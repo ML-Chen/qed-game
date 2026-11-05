@@ -36,7 +36,7 @@
     o.fillStyle = '#5a4a6a'; o.fillRect(RX[1] + LEDGE - 6, rim - 30, 4, 30); o.fillStyle = '#ffd45a'; o.beginPath(); o.moveTo(RX[1] + LEDGE - 2, rim - 30); o.lineTo(RX[1] + LEDGE + 18, rim - 24); o.lineTo(RX[1] + LEDGE - 2, rim - 18); o.fill(); // a flag on the ledge
   }
   MG.add({
-    id: 'energy_skate', stage: 'energy', cmd: 'SKATE ONTO THE LEDGE!', time: 7, mood: 'night', winText: 'Energy kept!', failText: 'Splash!',
+    id: 'energy_skate', stage: 'energy', cmd: 'SKATE ONTO THE LEDGE!', time: 7, mood: 'night', winText: 'Back to the same height!', failText: 'Not on the ledge!',
     card: { title: 'Height turns into speed', kind: 'Physics', ref: 'Conservation of energy',
       text: 'High up, the skater has energy stored by her height. Rolling down, that energy turns into speed. Rolling up the other side, the speed turns back into height, so she rises to almost exactly the height she started from.\n\nStart lower than the ledge and she can never reach it. Start a little higher and she arrives with just a little speed left. Start much higher and the extra energy carries her right off the end. Rough ground turns some energy into heat, so she rises a little less each time.',
       note: 'Energy changes form, from height to speed and back, but the total stays the same.' },
@@ -98,8 +98,8 @@
       SK.tag(c, 'Ledge', RX[1] + LEDGE / 2 - 4, rim + 26, 18);
       // the rounds still to go: little flags along the top
       for (let i = 0; i < s.rims.length; i++) { c.fillStyle = i < s.round || (i === s.round && k.st === 'won') ? '#ffd45a' : 'rgba(255,255,255,0.35)'; c.beginPath(); c.arc(180 + (i - (s.rims.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
-      if (k.st === 'rest') { const q = at(s.T, k.s); SK.glow(c, g, q.x, q.y - 20, 30); }
       const want = rim - 18 - (s.rough ? ROUGH : 0), tx = LX[1] - (LX[1] - LX[0]) * Math.sqrt((BOT - want) / (BOT - TOPL)), q = at(s.T, k.s);
+      if (k.st === 'rest') { const tY = trackY(tx, rim); SK.grab(c, g, q.x, q.y - 22, 30); SK.target(c, g, tx + 6, tY - 18, 24); SK.arrow(c, g, q.x, q.y - 22, tx + 6, tY - 18, { from: 40, to: 34 }); }
       SK.demo(g, c, 'drag', [q.x, q.y - 18], [tx + 8, trackY(tx, rim) - 14], { period: 2.2, never: k.st === 'won' || k.st === 'fall' || k.st === 'drag' });
     },
     // the bot: carry her up to a little above the ledge's height (more at level 2, for the rough patch) and let go

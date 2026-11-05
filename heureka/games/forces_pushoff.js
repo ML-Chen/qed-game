@@ -81,7 +81,7 @@
       if (s.dir && t - s.pushT < 0.8) { const k = 1 - (t - s.pushT) / 0.8, mx = C.x, my = C.y; c.save(); c.globalAlpha = Math.min(1, k * 2); arrow(c, mx + s.dir.dx * 8, my + s.dir.dy * 8, s.dir.dx, s.dir.dy, 70, '#ff8a5a'); arrow(c, mx - s.dir.dx * 8, my - s.dir.dy * 8, -s.dir.dx, -s.dir.dy, 70, '#ff8a5a'); c.restore(); }
       // while aiming: where the big one will go (your swipe) and where the little one will go (the other way)
       if (s.aim) { const dx = s.aim.x - s.aim.x0, dy = s.aim.y - s.aim.y0, L = Math.hypot(dx, dy); if (L > 12) { c.save(); c.setLineDash([6, 7]); c.lineWidth = 3; c.strokeStyle = 'rgba(60,40,90,0.45)'; c.beginPath(); c.moveTo(C.x, C.y); c.lineTo(C.x + dx / L * 90, C.y + dy / L * 90); c.stroke(); c.strokeStyle = 'rgba(255,170,60,0.85)'; c.beginPath(); c.moveTo(C.x, C.y); c.lineTo(C.x - dx / L * 200, C.y - dy / L * 200); c.stroke(); c.restore(); } }
-      if (ready && !g.done && g.t >= s.next) { SK.glow(c, g, C.x, C.y, 46, undefined, { level: 2 }); const ax = C.x - D.x, ay = C.y - D.y, L = Math.hypot(ax, ay); SK.demo(g, c, 'swipe', [C.x, C.y], [C.x + ax / L * 110, C.y + ay / L * 110]); }
+      if (ready && !g.done && g.t >= s.next) { const ax = C.x - D.x, ay = C.y - D.y, L = Math.hypot(ax, ay); SK.grab(c, g, C.x, C.y, 46); SK.target(c, g, C.x + ax / L * 120, C.y + ay / L * 120, 20); SK.arrow(c, g, C.x, C.y, C.x + ax / L * 120, C.y + ay / L * 120, { from: 48, to: 22 }); SK.demo(g, c, 'swipe', [C.x, C.y], [C.x + ax / L * 110, C.y + ay / L * 110]); }
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.phase !== 'ready' || g.t < Math.max(1.0, s.next)) return; const D = s.doors[s.di], ax = C.x - D.x, ay = C.y - D.y, L = Math.hypot(ax, ay);

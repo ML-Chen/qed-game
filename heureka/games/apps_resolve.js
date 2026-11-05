@@ -95,7 +95,7 @@ MG.add({
     if (full && !s.go) { c.save(); c.fillStyle = '#3fcf6a'; c.beginPath(); c.arc(PICX + 26, TY.m + 8, 13, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(PICX + 22, TY.m + 1); c.lineTo(PICX + 32, TY.m + 8); c.lineTo(PICX + 22, TY.m + 15); c.closePath(); c.fill(); c.restore(); SK.glow(c, g, PICX, TY.m - 14, 40); }
     if (s.drag) token(c, s.drag.v, s.drag.x, s.drag.y, s.drag.k !== 'o' && s.drag.v !== S.base[s.drag.i] ? COLS[s.drag.k] : '#e8e0d0', 1.1);
     // guidance: glow the changed carriages (levels 0-1); the hand loads the next empty car, or taps the picture to run
-    if (!s.go) for (let i = 0; i < 3; i++) if (!s.slots[i]) { const k = S.a[i] !== S.base[i] ? 'a' : S.b[i] !== S.base[i] ? 'b' : null; if (k) SK.glow(c, g, carX(i), TY[k] - 2, 30, COLS[k]); }
+    if (!s.go && !s.drag) { const i = s.slots.findIndex(v => !v); if (i >= 0) { const k = S.a[i] !== S.base[i] ? 'a' : S.b[i] !== S.base[i] ? 'b' : 'o'; SK.grab(c, g, carX(i), TY[k] - 2, 30); SK.target(c, g, carX(i), TY.m - 2, 0, { w: CW, h: 34 }); SK.arrow(c, g, carX(i), TY[k] - 2, carX(i), TY.m - 2); } }
     if (!s.go && !s.drag) { const i = s.slots.findIndex(v => !v); if (i < 0) SK.demo(g, c, 'tap', [PICX, TY.m - 14]); else { const k = S.a[i] !== S.base[i] ? 'a' : S.b[i] !== S.base[i] ? 'b' : 'o'; SK.demo(g, c, 'drag', [carX(i), TY[k] - 2], [carX(i), TY.m - 2]); } }
   },
   // the bot loads each slot with the changed version, then runs it (B7FAIL: takes everything from the fox's train)

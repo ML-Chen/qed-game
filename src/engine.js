@@ -662,11 +662,19 @@ function drawStages(c, t) {
     } else {
       const ix = x0 + 22, iw = w - 22; c.fillStyle = r.kind === 'all' ? '#ffe9b0' : 'rgba(255,250,242,0.9)'; roundRect(c, ix, r.y, iw, r.h, 12); c.fill(); c.strokeStyle = 'rgba(122,74,58,0.3)'; c.lineWidth = 1.5; c.stroke();
       if (r.kind === 'all') { const n = MG.forStage(r.st.id).length; P.label(c, n > 1 ? `Play all ${n}` : 'Play', ix + 16, cy, 15, '#5a2414', 'left', 900); }
-      else { P.label(c, r.def.cmd, ix + 16, cy, 15, '#3a1640', 'left', 900);
+      else { // the command, shrunk to fit and wrapped onto two lines if it is still too long (Heurēka!'s commands are full instructions)
+        const room0 = iw - 52; let fs = 15, lines = [r.def.cmd]; c.save();
+        for (; fs > 11; fs -= 0.5) { c.font = `900 ${fs}px Nunito, system-ui, sans-serif`; if (c.measureText(r.def.cmd).width <= room0) break; }
+        c.font = `900 ${fs}px Nunito, system-ui, sans-serif`;
+        if (c.measureText(r.def.cmd).width > room0) { fs = 12.5; c.font = `900 ${fs}px Nunito, system-ui, sans-serif`; const bl = bannerLines(r.def.cmd); lines = bl.length === 1 ? [r.def.cmd] : bl.length === 2 ? bl : [bl[0], bl.slice(1).join(' ')]; }
+        c.restore();
+        lines.forEach((l, i) => P.label(c, l, ix + 16, cy + (i - (lines.length - 1) / 2) * (fs + 2), fs, '#3a1640', 'left', 900));
+        if (lines.length > 1 || fs < 15) { if (SAVE.d.cards[r.def.id]) { c.fillStyle = '#7ab05a'; c.beginPath(); c.arc(ix + iw - 18, cy, 5, 0, 7); c.fill(); } }
+        else {
         // the card title sits on the right; it shrinks to fit the space left by the command, and is left out if it still can't fit
         if (r.def.card && r.def.card.title) { c.save(); c.font = '900 15px Nunito, system-ui, sans-serif'; const room = (ix + iw - 34) - (ix + 16 + c.measureText(r.def.cmd).width + 14); let fs = 12;
           for (; fs >= 9.5; fs -= 0.5) { c.font = `800 ${fs}px Nunito, system-ui, sans-serif`; if (c.measureText(r.def.card.title).width <= room) break; } c.restore();
-          if (fs >= 9.5) P.label(c, r.def.card.title, ix + iw - 34, cy, fs, '#9a5a4a', 'right', 800); } if (SAVE.d.cards[r.def.id]) { c.fillStyle = '#7ab05a'; c.beginPath(); c.arc(ix + iw - 18, cy, 5, 0, 7); c.fill(); } }
+          if (fs >= 9.5) P.label(c, r.def.card.title, ix + iw - 34, cy, fs, '#9a5a4a', 'right', 800); } if (SAVE.d.cards[r.def.id]) { c.fillStyle = '#7ab05a'; c.beginPath(); c.arc(ix + iw - 18, cy, 5, 0, 7); c.fill(); } } }
       c.fillStyle = '#b8541f'; c.beginPath(); const px = r.kind === 'all' ? ix + iw - 22 : null; if (px) { c.moveTo(px - 5, cy - 7); c.lineTo(px + 7, cy); c.lineTo(px - 5, cy + 7); c.fill(); }
     }
     c.restore();

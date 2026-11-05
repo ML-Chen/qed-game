@@ -156,9 +156,9 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'owl', 48, 612, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     // guidance: glow the private cards; the ghost hand flicks the first one into the chest
-    for (const cd of s.cards) if (cd.state === 'float' && KINDS[cd.kind].priv) SK.glow(c, g, cd.x, cd.y, 44, '#ff8aa0', { level: 0 });
     // the hand flicks the private card closest to the board into the chest
     const next = s.cards.filter(cd => KINDS[cd.kind].priv && cd.state === 'float' && cd.y < 640).sort((a, b) => a.y - b.y)[0];
+    if (next && !SK.dragging(g)) { SK.grab(c, g, next.x, next.y, 46); SK.target(c, g, CHEST.x, CHEST.y - 4, 50); SK.arrow(c, g, next.x, next.y, CHEST.x, CHEST.y - 4); }
     if (next) SK.demo(g, c, 'swipe', [next.x, next.y], [CHEST.x - 10, CHEST.y - 20]);
   },
   // the bot: fling each private card at the chest once it is well up on screen (B7FAIL: lets the key float up)

@@ -130,7 +130,7 @@
         if (m > 0.5) B3.smoke(c, mx, my - 12, t, m, '60,50,60', 4, 50); }
       // guidance: the next unused tool glows, and a dashed ring marks the fire as where it goes
       const nx = s.tools.find(tl => tl.id === ['fuel', 'air', 'heat'].find(id => !s.used[id])), busy = !!A || !!s.out || !!s.fan;
-      if (nx && !busy && !SK.dragging(g)) { SK.glow(c, g, nx.x, nx.y, 34); c.save(); c.globalAlpha = 0.5; c.setLineDash([8, 7]); c.lineDashOffset = -t * 20; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(FIRE.x, FIRE.y - 20, 62, 0, 7); c.stroke(); c.restore(); }
+      if (nx && !busy && !SK.dragging(g)) { SK.grab(c, g, nx.x, nx.y, 34); SK.target(c, g, FIRE.x, FIRE.y - 20, 60); SK.arrow(c, g, nx.x, nx.y, FIRE.x, FIRE.y - 20, { from: 40, to: 80 }); }
       for (const sd of SIDES) if (!s.broken[sd.id]) SK.tag(c, { heat: 'Heat', air: 'Air', fuel: 'Fuel' }[sd.id], sd.x, sd.y + 44, 18);
       SK.demo(g, c, 'drag', nx ? [nx.hx, nx.hy] : [180, 400], [FIRE.x, FIRE.y - 20], { never: !nx || busy });
     },

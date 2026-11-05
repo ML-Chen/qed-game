@@ -100,7 +100,7 @@ MG.add({
     // guidance: the next molecule and where it goes (tap the pump when potassium sits in it)
     if (s.pumpMol && !g.done) { SK.glow(c, g, P2.pump, MY, 40); SK.demo(g, c, 'tap', [P2.pump, MY + 4], null, { period: 0.6 }); return; }
     const next = s.m.find(m => m.st === 'wait');
-    if (next && !dr && !g.done) { const tx = next.kind === 'o2' ? next.x : next.kind === 'k' ? P2.pump : P2[next.kind]; SK.glow(c, g, next.x, next.y, 28); SK.demo(g, c, 'drag', [next.x, next.y], [tx, next.kind === 'k' ? MY - 22 : MY + 40]); }
+    if (next && !dr && !g.done) { const tx = next.kind === 'o2' ? next.x : next.kind === 'k' ? P2.pump : P2[next.kind]; const ty = next.kind === 'k' ? MY - 22 : next.kind === 'o2' ? MY + 10 : MY - 36; SK.target(c, g, tx, ty, 22); SK.arrow(c, g, next.x, next.y, tx, ty); SK.grab(c, g, next.x, next.y, 26); SK.demo(g, c, 'drag', [next.x, next.y], [tx, next.kind === 'k' ? MY - 22 : MY + 40]); }
   },
   auto(g, dt, synth) {
     const s = g.s, P2 = s.L.prot; if (g.done || g.t < 0.6) return;

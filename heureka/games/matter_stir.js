@@ -22,7 +22,7 @@
   }
   function makeGrain(g, kind) { return { kind, a: g.rand() * Math.PI * 2, r: Math.pow(g.rand(), 0.8), h: 0, lift: 0.15 + g.rand() * 0.75, size: 1, sp: 0.7 + g.rand() * 0.6, gone: false }; }
   MG.add({
-    id: 'matter_stir', stage: 'matter', cmd: 'STIR THE SUGAR AWAY!', time: 7, mood: 'sea', winText: 'Dissolved!', failText: 'Gritty!', hold: 1.6,
+    id: 'matter_stir', stage: 'matter', cmd: 'STIR THE SUGAR AWAY!', time: 7, mood: 'sea', winText: 'Sugar dissolved!', failText: 'Gritty!', hold: 1.6,
     card: { title: 'Dissolving', kind: 'Chemistry', ref: 'Solutions',
       text: 'Stirring sugar into water makes it disappear, but the sugar is still there. Water knocks tiny bits off each grain, and the bits spread out between the bits of water. They are far too small to see, even with a magnifying glass, so the drink looks clear but tastes sweet. This mix is called a solution.\n\nSand does not dissolve in water. Stir it and it swirls round, then sinks back to the bottom. Sugar dissolves faster in warm water than in cold, because the bits move faster.',
       note: 'When sugar dissolves, it breaks into bits too small to see, and they spread through the water.' },
@@ -105,7 +105,7 @@
       // the fox waits for its drink
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'fox', 312, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : W > 0.4 ? 'wow' : 'happy', facing: -1 });
-      if (!s.doneT && !s.touched) SK.glow(c, g, G.cx, MID[1] + 20, 56);
+      if (!s.doneT && !s.spoon) { SK.grab(c, g, G.cx + 40, G.bot - 60, 20); SK.target(c, g, G.cx, MID[1] + 20, 56); }
       // the ghost hand stirs in circles (level 0, until the first touch)
       SK.demo(g, c, 'drag', [G.cx - 50, 420], [G.cx + 50, 420], { arc: 60, period: 1.4, never: !!s.doneT });
     },

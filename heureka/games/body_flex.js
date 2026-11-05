@@ -91,7 +91,7 @@ MG.add({
     if (t - s.ate < 0.5) for (let i = 0; i < 5; i++) { const k = (t - s.ate) / 0.5; c.fillStyle = `rgba(200,140,80,${1 - k})`; c.beginPath(); c.arc(MOUTH[0] + 8 + Math.cos(i * 1.3) * k * 30, MOUTH[1] + Math.sin(i * 1.3) * k * 20, 3, 0, 7); c.fill(); }
     // labels
     SK.tag(c, 'Biceps', 196, 330, 18, '#fff6ea', 'rgba(140,30,50,0.85)'); SK.tag(c, 'Elbow', 46, EL[1] + 38, 18);
-    if (!g.done) SK.glow(c, g, bx, by, 34);
+    if (s.has && !g.done) { SK.target(c, g, MOUTH[0] + 8, MOUTH[1] - 4, 24); SK.arrow(c, g, pw[0], pw[1], MOUTH[0] + 8, MOUTH[1] + 10, { from: 30, to: 30 }); SK.grab(c, g, bx, by, 32); }
     if (s.has && !g.done) SK.demo(g, c, 'drag', [bx + 4, by + 30], [bx + 4, by - 60]);
   },
   // the bot: pull up and hold until the snack is eaten, let go, repeat

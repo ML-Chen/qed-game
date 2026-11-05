@@ -98,7 +98,7 @@
         balloon(c, b, t);
         c.restore();
       }
-      const next = s.b.find(b => b.gas < 0.3); if (next && !s.grab) { const tp = toScr(next, tipOf(next)); SK.glow(c, g, tp.x, tp.y, 26); }
+      const next = s.b.find(b => b.gas < 0.3); if (next && !s.grab) { const tp = toScr(next, tipOf(next)), up = toScr(next, { x: MOUTH.x, y: MOUTH.y - 100 }); SK.grab(c, g, tp.x, tp.y, 24); SK.target(c, g, up.x, up.y, 26); SK.arrow(c, g, tp.x, tp.y, up.x, up.y, { from: 26, to: 34 }); }
       const won = g.result === 'win', lost = g.result === 'fail', foamy = s.b.some(b => b.foam > 0.2);
       SK.animal(c, 'frog', 180, 294, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : foamy ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : foamy ? 'wow' : 'happy' });
       const b0 = next || s.b[0], h = toScr(b0, tipOf(b0, b0.hang, 0)), up = toScr(b0, { x: MOUTH.x, y: MOUTH.y - 110 });

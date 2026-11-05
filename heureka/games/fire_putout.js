@@ -109,7 +109,7 @@
       SK.animal(c, 'beaver', 318, 606, 0.7, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.fires.some(f => f.spark && t - f.spark < 0.8) ? 'hop' : 'idle', expr: won ? 'laugh' : lost || s.flare ? 'wow' : 'happy' });
       if (lost || (s.singed && t - s.singed < 2)) B3.smoke(c, 312, 548, t, 0.6, '80,80,90', 3, 40);
       const nf = s.fires.find(f => !f.out), w = nf ? s.ext.find(e => e.kind === WORKS[nf.kind][0]) : s.ext[0];
-      if (nf && !SK.dragging(g) && !S) { SK.glow(c, g, w.x, w.y, 34, '#ffe27a', { level: 0 }); SK.glow(c, g, nf.x, BENCH - 40, 40, '#ffe27a', { level: 1 }); }
+      if (nf && !SK.dragging(g) && !S) { SK.grab(c, g, w.x, w.y, 34); SK.target(c, g, nf.x, BENCH - 40, 40); SK.arrow(c, g, w.x, w.y, nf.x, BENCH - 40, { from: 40, to: 52 }); }
       const EN = { water: 'Water', co2: 'CO\u2082', wet: 'Wet chem', metal: 'Powder' }, FN = { bin: 'Paper', toaster: 'Toaster', fryer: 'Oil', metal: 'Metal' };
       s.ext.forEach((e, i) => { if (SK.dragging(g) !== e && !(S && S.e === e)) SK.tag(c, EN[e.kind], e.hx, s.ext.length > 3 && i % 2 ? 478 : 496, 18); }); for (const f of s.fires) SK.tag(c, FN[f.kind], f.x, BENCH + 16, 18);
       SK.demo(g, c, 'drag', [w.hx, w.hy], [nf ? nf.x - 36 : 180, BENCH - 70], { never: !nf || !!S });

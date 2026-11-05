@@ -21,7 +21,7 @@
     o.fillStyle = '#5a7a9a'; o.fillRect(TH.x - 2, 210, 4, 28);
   }
   MG.add({
-    id: 'matter_melt', stage: 'matter', cmd: 'MELT ALL THE ICE!', time: 7, mood: 'sea', winText: 'Latent heat!', failText: 'Whoops!',
+    id: 'matter_melt', stage: 'matter', cmd: 'MELT ALL THE ICE!', time: 7, mood: 'sea', winText: 'All the ice melted!', failText: 'Still icy!',
     card: { title: 'Melting takes heat', kind: 'Chemistry', ref: 'Latent heat and changes of state',
       text: 'In ice, the particles are held in neat rows. Heating makes them jiggle faster, so the ice gets warmer. At 0 °C the heat goes into breaking particles out of their rows instead, so the thermometer stops rising until all the ice has melted. Melting ice takes about as much heat as warming the water from 0 to 80 °C.\n\nBoiling works the same way. At 100 °C the heat goes into setting particles free as steam, and the temperature stays at 100 °C until the water has boiled away.',
       note: 'While ice melts or water boils, the heat breaks particles free, so the temperature stops rising.' },

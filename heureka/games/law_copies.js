@@ -44,7 +44,7 @@ function easel(c, x, y, kind, t) {
   comic(c, x - EW / 2, y - EH / 2, EW, EH, kind, t);
 }
 MG.add({
-  id: 'catchcopies', stage: 'law', cmd: 'SWIPE AWAY THE COPYCATS!', time: 6, mood: 'desert', winText: 'Copyright!', failText: 'Objection!',
+  id: 'catchcopies', stage: 'law', cmd: 'SWIPE AWAY THE COPYCATS!', time: 6, mood: 'desert', winText: 'Copies caught!', failText: 'Objection!',
   card: { title: 'You own your drawing, not the idea', kind: 'Law', ref: 'Copyright: expression, not ideas (17 U.S.C. 102(b))',
     text: 'Copyright protects a creative work, such as a comic, from the moment it is written down or drawn. The frog owns its own pictures and the way it put them together. Nobody owns the idea of a duck in space.\n\nThe copiers traced the frog\'s pages, and changing only the colours still copies the drawing. The other artists drew their own space-duck comics, which the law allows. Copyright also has exceptions, such as fair use for things like reviews and teaching.\n\nGeneral information about US law, not legal advice.',
     note: 'Copyright protects the way an idea is expressed, not the idea itself.' },

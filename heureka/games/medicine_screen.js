@@ -78,10 +78,10 @@ MG.add({
     SK.animal(c, 'owl', ox, oy, fly ? 0.45 : 0.6, { t, pose: won ? 'cheer' : fly ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : fly ? 'think' : 'happy', facing: -1, noShadow: fly });
     if (fly) { c.strokeStyle = '#5a4a30'; c.lineWidth = 3; c.fillStyle = 'rgba(220,240,255,0.6)'; c.beginPath(); c.arc(ox - 22, oy - 26, 8, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.moveTo(ox - 16, oy - 20); c.lineTo(ox - 10, oy - 14); c.stroke(); }
     // guidance: a ghost hand rubbing the scanner across the crowd
-    if (!g.done && s.left === s.an.length) SK.glow(c, g, 180, 350, 60);
     const nx = s.an.findIndex(a => a.scanned < 0);
     if (s.wand && !g.done) SK.tag(c, 'Quick test', SK.clamp(s.wand.x, 70, 290), s.wand.y - SR - 22, 18);
     if (fly) SK.tag(c, 'Careful test', SK.clamp(ox, 80, 280), oy - 74, 18);
+    if (nx >= 0 && !s.wand && !g.done) { const [, ry] = pos(nx); SK.arrow(c, g, 40, ry - 14, 320, ry - 14, { from: 0, to: 0 }); }
     if (nx >= 0) { const [, ry] = pos(nx); SK.demo(g, c, 'drag', [30, ry - 10], [330, ry - 10], { period: 1.6 }); }
   },
   // the bot: sweep the scanner back and forth over every row

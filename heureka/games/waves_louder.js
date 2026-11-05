@@ -101,8 +101,9 @@
       // the handle on the first crest
       const hx = crestX(s), hy = SCR.mid - yA; SK.ball(c, hx, hy, 13, '#ffd45a', { edge: '#7a4a10' });
       c.strokeStyle = 'rgba(255,212,90,0.6)'; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, SCR.mid); c.stroke(); c.setLineDash([]);
-      if (!g.done) SK.glow(c, g, hx, hy, 22, undefined, { level: 2 });
-      const tgt = s.who.find(w => !w.awake); if (tgt) SK.demo(g, c, 'drag', [hx, hy], [hx, SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX]);
+      const tgt = s.who.find(w => !w.awake);
+      if (!g.done && tgt) { const ty = SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX; SK.grab(c, g, hx, hy, 20); SK.target(c, g, hx, ty, 18); }
+      if (tgt) SK.demo(g, c, 'drag', [hx, hy], [hx, SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX]);
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done) return; const w = s.who.find(q => !q.awake); if (!w) return;

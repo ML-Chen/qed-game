@@ -106,10 +106,11 @@ MG.add({
     if (s.learn >= 0 && t - s.learn < 0.9) { const k = (t - s.learn) / 0.9; c.fillStyle = `rgba(255,230,90,${1 - k})`; c.beginPath(); c.arc(126, 410 - k * 20, 11, 0, 7); c.fill(); }
     // the poster: in the tray (glowing), being dragged, or pinned on the board
     const p = s.post;
-    if (p && !p.on) { SK.glow(c, g, TRAY[0], TRAY[1], 42); c.save(); c.setLineDash([8, 6]); c.strokeStyle = `rgba(255,250,200,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.roundRect(BOARD.x + BOARD.w / 2 - 50, BOARD.y + 6, 100, 112, 6); c.stroke(); c.restore(); }
+    if (p && !p.on) { c.save(); c.setLineDash([8, 6]); c.strokeStyle = `rgba(255,250,200,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.roundRect(BOARD.x + BOARD.w / 2 - 50, BOARD.y + 6, 100, 112, 6); c.stroke(); c.restore(); }
     if (p) poster(c, p.x, p.y, KINDS[p.kind], t, p.drag ? 1.4 : 1.3);
     SK.animal(c, 'duck', 40, 620, 0.65, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (p) SK.tag(c, 'Vaccine', p.x, p.y - 64, 18); SK.tag(c, 'Immune cells', 120, 534, 18); if (R && !R.beat && !R.spread && R.k < 0.5) SK.tag(c, 'Germ', 300, 232, 18);
+    if (p && !p.on && !p.drag) { SK.target(c, g, BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2, 0, { w: BOARD.w + 10, h: BOARD.h + 10 }); SK.arrow(c, g, p.x, p.y, BOARD.x + BOARD.w / 2 + 20, BOARD.y + BOARD.h / 2 + 30); SK.grab(c, g, p.x, p.y, 50); }
     if (p && !p.on) SK.demo(g, c, 'drag', [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2]);
   },
   // the bot: put each poster on the board as soon as it appears

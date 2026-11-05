@@ -112,7 +112,7 @@ MG.add({
     // guidance: the next step glows and the hand shows it (to the asker's own drawer, or to the stamp pad)
     if (r && r.st === 'here' && !a && !s.drag) {
       const deny = r.who !== r.want, to = deny ? [PAD.x, PAD.y] : [CAB.x + 50, drawerY(OWN.indexOf(r.want))];
-      SK.glow(c, g, HATCH.x, HATCH.y, 50); if (g.level === 0) SK.glow(c, g, to[0], to[1], 44, deny ? '#ff8a9a' : '#7ee8a0');
+      SK.grab(c, g, HATCH.x, HATCH.y, 50); SK.target(c, g, to[0], to[1], 0, deny ? { w: 110, h: 50 } : { w: 140, h: 92 }); SK.arrow(c, g, HATCH.x, HATCH.y, to[0], to[1]);
       SK.demo(g, c, 'drag', [HATCH.x, HATCH.y], to);
     }
   },

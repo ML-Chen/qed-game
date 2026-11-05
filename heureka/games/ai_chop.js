@@ -62,7 +62,7 @@ MG.add({
     c.fillStyle = '#6a4428'; c.beginPath(); c.roundRect(16, 130, 328, 108, 12); c.fill(); c.fillStyle = '#8a5a34'; c.beginPath(); c.roundRect(22, 136, 316, 96, 9); c.fill();
     { let x = 32, y = 160; c.font = `700 19px ${B7.MONO}`; c.textBaseline = 'middle'; c.textAlign = 'center'; for (const v of s.board) { const w = carW(v); if (x + w > 330) { x = 32; y += 44; } const used = s.segs.some(q => q.st === 'tok' && s.word.slice(q.a, q.b) === v);
       c.fillStyle = used ? '#a8e8a0' : '#f4dcb0'; c.strokeStyle = '#4a2a14'; c.lineWidth = 2; c.beginPath(); c.roundRect(x, y - 16, w, 32, 6); c.fill(); c.stroke(); c.fillStyle = '#3a2010'; c.fillText(v, x + w / 2, y + 1); x += w + 8; } }
-    SK.tag(c, 'Token list', 180, 252, 18);
+    SK.tag(c, "AI model's token list", 180, 252, 18);
     // the log: still-uncut parts sit here; tokens and crumbs leave for the train
     for (const q of s.segs) {
       const txt = s.word.slice(q.a, q.b), x0 = G.gapX(q.a), x1 = G.gapX(q.b), age = q.t ? t - q.t : 9;
@@ -88,7 +88,8 @@ MG.add({
     }
     // the beaver at the station
     const won = s.res && s.res.win, lost = s.res && !s.res.win;
-    SK.animal(c, 'beaver', 316, 626, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
+    B7.robot(c, 324, 606, 0.82, { t, dir: 2, mood: won ? 'happy' : lost ? 'wow' : 'idle' }); SK.tag(c, 'AI model', 300, 500, 18); if (lost) { c.save(); c.globalAlpha = Math.min(1, (t - s.res.t) * 3); SK.tag(c, '?', 344, 520, 22); c.restore(); }
+    SK.animal(c, 'beaver', 338, 346, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // the knife stroke while swiping
     if (s.swipe) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.swipe.x0, s.swipe.y0); c.lineTo(s.swipe.x, s.swipe.y); c.stroke(); c.restore(); }
     // guidance: a dashed cut line at the next place the model splits (levels 0-1), and the hand swipes down through it

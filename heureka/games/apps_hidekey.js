@@ -29,12 +29,13 @@ function safeBox(c, x, y, s, keys, t, tag) {
   c.fillStyle = '#5a6a80'; c.beginPath(); c.roundRect(-28, -24, 56, 46, 5); c.fill();
   c.save(); c.translate(0, -2); c.rotate(keys * 1.2 + (tag ? 0 : Math.sin(t) * 0.05)); c.fillStyle = '#c8d0dc'; c.beginPath(); c.arc(0, 0, 11, 0, 7); c.fill(); c.strokeStyle = '#2a3040'; c.lineWidth = 2; c.stroke(); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -9); c.stroke(); c.restore();
   for (let i = 0; i < keys; i++) { c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(-18 + i * 9, 16, 3.5, 0, 7); c.fill(); }
-  c.fillStyle = '#fff6ea'; c.font = `700 18px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('.env', 0, 46);
+  SK.tag(c, 'Secret file', 0, 50, 18);
   if (tag) { c.save(); c.translate(26, -30); c.fillStyle = '#e83a4a'; c.beginPath(); c.arc(0, 0, 11, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.moveTo(-6, 0); c.lineTo(6, 0); c.stroke(); c.restore(); }
   c.restore();
 }
 function foxBot(c, x, y, t, mood) {
   SK.animal(c, 'fox', x, y, 0.75, { t, pose: mood === 'got' ? 'cheer' : mood === 'none' ? 'sad' : 'walk', expr: mood === 'got' ? 'laugh' : mood === 'none' ? 'think' : 'happy', tint: '#c87a5a', facing: -1 });
+  if (mood === 'look') { const a = Math.sin(t * 2.2) * 0.4; c.save(); c.translate(x - 34, y - 40 + Math.sin(t * 3) * 3); c.rotate(a); c.strokeStyle = '#3a3040'; c.lineWidth = 4; c.beginPath(); c.moveTo(8, 8); c.lineTo(18, 18); c.stroke(); c.fillStyle = 'rgba(200,240,255,0.6)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 10, 0, 7); c.fill(); c.stroke(); c.restore(); } // sniffing the public site with a magnifier
   c.save(); c.translate(x - 6, y - 52); c.fillStyle = '#9aa4b4'; c.strokeStyle = '#3a4050'; c.lineWidth = 2; c.beginPath(); c.roundRect(-14, -12, 28, 12, 4); c.fill(); c.stroke(); c.fillStyle = '#ff5a5a'; c.beginPath(); c.arc(0, -16, 3, 0, 7); c.fill(); c.restore(); // a robot visor and antenna
 }
 MG.add({
@@ -74,7 +75,7 @@ MG.add({
     // the .gitignore list: a clipboard with a no-entry sign, where the safe goes to stay home
     c.save(); c.translate(FENCE.x, FENCE.y); c.fillStyle = '#c89a5a'; c.strokeStyle = '#5a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(-40, -44, 80, 92, 8); c.fill(); c.stroke(); c.fillStyle = '#fff6ea'; c.fillRect(-32, -34, 64, 74);
     c.strokeStyle = 'rgba(232,58,74,0.5)'; c.lineWidth = 5; c.beginPath(); c.arc(0, 2, 22, 0, 7); c.moveTo(-15, 17); c.lineTo(15, -13); c.stroke(); c.restore();
-    c.fillStyle = '#fff6ea'; c.font = `700 18px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('.gitignore', FENCE.x - 6, FENCE.y - 58);
+    c.fillStyle = '#fff6ea'; c.font = `700 18px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; SK.tag(c, "Don't upload", FENCE.x - 10, FENCE.y - 60, 18);
     // the key cutter (level 2): makes a fresh key and switches the leaked one off
     if (s.old) { c.save(); c.translate(CUTTER.x, CUTTER.y); c.fillStyle = s.cut ? '#5a8a6a' : '#8a6aa0'; c.strokeStyle = '#2a2040'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(-34, -30, 68, 60, 10); c.fill(); c.stroke(); c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(-10, 0, 9, 0, 7); c.fill(); c.fillRect(-2, -3, 26, 6); c.fillRect(14, 3, 4, 6); c.restore(); }
     SK.tag(c, 'Your computer', 96, s.panelB + 18, 18); SK.tag(c, 'Public site', BOARD.x, BOARD.y - 82, 18);
@@ -103,8 +104,8 @@ MG.add({
     if (s.drag && s.drag.kind === 'key') { c.save(); c.font = `700 19px ${B7.MONO}`; const w = c.measureText(s.drag.txt).width + 18; c.fillStyle = '#ff9ac0'; c.strokeStyle = '#8a2a4a'; c.lineWidth = 2; c.beginPath(); c.roundRect(s.drag.x - w / 2, s.drag.y - 15, w, 30, 8); c.fill(); c.stroke(); c.fillStyle = '#3a1428'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(s.drag.txt, s.drag.x, s.drag.y + 1); c.restore(); }
     // guidance: the next step glows and the hand shows it
     if (!P0 && !s.drag) {
-      if (s.keys.length) { const i = s.keys[0], [a, b] = strSpan(s, i), ly = s.lay.lineY(i); SK.glow(c, g, s.safe.x, s.safe.y, 46); SK.demo(g, c, 'drag', [(a + b) / 2, ly], [s.safe.x, s.safe.y]); }
-      else if (!s.safe.ign) { SK.glow(c, g, FENCE.x, FENCE.y, 50); SK.demo(g, c, 'drag', [s.safe.x, s.safe.y], [FENCE.x, FENCE.y]); }
+      if (s.keys.length) { const i = s.keys[0], [a, b] = strSpan(s, i), ly = s.lay.lineY(i); SK.grab(c, g, (a + b) / 2, ly, 30); SK.target(c, g, s.safe.x, s.safe.y, 44); SK.arrow(c, g, (a + b) / 2, ly, s.safe.x, s.safe.y); SK.demo(g, c, 'drag', [(a + b) / 2, ly], [s.safe.x, s.safe.y]); }
+      else if (!s.safe.ign) { SK.grab(c, g, s.safe.x, s.safe.y, 40); SK.target(c, g, FENCE.x, FENCE.y, 0, { w: 90, h: 100 }); SK.arrow(c, g, s.safe.x, s.safe.y, FENCE.x, FENCE.y); SK.demo(g, c, 'drag', [s.safe.x, s.safe.y], [FENCE.x, FENCE.y]); }
       else if (s.old && !s.cut) { SK.glow(c, g, CUTTER.x, CUTTER.y, 40); SK.demo(g, c, 'tap', [CUTTER.x, CUTTER.y]); }
       else { SK.glow(c, g, PUSH.x, PUSH.y, 40); SK.demo(g, c, 'tap', [PUSH.x, PUSH.y]); }
     }

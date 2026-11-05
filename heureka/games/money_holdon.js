@@ -42,6 +42,7 @@ MG.add({
     s.T = TRACKS[L].map(([x, y], i) => [x, y + (i > 0 && i < TRACKS[L].length - 1 ? (g.rand() - 0.5) * 16 : 0)]);
     s.v = SPEED[L]; s.x = 30; s.go = false; s.off = 0; s.offX = 0; s.ptr = null; s.startY = trackY(s.T, 30);
   },
+  val(g, y) { return Math.max(1, Math.round(10 * (600 - y) / (600 - g.s.startY))); }, // the coins your money is worth at this height (10 at the start)
   pos(g, x) { const y = trackY(g.s.T, x), y2 = trackY(g.s.T, x + 2); return { x, y, ang: Math.atan2(y2 - y, 2) }; },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.off) return; const p = this.pos(g, s.x); if (SK.dist(x, y, p.x, p.y - 30) < GRIP) { s.go = true; s.ptr = { x, y }; g.sfx('click'); } },
   move(g, x, y) { const s = g.s; if (s.ptr) s.ptr = { x, y }; },
@@ -67,14 +68,20 @@ MG.add({
     const fy = trackY(T, 342); c.strokeStyle = '#5a3a1a'; c.lineWidth = 3; c.beginPath(); c.moveTo(346, fy); c.lineTo(346, fy - 54); c.stroke(); c.fillStyle = '#f5c23a'; c.beginPath(); c.moveTo(346, fy - 54); c.lineTo(320 + Math.sin(t * 6) * 3, fy - 46); c.lineTo(346, fy - 38); c.closePath(); c.fill();
     // the cart; once the turtle has hopped off it stands at that spot, sad, and the empty cart climbs away
     const p = this.pos(g, s.x);
-    cart(c, p.x, p.y - 6, p.ang, t, !s.off, s.go);
+    // the Sell platform at the bottom of the dip: riders who jumped off wave you down
+    let lowX = 18; for (let x = 18; x < 340; x += 2) if (trackY(T, x) > trackY(T, lowX)) lowX = x; const lowY = trackY(T, lowX);
+    c.fillStyle = '#c8b8a0'; c.fillRect(lowX - 56, lowY + 30, 112, 9); c.fillStyle = '#a89880'; c.fillRect(lowX - 50, lowY + 39, 6, 600); c.fillRect(lowX + 44, lowY + 39, 6, 600);
+    for (const [dx, kind] of [[-34, 'fox'], [34, 'rabbit']]) SK.animal(c, kind, lowX + dx, lowY + 30, 0.6, { t, phase: dx, pose: won ? 'sad' : 'wave', expr: won ? 'sad' : 'happy', facing: dx < 0 ? 1 : -1 });
+    if (won || s.x > lowX + 40) SK.tag(c, 'They sold for ' + this.val(g, lowY), lowX, lowY + 58, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); else SK.tag(c, 'Sell', lowX, lowY + 58, 18);
+    const rattle = s.go && Math.abs(s.x - lowX) < 40 ? Math.sin(t * 50) * 2.5 : 0;
+    cart(c, p.x + rattle, p.y - 6, p.ang, t, !s.off, s.go);
     if (s.off) { const ox = s.offX, oy = trackY(T, ox); c.fillStyle = '#c8b8a0'; c.fillRect(ox - 24, oy + 4, 48, 8); SK.animal(c, 'turtle', ox, oy + 4, 0.8, { t, pose: 'sad', expr: 'sad' }); B8.cashBag(c, ox + 30, oy - 8, 0.45); }
     if (won) SK.animal(c, 'turtle', 300, 590, 0.9, { t, pose: 'cheer', expr: 'laugh' });
     // your hand on the bar
     if (s.go && s.ptr) { c.save(); c.globalAlpha = 0.35; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y - 30, GRIP * 0.5, 0, 7); c.stroke(); c.restore(); }
-    if (!s.go && !s.off && !g.done) SK.glow(c, g, p.x, p.y - 30, 30);
-    SK.tag(c, 'Stock market', 180, 150, 20); SK.tag(c, 'Price you paid', 300, s.startY + 22, 18);
-    if (!s.off) SK.tag(c, 'Your money', p.x, p.y - 74, 18); else SK.tag(c, 'Sold', s.offX, trackY(T, s.offX) - 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
+    if (!s.go && !s.off && !g.done) SK.grab(c, g, p.x, p.y - 30, 30); // press and keep holding the bar
+    SK.tag(c, 'Stock market', 180, 178, 20); SK.tag(c, 'Price you paid', 300, s.startY + 22, 18);
+    if (!s.off) SK.tag(c, 'Your money: ' + this.val(g, p.y), SK.clamp(p.x, 70, 290), p.y - 74, 18); else SK.tag(c, 'Sold for ' + this.val(g, trackY(T, s.offX)), SK.clamp(s.offX, 70, 290), trackY(T, s.offX) - 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     SK.demo(g, c, 'hold', [p.x + 6, p.y - 26], null, { delay: 0.8 });
   },
   auto(g, dt, synth) { // press the bar and follow the cart all the way

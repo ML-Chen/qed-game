@@ -100,7 +100,7 @@ MG.add({
       for (const b of s.bugs) if (b.big) { const k = b.dead ? Math.max(0, 1 - (t - b.dead) * 3) : 1, w = mw * b.w / 100 * k; if (w > 0.5) { c.fillStyle = '#d82a3a'; c.fillRect(x, my, w - 1, 16); x += w; } }
       const aw = mw * s.bugs.filter(b => !b.big && !b.dead).reduce((a, b) => a + b.w, 0) / 100; c.fillStyle = '#f0a040'; c.fillRect(x, my, aw, 16); }
     c.restore();
-    SK.tag(c, 'Your app', 180, SCR.t - 40, 18);
+    SK.tag(c, 'Your app', 180, SCR.b + 14, 18);
     // the mallet strikes
     for (const w of s.whacks) { const k = (t - w.t) / 0.35; if (k < 1) { c.save(); c.translate(w.x, w.y); c.rotate(-0.6 + Math.min(1, k * 4) * 0.6); c.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3; c.fillStyle = '#8a5a2a'; c.fillRect(-4, -60, 8, 50); c.fillStyle = '#e84a4a'; c.beginPath(); c.roundRect(-22, -16, 44, 22, 6); c.fill(); c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(-18, -13, 36, 5); c.restore(); } }
     // the squashes left: one mallet each

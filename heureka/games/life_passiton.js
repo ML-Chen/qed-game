@@ -67,7 +67,7 @@
       for (const n of show) if (n.k !== 'sun') SK.tag(c, NAME[n.k], n.x, n.y + (n.k === 'grass' ? 34 : n.k === 'leaf' ? 30 : n.k === 'caterpillar' ? 26 : n.k === 'mushroom' ? 30 : 44), 18);
       // the energy dot, smaller after every step
       if (!s.next || t - s.next < 0.6) { const r = s.r * (s.next ? 1 - (t - s.next) / 0.6 : 1) + Math.sin(t * 8) * 1.2; B3.glow(c, s.dot.x, s.dot.y, r * 3.2, '255,230,120', 0.7); c.fillStyle = '#fff8c8'; c.beginPath(); c.arc(s.dot.x, s.dot.y, Math.max(1, r), 0, 7); c.fill(); }
-      const nx = show[s.at + 1]; if (nx && !s.drag) { SK.glow(c, g, s.dot.x, s.dot.y, 30); c.save(); c.globalAlpha = 0.5; c.setLineDash([6, 8]); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(nx.x, nx.y, 34, 0, 7); c.stroke(); c.restore(); }
+      const nx = show[s.at + 1]; if (nx && !s.drag && !s.next) { SK.grab(c, g, s.dot.x, s.dot.y, 26); SK.target(c, g, nx.x, nx.y, 34); SK.arrow(c, g, s.dot.x, s.dot.y, nx.x, nx.y, { from: 30, to: 44 }); }
       for (let i = 0; i < CHAINS.length; i++) { const x = 24 + i * 22, y = 604, d = i < s.ci || (i === s.ci && s.next); c.fillStyle = d ? '#ffe070' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(x, y, 7, 0, 7); c.fill(); }
       SK.demo(g, c, 'drag', [s.dot.x, s.dot.y], nx ? [nx.x, nx.y] : [180, 400], { never: !nx || !!s.next });
     },

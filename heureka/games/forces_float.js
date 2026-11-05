@@ -86,8 +86,8 @@
         if (g.level === 0) { c.save(); c.setLineDash([5, 6]); c.strokeStyle = 'rgba(80,60,40,0.55)'; c.lineWidth = 2; c.translate(CL.x, CL.y); boatPath(c, 140, wallH(140)); c.stroke(); c.restore(); }
         c.save(); c.fillStyle = 'rgba(255,255,255,0.9)'; for (const sd of [-1, 1]) { const ax = CL.x + sd * (s.w / 2 + 22); c.beginPath(); c.moveTo(ax + sd * 12, CL.y - 20); c.lineTo(ax, CL.y - 30); c.lineTo(ax, CL.y - 10); c.closePath(); c.fill(); } c.restore();
         SK.tag(c, 'Clay', CL.x, CL.y - 96, 18);
-        SK.glow(c, g, CL.x, CL.y - 24, 40, undefined, { level: 2 });
-        SK.demo(g, c, 'drag', [CL.x + 10, CL.y - 20], [CL.x + 10 + (140 - s.w) / 2, CL.y - 20]);
+        SK.grab(c, g, CL.x + s.w / 2, CL.y - 20, 22); SK.target(c, g, CL.x + 70, CL.y - 20, 18); SK.arrow(c, g, CL.x + s.w / 2, CL.y - 20, CL.x + 70, CL.y - 20, { from: 18, to: 20 });
+        SK.demo(g, c, 'drag', [CL.x + s.w / 2, CL.y - 20], [CL.x + s.w / 2 + Math.max(0, (140 - s.w) / 2), CL.y - 20]);
       }
     },
     auto(g, dt, synth) {

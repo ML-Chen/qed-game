@@ -98,7 +98,7 @@ MG.add({
     // the price tag on its pole
     const ty = yOfP(s.p);
     B8.coin(c, TRACK.x - 26, TRACK.y1 + 6, 9); for (let i = 0; i < 6; i++) B8.flatCoin(c, TRACK.x - 26, TRACK.y0 + 10 - i * 5, 10, 0); // cheap at the bottom, dear at the top
-    if (!R) SK.glow(c, g, TRACK.x + 2, ty, 34);
+    if (!R) { const by = yOfP(this.band(g)); SK.grab(c, g, TRACK.x + 2, ty, 30); if (Math.abs(by - ty) > 40) SK.arrow(c, g, TRACK.x - 40, ty, TRACK.x - 40, by, { from: 0, to: 0 }); } // slide the tag up or down
     priceTag(c, TRACK.x + 4, ty, s.p, s.held);
     // the state of the market, live as you slide, and the labels
     const nb = k.b.filter(Boolean).length, na = k.a.filter(Boolean).length;

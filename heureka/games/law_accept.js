@@ -64,7 +64,7 @@ function stampTool(c, x, y, press) { // a wooden paw stamp, pressed down by `pre
   c.restore();
 }
 MG.add({
-  id: 'acceptoffer', stage: 'law', cmd: 'STAMP YES ON EACH OFFER!', time: 6, mood: 'desert', winText: 'Acceptance!', failText: 'Counteroffer!',
+  id: 'acceptoffer', stage: 'law', cmd: 'STAMP YES ON EACH OFFER!', time: 6, mood: 'desert', winText: 'Deal done!', failText: 'Counteroffer!',
   card: { title: 'Say yes to the offer as it stands', kind: 'Law', ref: 'Offer and acceptance; counteroffers',
     text: 'An offer is a promise that waits for a yes. When you accept it exactly as it stands, a contract forms: here, a bike for three coins. Each side gives something of value, which the law calls consideration.\n\nA reply that changes the deal doesn\'t accept it. Crossing out a coin made a counteroffer: it turns down the first offer and makes a new one, which the seller is free to refuse. Until you accept, the seller can also take an offer back.\n\nGeneral information about US law, not legal advice.',
     note: 'A contract forms when an offer is accepted as it stands; changing the terms makes a counteroffer instead.' },

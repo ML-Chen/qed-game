@@ -114,7 +114,7 @@
       c.fillStyle = '#4a2a10'; c.beginPath(); c.ellipse(TR.x - 3, ky + 6, 6, 4.5, -0.4, 0, 7); c.fill(); c.fillRect(TR.x + 1.5, ky - 10, 2.5, 16); c.beginPath(); c.moveTo(TR.x + 4, ky - 10); c.quadraticCurveTo(TR.x + 12, ky - 6, TR.x + 9, ky + 1); c.lineTo(TR.x + 4, ky - 4); c.fill();
       SK.tag(c, 'High', TR.x + 52, TR.y1 - 4, 18); SK.tag(c, 'Low', TR.x + 48, TR.y0 + 4, 18);
       const q0 = next(s);
-      if (!g.done) { SK.glow(c, g, TR.x, ky, 24, undefined, { level: 2 }); for (const q of s.gl) if (!q.broken) SK.glow(c, g, TR.x, yOf(q.f0), 12, '#ffffff', { level: 0 }); }
+      if (!g.done && q0) { SK.grab(c, g, TR.x, ky, 24); SK.target(c, g, TR.x, yOf(q0.f0), 22); SK.arrow(c, g, TR.x + 30, ky, TR.x + 30, yOf(q0.f0), { from: 0, to: 0 }); }
       if (q0) SK.demo(g, c, 'drag', [TR.x + 4, s.knob + 6], [TR.x + 4, yOf(q0.f0) + 6]);
     },
     auto(g, dt, synth) {

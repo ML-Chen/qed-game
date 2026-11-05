@@ -95,7 +95,7 @@ MG.add({
     if (s.drag) fruit(c, s.drag.k, s.drag.x, s.drag.y, 1.05);
     SK.tag(c, 'You', 56, ME.y + 2, 18);
     const tg = this.target(g);
-    if (tg && !s.drag && !g.done) { const m = this.slots(g, 'me').find(o => o.k === tg.k); if (m) { SK.glow(c, g, m.x, m.y, 22); SK.demo(g, c, 'drag', [m.x, m.y], [POS[tg.w].x, POS[tg.w].y - 20], { delay: 0.7, arc: 40 }); } }
+    if (tg && !s.drag && !g.done) { const m = this.slots(g, 'me').find(o => o.k === tg.k); if (m) { SK.grab(c, g, m.x, m.y, 20); SK.target(c, g, POS[tg.w].x, POS[tg.w].y - 20, 44); SK.arrow(c, g, m.x, m.y, POS[tg.w].x, POS[tg.w].y - 20, { to: 60 }); SK.demo(g, c, 'drag', [m.x, m.y], [POS[tg.w].x, POS[tg.w].y - 20], { delay: 0.7, arc: 40 }); } }
   },
   // the next useful trade (for the guidance and the bot): a friend not yet traded with who wants something you hold
   target(g) {

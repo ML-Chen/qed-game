@@ -162,7 +162,7 @@
       // the frog cheers you on
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'frog', 180, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-      if (!s.items.some(i => i.lv) && !s.held) { SK.glow(c, g, BOWL.x, BOWL.y - 6, 40); SK.glow(c, g, CAN.x, CAN.y, 40); }
+      { const nf = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2); if (nf && !s.held && !s.can.pour) { const sn = LIVING[nf.kind] === 'snack' && !nf.lv, a = sn ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y]; SK.grab(c, g, a[0], a[1], 40); SK.target(c, g, nf.x, nf.y, 40); SK.arrow(c, g, a[0], a[1], nf.x, nf.y, { from: 46, to: 54 }); } }
       const nx = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2), snack = nx && LIVING[nx.kind] === 'snack';
       SK.demo(g, c, 'drag', snack ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y], nx ? (snack ? [nx.x, nx.y + 4] : [nx.x - 30, nx.y - 8]) : [180, 300], { never: !nx || !!s.can.pour });
     },

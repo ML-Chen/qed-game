@@ -102,8 +102,6 @@ MG.add({
     SK.animal(c, 'fox', 120, 602, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', hold: c2 => food(c2, 'tacos', 0, -4, 1) });
     // the fox wants tacos: a thought bubble over its head
     c.save(); c.fillStyle = 'rgba(255,255,255,0.92)'; c.beginPath(); c.ellipse(70, 488, 30, 22, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(96, 516, 6, 0, TAU); c.fill(); c.beginPath(); c.arc(106, 530, 3.5, 0, TAU); c.fill(); c.restore(); food(c, 'tacos', 70, 490, 1.3);
-    // where a look-alike flag can go: a dashed ring by the pizza crowd
-    const nf = s.flags.find(f => !f.planted); if (nf && !g.done) { const free = [88, 142, 196].find(x => !s.flags.some(o => o.planted && Math.abs(o.x - x) < 20)); if (free != null) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.8)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(free, BASE, 22, 8, 0, 0, TAU); c.stroke(); c.restore(); } }
     for (const f of s.flags) if (!f.planted && f !== held) flag(c, f, t, 60, { tilt: 0.25 });
     if (held) flag(c, held, t, 60, { tilt: 0.1 });
     const nx = s.flags.find(f => !f.planted), fs = [88, 142, 196].find(x => !s.flags.some(o => o.planted && Math.abs(o.x - x) < 20));

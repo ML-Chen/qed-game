@@ -32,7 +32,7 @@
     o.fillStyle = '#8a8aa0'; o.fillRect(0, RAIL - 60, 360, 6); o.fillStyle = '#b8b8c8'; o.fillRect(0, RAIL - 60, 360, 2); // the rail the jug hangs from
   }
   MG.add({
-    id: 'matter_pour', stage: 'matter', cmd: 'FILL EVERY GLASS!', time: 8, mood: 'sea', winText: 'Liquid!', failText: 'Spilled!',
+    id: 'matter_pour', stage: 'matter', cmd: 'FILL EVERY GLASS!', time: 8, mood: 'sea', winText: 'Juice fills every corner!', failText: 'Spilled!',
     card: { title: 'Liquids take any shape', kind: 'Chemistry', ref: 'Solids and liquids',
       text: 'A liquid flows. Its particles slide past each other, so juice runs into every corner of a glass, even the tips of a star, and its top settles flat. A liquid keeps its amount, though: pour too much and it spills over.\n\nA solid keeps its own shape. The particles in an ice cube are locked together, so the cube stays a cube in any glass. It just floats in the juice. A pile of sand pours too, but each grain is a tiny solid that keeps its shape.',
       note: 'Liquids flow and take the shape of their container; solids keep their own shape.' },
@@ -91,8 +91,7 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 336, 626, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
       const next = s.cups.find(cc => !cc.full);
-      if (!s.grab) SK.glow(c, g, j.x - 36, RAIL + 12, 40);
-      if (next && !s.grab) SK.glow(c, g, next.cx, BASE + next.top - 8, 22, '#ffe27a', { level: 0 });
+      if (!s.grab && next) { SK.grab(c, g, j.x - 36, RAIL + 12, 42); SK.target(c, g, next.cx, BASE + next.top - 16, 24); SK.arrow(c, g, j.x - 36, RAIL + 12, next.cx - 20, BASE + next.top - 30, { from: 50, to: 30 }); }
       SK.demo(g, c, 'drag', [j.x - 36, RAIL + 12], [next ? next.cx - 36 : j.x, RAIL + 92], { period: 2, never: !next || !!s.grab });
     },
     // the bot: carry the jug over each glass (tilt so the spout sits over the opening), pour, ease off at the brim

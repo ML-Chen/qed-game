@@ -29,7 +29,7 @@
     c.fillStyle = '#c8c8d0'; c.beginPath(); c.ellipse(16, 1, 7, 5, 0, 0, 7); c.fill(); c.fillStyle = '#2a2a30'; c.beginPath(); c.arc(21, 0, 1.6, 0, 7); c.fill(); c.restore();
   }
   MG.add({
-    id: 'atoms_halve', stage: 'atoms', cmd: 'DECAY THEM DOWN TO THE MARK!', time: 7, mood: 'night', winText: 'Half-life!', failText: 'Overshot!',
+    id: 'atoms_halve', stage: 'atoms', cmd: 'DECAY THEM DOWN TO THE MARK!', time: 7, mood: 'night', winText: 'Half gone each time!', failText: 'Overshot!',
     card: { title: 'Half-life', kind: 'Physics', ref: 'Radioactive decay',
       text: 'An unstable atom decays at a random moment, and nobody can say when one particular atom will go. But in a big crowd of them, about half decay in a fixed time, called the half-life.\n\nAfter one half-life, half are left. After two, a quarter. After three, an eighth. The pile shrinks by halves, so it never quite reaches zero in a straight line. Scientists date old bones this way: they measure how much carbon-14 is left and count how many half-lives have passed.',
       note: 'In each half-life, about half of the unstable atoms still left decay.' },

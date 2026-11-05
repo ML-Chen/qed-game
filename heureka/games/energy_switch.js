@@ -54,7 +54,7 @@
     c.restore();
   }
   MG.add({
-    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF TO SLOW THE METER!', time: 6, mood: 'night', winText: 'Power saved!', failText: 'Bill shock!',
+    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF TO SLOW THE METER!', time: 6, mood: 'night', winText: 'Power saved!', failText: 'Meter still racing!',
     card: { title: 'Gulpers and sippers', kind: 'Physics', ref: 'Electrical power (watts)',
       text: 'Power is how fast something uses energy, measured in watts. Things that make heat are the big gulpers: a heater or a kettle uses about 2,000 watts. A TV or a fridge uses about 100. An LED lamp or a phone charger only sips about 5 to 10.\n\nSo switching off one heater saves as much as switching off two hundred LED lamps. To cut an energy bill, switch off or turn down the things that heat. A fridge runs all day, so it adds up too, but food needs it.',
       note: 'Things that heat use far more energy than lights and chargers.' },

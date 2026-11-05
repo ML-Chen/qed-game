@@ -136,9 +136,9 @@ MG.add({
     // time ran out with bugs still hiding: real users pour in and the machine blows up in garbled letters
     if (lost) { const q = t - g.doneAt; c.save(); c.globalAlpha = Math.max(0, 1 - q * 0.6); c.font = '900 22px monospace'; c.textAlign = 'center'; for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, r = q * 220; c.fillStyle = ['#ff7a8a', '#ffd45a', '#7ee8ff'][i % 3]; c.fillText('□Ã?#'[i % 4], 180 + Math.cos(a) * r, 370 + Math.sin(a) * r * 0.8 + q * q * 80); } c.restore(); }
     // guidance: glow the weird cards; the ghost hand flings the first one into the hopper
-    for (const cd of s.cards) if (cd.state === 'tray' && isBug(cd.k)) SK.glow(c, g, cd.x, cd.y, 36, '#ffe27a', { level: 0 });
     // the hand flings the next weird card still in the tray up at the hopper
     const next = s.cards.find(cd => isBug(cd.k) && cd.state === 'tray');
+    if (next && !SK.dragging(g)) { SK.grab(c, g, next.hx, next.hy, 34); SK.target(c, g, hx, HOP.y + 6, 0, { w: HOP.w + 10, h: 36 }); SK.arrow(c, g, next.hx, next.hy - 30, hx, HOP.y + 20); }
     if (next) SK.demo(g, c, 'swipe', [next.hx, next.hy], [SK.lerp(next.hx, hx, 0.4), next.hy - 130]);
   },
   // the bot flings each weird card on an arc that drops into the hopper (B7FAIL: throws only the normal names)

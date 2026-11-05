@@ -25,12 +25,12 @@ function paintRoom(o) {
 // towards the smallest bar as the edge is dragged higher (so the gap balloons)
 function floorVal(ch, F) { if (F >= F0) return ch.fl * (Z - F) / (Z - F0); const lo = Math.min(...ch.v); return ch.fl + (lo - 0.25 - ch.fl) * SK.clamp((F0 - F) / (F0 - 300), 0, 1); }
 MG.add({
-  id: 'startzero', stage: 'problems', cmd: 'START AT ZERO!', time: 6, mood: 'party', winText: 'Zero baseline!', failText: 'Misleading!',
+  id: 'startzero', stage: 'problems', cmd: 'DRAG EACH AXIS DOWN TO ZERO!', time: 6, mood: 'party', winText: 'True sizes!', failText: 'Misleading!',
   card: { title: 'Bars start at zero', kind: 'Problem solving', ref: 'Truncated axes in bar charts',
     text: 'A bar chart shows each amount as the length of a bar. If the axis starts at zero, a bar twice as long means twice as much.\n\nThese charts started their axis near the top of the values, so a small difference looked huge: one bar looked three times taller than the other when it was only a little bigger. Dragging the bottom down to zero showed the true sizes.\n\nWhen you read a chart, check where the axis starts. Line charts are different: they show change over time, and they don\'t always need to start at zero.',
     note: 'A bar chart whose axis doesn\'t start at zero makes small differences look huge.' },
   init(g) {
-    const s = g.s; s.list = CHARTS.slice(0, g.level >= 2 ? 4 : 3); s.i = 0; s.F = F0; s.ok = 0; s.tol = g.level >= 2 ? 7 : 12; s.slide = 0; s.calm = 0;
+    const s = g.s; s.list = CHARTS.slice(0, g.level >= 2 ? 4 : 3); s.i = 0; s.F = F0; s.ok = 0; s.tol = g.level >= 2 ? 7 : 12; s.slide = 0; s.calm = 1;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.ok) return; if (Math.abs(y - s.F) < 40 && x > 30 && x < 330) { s.drag = { y0: y, F0: s.F }; g.sfx('click'); } },
   move(g, x, y) {
@@ -61,6 +61,7 @@ MG.add({
     const F = s.F, fv = floorVal(ch, F), n = ch.v.length, bw = n === 2 ? 70 : 54, gap = (X1 - X0 - n * bw) / (n + 1);
     ch.v.forEach((v, i) => {
       const x = X0 + gap + i * (bw + gap), y = TOP + (ch.top - v) / (ch.top - fv) * (F - TOP), h = F - y;
+      if (h > 0) B9.txt(c, String(v), x + bw / 2, Math.max(TOP + 4, y - 14), 20, '#3a2a4a');
       if (h > 0) { const gr = c.createLinearGradient(x, 0, x + bw, 0); gr.addColorStop(0, P.shade(ch.col[i], 0.2)); gr.addColorStop(1, P.shade(ch.col[i], -0.15)); c.fillStyle = gr; c.beginPath(); c.roundRect(x, y, bw, h, [8, 8, 0, 0]); c.fill(); c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(x + 6, y + 6, 6, Math.max(0, h - 12)); }
     });
     // the axis: a left rule from the top down to the draggable bottom edge
@@ -78,6 +79,8 @@ MG.add({
       if (kind === 'duck' && s.faint) { c.save(); c.translate(x, y - 10); c.rotate(-1.5 * SK.clamp((t - s.faint) * 3, 0, 1)); SK.animal(c, kind, 0, 10, 0.75, { t, expr: 'sad', pose: 'sad', noShadow: true }); c.restore(); return; }
       SK.animal(c, kind, x, y + (alarm ? -Math.abs(Math.sin(t * 9 + k)) * 6 : 0), 0.72, { t, phase: k, pose: won ? 'cheer' : alarm ? 'hop' : 'idle', expr: won ? 'laugh' : alarm ? 'wow' : 'happy' });
     });
+    // what the audience thinks it sees
+    if (!g.done || g.result === 'win') { const say = s.end || s.ok ? 'About the same!' : s.calm > 0.45 ? 'Way bigger!' : 'Hmm...'; SK.tag(c, say, 180, 572, 18, s.end || s.ok ? '#d0ffd8' : s.calm > 0.45 ? '#ffd0d0' : '#fff6ea'); }
     if (!s.ok && !s.end && !s.drag && !g.done) { SK.grab(c, g, 180, s.F, 26); SK.target(c, g, 180, Z, 26, { w: X1 - X0 + 30, h: 26 }); SK.arrow(c, g, 180, s.F, 180, Z); }
     if (!s.ok && !s.end && !g.done) SK.demo(g, c, 'drag', [180, s.F], [180, Z]);
   },

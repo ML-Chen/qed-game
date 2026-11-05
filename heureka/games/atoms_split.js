@@ -36,7 +36,7 @@
     c.beginPath(); c.moveTo(x - 44, y); c.quadraticCurveTo(x, y + (bowl ? 44 : 18), x + 44, y); c.closePath(); c.fill(); c.stroke();
   }
   MG.add({
-    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT THE NUCLEUS!', time: 6, mood: 'night', winText: 'Lighter!', failText: 'Missed!',
+    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT THE NUCLEUS!', time: 6, mood: 'night', winText: 'The pieces weigh less!', failText: 'Missed!',
     card: { title: 'Splitting a nucleus', kind: 'Physics', ref: 'Nuclear fission and E = mc²',
       text: 'The middle of an atom is its nucleus, a tight ball of protons and neutrons. A neutron has no electric charge, so it flies straight in. A big nucleus such as uranium can wobble and split in two when a neutron hits it, and two or three spare neutrons fly out.\n\nWeigh all the pieces and they come to a tiny bit less than the nucleus did. That missing mass has turned into a huge amount of energy, the flash. Nuclear power stations run on this. Joining two small nuclei (fusion) also loses mass and powers the Sun.',
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },
@@ -106,7 +106,7 @@
       // the nucleus (or, after the hit, its pieces) in the left bowl
       pan(c, bx, by, true);
       const cx = bx, cy = by + 2 - s.bigR * 0.55;
-      if (!s.hit) { const dk = SK.easeOut(SK.clamp((t - s.born) / 0.35, 0, 1)); cluster(c, cx, cy - (1 - dk) * 200, s.big, s.br, t); if (dk >= 1) SK.glow(c, g, cx, cy, s.bigR + 12); }
+      if (!s.hit) { const dk = SK.easeOut(SK.clamp((t - s.born) / 0.35, 0, 1)); cluster(c, cx, cy - (1 - dk) * 200, s.big, s.br, t); if (dk >= 1 && n.st === 'ready') { SK.target(c, g, cx, cy, s.bigR + 10); SK.arrow(c, g, n.x, n.y, cx, cy, { from: 34, to: s.bigR + 30 }); } }
       else {
         const k = SK.clamp((t - s.hit) / 0.3, 0, 1), sep = SK.easeOut(SK.clamp((t - s.hit - 0.2) / 0.3, 0, 1));
         if (s.fus) { // two small nuclei join into one helium nucleus
@@ -128,12 +128,11 @@
         c.save(); c.globalAlpha = n.alpha;
         if (s.fus) cluster(c, n.x, n.y, s.proj, s.br, t); else SK.ball(c, n.x, n.y, n.r, '#9ab8e0', { lw: 1.5 });
         c.restore();
-        if (n.st === 'ready') SK.glow(c, g, n.x, n.y, 24, '#9ad8ff');
+        if (n.st === 'ready') SK.grab(c, g, n.x, n.y, 20);
         const d = g.s._drag; if (d && n.st === 'ready') { const q = d.pts[d.pts.length - 1]; c.save(); c.strokeStyle = 'rgba(160,210,255,0.4)'; c.lineWidth = 3; c.setLineDash([5, 6]); c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(q.x, q.y); c.stroke(); c.restore(); }
       }
       // the missing mass: a little glowing bit leaves the bowl as light, and the bowl rises
       if (s.boom) { const q = (t - s.flash) / 0.9; if (q < 1) { const mx = cx + 10, my = cy - 20 - q * 140; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(mx, my, 6 + q * 10, 0, 7); c.fill(); c.restore(); } if (t - s.flash > 0.2) SK.tag(c, 'Lighter!', cx + 4, cy - 64, 18); }
-      if (n.st === 'ready' && !s.hit && !g.s._drag && g.level === 0) { c.save(); c.strokeStyle = 'rgba(160,210,255,0.45)'; c.lineWidth = 2.5; c.setLineDash([6, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(cx, cy); c.stroke(); c.restore(); }
       if (!s.hit) SK.tag(c, s.fus ? 'Nucleus' : 'Uranium nucleus', cx + (s.fus ? 0 : 30), cy - s.bigR - 40, 18);
       if (n.st === 'ready') SK.tag(c, s.fus ? 'Small nucleus' : 'Neutron', s.start[0] + (s.start[0] > 250 ? -40 : 0), s.start[1] + 44, 18);
       // the beaver peeks over the bench, and ducks when a neutron comes flying its way

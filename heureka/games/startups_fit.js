@@ -117,7 +117,7 @@ MG.add({
     for (const it of s.tray) if (!it.used) { addon(c, it.k, it.x, it.y, 1.15); }
     // guidance: drag what the last unhappy customer wanted onto the product
     const want = this.target(g), it = want && s.tray.find(o => !o.used && o.k === want);
-    if (it && !s.drag) { SK.glow(c, g, it.x, it.y, 28); SK.glow(c, g, BOOTH.x - 20, BOOTH.y - 10, 50); SK.demo(g, c, 'drag', [it.x, it.y], [BOOTH.x - 20, BOOTH.y - 10], { delay: 0.6 }); }
+    if (it && !s.drag) { SK.grab(c, g, it.x, it.y, 26); SK.target(c, g, BOOTH.x - 20, BOOTH.y - 10, 44); SK.arrow(c, g, it.x, it.y, BOOTH.x - 20, BOOTH.y - 10, { to: 60 }); SK.demo(g, c, 'drag', [it.x, it.y], [BOOTH.x - 20, BOOTH.y - 10], { delay: 0.6 }); }
   },
   target(g) { const s = g.s; const c = s.cust.filter(cu => (cu.st === 'leave') && cu.want && !s.feat.includes(cu.want)); return c.length ? c[c.length - 1].want : null; },
   auto(g, dt, synth) {

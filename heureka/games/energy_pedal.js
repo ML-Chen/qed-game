@@ -23,7 +23,7 @@
     c.strokeStyle = b > 0.05 ? `rgb(255,${140 + 110 * b},60)` : '#6a5a5a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x - 5, y - 10); c.lineTo(x - 4, y); c.lineTo(x - 1, y - 4); c.lineTo(x + 1, y); c.lineTo(x + 4, y - 4); c.lineTo(x + 5, y - 10); c.stroke();
   }
   MG.add({
-    id: 'energy_pedal', stage: 'energy', cmd: 'PEDAL TO KEEP THE LIGHT ON!', time: 6, mood: 'night', winText: 'Pedal power!', failText: 'Too dark!',
+    id: 'energy_pedal', stage: 'energy', cmd: 'PEDAL TO KEEP THE LIGHT ON!', time: 6, mood: 'night', winText: 'The light stays on!', failText: 'Too dark!',
     card: { title: 'How much power you have', kind: 'Physics', ref: 'Power in watts',
       text: 'Power is how fast energy is used or made, measured in watts. A fit person pedalling steadily makes about 100 watts. That is enough for one bright old-style bulb, which uses about 60 to 100 watts.\n\nA kettle uses about 2,000 watts, so it would take about twenty people pedalling to boil it. With a big load on the generator, the pedals get much harder to turn. Two bulbs need twice the power, so you have to pedal harder.',
       note: 'One person can make about 100 watts: enough for a bulb, nowhere near enough for a kettle.' },

@@ -21,7 +21,7 @@
     o.fillStyle = '#5a3a2a'; o.fillRect(MID - 22, BOX.t - 42, 44, 32); // the door's slot on top
   }
   MG.add({
-    id: 'matter_herd', stage: 'matter', cmd: 'HERD THEM BACK TO THE LEFT!', time: 8, mood: 'sea', winText: 'Entropy!', failText: 'Everywhere!',
+    id: 'matter_herd', stage: 'matter', cmd: 'HERD THEM BACK TO THE LEFT!', time: 8, mood: 'sea', winText: 'Herded back!', failText: 'Spread out again!',
     card: { title: 'Things spread out', kind: 'Chemistry', ref: 'Entropy and the second law of thermodynamics',
       text: 'Gas particles fly about at random and bounce off the walls. Open the door and they soon fill the whole box. They never all gather back in one half by themselves, because there are far more ways to be spread out than to be bunched up.\n\nGetting them back takes work: you have to push them, and they keep slipping away. Pushing also speeds them up, so the gas gets warmer. Scientists call this tendency to spread out entropy, and it rises on its own.',
       note: 'Left alone, things spread out and mix, and never un-mix by themselves.' },
@@ -74,7 +74,7 @@
       if (!s.broom) { // the broom, lying on the bench until you pick it up (dim until the gas has spread)
         c.save(); c.globalAlpha = s.spread ? 1 : 0.55; c.translate(268, 584); c.rotate(-0.12); c.strokeStyle = '#d89a5a'; c.lineWidth = 8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-70, 6); c.lineTo(10, 0); c.stroke();
         c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(8, -14, 70, 26, 6); c.fill(); c.stroke(); c.strokeStyle = 'rgba(138,106,42,0.6)'; for (let xx = 14; xx < 76; xx += 6) { c.beginPath(); c.moveTo(xx, -12); c.lineTo(xx + 3, 10); c.stroke(); } c.restore();
-        if (s.spread) SK.glow(c, g, 300, 584, 40, '#ffe27a', { level: 2 });
+        if (s.spread) { SK.grab(c, g, 300, 584, 36); SK.target(c, g, (BOX.l + MID) / 2, (BOX.t + BOX.b) / 2, 0, { w: MID - BOX.l - 16, h: BOX.b - BOX.t - 16 }); SK.arrow(c, g, 300, 560, 160, 420, { from: 30, to: 30 }); }
       }
       const far = s.ps.reduce((a, p) => (p.x > (a ? a.x : MID) ? p : a), null), fy = far ? SK.clamp(far.y, BOX.t + 40, BOX.b - 40) : 358;
       SK.demo(g, c, 'drag', [Math.min(BOX.r - 10, (far ? far.x : 300) + 34), fy], [MID - 20, fy], { period: 2, delay: (s.spread || 0) + 0.2, never: !s.spread || !far });

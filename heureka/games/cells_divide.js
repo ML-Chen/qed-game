@@ -96,8 +96,6 @@ MG.add({
       }
       if (s.copy > 0 && sk === 0) { c.fillStyle = '#fff'; c.beginPath(); c.arc(q.px, q.py, 3, 0, 7); c.fill(); }
     }
-    // arrows showing which way to pull, once lined up (levels 0 and 1)
-    if (s.lined >= 0 && s.split < 0 && !g.done && g.level <= 1) { c.save(); c.globalAlpha = 0.5 + 0.3 * Math.sin(t * 6); c.strokeStyle = '#fff6a0'; c.lineWidth = 4; c.lineCap = 'round'; for (const d of [-1, 1]) { c.beginPath(); c.moveTo(CX + d * 30, CY + R0 + 34); c.lineTo(CX + d * 80, CY + R0 + 34); c.lineTo(CX + d * 68, CY + R0 + 24); c.moveTo(CX + d * 80, CY + R0 + 34); c.lineTo(CX + d * 68, CY + R0 + 44); c.stroke(); } c.restore(); }
     c.restore();
     // faces on the new cells: happy with a full set, wilting with a wrong set
     if (sk >= 1) for (const [i, [x0, y0]] of cells.entries()) { const x = s.axis ? CX : x0, y = s.axis ? CY + (i ? 84 : -84) * sk : y0;
@@ -112,6 +110,7 @@ MG.add({
     // guidance: hold the cell, then swipe sideways once lined up
     if (s.split < 0) SK.tag(c, 'Chromosomes', CX, CY + R0 + (s.axis ? 70 : 72), 18);
     if (s.copied < 0 && !g.done) { SK.glow(c, g, CX, CY, 60); SK.demo(g, c, 'hold', [CX, CY + 10], null); }
+    if (s.lined >= 0 && s.split < 0 && !g.done) { if (s.axis) { SK.arrow(c, g, CX + 64, CY, CX + 64, CY - 120, { from: 0, to: 0 }); SK.arrow(c, g, CX + 64, CY, CX + 64, CY + 120, { from: 0, to: 0 }); } else { SK.arrow(c, g, CX, CY + 64, CX - 130, CY + 64, { from: 0, to: 0 }); SK.arrow(c, g, CX, CY + 64, CX + 130, CY + 64, { from: 0, to: 0 }); } }
     if (s.lined >= 0 && s.split < 0 && !g.done) SK.demo(g, c, 'swipe', s.axis ? [CX + 60, CY - 50] : [CX - 50, CY + 60], s.axis ? [CX + 60, CY + 80] : [CX + 80, CY + 60], { delay: 0 });
   },
   // the bot: hold until copied, wait for the line-up, then swipe

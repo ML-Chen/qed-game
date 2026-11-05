@@ -104,8 +104,8 @@
       if (lost) { B3.smoke(c, 292, 316, t, 0.8, '60,60,70', 3, 30); }
       // guidance: the next lid to its pan, or the next knob to off
       const np = s.pans.find(p => !p.lid), nl = s.lids.find(l => !l.on), nk = s.pans.find(p => p.lid && !p.off) || s.pans.find(p => !p.off);
-      if (np && nl && !SK.dragging(g)) { SK.glow(c, g, nl.x, nl.y, 34); c.save(); c.globalAlpha = 0.35; c.setLineDash([6, 6]); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.ellipse(np.x, np.y - 28, 52, 16, 0, 0, 7); c.stroke(); c.restore(); }
-      else if (nk) SK.glow(c, g, nk.kx, KY, 28);
+      if (np && nl && !SK.dragging(g)) { SK.grab(c, g, nl.x, nl.y, 34); SK.target(c, g, np.x, np.y - 28, 0, { w: 112, h: 44 }); SK.arrow(c, g, nl.x, nl.y, np.x, np.y - 28, { to: 40 }); }
+      else if (nk) { SK.grab(c, g, nk.kx + 22, KY, 14); SK.target(c, g, nk.kx, KY - 30, 10); SK.arrow(c, g, nk.kx + 26, KY - 4, nk.kx + 6, KY - 30, { from: 4, to: 12 }); }
       SK.tag(c, 'Water', s.cup.x, s.cup.y + 36, 18); SK.tag(c, 'Lid', s.lids[0].hx, 176, 18);
       if (np && nl) SK.demo(g, c, 'drag', [nl.hx, nl.hy], [np.x, np.y - 30], { never: !!s.flare });
       else if (nk) SK.demo(g, c, 'drag', [nk.kx + 24, KY], [nk.kx, KY - 24], { arc: 10, never: !!s.flare });

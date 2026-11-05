@@ -59,7 +59,9 @@ MG.add({
     note: 'Text an AI reads can hide instructions, so an app treats outside text as data, never as orders.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), pl = PLANS[L]; s.L = L; s.v = pl.v;
-    s.mails = pl.bad.map((b, i) => ({ i, bad: b, pic: PICS[(i + Math.floor(g.rand() * 5)) % 5], x: BELT.x0 - i * pl.v * pl.gap, y: BELT.y, boxed: 0, state: 'belt' }));
+    s.mails = pl.bad.map((b, i) => ({ i, bad: b, pic: PICS[(i + Math.floor(g.rand() * 5)) % 5], x: BELT.x0 - (i + 1) * pl.v * pl.gap, y: BELT.y, boxed: 0, state: 'belt' }));
+    // the opening beat: one email with the fox's order is already at the robot, too late to box; watch what it does
+    s.mails.unshift({ i: -1, bad: 1, demo: true, pic: 'note', x: BELT.read - 46, y: BELT.y, boxed: 0, state: 'belt' });
     s.drag = null; s.res = null; s.fwd = null; s.read = 0;
   },
   down(g, x, y) {
@@ -69,7 +71,7 @@ MG.add({
   move(g, x, y) { const d = g.s.drag; if (d) { d.x = x; d.y = y; } },
   up(g, x, y) {
     const s = g.s, d = s.drag; if (!d) return; s.drag = null;
-    const m = SK.pick(s.mails.filter(q => q.state === 'belt' && !q.boxed && q.x > -30 && q.x < BELT.read), x, y - 0, 70);
+    const m = SK.pick(s.mails.filter(q => q.state === 'belt' && !q.boxed && !q.demo && q.x > -30 && q.x < BELT.read), x, y - 0, 70);
     if (m && Math.abs(y - BELT.y) < 70) { m.boxed = g.t; g.sfx('snap'); g.sfx('sparkle'); } else g.sfx('swoosh');
   },
   update(g, dt) {
@@ -77,8 +79,9 @@ MG.add({
     for (const m of s.mails) {
       if (m.state === 'belt') { m.x += s.v * dt; if (m.x >= BELT.read) { m.state = 'read'; m.rt = g.t; g.sfx('click'); } }
       else if (m.state === 'read' && g.t - m.rt > 0.55) {
+        if (m.demo) { m.state = 'done'; s.demoFwd = g.t; g.sfx('magic'); g.sfx('laugh'); continue; }
         if (m.bad && !m.boxed) { m.state = 'obey'; s.fwd = { t: g.t, m }; g.sfx('magic'); g.sfx('laugh'); }
-        else { m.state = 'done'; s.read++; g.sfx(m.bad ? 'ding' : 'pop'); }
+        else { m.state = 'done'; m.dt = g.t; s.read++; g.sfx(m.bad ? 'ding' : 'pop'); }
       }
     }
     if (s.fwd && g.t - s.fwd.t > 1.3 && !s.res) { s.res = { t: g.t, win: false }; g.fail(); }
@@ -90,8 +93,8 @@ MG.add({
     // the belt's moving stripes
     c.save(); c.strokeStyle = 'rgba(255,255,255,0.12)'; c.lineWidth = 3; for (let x = ((t * s.v) % 30) - 30; x < 290; x += 30) { c.beginPath(); c.moveTo(x, BELT.y + 27); c.lineTo(x + 10, BELT.y + 35); c.stroke(); } c.restore();
     // the inbox pile and the fox lurking with an open sack
-    const fw = s.fwd ? t - s.fwd.t : -1;
-    SK.animal(c, 'fox', 300, 248, 0.78, { t, pose: fw > 0 ? 'cheer' : 'idle', expr: fw > 0 ? 'laugh' : 'think', facing: -1 });
+    const fw = s.fwd ? t - s.fwd.t : -1, dfw = s.demoFwd ? t - s.demoFwd : -1;
+    SK.animal(c, 'fox', 300, 248, 0.78, { t, pose: fw > 0 || (dfw > 0 && dfw < 1.4) ? 'cheer' : 'idle', expr: fw > 0 || (dfw > 0 && dfw < 1.4) ? 'laugh' : 'think', facing: -1 });
     c.fillStyle = '#c89a5a'; c.strokeStyle = '#6a4a20'; c.lineWidth = 2; c.beginPath(); c.ellipse(258, 240, 18, 14, 0, 0, 7); c.fill(); c.stroke();
     for (let i = 0; i < 6; i++) { const flying = fw > 0 && fw * 6 > i; if (flying) continue; c.save(); c.translate(326 - (i % 3) * 6, 536 - i * 8); c.rotate((i % 2 ? 0.1 : -0.08)); c.fillStyle = '#fff6ea'; c.strokeStyle = '#6a5a8a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-18, -6, 36, 12, 2); c.fill(); c.stroke(); c.restore(); }
     if (fw > 0) for (let i = 0; i < 6; i++) { const q = fw * 1.6 - i * 0.16; if (q < 0 || q > 1) continue; const x = SK.lerp(320, 258, q), y = SK.lerp(520, 240, q) - Math.sin(q * Math.PI) * 60; c.save(); c.translate(x, y); c.rotate(q * 6); c.fillStyle = '#fff6ea'; c.strokeStyle = '#6a5a8a'; c.beginPath(); c.roundRect(-14, -9, 28, 18, 2); c.fill(); c.stroke(); c.restore(); }
@@ -99,9 +102,12 @@ MG.add({
     const reading = s.mails.find(m => m.state === 'read');
     SK.tag(c, 'AI agent', 300, 596, 18); SK.tag(c, 'Just data', STACK.x, STACK.y + 58, 18);
     B7.robot(c, 312, 520, 1.05, { t, dir: 2, mood: s.fwd ? 'wow' : s.res && s.res.win ? 'happy' : 'idle', col: s.fwd ? '#e8506a' : '#4ac4cc' });
-    if (s.fwd) { c.fillStyle = '#ff3a4a'; for (const sd of [-1, 1]) { c.beginPath(); c.arc(312 + sd * 6.3 - 4.2, 520 - 57, 4, 0, 7); c.fill(); } }
+    if (dfw > 0 && dfw < 1.2) { for (let i = 0; i < 2; i++) { const q = dfw * 1.4 - i * 0.25; if (q < 0 || q > 1) continue; const x = SK.lerp(320, 258, q), y = SK.lerp(520, 240, q) - Math.sin(q * Math.PI) * 60; c.save(); c.translate(x, y); c.rotate(q * 6); c.fillStyle = '#fff6ea'; c.strokeStyle = '#6a5a8a'; c.beginPath(); c.roundRect(-14, -9, 28, 18, 2); c.fill(); c.stroke(); c.restore(); } }
+    if (s.fwd || (dfw > 0 && dfw < 1.2)) { c.fillStyle = '#ff3a4a'; for (const sd of [-1, 1]) { c.beginPath(); c.arc(312 + sd * 6.3 - 4.2, 520 - 57, 4, 0, 7); c.fill(); } }
     // the summaries it wrote: one little card per email read as data
-    s.mails.filter(m => m.state === 'done').forEach((m, i) => { const x = 150 + i * 36, y = 560; c.save(); c.translate(x, y); c.fillStyle = '#e8f8ff'; c.strokeStyle = '#6a8aaa'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-15, -12, 30, 24, 4); c.fill(); c.stroke(); c.scale(0.6, 0.6); pic(c, m.pic); c.restore(); if (m.bad) { c.save(); c.translate(x, y + 9); c.scale(0.35, 0.35); orders(c, 1); c.restore(); } });
+    // a boxed email is read aloud as a harmless summary
+    for (const m of s.mails) if (m.dt && t - m.dt < 1.1) { c.save(); c.globalAlpha = Math.min(1, (1.1 - (t - m.dt)) * 4); c.fillStyle = '#fff'; c.strokeStyle = '#6a8aaa'; c.lineWidth = 2; c.beginPath(); c.roundRect(220, 380, 84, 46, 12); c.fill(); c.stroke(); c.beginPath(); c.moveTo(286, 426); c.lineTo(298, 440); c.lineTo(276, 426); c.fill(); c.translate(244, 403); c.scale(0.8, 0.8); pic(c, m.pic); c.restore(); if (m.bad) { c.save(); c.globalAlpha = Math.min(1, (1.1 - (t - m.dt)) * 4); c.translate(278, 404); c.scale(0.5, 0.5); orders(c, 1); c.restore(); } }
+    s.mails.filter(m => m.state === 'done' && !m.demo).forEach((m, i) => { const x = 150 + i * 36, y = 560; c.save(); c.translate(x, y); c.fillStyle = '#e8f8ff'; c.strokeStyle = '#6a8aaa'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-15, -12, 30, 24, 4); c.fill(); c.stroke(); c.scale(0.6, 0.6); pic(c, m.pic); c.restore(); if (m.bad) { c.save(); c.translate(x, y + 9); c.scale(0.35, 0.35); orders(c, 1); c.restore(); } });
     // the emails on the belt (in their glass cases when boxed)
     for (const m of s.mails) {
       if (m.state === 'done') continue; let x = m.x, y = BELT.y, sc = 1;
@@ -113,10 +119,10 @@ MG.add({
     if (reading && !s.fwd) { c.save(); c.fillStyle = 'rgba(160,240,255,0.25)'; c.beginPath(); c.moveTo(300, 462); c.lineTo(230, BELT.y - 40); c.lineTo(230, BELT.y + 10); c.closePath(); c.fill(); c.restore(); }
     // the shelf of glass cases, and the one in your hand
     for (let i = 0; i < 3; i++) glassCase(c, STACK.x + i * 4, STACK.y - i * 4, 0.9, 0.7 + i * 0.1);
-    if (!s.drag && !g.done) SK.glow(c, g, STACK.x, STACK.y, 46, '#bfeaff');
     if (s.drag) glassCase(c, s.drag.x, s.drag.y, 1);
     // the hand drags a case down onto the email closest to the robot that is not yet boxed
-    const next = s.mails.filter(m => m.state === 'belt' && !m.boxed && m.x > 10 && m.x < BELT.read - 40).sort((a, b) => b.x - a.x)[0];
+    const next = s.mails.filter(m => m.state === 'belt' && !m.boxed && !m.demo && m.x > 10 && m.x < BELT.read - 40).sort((a, b) => b.x - a.x)[0];
+    if (next && !s.drag) { SK.grab(c, g, STACK.x, STACK.y, 50); SK.target(c, g, next.x + 30, BELT.y, 0, { w: EW2 + 24, h: EH + 24 }); SK.arrow(c, g, STACK.x, STACK.y, next.x + 30, BELT.y); }
     if (next && !s.drag) SK.demo(g, c, 'drag', [STACK.x, STACK.y], [next.x + s.v * 0.9, BELT.y]);
   },
   // the bot boxes every email once it is well onto the belt (B7FAIL: boxes none)

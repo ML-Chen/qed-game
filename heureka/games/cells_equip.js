@@ -162,7 +162,7 @@ MG.add({
     const NAMES = { nucleus: 'Nucleus', chloro: 'Chloroplast', mito: 'Mitochondrion', vacuole: 'Vacuole', pebble: 'Pebble' }, shown = {};
     for (const p of s.parts) if (p.state === 'in' && !shown[p.kind]) { shown[p.kind] = 1; SK.tag(c, NAMES[p.kind], SK.clamp(p.x, 76, 284), p.y + 30, 18); }
     if (dr) SK.tag(c, NAMES[dr.kind], SK.clamp(dr.x, 76, 284), dr.y - 42, 18); else if (next) SK.tag(c, NAMES[next.kind], SK.clamp(next.x, 76, 284), next.y - 40, 18);
-    if (next && !dr) { SK.glow(c, g, next.x, next.y, 30); SK.demo(g, c, 'drag', [next.x, next.y], [CX, CY]); }
+    if (next && !dr) { SK.target(c, g, CX, CY, 0, { w: 200, h: 220 }); SK.arrow(c, g, next.x, next.y, CX, CY + 60); SK.grab(c, g, next.x, next.y, 30); SK.demo(g, c, 'drag', [next.x, next.y], [CX, CY]); }
   },
   auto(g, dt, synth) {
     const s = g.s, L = s.L; if (g.done) return;

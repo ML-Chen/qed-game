@@ -80,7 +80,7 @@ MG.add({
       const ears = lost || a > 0.55; SK.animal(c, m.kind, m.x - 10 + shake, m.y, m.kind === 'bird' ? 1.45 : 1.15, { t, pose: won ? 'cheer' : ears ? 'sad' : singing ? 'wave' : 'idle', expr: won ? 'laugh' : ears ? 'wow' : singing ? 'happy' : 'think', facing: 1 });
       if (m.calm && !lost) { c.fillStyle = '#7aff9a'; c.font = '900 22px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('♪', m.x + 26 + Math.sin(t * 3) * 3, m.y - 74); }
     }
-    SK.tag(c, 'Speaker', SPK[2][0], SPK[2][1] + 46, 18); { const m = s.mics[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 40, m.y - 66, 18); }
+    SK.tag(c, 'Speaker', SPK[2][0], SPK[2][1] + 46, 18); { const m = s.mics[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 4, m.y + 22, 18); }
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
     // guidance: drag the first squealing singer away from its speaker (the ghost hand shows one quiet spot; any will do)
     const m0 = s.mics.find(m => t >= m.live && !m.calm);

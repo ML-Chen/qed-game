@@ -78,7 +78,7 @@
       SK.tag(c, 'Smoke', 180, sl - 36, 20);
       SK.tag(c, 'Clean air', 252, Math.min(FLOOR - 30, sl + 32), 18, '#d8ffe8', 'rgba(20,60,40,0.65)');
       SK.tag(c, 'Exit', DOOR.x + DOOR.w / 2, 282, 20, '#fff', 'rgba(30,140,70,0.9)');
-      const next = s.an.find(a => !a.out); if (next && !s.cur) SK.glow(c, g, next.x, FLOOR - 60, 48);
+      const next = s.an.find(a => !a.out); if (next && !s.cur) { SK.grab(c, g, next.x, FLOOR - 60, 50); SK.target(c, g, DOOR.x + DOOR.w / 2, FLOOR - 50, 0, { w: DOOR.w + 10, h: 90 }); SK.arrow(c, g, next.x, FLOOR - 24, DOOR.x + DOOR.w / 2, FLOOR - 24, { from: 50, to: 50 }); }
       SK.demo(g, c, 'drag', [next ? next.x : START, FLOOR - 18], [GOAL + 6, FLOOR - 14], { period: 2.4, never: !next });
     },
     // the bot crawls each animal out in turn, the one nearest the door first

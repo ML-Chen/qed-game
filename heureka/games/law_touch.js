@@ -60,7 +60,7 @@ function stamp(c, x, y, rot) { // the copyright stamp: a red rubber stamp with a
   c.restore();
 }
 MG.add({
-  id: 'addtouch', stage: 'law', cmd: 'PAINT YOUR OWN PARTS IN!', time: 6, mood: 'desert', winText: 'Human author!', failText: 'No author!',
+  id: 'addtouch', stage: 'law', cmd: 'PAINT YOUR OWN PARTS IN!', time: 6, mood: 'desert', winText: 'Your art is protected!', failText: 'No author!',
   card: { title: 'A person has to make it', kind: 'Law', ref: 'Copyright and AI (US Copyright Office, 2025; Thaler v. Perlmutter)',
     text: 'US copyright protects works made by people. The US Copyright Office says that a picture made by an AI on its own, even from a person\'s prompt, can\'t be copyrighted. A federal appeals court agreed in 2025, in a case called Thaler v. Perlmutter.\n\nThe parts a person creatively adds, changes, selects or arranges can be protected, so the stamp landed only on the penguin\'s pieces. The robot\'s mountains stay free for anyone to use. The rules are still being worked out, and other countries differ.\n\nGeneral information about US law, not legal advice.',
     note: 'In the US, work made by AI alone can\'t be copyrighted; the parts a person creatively made or arranged can be.' },
@@ -89,6 +89,8 @@ MG.add({
     c.drawImage(g.bake('addtouch', paintStudio), 0, 0, 360, 640);
     // the slots for the artist's pieces: faint dashed outlines on the canvas
     for (const p of s.parts) if (p.st !== 'on') part(c, p.kind, p.slot[0], p.slot[1], 1, { ghost: true });
+    // at the win, the robot's own picture greys out: nobody owns it; only the stamped pieces are protected
+    if (g.result === 'win') { c.save(); c.globalAlpha = 0.45 * SK.clamp((t - g.doneAt) * 3, 0, 1); c.fillStyle = '#8a8a90'; c.fillRect(CV.x, CV.y, CV.w, CV.h); c.restore(); }
     // pieces on the canvas, each outlined with its own copyright line once stamped
     for (const p of s.parts) if (p.st === 'on') { part(c, p.kind, p.x, p.y, 1); if (p.stamped) { const k = SK.clamp((t - p.stamped) / 0.3, 0, 1); c.save(); c.globalAlpha = k; c.strokeStyle = '#e8304a'; c.lineWidth = 3; c.setLineDash([6, 4]); c.lineDashOffset = -t * 20; c.beginPath(); c.arc(p.x, p.y, 32, 0, TAU); c.stroke(); c.setLineDash([]); c.fillStyle = '#e8304a'; c.beginPath(); c.arc(p.x + 24, p.y - 24, 11, 0, TAU); c.fill(); B9.txt(c, '©', p.x + 24, p.y - 23, 15, '#fff6ea'); c.restore(); } }
     // the hovering stamp: dropping onto a fresh human piece, or bouncing off the robot's picture

@@ -5,7 +5,7 @@
 // every shot takes the same time to come down, and you fire when a boat is the same distance from where the ball lands.
 // Two boats at level 0, three at levels 1 and 2 (faster boats; level 0 and 1 mark where the ball will land).
 (() => {
-  const TOP = 236, SEA = 548, MUZ = { x: 108, y: TOP - 22 }, VX = 170, G = 900, DROP = { x: 64, y: TOP - 34 };
+  const TOP = 236, SEA = 548, MUZ = { x: 140, y: TOP - 22 }, VX = 170, G = 900, DROP = { x: 72, y: TOP - 30 };
   const TFALL = Math.sqrt(2 * (SEA - MUZ.y) / G), LAND = MUZ.x + VX * TFALL; // every shot lands here, after the same time
   function paintCliff(o) {
     const sky = o.createLinearGradient(0, 0, 0, SEA); sky.addColorStop(0, '#8ac8f0'); sky.addColorStop(0.7, '#cfe8f8'); sky.addColorStop(1, '#f0f8ff'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
@@ -18,8 +18,10 @@
     // the cliff: rock face with a snow cap; its face is a smooth wall so the falling snowball's path shows against it
     const cg = o.createLinearGradient(0, 0, 90, 0); cg.addColorStop(0, '#6a6a8a'); cg.addColorStop(1, '#9a9ab8'); o.fillStyle = cg;
     o.beginPath(); o.moveTo(0, TOP); o.lineTo(60, TOP); o.lineTo(62, SEA + 92); o.lineTo(0, 640); o.closePath(); o.fill();
-    o.fillStyle = '#ffffff'; o.beginPath(); o.moveTo(0, TOP - 10); o.quadraticCurveTo(60, TOP - 18, 130, TOP - 8); o.lineTo(130, TOP + 6); o.quadraticCurveTo(60, TOP + 2, 0, TOP + 12); o.closePath(); o.fill();
-    o.fillStyle = '#9a9ab8'; o.fillRect(60, TOP, 70, 10);
+    o.fillStyle = '#ffffff'; o.beginPath(); o.moveTo(0, TOP - 10); o.quadraticCurveTo(40, TOP - 16, 62, TOP - 8); o.lineTo(62, TOP + 6); o.quadraticCurveTo(30, TOP + 2, 0, TOP + 12); o.closePath(); o.fill();
+    // a wooden platform for the cannon, bolted to the cliff face, with a gap at the cliff edge for the snowball to fall through
+    o.fillStyle = '#8a5a3a'; o.strokeStyle = '#4a2a1a'; o.lineWidth = 2; o.beginPath(); o.roundRect(84, TOP - 2, 56, 9, 2); o.fill(); o.stroke();
+    o.strokeStyle = '#6a4a2a'; o.lineWidth = 5; o.beginPath(); o.moveTo(92, TOP + 6); o.lineTo(60, TOP + 50); o.moveTo(132, TOP + 6); o.lineTo(60, TOP + 90); o.stroke();
     o.strokeStyle = 'rgba(50,50,80,0.25)'; o.lineWidth = 1.5; for (let y = TOP + 40; y < SEA; y += 40) { o.beginPath(); o.moveTo(8, y); o.lineTo(56, y + 6); o.stroke(); }
     // a bucket on a rock at the foot of the cliff to catch the dropped snowball
     o.fillStyle = '#5a5a7a'; o.beginPath(); o.ellipse(DROP.x, SEA + 4, 26, 9, 0, 0, 7); o.fill();
@@ -48,7 +50,7 @@
     update(g, dt) {
       const s = g.s, B = s.boat, v = s.speeds[Math.min(s.bi, s.speeds.length - 1)];
       B.x -= v * dt; if (s.old) { s.old.x -= 220 * dt; if (s.old.x < -60) s.old = null; } // a loaded boat sails off fast
-      if (B.x < -60) s.boat = { x: 420, hit: 0 }; // a missed boat comes round again
+      if (B.x < -60) s.boat = { x: 470, hit: 0 }; // a missed boat comes round again
       const b = s.ball;
       if (b) { // both fall under the same gravity; the cannonball also keeps its sideways speed
         b.vy += G * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.t += dt; const n = s.snow; n.vy += G * dt; n.y += n.vy * dt;
@@ -56,7 +58,7 @@
         s.trail.push([b.x, b.y]); if (s.trail.length > 40) s.trail.shift();
         if (b.y >= SEA - 6) {
           s.splash.push({ x: b.x, t: g.t }, { x: n.x, t: g.t, bucket: 1 }); g.sfx('splash'); g.sfx('drip');
-          if (!B.hit && Math.abs(b.x - B.x) < 46) { B.hit = g.t; g.sfx('ding'); g.sfx('cheer'); g.burst(b.x, SEA - 20, ['#ffd45a', '#ffffff'], 18, 180); s.old = B; s.oldCol = COLS[s.bi % 3]; s.bi++; if (s.bi >= s.speeds.length) { if (!g.done) g.win(); } else s.boat = { x: 420, hit: 0 }; }
+          if (!B.hit && Math.abs(b.x - B.x) < 46) { B.hit = g.t; g.sfx('ding'); g.sfx('cheer'); g.burst(b.x, SEA - 20, ['#ffd45a', '#ffffff'], 18, 180); s.old = B; s.oldCol = COLS[s.bi % 3]; s.bi++; if (s.bi >= s.speeds.length) { if (!g.done) g.win(); } else s.boat = { x: 470, hit: 0 }; }
           else g.sfx('laugh');
           s.ball = null; s.cool = g.t + 0.35; s.trail = [];
         }
@@ -81,7 +83,7 @@
       c.fillStyle = '#3a3a4a'; c.beginPath(); c.roundRect(0, -11, 40, 22, 6); c.fill(); c.fillStyle = '#5a5a6a'; c.beginPath(); c.roundRect(34, -13, 8, 26, 3); c.fill();
       c.fillStyle = '#7a4a2a'; c.beginPath(); c.arc(12, 14, 10, 0, 7); c.fill(); c.fillStyle = '#c89a6a'; c.beginPath(); c.arc(12, 14, 4, 0, 7); c.fill(); c.restore();
       // the penguin at the edge, holding (or having just dropped) its snowball
-      SK.animal(c, 'penguin', DROP.x - 30, TOP - 4, 1.1, { t, facing: 1, pose: won ? 'cheer' : s.ball ? 'wave' : 'point', expr: won ? 'laugh' : s.ball ? 'wow' : 'happy' });
+      SK.animal(c, 'penguin', DROP.x - 34, TOP - 6, 1.05, { t, facing: 1, pose: won ? 'cheer' : s.ball ? 'wave' : 'point', expr: won ? 'laugh' : s.ball ? 'wow' : 'happy' });
       if (!s.ball && !g.done) SK.ball(c, DROP.x, DROP.y, 10, '#f4f6ff', { edge: '#8a86b8' });
       SK.tag(c, 'Cannon', MUZ.x - 20, MUZ.y - 40, 18);
       if (!s.ball && !g.done && t >= s.cool) { SK.glow(c, g, MUZ.x - 10, MUZ.y, 28, undefined, { level: 2 }); SK.demo(g, c, 'tap', [MUZ.x - 8, MUZ.y + 6], null, { period: 1.1 }); }

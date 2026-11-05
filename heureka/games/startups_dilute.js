@@ -95,7 +95,7 @@ MG.add({
     for (const it of s.items) if (!it.in && it.show && t > it.show + 0.2) {
       const da = it.f * Math.PI * 2, rr = PIE.r * 0.95, a0 = -Math.PI / 2 - da / 2; // pointing down, apex up
       wedge(c, it.x, it.y - rr * 0.55, rr, a0 + Math.PI, da, COL[it.who]);
-      if (!SK.dragging(g)) SK.glow(c, g, it.x, it.y, 40);
+      if (!SK.dragging(g)) { SK.grab(c, g, it.x, it.y, 36); SK.target(c, g, PIE.x, PIE.y, s.r + 6); SK.arrow(c, g, it.x, it.y, PIE.x, PIE.y, { to: s.r + 20 }); }
     }
     const first = s.items.find(i => !i.in && i.show && t > i.show + 0.3);
     SK.tag(c, 'Company', PIE.x, PIE.y - s.r - 20, 18); SK.tag(c, 'Founders', 172, 512, 18);
