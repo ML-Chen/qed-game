@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Q.E.D.! version: three options at 150 BPM; the renderer cuts on 1.6 s bars.
 """Generates background music options for the promo video with ElevenLabs Music.
 Usage: ELEVENLABS_API_KEY=... python3 promo/make_music.py OUT_DIR [seconds]
 Runs in GitHub Actions (.github/workflows/promo-music.yml), where the key is the repository secret ELEVENLABS_API_KEY.
