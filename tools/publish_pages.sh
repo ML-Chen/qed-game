@@ -2,6 +2,7 @@
 # Assembles the GitHub Pages site for a game build, including the SIGNED update the Android app downloads.
 #
 #   tools/publish_pages.sh dist/qed.html OUTDIR
+#   APP=heureka tools/publish_pages.sh dist/heureka.html OUTDIR/heureka
 #
 # OUTDIR gets: index.html (the game), .nojekyll, and, when the signing key is available, update/index.html
 # (same game), update/manifest.json (app, version, size, SHA-256) and update/manifest.sig (ECDSA P-256 signature
@@ -14,7 +15,10 @@
 set -euo pipefail
 GAME="$1"; OUT="$2"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="$(git -C "$ROOT" log -1 --format=%ct -- src 2>/dev/null || true)"
+APP="${APP:-qed}"
+# the update version is the commit time of the sources the build comes from (Heurēka! also uses heureka/)
+if [ "$APP" = heureka ]; then SRCS="src heureka"; else SRCS="src"; fi
+VERSION="$(git -C "$ROOT" log -1 --format=%ct -- $SRCS 2>/dev/null || true)"
 [ -n "$VERSION" ] || { echo "could not read the commit time of src/ (is this a git checkout with history?)" >&2; exit 1; }
 mkdir -p "$OUT"
 cp "$GAME" "$OUT/index.html"
@@ -31,7 +35,7 @@ if [ -n "${QED_UPDATE_KEY:-}" ]; then
   esac
   mkdir -p "$OUT/update"
   cp "$GAME" "$OUT/update/index.html"
-  python3 "$ROOT/tools/update_manifest.py" "$GAME" --version "$VERSION" > "$OUT/update/manifest.json"
+  python3 "$ROOT/tools/update_manifest.py" "$GAME" --version "$VERSION" --app "$APP" > "$OUT/update/manifest.json"
   openssl dgst -sha256 -sign "$TMP/key.pem" "$OUT/update/manifest.json" | base64 -w0 > "$OUT/update/manifest.sig"
   # Check the signature the same way the app will, so a broken signing step fails here and not on phones.
   openssl pkey -in "$TMP/key.pem" -pubout -out "$TMP/pub.pem"

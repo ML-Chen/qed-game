@@ -16,11 +16,12 @@ from datetime import datetime, timezone
 ap = argparse.ArgumentParser()
 ap.add_argument('game')
 ap.add_argument('--version', type=int, required=True)
+ap.add_argument('--app', default='qed', choices=['qed', 'heureka'])  # each app accepts only manifests with its own name
 args = ap.parse_args()
 
 data = open(args.game, 'rb').read()
 manifest = {
-    'app': 'qed',  # the app refuses any other name (android/src/app/qed/UpdateCheck.java)
+    'app': args.app,  # the app refuses any other name (android/src/app/qed/UpdateCheck.java)
     'file': 'index.html',
     'version': args.version,
     'built': datetime.fromtimestamp(args.version, timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),

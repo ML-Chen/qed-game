@@ -20,7 +20,10 @@ const MG = {
 // ---------------- stages ----------------
 // host: person() options for the stage's host character. sky/ground: colours for the between-screen page.
 // animal: the host's ANI kind (src/animals.js). grade: shown on the topic tile. sky/ground: colours for the between-screen page.
-const STAGES = [ // ordered by grade; ids are stable (saves use them). Stages with no microgames yet are hidden.
+// An app built from this engine (Heurēka!, heureka/app.js) defines APP before the engine loads: its own topics, save
+// key, card label and hidden settings. Q.E.D.! defines no APP and uses the list below.
+const APPC = typeof APP !== 'undefined' ? APP : {};
+const STAGES = APPC.stages || [ // ordered by grade; ids are stable (saves use them). Stages with no microgames yet are hidden.
   { id: 'carry', name: 'Adding and subtracting', grade: 'Grade 3', group: 'Grades 3–5', animal: 'ant', mood: 'bright', sky: ['#7ec8e8', '#bfe6f0', '#fff1c8'], ground: ['#c8a870', '#9a7a48'], line: 'When a column adds up to 10 or more, write the ones digit and carry the ten to the next column.' },
   { id: 'fractions', name: 'Fractions', grade: 'Grade 4', group: 'Grades 3–5', animal: 'rabbit', mood: 'bright', sky: ['#ffb0a0', '#ffd8b8', '#fff4e0'], ground: ['#a8d870', '#70a848'], line: 'To add fractions, first give them the same bottom number.' },
   { id: 'longway', name: 'Multiplying', grade: 'Grades 3–5', group: 'Grades 3–5', animal: 'ant', mood: 'party', sky: ['#8ac8f0', '#c8e8f8', '#fff8e0'], ground: ['#9ad070', '#6aa048'], line: 'Multiply one digit at a time, starting with the ones.' },
@@ -64,7 +67,7 @@ const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
 // learn: { [microgame id]: { s: 'got' | 'confused', at } } from the check-in after each microgame.
 const SETTINGS_DEFAULT = { timer: true, anim: 'normal', speedups: true, steps: 'auto' };
 const SAVE = {
-  key: 'qed1', d: { best: {}, cleared: {}, cards: {}, remixBest: 0, muted: false, mode: 'easy', settings: { ...SETTINGS_DEFAULT }, learn: {}, savedAt: 0 },
+  key: APPC.saveKey || 'qed1', d: { best: {}, cleared: {}, cards: {}, remixBest: 0, muted: false, mode: 'easy', settings: { ...SETTINGS_DEFAULT }, learn: {}, savedAt: 0 },
   db: null, uid: null, busy: false, again: false, timer: null,
   // merge(a, b): union of cards and cleared stages, best scores, the newer settings, and per microgame the newer check-in
   merge(a, b) {
@@ -249,7 +252,7 @@ function nextMicro(replay) {
 }
 // The screen between microgames. After a microgame it also shows the check-in (Got it / Confused / Replay slower) and
 // waits a little longer. final: 'won' or 'lost' when the run ends after this screen.
-const CHECKIN_WAIT = 2.5, CHECKIN_GO = 0.35;
+const CHECKIN_WAIT = APPC.checkin === false ? 1.8 : 2.5, CHECKIN_GO = 0.35;
 function between(final) {
   run.phase = 'between'; run.pt = 0; run.final = final || null; A.beat(false); run.wait = final ? 0 : waitOf(A.jingle('ready', run.speed));
   run.checkin = run.last ? { def: run.last.def, choice: null, at: 0 } : null;
@@ -267,9 +270,12 @@ function leaveBetween() {
 }
 // the player's answer to the check-in. got: saved, and the microgame comes up less often. confused: saved, the
 // microgame comes back later in this run, and its working plays slower until a later "Got it". replay: play it again now.
-const CHECKIN = [{ id: 'got', label: 'Got it!', y: 466 }, { id: 'confused', label: 'Confused', y: 526 }, { id: 'replay', label: 'Replay slower', y: 586 }], CHECKIN_BOX = { x: 248, w: 184, h: 52 };
+// An app with APP.checkin === false (Heurēka!: "all of these should be very intuitive") shows one button instead, which
+// opens the microgame's card for a curious player; the run waits while the card is open.
+const CHECKIN = APPC.checkin === false ? [{ id: 'card', label: 'How it works', y: 526 }] : [{ id: 'got', label: 'Got it!', y: 466 }, { id: 'confused', label: 'Confused', y: 526 }, { id: 'replay', label: 'Replay slower', y: 586 }], CHECKIN_BOX = { x: 248, w: 184, h: 52 };
 function checkIn(choice) {
   const ck = run && run.checkin; if (!ck || ck.choice) return;
+  if (choice === 'card') { if (ck.def.card && ck.def.card.text) { openCards([ck.def], 0, 'browse'); A.sfx('chime'); } return; }
   ck.choice = choice; ck.at = run.pt; const id = ck.def.id;
   if (choice === 'got' || choice === 'confused') { SAVE.d.learn = SAVE.d.learn || {}; SAVE.d.learn[id] = { s: choice, at: Date.now() }; SAVE.save(); }
   if (choice === 'confused') requeue(ck.def);
@@ -310,6 +316,7 @@ function finishRun(cleared) {
   if (run.newCards.length) { const ids = run.newCards.slice(), r0 = run; setTimeout(() => { if (scene === 'run' && run === r0 && run.phase === 'over') { openCards(ids.map(id => MG.byId[id]), 0, 'reward'); A.sfx('chime'); } }, 1600); } setTimeout(() => { if (scene === 'run' && run && run.phase === 'over') A.music('results'); }, 2600);
 }
 function updateRun(dt) {
+  if (CV.list && run.phase === 'between') return; // the player is reading the card they opened from the screen between games
   run.pt += dt;
   if (run.phase === 'intro' && run.pt > Math.max(2.2, run.wait, 1.2 + run.stage.line.split(' ').length * 0.3)) between(); // time to read the host's sentence (a tap skips it)
   else if (run.phase === 'between' && betweenDone()) leaveBetween();
@@ -553,7 +560,7 @@ const SET_ROWS = [
   { id: 'speedups', label: 'Speed-ups', opts: [['on', 'On'], ['off', 'Off']], get: () => setting('speedups') !== false ? 'on' : 'off', set: v => setSetting('speedups', v === 'on') },
   { id: 'mode', label: 'Mode', opts: [['easy', 'Easy'], ['medium', 'Medium']], get: () => SAVE.d.mode || 'easy', set: v => { SAVE.d.mode = v; SAVE.save(); } },
   { id: 'sound', label: 'Sound', opts: [['on', 'On'], ['off', 'Off']], get: () => SAVE.d.muted ? 'off' : 'on', set: v => { SAVE.d.muted = v === 'off'; SAVE.save(); A.call('mute', SAVE.d.muted); } },
-];
+].filter(r => !(APPC.hideSettings || []).includes(r.id));
 const SET_LAYOUT = { y0: 80, dy: 82, x0: 28, w: 304, h: 50, back: [180, 594, 180, 54] };
 function setRowY(i) { return SET_LAYOUT.y0 + i * SET_LAYOUT.dy; } // the label's centre; the choices sit 38 px below
 function setOptBox(i, j) { const L = SET_LAYOUT, n = SET_ROWS[i].opts.length, w = L.w / n; return { x: L.x0 + w * (j + 0.5), y: setRowY(i) + 40, w, h: L.h }; }
@@ -728,7 +735,7 @@ function cardBody(def) {
   m.font = '900 23px Nunito, system-ui, sans-serif'; add(textLines(m, cd.title || def.cmd, Wd - 10), m.font, 29, '#3a1640', 'center'); y += 4;
   m.font = '800 14px Nunito, system-ui, sans-serif'; add([[cd.ref, cd.kind].filter(Boolean).join(' · ')], m.font, 20, '#9a5a4a', 'center'); y += 12;
   m.font = '700 17px Nunito, system-ui, sans-serif'; String(cd.text || '').split('\n\n').forEach((para, i) => { if (i) y += 12; add(textLines(m, para, Wd), m.font, 25, '#3a2a30', 'left'); }); y += 16;
-  if (cd.note) { const top = y; y += 12; m.font = '900 12px Nunito, system-ui, sans-serif'; add(['THE PATTERN'], m.font, 18, '#4a7a52', 'left'); y += 2; m.font = '700 15px Nunito, system-ui, sans-serif'; add(textLines(m, cd.note, Wd - 32), m.font, 22, '#2f5a38', 'left'); y += 12; blocks.push({ rect: [0, top, Wd, y - top], fill: '#e7f2df' }); y += 14; }
+  if (cd.note) { const top = y; y += 12; m.font = '900 12px Nunito, system-ui, sans-serif'; add([APPC.noteLabel || 'THE PATTERN'], m.font, 18, '#4a7a52', 'left'); y += 2; m.font = '700 15px Nunito, system-ui, sans-serif'; add(textLines(m, cd.note, Wd - 32), m.font, 22, '#2f5a38', 'left'); y += 12; blocks.push({ rect: [0, top, Wd, y - top], fill: '#e7f2df' }); y += 14; }
   if (cd.ask) { const top = y; y += 12; m.font = '800 16px Nunito, system-ui, sans-serif'; add(textLines(m, cd.ask, Wd - 32), m.font, 23, '#7a3a2a', 'left'); y += 12; blocks.push({ rect: [0, top, Wd, y - top], fill: '#fbe6c8' }); y += 6; }
   const cv2 = document.createElement('canvas'); cv2.width = Wd * S2; cv2.height = Math.ceil(y * S2); const o = cv2.getContext('2d'); o.scale(S2, S2);
   for (const b of blocks) if (b.rect) { o.fillStyle = b.fill; roundRect(o, ...b.rect, 14); o.fill(); }
@@ -837,6 +844,7 @@ const CHECKIN_LOOK = {
   got: { top: '#d8f6b8', bot: '#7ccf5e', edge: '#2f6a2a', ink: '#1e4a1a' },
   confused: { top: '#ece2ff', bot: '#b49cf0', edge: '#4a3a8a', ink: '#2a1a5a' },
   replay: { top: '#ffe08a', bot: '#f2a33a', edge: '#7a3a1a', ink: '#5a2414' },
+  card: { top: '#d6eeff', bot: '#7ab8ee', edge: '#1e4a7a', ink: '#12325a' },
 };
 function drawCheckin(c, r) {
   const ck = r.checkin, B = CHECKIN_BOX;
@@ -855,6 +863,7 @@ function checkinGlyph(c, id, x, y, col) {
   c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 3.5; c.lineCap = 'round'; c.lineJoin = 'round';
   if (id === 'got') { c.beginPath(); c.moveTo(x - 8, y); c.lineTo(x - 2, y + 6); c.lineTo(x + 8, y - 7); c.stroke(); }
   else if (id === 'confused') P.label(c, '?', x, y + 1, 24, col, 'center', 900);
+  else if (id === 'card') { c.lineWidth = 2.5; roundRect(c, x - 8, y - 10, 16, 20, 3); c.stroke(); for (const dy of [-4, 1, 6]) { c.beginPath(); c.moveTo(x - 4, y + dy); c.lineTo(x + 4, y + dy); c.stroke(); } }
   else replayGlyph(c, x, y, 9, col);
   c.restore();
 }

@@ -1,10 +1,24 @@
-# Q.E.D.!
+# Q.E.D.! and Heurēka!
 
-Q.E.D.! is a free math game that runs in a web browser and on Android phones. It covers math from grade 3 arithmetic to college topics such as calculus, linear algebra and abstract algebra.
+This repo holds two free learning games that run in a web browser and on Android phones. Both are built like the WarioWare video games: a round is a fast series of tiny games, called microgames, each lasting a few seconds.
 
-**Play it:** https://ml-chen.github.io/qed-game/ (works on phones and computers; nothing to install)
+- **Q.E.D.!** covers math, from grade 3 arithmetic to college topics such as calculus, linear algebra and abstract algebra. Play it at https://ml-chen.github.io/qed-game/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk.
+- **Heurēka!** covers the rest of science and engineering, plus the practical subjects people use at work: physics, chemistry, biology and medicine, earth and space, engineering, robotics and hardware, computer science and AI, personal finance, startups and economics, law, government and consulting. Play it at https://ml-chen.github.io/qed-game/heureka/. It is new, and microgames are being added every day.
 
-**Android app:** https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk
+## Heurēka!
+
+In Heurēka!, each microgame is one shouted command and one action, and the idea behind it happens on screen as a result of what you do. There are no questions to answer and nothing to calculate. Some examples from the first games being built:
+
+- **SLIDE!** You flick a puck across an ice rink. On the ice it glides at the same speed in a straight line all the way into the net. If you flick it across a patch of sand, it scrapes to a stop at once and a crab pops out. That is Newton's first law: a moving thing keeps moving until something pushes or rubs on it.
+- **SWING!** A frog whirls a ball on a string, and you let go to hit a target. The ball flies off along the edge of the circle, not straight outward, which shows the pull that kept it going round.
+- **DILUTE!** You drag an investor's slice into a pie that stands for a company. Every old slice gets thinner, but the pie grows, so a smaller share can be worth more.
+- **LOOP!** A short Python loop sits beside a maze, and you act as the computer: the current line glows and you move the robot exactly as that line says.
+
+At the easiest level a ghost hand shows the action until you first touch the screen. After a microgame, a "How it works" button opens a card that explains the idea in plain words. Every card is also collected under Cards on the title screen.
+
+The plan for every subject is in [docs/science/](docs/science/): one curriculum file per subject, about 1,500 microgame ideas in all, mapped to standard courses (NGSS, AP, OpenStax, MIT and others) and ordered by how useful each topic is for real jobs and projects. The order in which they are being built is in [docs/science/BUILD_PLAN.md](docs/science/BUILD_PLAN.md).
+
+## Q.E.D.!
 
 <p>
 <img src="docs/screenshots/title.jpg" width="216" alt="Title screen">
@@ -24,9 +38,9 @@ Q.E.D.! is a free math game that runs in a web browser and on Android phones. It
 <img src="docs/screenshots/vecadd.jpg" width="216" alt="VECTOR ADD!: arrows tip to tail in a lagoon">
 </p>
 
-## How it plays
+## How Q.E.D.! plays
 
-The game is built like the WarioWare video games: a round is a fast series of tiny games, called microgames, each lasting a few seconds. In Q.E.D.!, every microgame is one real math problem, such as 368 + 587, 2x + 5 = 13, or the integral of 3x².
+In Q.E.D.!, every microgame is one real math problem, such as 368 + 587, 2x + 5 = 13, or the integral of 3x².
 
 1. You pick a topic, for example "Fractions" or "Derivatives". A round in that topic is 12 microgames in a row.
 2. Each microgame shows a command with the name of the operation, such as "REGROUP!", "SOLVE FOR x!" or "POWER RULE!", and one problem.
@@ -58,12 +72,12 @@ The Android app is the same game, packaged so it works offline. Download the new
 
 ## For developers
 
-The whole game is one self-contained web page. All the art is drawn in code, so there are no image files to load.
+Each game is one self-contained web page. All the art is drawn in code, so there are no image files to load. The two games share one engine, art library, animal cast and sound library in `src/`; Heurēka!'s own topics, scene kit, title screen and microgames are in `heureka/`.
 
-- **Build:** `python3 src/build.py dist/qed.html`, then open `dist/qed.html` in a browser.
+- **Build:** `python3 src/build.py dist/qed.html` (Q.E.D.!) or `python3 src/build.py --app heureka` (Heurēka!, written to `dist/heureka.html`), then open the page in a browser.
 - **Test:** `python3 tests/run.py`. It needs Playwright and Chromium, and it plays every microgame with a robot player.
 - **Film one microgame:** `python3 tools/film.py OUTDIR <id>` saves a frame-by-frame picture sheet and a GIF of a robot playing it, which is the easiest way to check an animation.
-- **Write a microgame:** see [docs/MICROGAMES.md](docs/MICROGAMES.md). Microgames still in progress are listed in `src/games/PENDING` and are left out of the published game until they pass review.
-- **Publishing:** every push to the `main` branch that changes `src/` rebuilds the website automatically.
+- **Write a microgame:** see [docs/MICROGAMES.md](docs/MICROGAMES.md) for Q.E.D.! and [docs/HEUREKA_MICROGAMES.md](docs/HEUREKA_MICROGAMES.md) for Heurēka!. Set `HM_APP=heureka` to make the test and filming tools build Heurēka!. Microgames still in progress are listed in `src/games/PENDING` and are left out of the published game until they pass review.
+- **Publishing:** every push to the `main` branch that changes `src/` or `heureka/` rebuilds both websites automatically.
 
 The game engine and the drawing library come from the author's earlier game Holy Moly!. Fonts: Fredoka and Nunito, under the SIL Open Font License (`src/OFL-*.txt`).
