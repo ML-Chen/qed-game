@@ -5,7 +5,7 @@
 // and that room goes dark. Level 2: the rings ask for a closer match.
 const SQ = 90, BUS = { l: 34, r: 340 }, ROWS = [230, 372, 514], CLAMP_X = 118, BULB_X = 214;
 const ROOM = [{ kind: 'rabbit', want: 0.12, wall: '#3a3a6a' }, { kind: 'owl', want: 0.3, wall: '#5a3a5a' }, { kind: 'hedgehog', want: 0.5, wall: '#3a5a5a' }];
-const TOL = [0.08, 0.07, 0.05];
+const TOL = [0.13, 0.11, 0.09]; // forgiving: the owner kept dimming and brightening without landing on the ring
 function paintHouse(o) {
   o.fillStyle = '#141428'; o.fillRect(0, 0, 360, 640);
   for (let i = 0; i < 3; i++) { const y = ROWS[i]; o.fillStyle = ROOM[i].wall; o.beginPath(); o.roundRect(10, y - 66, 340, 128, 14); o.fill(); o.fillStyle = 'rgba(0,0,0,0.25)'; o.fillRect(10, y + 40, 340, 22); }

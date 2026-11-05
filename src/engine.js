@@ -197,7 +197,7 @@ const testMode = /[?&]test=1/.test(location.search);
 // 1.6x at level 2, and another 1.4x until the player has won it once (its card is unlocked). Medium mode adds 40%.
 // Speed-ups shorten it gently. Stars are measured against the base time (g.par), not the fuse, so fast play still shows.
 function timeFactor(def, level, mode) {
-  return [3, 2.2, 1.6][Math.min(2, level)] * (SAVE.d.cards[def.id] ? 1 : 1.4) * (mode === 'medium' ? 1.4 : 1);
+  return [3, 2.2, 1.6][Math.min(2, level)] * (SAVE.d.cards[def.id] ? 1 : 1.4) * (mode === 'medium' ? 1.4 : 1) * (APPC.timeScale || 1); // Heurēka!: enough time to follow the guides
 }
 // mode: 'easy' (taps and drags; the animations do the arithmetic) or 'medium' (also pick each result from a tray; more time)
 // paceMul: how much longer the working animations take (MK.pace); by default from the settings and the check-ins

@@ -31,9 +31,9 @@ const SK = (() => {
   // o: { delay, period, never: true to turn it off for this frame }.
   function demo(g, c, kind, a, b, o = {}) {
     if (g.done || o.never || (g.ptr && g.ptr.down)) return;
-    const idle = g.t - (g.lastIn ?? 0), wait = [2.0, 2.4, 2.8][Math.min(2, g.level)];
+    const idle = g.t - (g.lastIn ?? 0), wait = 1.4;
     let t0;
-    if (g.level === 0 && !g.s.touched) t0 = o.delay ?? 0.9;
+    if (!g.s.touched) t0 = o.delay ?? 0.9; // every level: the hand shows the action from the start until the first touch
     else if (idle >= wait) t0 = (g.lastIn ?? 0) + wait;
     else return;
     if (g.t < t0) return;
@@ -59,7 +59,7 @@ const SK = (() => {
   // arrows pointing in), and SK.arrow between them (a dotted arrow that flows from the thing to the target).
   // They show at every level until the drag starts (pass o.always to keep them at level 2 too; by default level 2 shows
   // only the arrow while the player is idle, like the ghost hand).
-  function hintOn(g, o) { if (g.done || (g.ptr && g.ptr.down)) return false; if (o.always || g.level < 2) return true; return g.t - (g.lastIn ?? 0) > 2.8; }
+  function hintOn(g, o) { return !(g.done || (g.ptr && g.ptr.down)); } // the owner: "all the interaction should be very obvious from the guides": shown at every level whenever the player isn't dragging
   function grab(c, g, x, y, r = 26, o = {}) {
     if (!hintOn(g, o)) return; const p = 0.5 + 0.5 * Math.sin(g.t * 6);
     c.save(); c.strokeStyle = o.col || '#fff6ea'; c.lineWidth = 4; c.globalAlpha = 0.75 + 0.25 * p; c.beginPath(); c.arc(x, y, r + 3 * p, 0, TAU); c.stroke();
@@ -79,7 +79,7 @@ const SK = (() => {
     c.restore();
   }
   function arrow(c, g, ax, ay, bx, by, o = {}) {
-    if (!(g.done || (g.ptr && g.ptr.down)) && (o.always || g.level < 2 || g.t - (g.lastIn ?? 0) > 2.8)) {
+    if (!(g.done || (g.ptr && g.ptr.down))) {
       const L = Math.hypot(bx - ax, by - ay); if (L < 20) return; const ux = (bx - ax) / L, uy = (by - ay) / L, s0 = o.from ?? 30, s1 = L - (o.to ?? 36);
       c.save(); c.fillStyle = o.col || '#fff6ea'; c.globalAlpha = 0.85; const step = 16, off = (g.t * 40) % step;
       for (let d = s0 + off; d < s1; d += step) { c.beginPath(); c.arc(ax + ux * d, ay + uy * d, 3.2, 0, TAU); c.fill(); }

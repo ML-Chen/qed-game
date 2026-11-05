@@ -10,6 +10,7 @@ const APP = {
   saveKey: 'heureka1',
   noteLabel: 'THE IDEA',
   hideSettings: ['steps', 'mode'], // tap-through steps and the answer tray are Q.E.D.! features
+  timeScale: 1.5, // the owner: "you should have enough time to do it even if you're just following the guides"
   checkin: false, // no Got it / Confused / Replay slower after a game; a "How it works" button opens the card instead
   stages: [
     // Physics
