@@ -6,9 +6,9 @@
 (() => {
   const V = [[180, 178], [44, 470], [316, 470]], FIRE = { x: 180, y: 418 };
   const SIDES = [ // which side, its two corners, its picture's centre
-    { id: 'heat', a: 0, b: 1, x: 112, y: 324, col: '#ff7a3a' },
+    { id: 'heat', a: 0, b: 1, x: 112, y: 324, col: '#ff5a3a' },
     { id: 'air', a: 0, b: 2, x: 248, y: 324, col: '#8ad8ff' },
-    { id: 'fuel', a: 1, b: 2, x: 180, y: 470, col: '#c88a4a' },
+    { id: 'fuel', a: 1, b: 2, x: 180, y: 470, col: '#f2b860' },
   ];
   function segDist(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy || 1, k = SK.clamp(((px - ax) * dx + (py - ay) * dy) / L, 0, 1); return Math.hypot(px - ax - dx * k, py - ay - dy * k); }
   function pathNear(pts, x, y, r) { for (let i = 1; i < pts.length; i++) if (segDist(x, y, pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y) < r) return true; return false; }
@@ -26,7 +26,7 @@
   function logs(c, apart, t) {
     const sp = apart * 46;
     for (const [dx, ang, col] of [[-1, 0.45, '#8a5430'], [1, -0.45, '#7a4826'], [0, 0.05, '#9a6038']]) {
-      c.save(); c.translate(FIRE.x + dx * (sp + 4), FIRE.y + 2 + (dx === 0 ? -4 + apart * 10 : 0)); c.rotate(ang * (1 - apart * 0.6) + (dx === 0 ? apart * 1.4 : 0));
+      c.save(); c.translate(FIRE.x + dx * (sp + 4), FIRE.y + 2 + (dx === 0 ? -4 + apart * 26 : 0)); c.rotate(ang * (1 - apart * 0.6) + (dx === 0 ? apart * 0.25 : 0));
       c.fillStyle = col; c.beginPath(); c.roundRect(-30, -7, 60, 14, 7); c.fill(); c.strokeStyle = '#3a2010'; c.lineWidth = 2; c.stroke();
       c.fillStyle = '#e8b878'; c.beginPath(); c.ellipse(30, 0, 4, 7, 0, 0, 7); c.fill(); c.stroke(); c.restore();
     }
@@ -93,7 +93,7 @@
       logs(c, s.broken.fuel ? SK.easeOut((t - s.broken.fuel) * 3) : 0, t);
       if (s.broken.air) { const q = SK.clamp((t - s.broken.air) * 3, 0, 1); c.fillStyle = '#d8b878'; c.beginPath(); c.ellipse(FIRE.x, FIRE.y, 46 * q, 22 * q, 0, Math.PI, 0); c.fill(); c.fillStyle = 'rgba(255,240,200,0.4)'; c.beginPath(); c.ellipse(FIRE.x - 10, FIRE.y - 10 * q, 18 * q, 6 * q, 0, 0, 7); c.fill(); }
       if (s.ember > 0.02) { const e = Math.min(1, s.ember); for (let i = 0; i < 9; i++) { const x = FIRE.x - 30 + B3.hash(i) * 60, y = FIRE.y - 2 + B3.hash(i * 2) * 8, p = 0.6 + 0.4 * Math.sin(t * 5 + i * 1.7); c.fillStyle = `rgba(255,${80 + 80 * p | 0},40,${e * p})`; c.beginPath(); c.arc(x, y, 3 + B3.hash(i * 3) * 3, 0, 7); c.fill(); } B3.glow(c, FIRE.x, FIRE.y, 50, '255,90,40', 0.4 * e); }
-      for (let i = 0; i < 3; i++) B3.flame(c, FIRE.x + (i - 1) * 16, FIRE.y + 2, (i === 1 ? 1.15 : 0.8) * (0.5 + 0.5 * Math.min(1.5, fk)), t, Math.min(1.4, fk), i * 1.9);
+      for (let i = 0; i < 3; i++) B3.flame(c, FIRE.x + (i - 1) * 20, FIRE.y + 2, (i === 1 ? 1.6 : 1.1) * (0.5 + 0.5 * Math.min(1.5, fk)), t, Math.min(1.4, fk), i * 1.9);
       if (s.out || (A && A.hit)) B3.smoke(c, FIRE.x, FIRE.y - 10, t, Math.max(0.3, 1 - fk), '150,140,150', 7, 160);
       stones(c, true);
       if (s.fan) for (let i = 0; i < 10; i++) { const q = ((t - s.fan) * 1.5 + i / 10) % 1; c.fillStyle = `rgba(255,${200 - q * 120 | 0},80,${1 - q})`; c.beginPath(); c.arc(FIRE.x + Math.sin(i * 2.3 + t * 3) * 30 * q, FIRE.y - 60 - q * 150, 3, 0, 7); c.fill(); }
@@ -110,7 +110,7 @@
       // the fox with a marshmallow on a stick
       const won = g.result === 'win', lost = g.result === 'fail';
       const hn = SK.animal(c, 'fox', 70, 604, 1, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost || s.fan ? 'wow' : 'happy' });
-      if (!won) { const hx = hn ? hn.hands[1].x : 96, hy = hn ? hn.hands[1].y : 570, mx = 140, my = FIRE.y - 34; c.strokeStyle = '#8a6040'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(hx, hy); c.lineTo(mx, my); c.stroke();
+      { const hx = hn ? hn.hands[1].x : 96, hy = hn ? hn.hands[1].y : 570, mx = 140, my = FIRE.y - 34; c.strokeStyle = '#8a6040'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(hx, hy); c.lineTo(mx, my); c.stroke();
         const m = s.mallow; c.fillStyle = P.mix('#fff6ea', '#2a1a1a', m); c.strokeStyle = P.mix('#d8c8b0', '#100808', m); c.lineWidth = 2; c.beginPath(); c.roundRect(mx - 9, my - 12, 18, 20, 6); c.fill(); c.stroke();
         if (m > 0.5) B3.smoke(c, mx, my - 12, t, m, '60,50,60', 4, 50); }
       // guidance

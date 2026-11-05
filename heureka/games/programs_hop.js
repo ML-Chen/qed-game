@@ -27,7 +27,7 @@ function solve(L) { // the one order that works (the bot and the demo hand use i
   rec(start, [], pool, 0); return { start, flies, answer: best, R, C, cell, n };
 }
 function geo(s) { // where the pond grid sits, under the code panel
-  const top = s.panelB + 14, bot = 548, cs = Math.min(88, (bot - top) / s.S.R, 300 / s.S.C);
+  const top = s.panelB + 12, bot = 540, cs = Math.min(88, (bot - top) / s.S.R, 300 / s.S.C);
   const x0 = 180 - cs * s.S.C / 2, y0 = top + (bot - top - cs * s.S.R) / 2;
   return { cs, x0, y0, at: (cx, cy) => [x0 + (cx + 0.5) * cs, y0 + (cy + 0.5) * cs] };
 }
@@ -91,7 +91,7 @@ MG.add({
     const lay = B7.layout({ x: PX, y: PY, w: PW, lines: s.prog.map(() => '') }); s.panelB = lay.y + lay.h; s.lay = lay;
     s.go = { x: 298, y: lay.y + lay.h / 2 + 6, r: 30 };
     const n = L.cards.length, gap = Math.min(66, 320 / n);
-    s.cards = L.cards.map((k, i) => { const hx = 180 + (i - (n - 1) / 2) * gap, hy = 590; return { i, kind: k, hx, hy, x: hx, y: hy, slot: -1 }; });
+    s.cards = L.cards.map((k, i) => { const hx = 180 + (i - (n - 1) / 2) * gap, hy = 580; return { i, kind: k, hx, hy, x: hx, y: hy, slot: -1 }; });
     s.frog = S.start.slice(); s.fly = S.flies.map(f => ({ x: f[0], y: f[1], eatenAt: 0 }));
   },
   down(g, x, y) {
@@ -157,7 +157,9 @@ MG.add({
       if (st) {
         const k = Math.min(1, e - i), [ax, ay] = G.at(...st.from), [bx, by] = G.at(...st.to);
         if (st.type === 'rock') { // hop toward the rock, bonk, and drop into the water beside it
-          const m = k < 0.45 ? k / 0.45 * 0.42 : 0.42 - (k - 0.45) * 0.3; fx = SK.lerp(ax, bx, m); fy = SK.lerp(ay, by, m) + (k > 0.6 ? (k - 0.6) * 30 : 0); lift = k < 0.45 ? Math.sin(k / 0.45 * Math.PI) * 20 : 0; pose = 'hop';
+          const m = k < 0.45 ? k / 0.45 * 0.42 : 0.42 + (0.5 - 0.42) * Math.min(1, (k - 0.45) / 0.3), side = k < 0.45 ? 0 : Math.min(1, (k - 0.45) / 0.3) * cs * 0.5;
+          const ux = (bx - ax) / cs, uy = (by - ay) / cs; fx = SK.lerp(ax, bx, m) - uy * side; fy = SK.lerp(ay, by, m) + ux * side; // bounce off sideways into the water between the pads
+          lift = k < 0.45 ? Math.sin(k / 0.45 * Math.PI) * 20 : Math.sin(Math.min(1, (k - 0.45) / 0.3) * Math.PI) * 26; pose = 'hop';
           if (k > 0.45 && k < 0.75) { c.save(); c.fillStyle = '#ffe27a'; for (let j = 0; j < 4; j++) { const a = t * 6 + j * 1.57; c.beginPath(); c.arc(fx + Math.cos(a) * 18, fy - 40 + Math.sin(a) * 6, 3, 0, 7); c.fill(); } c.restore(); }
         } else { const m = SK.easeInOut(k); fx = SK.lerp(ax, bx, m); fy = SK.lerp(ay, by, m); lift = Math.sin(m * Math.PI) * cs * 0.4; pose = k < 0.95 ? 'hop' : 'idle'; }
         if (i === run.steps.length - 1 && k >= 1 && st.type !== 'rock' && st.type !== 'water') { [fx, fy] = G.at(...st.to); }
@@ -172,7 +174,7 @@ MG.add({
     if (sink) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2; for (let j = 0; j < 3; j++) { const q = ((t - s.res.t) * 1.2 + j * 0.33) % 1; c.globalAlpha = 1 - q; c.beginPath(); c.ellipse(fx, fy - 4, 10 + q * 26, 3 + q * 7, 0, 0, 7); c.stroke(); } c.restore(); }
     if (s.res && s.res.type === 'hungry') { c.save(); c.globalAlpha = Math.min(1, (t - s.res.t) * 3); SK.tag(c, '?', fx + 24, fy - 62, 22); c.restore(); }
     // the cards: in the tray, or tucked against their line in the program
-    c.fillStyle = 'rgba(90,56,30,0.85)'; c.beginPath(); c.roundRect(14, 556, 332, 64, 14); c.fill(); c.strokeStyle = '#c89a62'; c.lineWidth = 2; c.stroke();
+    c.fillStyle = 'rgba(90,56,30,0.85)'; c.beginPath(); c.roundRect(14, 546, 332, 64, 14); c.fill(); c.strokeStyle = '#c89a62'; c.lineWidth = 2; c.stroke();
     for (const cd of s.cards) {
       if (cd === dragC) continue;
       if (cd.slot >= 0) { const ly = s.lay.lineY(cd.slot); if (!run) { cd.x = SK.lerp(cd.x, PX + 150, 0.35); cd.y = SK.lerp(cd.y, ly, 0.35); } continue; }
@@ -186,7 +188,7 @@ MG.add({
   },
   // the bot: drag the cards up in the solved order, then tap run
   auto(g, dt, synth) {
-    const s = g.s, ans = s.S.answer; if (g.done || s.run) return; const used = new Set();
+    const s = g.s, ans = (typeof window !== 'undefined' && window.B7FAIL) ? s.S.answer.slice().reverse() : s.S.answer; if (g.done || s.run) return; const used = new Set();
     for (let i = 0; i < ans.length; i++) {
       const t0 = 1.0 + i * 0.55, B = g.s._bot || {};
       if (B['c' + i] === 2) { used.add(s.prog[i]); continue; }

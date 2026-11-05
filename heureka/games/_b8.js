@@ -65,7 +65,9 @@ const B8 = (() => {
   // a wooden bucket: x = centre, y0 = rim, y1 = bottom, w = top width
   function bucketBack(c, x, y0, y1, w, col = '#a8683a') {
     const b = w * 0.78; c.save();
-    c.fillStyle = P.shade(col, -0.45); c.beginPath(); c.moveTo(x - w / 2, y0); c.lineTo(x + w / 2, y0); c.lineTo(x + b / 2, y1); c.lineTo(x - b / 2, y1); c.closePath(); c.fill();
+    const g = c.createLinearGradient(x - w / 2, 0, x + w / 2, 0); g.addColorStop(0, P.shade(col, -0.55)); g.addColorStop(0.5, P.shade(col, -0.3)); g.addColorStop(1, P.shade(col, -0.6));
+    c.fillStyle = g; c.beginPath(); c.moveTo(x - w / 2, y0); c.lineTo(x + w / 2, y0); c.lineTo(x + b / 2, y1); c.lineTo(x - b / 2, y1); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(30,14,10,0.35)'; c.lineWidth = 2; for (let i = 1; i < 8; i++) { const k = i / 8; c.beginPath(); c.moveTo(x - w / 2 + w * k, y0); c.lineTo(x - b / 2 + b * k, y1); c.stroke(); }
     c.restore();
   }
   function bucketFront(c, x, y0, y1, w, col = '#a8683a', o = {}) {

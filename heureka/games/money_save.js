@@ -72,13 +72,13 @@ MG.add({
     const s = g.s, d = SK.dragEnd(g); if (!d || !d.obj) return; const k = d.obj; k.held = false;
     if (k.x > JAR.x - JAR.w / 2 - 22 && k.x < JAR.x + JAR.w / 2 + 22 && k.y < JAR.y1 - 10 && k.y > JAR.y0 - 140) { // over the jar's mouth or on it
       const sl = slot(s.saved + s.fall.length); k.inJar = true; k.tx = sl.x; k.ty = sl.y; k.tilt = sl.tilt; k.vy = 200; k.x = SK.clamp(k.x, JAR.x - 30, JAR.x + 30); if (k.y > JAR.y0) k.y = JAR.y0 - 6; g.sfx('whoosh');
-      s.fall.push(k); s.coin = null; s.next = g.t + 0.25;
+      s.fall.push(k); s.coin = null; s.next = g.t + 0.12;
     } else { k.vx = d.vx * 0.2; k.vy = Math.min(0, d.vy * 0.2); }
   },
   update(g, dt) {
     const s = g.s, k = s.coin;
     // a new coin pops out once the last one is settled
-    if (!k && !g.done && g.t >= s.next) { s.coin = { x: 160 + g.rand() * 32, y: 470, vx: 0, vy: 0, r: CR, e: 0.35, mu: 1400, t0: g.t, spin: 0, idx: s.k++ }; g.sfx('coin'); }
+    if (!k && !g.done && g.t >= s.next) { s.coin = { x: 160 + g.rand() * 32, y: 500, vx: 0, vy: 0, r: CR, e: 0.35, mu: 1400, t0: g.t, spin: 0, idx: s.k++ }; g.sfx('coin'); }
     if (k && !k.inJar && !k.gone && !k.held) {
       SK.step(k, dt, { gy: 1500, floor: FLOOR, left: 16, right: 344 }); k.spin += dt * (k.onFloor ? 0 : 14);
       if (k.onFloor) k.spin *= 0.8;
@@ -139,7 +139,7 @@ MG.add({
   },
   auto(g, dt, synth) {
     const s = g.s, k = s.coin; if (!k || k.inJar || k.gone || !k.onFloor) return;
-    const B = s._b8 = s._b8 || {}; if (!B[k.idx]) B[k.idx] = { a: [k.x, k.y], t: g.t + 0.15 };
+    const B = s._b8 = s._b8 || {}; if (!B[k.idx]) B[k.idx] = { a: [k.x, k.y], t: g.t + 0.05 };
     SK.bot.drag(g, synth, 'c' + k.idx, B[k.idx].t, B[k.idx].a, [JAR.x, JAR.y0 - 30], 0.35);
   },
 });
