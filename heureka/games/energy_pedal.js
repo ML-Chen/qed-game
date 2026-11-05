@@ -29,8 +29,8 @@
       note: 'One person can make about 100 watts: enough for a bulb, nowhere near enough for a kettle.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
-      s.bulbs = lv >= 2 ? [[150, 206], [250, 206]] : [[236, 206]]; s.need = [3, 3.5, 3][lv]; s.th = lv >= 2 ? 0.6 : 0.7;
-      s.cad = 0; s.crank = 0; s.read = 0; s.b = 0; s.kettleAt = lv === 1 ? 2.4 : 9e9; s.kettle = false; s.kettleUsed = false; s.taps = 0; s.pageT = -9;
+      s.v = SK.variant(g, 4); s.bulbs = lv >= 2 ? [[[150, 206], [250, 206]], [[130, 196], [240, 214]], [[170, 214], [270, 196]], [[140, 204], [230, 204]]][s.v] : [[[236, 206]], [[206, 196]], [[256, 214]], [[180, 204]]][s.v]; s.need = [3, 3.5, 3][lv]; s.th = lv >= 2 ? 0.6 : 0.7;
+      s.cad = 0; s.crank = 0; s.read = 0; s.b = 0; s.kettleAt = lv === 1 ? [2.4, 2.0, 2.8, 3.2][s.v] : 9e9; s.kettle = false; s.kettleUsed = false; s.taps = 0; s.pageT = -9;
     },
     down(g, x, y) {
       const s = g.s; SK.touched(g); if (g.done) return;
@@ -48,6 +48,7 @@
     draw(g, c) {
       const s = g.s, t = g.t, b = s.b || 0, won = g.result === 'win', lost = g.result === 'fail';
       c.drawImage(g.bake('pedal_room', paintRoom), 0, 0, 360, 640);
+      c.fillStyle = ['rgba(0,0,0,0)', 'rgba(120,50,20,0.22)', 'rgba(20,90,70,0.22)', 'rgba(130,30,100,0.2)'][s.v]; c.fillRect(0, 0, 360, 552); // each night the room is painted differently
       // the kettle on the side table, and its switch
       c.fillStyle = '#c8d0e0'; c.beginPath(); c.moveTo(KET.x - 22, KET.y + 26); c.lineTo(KET.x - 18, KET.y - 10); c.quadraticCurveTo(KET.x, KET.y - 20, KET.x + 18, KET.y - 10); c.lineTo(KET.x + 22, KET.y + 26); c.closePath(); c.fill();
       c.strokeStyle = '#5a5a6a'; c.lineWidth = 4; c.beginPath(); c.arc(KET.x, KET.y - 12, 13, Math.PI, 0); c.stroke(); c.fillStyle = '#c8d0e0'; c.beginPath(); c.moveTo(KET.x - 18, KET.y); c.lineTo(KET.x - 32, KET.y - 10); c.lineTo(KET.x - 22, KET.y + 10); c.fill();
@@ -71,7 +72,7 @@
       if (strain) for (let i = 0; i < 3; i++) { const q = (t * 2 + i / 3) % 1; c.fillStyle = `rgba(140,200,255,${1 - q})`; c.beginPath(); c.arc(cx + 14 + i * 6, cy - 100 + q * 30, 3, 0, 7); c.fill(); }
       // the hedgehog reads in the armchair; pages turn while the light is bright
       SK.animal(c, 'hedgehog', 272, 516, 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : b < s.th ? 'think' : 'happy', facing: -1 });
-      const pk = (t - s.pageT) / 0.4; c.fillStyle = '#fff6ea'; c.strokeStyle = '#8a5a3a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(246, 528); c.lineTo(272, 534); c.lineTo(298, 528); c.lineTo(298, 506); c.lineTo(272, 512); c.lineTo(246, 506); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#c83a5a'; c.fillRect(270, 512, 4, 22);
+      const pk = (t - s.pageT) / 0.4; c.fillStyle = '#fff6ea'; c.strokeStyle = '#8a5a3a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(246, 528); c.lineTo(272, 534); c.lineTo(298, 528); c.lineTo(298, 506); c.lineTo(272, 512); c.lineTo(246, 506); c.closePath(); c.fill(); c.stroke(); c.fillStyle = ['#c83a5a', '#3a7ac8', '#3aa85a', '#e8a03a'][s.v]; c.fillRect(270, 512, 4, 22);
       if (pk >= 0 && pk < 1) { c.fillStyle = '#f2e8d8'; c.beginPath(); c.moveTo(272, 512); c.lineTo(272 + 26 * Math.cos(pk * Math.PI), 506 - 12 * Math.sin(pk * Math.PI)); c.lineTo(272 + 26 * Math.cos(pk * Math.PI), 528 - 12 * Math.sin(pk * Math.PI)); c.lineTo(272, 534); c.fill(); c.stroke(); }
       // the room darkens when the light is weak
       c.fillStyle = `rgba(8,6,24,${0.72 * (1 - b)})`; c.fillRect(0, 0, 360, 640);

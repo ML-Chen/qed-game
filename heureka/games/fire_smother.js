@@ -64,7 +64,8 @@
       text: 'A fire needs three things at the same time: fuel to burn, heat, and oxygen from the air. These are the three sides of the fire triangle. Take away any one side and the fire goes out.\n\nRaking the logs apart takes away the fuel. Sand over the fire smothers it: it keeps the air out. Water cools the fire until it is too cold to keep burning. Bellows do the opposite: they blow in more oxygen, so the flames grow.\n\nEmbers can stay hot for hours and start a fire again. Put out a campfire with an adult, and keep cooling and stirring it until it feels cold.',
       note: 'Fire needs fuel, heat and oxygen at once. Remove any one and it goes out.' },
     init(g) { const s = g.s; s.fire = 1; s.broken = {}; s.act = null; s.ember = 0; s.fan = 0; s.out = 0; s.mallow = 0; s.n = g.level >= 1 ? 3 : 2; s.k = 0; s.used = {}; s.litT = 0; s.dud = null; s.lightT = -9;
-      s.tools = Object.keys(TOOLS).map(id => ({ id, x: TOOLS[id].x, y: TOOLS[id].y, hx: TOOLS[id].x, hy: TOOLS[id].y })); },
+      const v = s.v = SK.variant(g, 4), SPOTS = [[40, 262], [320, 262], [286, 552], [188, 560]], ORD = [['heat', 'air', 'fuel', 'fan'], ['air', 'heat', 'fan', 'fuel'], ['fan', 'fuel', 'heat', 'air'], ['fuel', 'fan', 'air', 'heat']][v];
+      s.tools = ORD.map((id, i) => ({ id, x: SPOTS[i][0], y: SPOTS[i][1], hx: SPOTS[i][0], hy: SPOTS[i][1] })); s.order = [['fuel', 'air', 'heat'], ['air', 'heat', 'fuel'], ['heat', 'fuel', 'air'], ['fuel', 'heat', 'air']][v]; },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.act || s.out || s.fan) return; const tl = SK.pick(s.tools, x, y, 48); if (!tl) return;
       if (s.used[tl.id]) { s.dud = { id: tl.id, t: g.t }; g.sfx('wrong'); g.sfx('thud'); return; } SK.dragStart(g, tl, x, y); g.sfx('tap'); },
     move(g, x, y) { SK.dragMove(g, x, y); },
@@ -129,7 +130,7 @@
         const m = s.mallow; c.fillStyle = P.mix('#fff6ea', '#2a1a1a', m); c.strokeStyle = P.mix('#d8c8b0', '#100808', m); c.lineWidth = 2; c.beginPath(); c.roundRect(mx - 9, my - 12, 18, 20, 6); c.fill(); c.stroke();
         if (m > 0.5) B3.smoke(c, mx, my - 12, t, m, '60,50,60', 4, 50); }
       // guidance: the next unused tool glows, and a dashed ring marks the fire as where it goes
-      const nx = s.tools.find(tl => tl.id === ['fuel', 'air', 'heat'].find(id => !s.used[id])), busy = !!A || !!s.out || !!s.fan;
+      const nx = s.tools.find(tl => tl.id === s.order.find(id => !s.used[id])), busy = !!A || !!s.out || !!s.fan;
       if (nx && !busy && !SK.dragging(g)) { SK.grab(c, g, nx.x, nx.y, 34); SK.target(c, g, FIRE.x, FIRE.y - 20, 60); SK.arrow(c, g, nx.x, nx.y, FIRE.x, FIRE.y - 20, { from: 40, to: 80 }); }
       for (const sd of SIDES) if (!s.broken[sd.id]) SK.tag(c, { heat: 'Heat', air: 'Air', fuel: 'Fuel' }[sd.id], sd.x, sd.y + 44, 18);
       SK.demo(g, c, 'drag', nx ? [nx.hx, nx.hy] : [180, 400], [FIRE.x, FIRE.y - 20], { never: !nx || busy });
@@ -138,7 +139,7 @@
     auto(g, dt, synth) {
       const s = g.s; if (g.done || g.t < 1.0) return; const B = s._b = s._b || {};
       if (B.job) { const J = B.job, k = Math.min(1, (g.t - J.t0) / 0.3); synth('move', SK.lerp(J.a[0], FIRE.x, k), SK.lerp(J.a[1], FIRE.y - 20, k)); if (k >= 1) { synth('up', FIRE.x, FIRE.y - 20); B.job = null; } return; }
-      if (s.act || s.out || s.fan || g.t < s.litT + 0.45) return; const id = ['fuel', 'air', 'heat'].find(id => !s.used[id]), tl = s.tools.find(t => t.id === id); if (!tl || tl.back) return;
+      if (s.act || s.out || s.fan || g.t < s.litT + 0.45) return; const id = s.order.find(id => !s.used[id]), tl = s.tools.find(t => t.id === id); if (!tl || tl.back) return;
       B.job = { a: [tl.x, tl.y], t0: g.t }; synth('down', tl.x, tl.y);
     },
   });

@@ -63,7 +63,7 @@
       note: 'Pushing something at its own natural rhythm makes it shake more and more. This is resonance.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      const fs = L === 0 ? [2.9, 4.4] : [2.75, 3.65, 4.55].map(f => f + (g.rand() - 0.5) * 0.24);
+      s.v = SK.variant(g, 4); const fs = L === 0 ? [[2.9, 4.4], [4.4, 2.9], [2.6, 3.9], [4.8, 3.4]][s.v] : [[2.75, 3.65, 4.55], [2.6, 3.5, 4.6], [2.9, 3.9, 4.8], [2.7, 3.8, 4.7]][s.v].map(f => f + (g.rand() - 0.5) * 0.16);
       for (let i = fs.length - 1; i > 0 && L; i--) { const j = Math.floor(g.rand() * (i + 1)); [fs[i], fs[j]] = [fs[j], fs[i]]; }
       const xs = fs.length === 2 ? [GL.x - 44, GL.x + 44] : [GL.x - 60, GL.x, GL.x + 60];
       s.gl = fs.map((f0, i) => ({ f0, w0: Math.PI * 2 * f0, cx: xs[i], sz: 1.45 - (f0 - 2.6) * 0.36, x: 0, v: 0, amp: 0, xn: 0, broken: 0 }));

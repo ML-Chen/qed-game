@@ -21,7 +21,7 @@ function paintStreet(o) {
   o.fillStyle = '#f5d040'; o.beginPath(); o.ellipse(70, 452, 16, 12, 0.2, 0, 7); o.fill(); o.fillStyle = '#5ab050'; o.beginPath(); o.ellipse(80, 440, 6, 3, -0.5, 0, 7); o.fill();
   // the dial's face
   o.fillStyle = '#3a1640'; o.beginPath(); o.arc(DIAL.x, DIAL.y, DIAL.r + 10, Math.PI, 0); o.closePath(); o.fill();
-  for (let k = 0; k < NK; k++) { const a0 = Math.PI + k * Math.PI / NK, a1 = a0 + Math.PI / NK; o.fillStyle = P.mix('#7ad070', '#f06a50', k / (NK - 1)); o.beginPath(); o.moveTo(DIAL.x, DIAL.y); o.arc(DIAL.x, DIAL.y, DIAL.r, a0, a1); o.closePath(); o.fill(); o.strokeStyle = '#fff6ea'; o.lineWidth = 2; o.stroke(); }
+  for (let k = 0; k < NK; k++) { const a0 = Math.PI + k * Math.PI / NK, a1 = a0 + Math.PI / NK; o.fillStyle = k % 2 ? '#f8e0b8' : '#f0c890'; /* neutral: no colour says cheap is good or bad */ o.beginPath(); o.moveTo(DIAL.x, DIAL.y); o.arc(DIAL.x, DIAL.y, DIAL.r, a0, a1); o.closePath(); o.fill(); o.strokeStyle = '#fff6ea'; o.lineWidth = 2; o.stroke(); }
   o.fillStyle = '#3a1640'; o.beginPath(); o.arc(DIAL.x, DIAL.y, 26, Math.PI, 0); o.closePath(); o.fill();
 }
 function cup(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = 'rgba(255,255,255,0.8)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-8, -18); c.lineTo(8, -18); c.lineTo(6, 0); c.lineTo(-6, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#f8e050'; c.beginPath(); c.moveTo(-7, -13); c.lineTo(7, -13); c.lineTo(6, -1); c.lineTo(-6, -1); c.closePath(); c.fill(); c.restore(); }
@@ -61,17 +61,19 @@ MG.add({
     for (let i = 0; i < 3; i++) cup(c, 118 + i * 18, 420, 0.9);
     // the jar and its line; level 2 shows the lemons' cost paid out of each day's takings
     const ly = JAR.y1 - 10 - L.need * 2.6, fill = JAR.y1 - 8 - s.jar * 2.6;
+    const kNow = st ? st.k : k, earnNow = BUY[kNow] * (kNow + 1 - L.cost); // what today would bring at this price, shown live
     B8.jarBack(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     for (let i = 0; i < Math.round(s.jar); i++) B8.flatCoin(c, JAR.x - 24 + (i % 4) * 16, JAR.y1 - 10 - Math.floor(i / 4) * 10.4, 10, ((i * 7) % 5 - 2) * 0.05);
+    if (!st && !g.done) { const gy = Math.max(JAR.y0 + 10, JAR.y1 - 8 - (s.jar + Math.max(0, earnNow)) * 2.6); c.save(); c.fillStyle = 'rgba(245,194,58,0.35)'; c.fillRect(JAR.x - JAR.w / 2 + 4, gy, JAR.w - 8, fill - gy); c.strokeStyle = '#c08a14'; c.lineWidth = 2; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 + 4, gy); c.lineTo(JAR.x + JAR.w / 2 - 4, gy); c.stroke(); c.restore(); } // a ghost of today's takings at this price
     B8.jarFront(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     c.save(); c.strokeStyle = s.jar >= L.need ? '#5ad07a' : '#e8403a'; c.lineWidth = 4; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 6, ly); c.lineTo(JAR.x + JAR.w / 2 + 6, ly); c.stroke(); c.restore();
     // the day markers (one sun per day)
     for (let d = 0; d < L.days; d++) { const x = JAR.x - (L.days - 1) * 14 + d * 28, y = JAR.y0 - 22; c.fillStyle = d < s.day || (d === s.day && st && st.paid) ? '#f5c23a' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); c.strokeStyle = '#a8801a'; c.lineWidth = 2; c.stroke(); }
     // the crowd: buyers walk up for a cup and pay; the rest frown and turn away
     for (let i = 0; i < 10; i++) {
-      const [x0, y0] = [26 + (i % 5) * 72 + (i >= 5 ? 36 : 0), 556 + (i >= 5 ? 48 : 0)], buys = st && i < st.buy, q = st ? SK.clamp((t - st.t) / 0.7, 0, 1) : 0;
+      const [x0, y0] = [26 + (i % 5) * 72 + (i >= 5 ? 36 : 0), 556 + (i >= 5 ? 48 : 0)], buys = st && i < st.buy, would = !st && i < BUY[kNow], q = st ? SK.clamp((t - st.t) / 0.7, 0, 1) : 0;
       const x = buys ? SK.lerp(x0, 150 + (i % 4) * 12, q * 0.35) : x0, y = buys ? y0 - q * 30 : y0;
-      SK.animal(c, KINDS[i], x, y, 0.62, { t, phase: i, pose: buys && q > 0.5 ? 'cheer' : st && !buys ? 'sad' : 'idle', expr: buys ? 'happy' : st ? 'sad' : 'happy', facing: st && !buys ? 1 : -1, hold: buys && q > 0.7 ? (h => cup(h, 0, 4, 0.9)) : null });
+      SK.animal(c, KINDS[i], x, y, 0.62, { t, phase: i, pose: buys && q > 0.5 ? 'cheer' : st && !buys ? 'sad' : would ? 'wave' : 'idle', expr: buys || would ? 'happy' : st ? 'sad' : 'sad', facing: st && !buys ? 1 : -1, hold: buys && q > 0.7 ? (h => cup(h, 0, 4, 0.9)) : null });
       if (buys && q > 0.4 && q < 1) for (let j = 0; j <= Math.min(2, k); j++) { const qq = SK.clamp((q - 0.4) / 0.6 - j * 0.15, 0, 1); if (qq > 0 && qq < 1) B8.coin(c, SK.lerp(x, JAR.x, qq), SK.lerp(y - 40, JAR.y0, qq) - Math.sin(qq * Math.PI) * 60, 7, qq * 8); }
     }
     // level 2: lemons cost money too, paid out of the jar for every cup sold

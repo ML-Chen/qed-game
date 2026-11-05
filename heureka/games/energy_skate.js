@@ -6,7 +6,7 @@
 // bottom steals a little height on every pass, so start a bit higher.
 (() => {
   const G = 900, BOT = 520, LX = [20, 120], RX = [190, 270], LEDGE = 50, TOPL = 200;
-  const ROUNDS = [[380, 320], [360, 300, 336], [350, 296, 326]], MU = [900, 720, 720], ROUGH = 16;
+  const ROUNDS = [[[380, 320], [330, 380], [360, 300], [310, 350]], [[360, 300, 336], [300, 350, 320], [330, 290, 360], [350, 320, 296]], [[350, 296, 326], [300, 340, 290], [330, 300, 350], [296, 330, 310]]], MU = [900, 720, 720], ROUGH = 16;
   function trackY(x, rim) {
     if (x <= LX[1]) return BOT - (BOT - TOPL) * Math.pow((LX[1] - x) / (LX[1] - LX[0]), 2);
     if (x <= RX[0]) return BOT; if (x <= RX[1]) return BOT - (BOT - rim) * Math.pow((x - RX[0]) / (RX[1] - RX[0]), 2); return rim;
@@ -41,7 +41,7 @@
       text: 'High up, the skater has energy stored by her height. Rolling down, that energy turns into speed. Rolling up the other side, the speed turns back into height, so she rises to almost exactly the height she started from.\n\nStart lower than the ledge and she can never reach it. Start a little higher and she arrives with just a little speed left. Start much higher and the extra energy carries her right off the end. Rough ground turns some energy into heat, so she rises a little less each time.',
       note: 'Energy changes form, from height to speed and back, but the total stays the same.' },
     init(g) {
-      const s = g.s, lv = Math.min(2, g.level); s.rims = ROUNDS[lv]; s.mu = MU[lv]; s.rough = lv >= 2; s.round = 0;
+      const s = g.s, lv = Math.min(2, g.level); s.rims = ROUNDS[lv][SK.variant(g, 4)]; s.mu = MU[lv]; s.rough = lv >= 2; s.round = 0;
       s.T = build(s.rims[0]); s.sk = { s: sOfX(s.T, 150), dir: 1, Y0: BOT, st: 'rest' }; s.doneT = 0; s.fall = null; s.splash = -9;
     },
     down(g, x, y) {

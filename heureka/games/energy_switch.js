@@ -27,7 +27,6 @@
     o.fillStyle = '#6a6a80'; o.fillRect(174, 214, 12, 34); o.fillRect(8, 250, 344, 8); o.fillRect(8, 434, 344, 8); o.fillRect(342, 250, 10, 192);
     o.fillStyle = '#9a9ab0'; o.fillRect(8, 251, 344, 2); o.fillRect(8, 435, 344, 2);
     // the rug by the heater, where the cat sleeps
-    o.fillStyle = '#5a8ad0'; o.beginPath(); o.ellipse(104, 400, 46, 7, 0, 0, 7); o.fill();
   }
   function faucet(c, x, ceil) { c.fillStyle = '#8a8aa0'; c.fillRect(x - 4, ceil + 8, 8, 12); c.beginPath(); c.roundRect(x - 9, ceil + 18, 18, 8, 3); c.fill(); c.fillStyle = '#c8c8d8'; c.fillRect(x - 7, ceil + 19, 14, 2); }
   function stream(c, x, y0, y1, w, t, on) {
@@ -37,7 +36,7 @@
     c.strokeStyle = 'rgba(255,255,220,0.9)'; c.lineWidth = Math.max(1.2, w * 0.35); c.setLineDash([8, 10]); c.lineDashOffset = -t * 260; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke(); c.restore();
   }
   function appliance(c, k, a, t, s) {
-    const { x, y } = KINDS[k], on = a.on;
+    const { x, y } = s.K[k], on = a.on;
     c.save(); c.translate(x, y);
     if (k === 'heater') { c.fillStyle = on ? '#e85a3a' : '#9a8a8a'; c.beginPath(); c.roundRect(-30, 0, 60, 48, 6); c.fill(); for (let i = 0; i < 5; i++) { c.fillStyle = on ? `rgb(255,${170 + 50 * Math.sin(t * 6 + i)},60)` : '#6a5a5a'; c.fillRect(-24 + i * 11, 6, 6, 36); } c.fillStyle = '#4a3a3a'; c.fillRect(-28, 48, 6, 4); c.fillRect(22, 48, 6, 4);
       if (on) { c.strokeStyle = 'rgba(255,160,90,0.5)'; c.lineWidth = 2; for (let i = 0; i < 3; i++) { const q = (t * 0.8 + i / 3) % 1; c.beginPath(); c.moveTo(-14 + i * 14, -q * 30); c.quadraticCurveTo(-8 + i * 14, -q * 30 - 8, -14 + i * 14, -q * 30 - 16); c.stroke(); } } }
@@ -60,7 +59,9 @@
       note: 'Things that heat use far more energy than lights and chargers.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level); s.keepFridge = lv >= 2;
-      s.apps = LEVELS[lv].map(k => ({ k, on: true, x: KINDS[k].x, y: KINDS[k].y + 20, offT: -9 }));
+      const v = SK.variant(g, 4), UP = [[62, 152, 216, 296], [152, 62, 296, 216], [216, 296, 62, 152], [296, 216, 152, 62]][v], LO = [[58, 136, 222], [222, 58, 136], [136, 222, 58], [58, 222, 136]][v];
+      s.K = {}; for (const k in KINDS) s.K[k] = { ...KINDS[k] }; ['heater', 'lamp', 'charger', 'dryer'].forEach((k, i) => { s.K[k].x = UP[i]; }); ['kettle', 'fridge', 'tv'].forEach((k, i) => { s.K[k].x = LO[i]; });
+      s.apps = LEVELS[lv].map(k => ({ k, on: true, x: s.K[k].x, y: s.K[k].y + 20, offT: -9 }));
       s.f = frac(s.apps.reduce((a, b) => a + KINDS[b.k].w, 0)); s.disc = 0; s.melt = 0; s.under = 0; s.taps = 0;
     },
     down(g, x, y) {
@@ -80,10 +81,10 @@
       c.drawImage(g.bake('switch_house', paintHouse), 0, 0, 360, 640);
       // the cat dozing by the heater (it shivers once the heater goes off)
       const heat = s.apps.find(a => a.k === 'heater'), sh = heat && !heat.on ? Math.sin(t * 40) * 1.2 : 0;
-      try { P.cat(c, 112 + sh, 400, 0.7, { t }); } catch (e) { }
+      const hx = heat ? heat.x : 62, cx2 = hx > 250 ? hx - 52 : hx + 50; c.fillStyle = '#5a8ad0'; c.beginPath(); c.ellipse(cx2 - 8, 400, 46, 7, 0, 0, 7); c.fill(); try { P.cat(c, cx2 + sh, 400, 0.7, { t, facing: hx > 250 ? 1 : -1 }); } catch (e) { }
       // the appliances and the energy pouring into each from its tap
       for (const a of s.apps) {
-        const K = KINDS[a.k], w = a.on ? 1.5 + 11 * Math.sqrt(K.w / 2000) : 0; faucet(c, K.x, K.ceil);
+        const K = s.K[a.k], w = a.on ? 1.5 + 11 * Math.sqrt(K.w / 2000) : 0; faucet(c, K.x, K.ceil);
         if (a.on && K.w < 50) { for (let i = 0; i < 2; i++) { const q = (t * 1.6 + i * 0.5 + K.x * 0.01) % 1; c.fillStyle = 'rgba(255,220,90,0.9)'; c.beginPath(); c.arc(K.x, K.ceil + 26 + q * (K.y - K.ceil - 26), 2.6, 0, 7); c.fill(); } } // the sippers only drip
         else if (a.on) stream(c, K.x, K.ceil + 26, K.y + 2, w * 1.4, t);
         else { const q = (t - a.offT) * 2.5; if (q < 1) { c.fillStyle = 'rgba(255,220,90,0.8)'; c.beginPath(); c.arc(K.x, K.ceil + 26 + q * (K.y - K.ceil - 26), 3, 0, 7); c.fill(); } }

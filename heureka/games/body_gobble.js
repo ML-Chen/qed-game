@@ -5,19 +5,21 @@
 // pin them against the tissue wall to catch them.
 const AR = { l: 16, r: 344, t: 158, b: 572 }, WR = 38, VMAX = 320;
 
-function paintTissue(o) {
+const CUTS = [180, 110, 252, 146];
+function paintTissue(o, cx = 180) { o.save(); o.translate(cx - 180, 0); const dx0 = cx - 180;
   // skin at the top with a cut and a thorn, then the soft pink tissue fluid
   const bg = o.createLinearGradient(0, 140, 0, 640); bg.addColorStop(0, '#ffd8d0'); bg.addColorStop(1, '#f4b0a8');
   o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
   const sk = o.createLinearGradient(0, 0, 0, 150); sk.addColorStop(0, '#f6c8a0'); sk.addColorStop(0.6, '#e8a888'); sk.addColorStop(1, '#d88878');
-  o.fillStyle = sk; o.beginPath(); o.moveTo(0, 0); o.lineTo(360, 0); o.lineTo(360, 140); for (let x = 360; x >= 0; x -= 20) o.lineTo(x, 140 + Math.sin(x * 0.07) * 5); o.closePath(); o.fill();
+  o.fillStyle = sk; o.beginPath(); o.moveTo(-200, 0); o.lineTo(560, 0); o.lineTo(560, 140); for (let x = 560; x >= -200; x -= 20) o.lineTo(x, 140 + Math.sin(x * 0.07) * 5); o.closePath(); o.fill();
   // skin cells as rows of rounded bricks
-  o.strokeStyle = 'rgba(160,80,70,0.25)'; o.lineWidth = 1.5; for (let y = 10; y < 140; y += 18) for (let x = (y / 18) % 2 ? -12 : 0; x < 360; x += 26) { o.beginPath(); o.roundRect(x + 2, y, 22, 15, 6); o.stroke(); }
+  o.strokeStyle = 'rgba(160,80,70,0.25)'; o.lineWidth = 1.5; for (let y = 10; y < 140; y += 18) for (let x = ((y / 18) % 2 ? -12 : 0) - 208; x < 560; x += 26) { o.beginPath(); o.roundRect(x + 2, y, 22, 15, 6); o.stroke(); }
   // the cut: a dark gash in the middle
   o.fillStyle = '#8a2a30'; o.beginPath(); o.moveTo(150, 0); o.quadraticCurveTo(178, 70, 172, 146); o.lineTo(192, 146); o.quadraticCurveTo(196, 70, 214, 0); o.closePath(); o.fill();
   o.fillStyle = '#c84a4a'; o.beginPath(); o.moveTo(162, 0); o.quadraticCurveTo(182, 70, 178, 146); o.lineTo(186, 146); o.quadraticCurveTo(190, 70, 202, 0); o.closePath(); o.fill();
   // the thorn
   o.fillStyle = '#6a8a3a'; o.strokeStyle = '#3a5a20'; o.lineWidth = 2; o.beginPath(); o.moveTo(206, 20); o.lineTo(236, 6); o.lineTo(190, 118); o.closePath(); o.fill(); o.stroke();
+  o.restore();
   // tissue: soft fibres and fat cells at the edges
   const rnd = P.rng(41); o.strokeStyle = 'rgba(255,240,235,0.5)'; o.lineWidth = 2;
   for (let i = 0; i < 18; i++) { const y = 170 + rnd() * 400; o.beginPath(); o.moveTo(-10, y); o.bezierCurveTo(120, y + (rnd() - 0.5) * 80, 240, y + (rnd() - 0.5) * 80, 370, y + (rnd() - 0.5) * 40); o.stroke(); }
@@ -52,9 +54,9 @@ MG.add({
     text: 'When bacteria get in through a cut, white blood cells crawl out of the blood vessels to meet them. Some white cells, called phagocytes, swallow germs whole: the cell flows around a bacterium, wraps it in a bubble and breaks it down with strong chemicals. This is called phagocytosis.\n\nThe body\'s own cells carry markers that say "self", so phagocytes leave them alone.\n\nSome bacteria grow a slippery coat called a capsule that is hard to grip. Phagocytes catch them more easily when they are pinned against a surface or coated with antibodies.',
     note: 'White blood cells find bacteria, swallow them and digest them, and leave the body\'s own cells alone.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level), n = [4, 5, 5][L];
+    const s = g.s, L = Math.min(2, g.level), n = [4, 5, 4][L]; s.v = SK.variant(g, 4); const cx = CUTS[s.v];
     s.w = { x: 180, y: 470, vx: 0, vy: 0, r: WR }; s.tgt = null; s.eaten = 0; s.bump = -1;
-    s.bac = []; for (let i = 0; i < n; i++) { const a = g.rand() * 6.28, sp = [44, 60, 64][L] * (0.8 + g.rand() * 0.4); s.bac.push({ x: 150 + g.rand() * 60, y: 196 + g.rand() * 30, vx: Math.cos(a) * sp, vy: Math.abs(Math.sin(a)) * sp + 30, a, ph: g.rand() * 6, sp, cap: L >= 2 && i < 2, eat: -1, turn: g.rand() * 2 }); }
+    s.bac = []; for (let i = 0; i < n; i++) { const a = g.rand() * 6.28, sp = [44, 60, 64][L] * (0.8 + g.rand() * 0.4); s.bac.push({ x: cx - 30 + g.rand() * 60, y: 196 + g.rand() * 30, vx: Math.cos(a) * sp, vy: Math.abs(Math.sin(a)) * sp + 30, a, ph: g.rand() * 6, sp, cap: L >= 2 && i < 2, eat: -1, turn: g.rand() * 2 }); }
     s.rbc = []; for (let i = 0; i < 3; i++) s.rbc.push({ x: 40 + i * 120 + g.rand() * 30, y: 230 + (i % 2) * 140 + g.rand() * 60, a: g.rand() * 3, ph: g.rand() * 6, badge: 0, v: 18 + g.rand() * 10 });
     s.kids = [];
   },
@@ -90,7 +92,7 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, w = s.w, won = g.result === 'win', lost = g.result === 'fail';
-    c.drawImage(g.bake('body_gobble_tissue', paintTissue), 0, 0, 360, 640);
+    c.drawImage(g.bake('body_gobble_tissue' + s.v, o => paintTissue(o, CUTS[s.v])), 0, 0, 360, 640);
     for (const r of s.rbc) rbc(c, r, t, r.badge);
     for (const b of s.bac) if (b.eat < 0) bacterium(c, b, t);
     for (const k of s.kids) bacterium(c, k, t);

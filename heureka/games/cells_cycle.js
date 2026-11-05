@@ -47,7 +47,7 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
     s.T = 58; s.n = 1; s.sep = 0; s.cp = 0; s.goal = L ? 16 : 8; s.heat = [70, 74, 95][L]; s.cool = [80, 84, 105][L]; s.copyDur = [0.5, 0.45, 0.32][L];
-    s.hold = false; s.dbl = -1;
+    s.hold = false; s.dbl = -1; s.v = SK.variant(g, 4); [s.ca, s.cb] = [['#7ad0ff', '#ffb070'], ['#a8f07a', '#ff8ac8'], ['#c8a0ff', '#ffe060'], ['#ff8a7a', '#7ae8e0']][s.v];
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; s.hold = true; g.sfx('click'); },
   up(g) { const s = g.s; if (s.hold) g.sfx('click'); s.hold = false; },
@@ -80,13 +80,13 @@ MG.add({
     c.fillStyle = zb; c.beginPath(); c.arc(ZC[0], ZC[1], ZR, 0, 7); c.fill(); c.strokeStyle = '#e8f0fa'; c.lineWidth = 6; c.stroke(); c.strokeStyle = '#6a7a90'; c.lineWidth = 2; c.stroke();
     c.save(); c.beginPath(); c.arc(ZC[0], ZC[1], ZR - 3, 0, 7); c.clip();
     const par = slots(s.n), kid = slots(s.n * 2), jig = (i) => Math.sin(t * 3 + i) * heatK * 2;
-    if (s.sep === 0) for (const [i, p] of par.entries()) ladder(c, p.x + jig(i), p.y, p.L, p.gap, '#7ad0ff', s.n > 1 ? '#ffb070' : '#7ad0ff', 1, 1, false, t);
+    if (s.sep === 0) for (const [i, p] of par.entries()) ladder(c, p.x + jig(i), p.y, p.L, p.gap, s.ca, s.n > 1 ? s.cb : s.ca, 1, 1, false, t);
     else {
       const k = SK.easeInOut(s.sep);
       for (const [i, p] of par.entries()) for (const side of [0, 1]) {
         const q = kid[i * 2 + side], x = SK.lerp(p.x, q.x, k) + jig(i * 2 + side), y = SK.lerp(p.y + (side ? p.gap / 2 : -p.gap / 2), q.y - q.gap / 2, k), L = SK.lerp(p.L, q.L, k);
         // the old strand (blue) and, while cool, its new partner (orange) zipping along with the polymerase
-        ladder(c, x, y + q.gap / 2, L, q.gap, '#7ad0ff', s.cp > 0 ? '#ffb070' : null, s.cp > 0 ? 1 : 0, s.cp, true, t);
+        ladder(c, x, y + q.gap / 2, L, q.gap, s.ca, s.cp > 0 ? s.cb : null, s.cp > 0 ? 1 : 0, s.cp, true, t);
       }
       if (lost && s.cp === 0) for (let i = 0; i < 6; i++) { c.fillStyle = 'rgba(122,208,255,0.6)'; c.beginPath(); c.arc(ZC[0] + Math.cos(i + t) * 70, ZC[1] + Math.sin(i * 2 + t) * 60, 3, 0, 7); c.fill(); }
     }

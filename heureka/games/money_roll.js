@@ -4,7 +4,8 @@
 // the new snow off to spend it: the ball shrinks back to its first coin and the growth starts over from small. At the
 // bottom it slides onto a frozen pond: let go with it inside the ring (overshoot and it drops through the hole in the ice).
 // Level 2: a steeper hill (a higher rate), a bigger ring, a faster ball and less slack.
-const HILL = { a: [26, 196], b: [150, 470], e: [252, 560] }; // a quadratic curve: steep at the top, flat at the bottom
+const HILLS = [{ a: [26, 196], b: [150, 470], e: [252, 560] }, { a: [26, 230], b: [100, 440], e: [252, 560] }, { a: [26, 186], b: [196, 500], e: [252, 560] }, { a: [26, 214], b: [70, 520], e: [252, 560] }];
+let HILL = HILLS[0]; // a quadratic curve: steep at the top, flat at the bottom (one of four hills, a new one each play)
 const R0 = 11, LVR = [{ k: 1.75, goal: 46, v: 0.3, gx: 282, tol: 24 }, { k: 1.85, goal: 50, v: 0.34, gx: 290, tol: 19 }, { k: 2.0, goal: 58, v: 0.4, gx: 292, tol: 16 }]; // growth per hill, goal radius, hill per second, ring centre, stopping slack
 const FLAT = 272, HOLE = 338; // the frozen pond at the bottom (px per unit of u past the hill), and the hole in the ice
 function hp(u) { const { a, b, e } = HILL, m = 1 - u; return [m * m * a[0] + 2 * m * u * b[0] + u * u * e[0], m * m * a[1] + 2 * m * u * b[1] + u * u * e[1]]; }
@@ -46,11 +47,12 @@ MG.add({
     note: 'Leave the interest in and it earns interest too, so savings grow faster and faster.' },
   init(g) {
     const s = g.s, L = LVR[Math.min(2, g.level)];
+    s.hill = SK.variant(g, HILLS.length); HILL = HILLS[s.hill];
     s.L = L; s.u = 0.02; s.base = 0.02; s.r = R0; s.rot = 0; s.rolling = false; s.end = 0; s.spends = [];
   },
   down(g) { const s = g.s; if (g.done || s.end) return; SK.holdStart(g); s.rolling = true; g.sfx('swoosh'); },
   up(g) {
-    const s = g.s; SK.holdEnd(g); if (!s.rolling || g.done || s.end) return; s.rolling = false;
+    HILL = HILLS[g.s.hill]; const s = g.s; SK.holdEnd(g); if (!s.rolling || g.done || s.end) return; s.rolling = false;
     if (s.u > 1) { // letting go on the pond: the ball stops here. Inside the ring and big enough wins.
       const L = s.L, [x] = ballAt(s.u, s.r), inRing = Math.abs(x - L.gx) <= L.tol; s.end = g.t;
       if (inRing && s.r >= L.goal * 0.95) { g.win(); g.sfx('cheer'); g.shake(4, 0.3); g.burst(x, HILL.e[1] - s.r, ['#ffffff', '#ffe27a', '#bfe6ff'], 26, 260); }
@@ -63,6 +65,7 @@ MG.add({
     }
   },
   update(g, dt) {
+    HILL = HILLS[g.s.hill];
     const s = g.s, L = s.L;
     if (s.rolling && !s.end) {
       const [dx, dy] = hd(s.u), sp = L.v * 560 / Math.hypot(dx, dy) * (0.75 + 0.5 * SK.clamp(dy / Math.hypot(dx, dy), 0, 1)); // a little faster where steep
@@ -74,8 +77,9 @@ MG.add({
     }
   },
   draw(g, c) {
+    HILL = HILLS[g.s.hill];
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', L = s.L;
-    c.drawImage(g.bake('b8roll_h', paintHill), 0, 0, 360, 640);
+    c.drawImage(g.bake('b8roll_h' + s.hill, paintHill), 0, 0, 360, 640);
     // the year flags along the slope
     for (let i = 1; i < 6; i++) { const [x, y] = hp(i / 6); c.strokeStyle = '#6a4a2a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x - 6, y + 2); c.lineTo(x - 6, y - 26); c.stroke(); c.fillStyle = i % 2 ? '#e8566a' : '#f5c23a'; c.beginPath(); c.moveTo(x - 6, y - 26); c.lineTo(x + 8 + Math.sin(t * 6 + i) * 2, y - 21); c.lineTo(x - 6, y - 16); c.closePath(); c.fill(); }
     // the goal ring at the bottom
@@ -100,7 +104,7 @@ MG.add({
     if (s.rolling && s.u > 0.8) SK.glow(c, g, gx, gy, L.goal * 0.6); // levels 0 and 1: the place to let go glows
   },
   auto(g, dt, synth) { // hold from the top, and let go when the ball is over the ring
-    const s = g.s; if (!s._b8 && g.t >= 0.9) { s._b8 = 1; synth('down', 180, 330); }
+    HILL = HILLS[g.s.hill]; const s = g.s; if (!s._b8 && g.t >= 0.9) { s._b8 = 1; synth('down', 180, 330); }
     if (s._b8 === 1 && s.u > 1 && Math.abs(ballAt(s.u, s.r)[0] - s.L.gx) < 4) { s._b8 = 2; synth('up', 180, 330); }
   },
 });

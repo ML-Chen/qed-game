@@ -40,20 +40,21 @@ MG.add({
     note: 'Oxygen slips through the membrane itself; glucose, ions and most water need protein doors, and a pump needs energy.' },
   init(g) {
     const s = g.s, L = LV[Math.min(2, g.level)];
+    s.v = SK.variant(g, 4); s.prot = {}; for (const k in L.prot) s.prot[k] = s.v % 2 ? 360 - L.prot[k] : L.prot[k];
     s.L = L; s.m = []; const ks = L.mols.slice();
     for (let i = ks.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [ks[i], ks[j]] = [ks[j], ks[i]]; }
-    ks.forEach((k, i) => { const hx = 50 + i * (260 / Math.max(1, ks.length - 1)), hy = 214 + (i % 2) * 50; s.m.push({ kind: k, x: hx, y: hy, hx, hy, ph: g.rand() * 6, st: 'wait', at: 0 }); });
+    ks.forEach((k, i) => { const hx = 50 + i * (260 / Math.max(1, ks.length - 1)), hy = 214 + ((i + (s.v >> 1)) % 2) * 50; s.m.push({ kind: k, x: hx, y: hy, hx, hy, ph: g.rand() * 6, st: 'wait', at: 0 }); });
     s.pumpTaps = 0; s.pumpAt = -9; s.pumpMol = null; s.bounce = -9; s.atp = [];
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done) return;
-    const px = s.L.prot.pump;
+    const px = s.prot.pump;
     if (s.pumpMol && SK.dist(x, y, px, MY) < 50) { s.pumpTaps++; s.pumpAt = g.t; s.atp.push(g.t); g.sfx('click'); g.sfx('sweep'); if (s.pumpTaps >= 3) { const m = s.pumpMol; m.st = 'cross'; m.from = [px, MY]; m.to = [px + (g.rand() - 0.5) * 40, INSIDE + g.rand() * 60]; m.at = g.t; s.pumpMol = null; s.pumpTaps = 0; g.sfx('pop'); } return; }
     const m = SK.pick(s.m.filter(q => q.st === 'wait'), x, y, 44); if (m) { m.st = 'drag'; SK.dragStart(g, m, x, y); g.sfx('tap'); }
   },
   move(g, x, y) { SK.dragMove(g, x, y); },
   up(g) {
-    const s = g.s, d = SK.dragEnd(g); if (!d || !d.obj) return; const m = d.obj, P2 = s.L.prot;
+    const s = g.s, d = SK.dragEnd(g); if (!d || !d.obj) return; const m = d.obj, P2 = s.prot;
     if (g.done || m.y < MY - MH) { m.st = 'home'; m.from = [m.x, m.y]; m.at = g.t; return; }
     const near = (k, r) => P2[k] != null && Math.abs(m.x - P2[k]) < r;
     if (m.kind === 'o2') { m.st = 'cross'; m.from = [m.x, Math.min(m.y, MY - 20)]; m.to = [m.x, INSIDE + g.rand() * 60]; m.at = g.t; g.sfx('swoosh'); return; }
@@ -77,7 +78,7 @@ MG.add({
     const s = g.s, t = g.t, L = s.L, won = g.result === 'win', lost = g.result === 'fail';
     c.drawImage(g.bake('cells_slip_mem' + Math.min(2, g.level), o => paintMembrane(o, L)), 0, 0, 360, 640);
     // the proteins in the membrane
-    const P2 = L.prot;
+    const P2 = s.prot;
     if (P2.glu != null) { const x = P2.glu; c.fillStyle = '#5ac870'; c.strokeStyle = '#2a7a3a'; c.lineWidth = 3; for (const d of [-1, 1]) { c.beginPath(); c.roundRect(x + d * 24 - 12, MY - 34, 24, 68, 10); c.fill(); c.stroke(); }
       c.fillStyle = 'rgba(255,246,234,0.5)'; c.strokeStyle = '#2a7a3a'; c.lineWidth = 2.5; c.setLineDash([4, 3]); c.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * 6.283 + Math.PI / 6; i ? c.lineTo(x + Math.cos(a) * 15, MY - 36 + Math.sin(a) * 15) : c.moveTo(x + Math.cos(a) * 15, MY - 36 + Math.sin(a) * 15); } c.closePath(); c.fill(); c.stroke(); c.setLineDash([]); }
     if (P2.h2o != null) { const x = P2.h2o; c.fillStyle = '#5aa8f0'; c.strokeStyle = '#2a5a9a'; c.lineWidth = 3; for (const d of [-1, 1]) { c.beginPath(); c.roundRect(x + d * 16 - 9, MY - 32, 18, 64, 8); c.fill(); c.stroke(); } }
@@ -91,7 +92,7 @@ MG.add({
     for (const m of s.m) if (m.st !== 'drag') mol(c, m.kind, m.x, m.y, t);
     const dr = SK.dragging(g); if (dr) mol(c, dr.kind, dr.x, dr.y, t, 1.15);
     // labels
-    SK.tag(c, 'Outside', 180, 146, 18); SK.tag(c, 'Inside the cell', 100, 600, 18); SK.tag(c, 'Membrane', 56, MY, 18, '#fff6ea', 'rgba(120,70,20,0.8)');
+    SK.tag(c, 'Outside', 180, 146, 18); SK.tag(c, 'Inside the cell', 100, 600, 18); SK.tag(c, 'Membrane', s.v % 2 ? 304 : 56, MY, 18, '#fff6ea', 'rgba(120,70,20,0.8)');
     if (P2.glu != null) SK.tag(c, 'Glucose carrier', SK.clamp(P2.glu, 86, 274), MY + 54, 18);
     if (P2.h2o != null) SK.tag(c, 'Water channel', SK.clamp(P2.h2o, 80, 290), MY + 92, 18);
     SK.tag(c, 'Pump', SK.clamp(P2.pump, 40, 326), MY + 54, 18);
@@ -103,7 +104,7 @@ MG.add({
     if (next && !dr && !g.done) { const tx = next.kind === 'o2' ? next.x : next.kind === 'k' ? P2.pump : P2[next.kind]; const ty = next.kind === 'k' ? MY - 22 : next.kind === 'o2' ? MY + 10 : MY - 36; SK.target(c, g, tx, ty, 22); SK.arrow(c, g, next.x, next.y, tx, ty); SK.grab(c, g, next.x, next.y, 26); SK.demo(g, c, 'drag', [next.x, next.y], [tx, next.kind === 'k' ? MY - 22 : MY + 40]); }
   },
   auto(g, dt, synth) {
-    const s = g.s, P2 = s.L.prot; if (g.done || g.t < 0.6) return;
+    const s = g.s, P2 = s.prot; if (g.done || g.t < 0.6) return;
     if (s.botCur) { const b = s.botCur; if (!SK.bot.drag(g, synth, b.key, b.t, b.a, b.b, 0.3)) return; s.botCur = null; return; }
     if (s.pumpMol) { s.botT = s.botT || 0; if (g.t - s.botT > 0.16) { s.botT = g.t; synth('down', P2.pump, MY); synth('up', P2.pump, MY); } return; }
     const m = s.m.find(q => q.st === 'wait'); if (!m) return; s.botN = (s.botN || 0) + 1;

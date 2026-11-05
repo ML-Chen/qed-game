@@ -5,17 +5,17 @@
 // generation's mix. Fill your tummy to win. No moth ever changes colour; only the mix does.
 // Level 2: clean, pale birch bark instead of soot: now the dark moths stand out and pale moths take over.
 (() => {
-  const TRUNKS = [62, 180, 298], TW = 78, N = 10, TOP = 196, BOT = 548;
+  const TRUNK_SETS = [[62, 180, 298], [90, 270], [44, 136, 228, 318], [70, 200, 312]], TW = 78, N = 10, TOP = 196, BOT = 548;
   const TARGET = [7, 9, 9];
   function sched(g) { if (g.s.S) return g.s.S; const D = Math.min(g.dur - 0.4, [10.5, 8.5, 7.4][Math.min(2, g.level)]), R = D / 3; return (g.s.S = [0, 1, 2].map(i => ({ a: 0.6 + i * R, b: 0.6 + i * R + R - 0.75 }))); }
   function place(g, darks) {
     const ms = [];
     for (const dark of darks) { let x = 0, y = 0;
-      for (let k = 0; k < 24; k++) { const tr = TRUNKS[Math.floor(g.rand() * 3)]; x = tr + (g.rand() - 0.5) * (TW - 34); y = TOP + g.rand() * (BOT - TOP); if (ms.every(m => SK.dist(m.x, m.y, x, y) > 40)) break; }
+      for (let k = 0; k < 24; k++) { const T = g.s.tr, tr = T[Math.floor(g.rand() * T.length)]; x = tr + (g.rand() - 0.5) * (TW - 34); y = TOP + g.rand() * (BOT - TOP); if (ms.every(m => SK.dist(m.x, m.y, x, y) > 40)) break; }
       ms.push({ x, y, dark, alive: true, ang: (g.rand() - 0.5) * 0.6, born: 0 }); }
     return ms;
   }
-  function paintBg(o, clean) {
+  function paintBg(o, clean, TRUNKS) {
     const sk = o.createLinearGradient(0, 0, 0, 640);
     if (clean) { sk.addColorStop(0, '#a8d0e8'); sk.addColorStop(0.6, '#d8ecd8'); sk.addColorStop(1, '#a8c888'); } else { sk.addColorStop(0, '#6a6470'); sk.addColorStop(0.6, '#8a8278'); sk.addColorStop(1, '#5a5a48'); }
     o.fillStyle = sk; o.fillRect(0, 0, 360, 640);
@@ -53,6 +53,7 @@
       note: 'Living things that are better at surviving have more young, and the young are like their parents, so a population changes over generations.' },
     init(g) {
       const s = g.s, clean = g.level >= 2; s.clean = clean; s.round = 0; s.eaten = 0; s.target = TARGET[Math.min(2, g.level)];
+      s.v = SK.variant(g, 4); s.tr = TRUNK_SETS[s.v];
       const darks = []; for (let i = 0; i < N; i++) darks.push(i % 2 === 0); s.moths = place(g, darks); s.gens = [darks.slice()]; s.pecks = []; s.phase = 'hunt'; s.fly = 0;
     },
     down(g, x, y) {
@@ -75,7 +76,7 @@
     },
     draw(g, c) {
       const s = g.s, t = g.t;
-      c.drawImage(g.bake('hunt_bg' + (s.clean ? 1 : 0), o => paintBg(o, s.clean)), 0, 0, 360, 640);
+      c.drawImage(g.bake('hunt_bg' + (s.clean ? 1 : 0) + '_' + s.v, o => paintBg(o, s.clean, s.tr)), 0, 0, 360, 640);
       // the moths: resting, eaten, or flying off at the end of a round; new ones flutter in
       for (const m of s.moths) {
         if (!m.alive) continue;

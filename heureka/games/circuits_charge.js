@@ -5,6 +5,9 @@
 // each standing farther away, so each needs a fuller jar. Level 2: a narrower pipe fills more slowly.
 const FL = { x: 304, y: 352 }, TANK = { x: 64, y0: 392, y1: 580, w: 58 }, JAR = { x: 230, y0: 412, y1: 580, w: 74 }, PIPE_Y = 560;
 const TAU = [0.62, 0.72, 0.95]; // seconds: how slowly the jar fills (the pipe's resistance times the jar's size)
+const DIST = [{ sc: 1.5, y: 318, need: 0.62 }, { sc: 1.15, y: 286, need: 0.76 }, { sc: 0.95, y: 262, need: 0.86 }]; // near, middle, far
+const CAST = [['frog', 'duck', 'fox'], ['rabbit', 'penguin', 'owl'], ['hedgehog', 'frog', 'duck'], ['fox', 'owl', 'rabbit'], ['penguin', 'hedgehog', 'frog']];
+const ORDER = [[0, 2, 1], [1, 0, 2], [2, 1, 0], [0, 1, 2], [1, 2, 0]];
 const SHOTS = [ // each subject: animal, how far back it stands (scale, foot y), and the charge its flash needs
   { kind: 'frog', sc: 1.5, y: 318, need: 0.62 }, { kind: 'duck', sc: 0.95, y: 262, need: 0.86 }, { kind: 'fox', sc: 1.15, y: 286, need: 0.76 },
 ];
@@ -43,13 +46,13 @@ MG.add({
   card: { title: 'A capacitor fills fast, then slowly', kind: 'Engineering', ref: 'Charging a capacitor (RC circuit)',
     text: 'A capacitor stores electric charge, like a jar stores water. Here the battery is a full tank, and charge flows into the capacitor through a narrow pipe, which is a resistor.\n\nAt first the jar is empty and the push from the tank is strong, so it fills fast. As the jar fills, its own level pushes back, the difference shrinks, and the flow slows down. It creeps closer and closer to the tank\'s level but never quite gets there. A narrower pipe makes the whole thing slower. A camera flash charges a capacitor like this, then empties it all at once into the lamp.',
     note: 'A capacitor charges quickly at first and then more and more slowly, as it nears the battery\'s voltage.' },
-  init(g) { const s = g.s; s.drainT = null; s.drainQ = 0; s.tau = TAU[Math.min(2, g.level)]; s.q = 0; s.shot = 0; s.flash = 0; s.flashK = 0; s.photos = []; s.dud = 0; s.flowT = 0; },
+  init(g) { const s = g.s; s.v = SK.variant(g, 5); s.shots = ORDER[s.v].map((d, i) => ({ kind: CAST[s.v][i], ...DIST[d] })); s.drainT = null; s.drainQ = 0; s.tau = TAU[Math.min(2, g.level)]; s.q = 0; s.shot = 0; s.flash = 0; s.flashK = 0; s.photos = []; s.dud = 0; s.flowT = 0; },
   down(g) { if (g.done) return; SK.holdStart(g); g.sfx('click'); },
   up(g) {
     const s = g.s; if (s._hold == null) return; SK.holdEnd(g); if (g.done) return;
-    const sh = SHOTS[s.shot], ok = s.q >= sh.need; s.flash = 0.001; s.flashK = s.q * s.q; s.drainQ = s.q; s.drainT = g.t; // the flash's light grows with the stored energy
+    const sh = s.shots[s.shot], ok = s.q >= sh.need; s.flash = 0.001; s.flashK = s.q * s.q; s.drainQ = s.q; s.drainT = g.t; // the flash's light grows with the stored energy
     s.photos.push({ kind: sh.kind, ok, t: g.t }); s.q = 0;
-    if (ok) { g.sfx('snap'); g.sfx('sparkle'); s.shot++; if (s.shot >= SHOTS.length) { g.win(); g.sfx('cheer'); } }
+    if (ok) { g.sfx('snap'); g.sfx('sparkle'); s.shot++; if (s.shot >= s.shots.length) { g.win(); g.sfx('cheer'); } }
     else { g.sfx('click'); g.sfx('wrong'); s.dud = 0.8; }
   },
   update(g, dt) {
@@ -57,7 +60,7 @@ MG.add({
     if (s._hold != null && !g.done) { s.q += (1 - s.q) * (1 - Math.exp(-dt / s.tau)); s.flowT += dt; if (Math.floor((s.flowT - dt) * 8) !== Math.floor(s.flowT * 8)) g.sfx('drip', { vol: 0.35, pitch: 0.8 + s.q }); }
   },
   draw(g, c) {
-    const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', sh = SHOTS[Math.min(s.shot, SHOTS.length - 1)];
+    const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', sh = s.shots[Math.min(s.shot, s.shots.length - 1)];
     c.drawImage(g.bake('charge_studio', paintStudio), 0, 0, 360, 640);
     // the subject posing on the backdrop (the next one waits at the side)
     SK.shadow(c, 180, sh.y + 2, 30 * sh.sc, 7 * sh.sc, 0.2);
@@ -90,9 +93,9 @@ MG.add({
     SK.demo(g, c, 'hold', [150, PIPE_Y], null, { period: 2.0 });
   },
   auto(g, dt, synth) {
-    const s = g.s, B = s._bot = s._bot || {}; if (g.done || g.t < 1.0 || s.shot >= SHOTS.length) return;
+    const s = g.s, B = s._bot = s._bot || {}; if (g.done || g.t < 1.0 || s.shot >= s.shots.length) return;
     if (B.next && g.t < B.next) return;
     if (s._hold == null) { synth('down', 230, 500); return; }
-    if (s.q >= SHOTS[s.shot].need + 0.03) { synth('up', 230, 500); B.next = g.t + 0.35; }
+    if (s.q >= s.shots[s.shot].need + 0.03) { synth('up', 230, 500); B.next = g.t + 0.35; }
   },
 });

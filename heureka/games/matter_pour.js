@@ -12,7 +12,7 @@
     hour: [[-30, -112], [-30, -96], [-8, -60], [-30, -24], [-30, 0], [30, 0], [30, -24], [8, -60], [30, -96], [30, -112]],
     round: [[-17, -112], [-17, -84], [-40, -60], [-40, -18], [-22, 0], [22, 0], [40, -18], [40, -60], [17, -84], [17, -112]],
   };
-  const LV = [{ cups: ['star', 'heart'], m: 1.45, ice: false }, { cups: ['heart', 'star', 'hour'], m: 1.3, ice: true }, { cups: ['hour', 'star', 'round', 'heart'], m: 1.16, ice: true }];
+  const LV = [{ cups: [['star', 'heart'], ['heart', 'hour'], ['hour', 'star'], ['round', 'star']], m: 1.45, ice: false }, { cups: [['heart', 'star', 'hour'], ['star', 'round', 'heart'], ['hour', 'heart', 'star'], ['round', 'hour', 'star']], m: 1.3, ice: true }, { cups: [['hour', 'star', 'round', 'heart'], ['star', 'heart', 'hour', 'round'], ['heart', 'round', 'star', 'hour'], ['round', 'hour', 'heart', 'star']], m: 1.16, ice: true }];
   const BASE = 548;
   function widthAt(pts, y) { // total width of the outline cut by a horizontal line at height y
     const xs = []; for (let i = 0; i < pts.length; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % pts.length]; if ((y0 <= y && y1 > y) || (y1 <= y && y0 > y)) xs.push(x0 + (y - y0) / (y1 - y0) * (x1 - x0)); }
@@ -37,8 +37,8 @@
       text: 'A liquid flows. Its particles slide past each other, so juice runs into every corner of a glass, even the tips of a star, and its top settles flat. A liquid keeps its amount, though: pour too much and it spills over.\n\nA solid keeps its own shape. The particles in an ice cube are locked together, so the cube stays a cube in any glass. It just floats in the juice. A pile of sand pours too, but each grain is a tiny solid that keeps its shape.',
       note: 'Liquids flow and take the shape of their container; solids keep their own shape.' },
     init(g) {
-      const s = g.s, L = LV[Math.min(2, g.level)], n = L.cups.length;
-      s.cups = L.cups.map((k, i) => makeCup(k, 360 * (i + 0.5) / n));
+      const s = g.s, L = LV[Math.min(2, g.level)], set = L.cups[SK.variant(g, 4)], n = set.length;
+      s.cups = set.map((k, i) => makeCup(k, 360 * (i + 0.5) / n));
       s.juice = s.cups.reduce((a, c) => a + c.cap, 0) * L.m; s.juice0 = s.juice; s.jug = { x: 110, tilt: 0 }; s.grab = null; s.spill = 0; s.puddle = []; s.pourX = null;
       s.ice = L.ice ? [{ dx: -8 }, { dx: 8 }] : []; s.iceOut = false;
     },

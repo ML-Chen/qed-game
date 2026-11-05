@@ -5,7 +5,7 @@
 // shorter half-life and an eighth to hit.
 (() => {
   const JAR = { cx: 150, l: 48, r: 252, t: 220, b: 540 }, BAR = { x: 300, t: 236, b: 528 }, N = 24, HR = 15;
-  const LV = [{ fr: [2, 4], hl: 1.0 }, { fr: [4, 2, 8], hl: 0.9 }, { fr: [4, 8, 2], hl: 0.7 }];
+  const LV = [{ fr: [[2, 4], [4, 2], [2, 8], [8, 2]], hl: 1.0 }, { fr: [[4, 2, 8], [2, 8, 4], [8, 4, 2], [2, 4, 8]], hl: 0.9 }, { fr: [[4, 8, 2], [8, 2, 4], [2, 8, 4], [8, 4, 8]], hl: 0.7 }];
   function slots() { const out = []; for (let r = 0; out.length < N; r++) { const n = r % 2 ? 4 : 5; for (let c = 0; c < n && out.length < N; c++) out.push([JAR.l + 30 + c * 36 + (r % 2 ? 18 : 0), JAR.b - 24 - r * 31]); } return out; }
   const SLOTS = slots();
   function paintShelf(o) {
@@ -34,7 +34,7 @@
       text: 'An unstable atom decays at a random moment, and nobody can say when one particular atom will go. But in a big crowd of them, about half decay in a fixed time, called the half-life.\n\nAfter one half-life, half are left. After two, a quarter. After three, an eighth. The pile shrinks by halves, so it never quite reaches zero in a straight line. Scientists date old bones this way: they measure how much carbon-14 is left and count how many half-lives have passed.',
       note: 'In each half-life, about half of the unstable atoms still left decay.' },
     init(g) {
-      const s = g.s, L = LV[Math.min(2, g.level)]; s.fr = L.fr; s.hl = L.hl; s.round = 0; s.held = false; s.overT = 0; this.fill(g);
+      const s = g.s, L = LV[Math.min(2, g.level)]; s.fr = L.fr[SK.variant(g, 4)]; s.hl = L.hl; s.round = 0; s.held = false; s.overT = 0; this.fill(g);
     },
     fill(g) { const s = g.s; s.tau = 0; s.ticks = []; s.born = g.t; s.okT = 0; s.hogs = SLOTS.map(([x, y], i) => ({ x, y, life: -s.hl * Math.log(1 - g.rand()) / Math.LN2, gone: 0 })); s.target = Math.round(N / s.fr[s.round]); },
     down(g) { const s = g.s; SK.holdStart(g); if (g.done || s.okT) return; s.held = true; g.sfx('click'); },

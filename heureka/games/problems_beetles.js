@@ -12,12 +12,18 @@ function paintDesk(o) {
   B9.wood(o, 0, 540, 360, 100, '#c08a52', 5); o.fillStyle = 'rgba(40,20,10,0.3)'; o.fillRect(0, 538, 360, 5);
   P.grain(o, 360, 640, 0.04);
 }
-function paintApp(o) { // the app on the screen: a cheerful little shop app
-  o.fillStyle = '#fff6ea'; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, SCR.b - SCR.t, 14); o.fill();
-  o.fillStyle = '#ff8a5a'; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, 46, [14, 14, 0, 0]); o.fill();
-  
-  const cols = ['#ffd45a', '#8ad0a0', '#a8c8f0', '#f0a8c8'];
-  for (let r = 0; r < 3; r++) for (let k = 0; k < 2; k++) { const x = SCR.l + 14 + k * 140, y = SCR.t + 60 + r * 96; o.fillStyle = cols[(r * 2 + k) % 4]; o.beginPath(); o.roundRect(x, y, 124, 84, 10); o.fill(); o.fillStyle = 'rgba(255,255,255,0.7)'; o.fillRect(x + 10, y + 60, 70, 10); o.beginPath(); o.arc(x + 62, y + 30, 18, 0, TAU); o.fill(); }
+// four apps (one per variant): a shop, a music player, a weather app and a photo grid, each with its own colours and layout
+const THEMES = [
+  { head: '#ff8a5a', bg: '#fff6ea', cols: ['#ffd45a', '#8ad0a0', '#a8c8f0', '#f0a8c8'], grid: [2, 3] },
+  { head: '#7a5ad8', bg: '#f4f0ff', cols: ['#c8b8f8', '#f8b8d8', '#b8e0f8', '#f8e0a8'], grid: [1, 5] },
+  { head: '#3aa0d8', bg: '#eef8ff', cols: ['#ffe27a', '#bfe8ff', '#d8f0c8', '#ffd0b0'], grid: [2, 2] },
+  { head: '#4ab070', bg: '#f2fff4', cols: ['#f0a8a8', '#a8d8f0', '#f0d8a0', '#c8a8f0'], grid: [3, 4] },
+];
+function paintApp(o, th) { // the app on the screen
+  o.fillStyle = th.bg; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, SCR.b - SCR.t, 14); o.fill();
+  o.fillStyle = th.head; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, 46, [14, 14, 0, 0]); o.fill();
+  const [nc, nr] = th.grid, W = (SCR.r - SCR.l - 14 * (nc + 1)) / nc, Hh = (SCR.b - SCR.t - 60 - 12 * nr) / nr;
+  for (let r = 0; r < nr; r++) for (let k = 0; k < nc; k++) { const x = SCR.l + 14 + k * (W + 14), y = SCR.t + 58 + r * (Hh + 12); o.fillStyle = th.cols[(r * nc + k) % 4]; o.beginPath(); o.roundRect(x, y, W, Hh, 10); o.fill(); o.fillStyle = 'rgba(255,255,255,0.7)'; o.fillRect(x + 10, y + Hh - 22, Math.min(70, W - 20), 9); o.beginPath(); o.arc(x + (nc === 1 ? 26 : W / 2), y + (nc === 1 ? Hh / 2 : Hh * 0.38), Math.min(18, Hh * 0.28), 0, TAU); o.fill(); }
 }
 function beetle(c, x, y, a, t, ph, sq) {
   c.save(); c.translate(x, y); c.rotate(a); if (sq) c.scale(1.4, 0.35);
@@ -43,7 +49,7 @@ MG.add({
     text: 'The crash meter showed it: the two big beetles caused most of the crashing, and the swarm of ants caused only a little. With only a few squashes, hitting the beetles fixed almost everything.\n\nThis pattern is common: a few causes often make most of the effect. People call it the 80/20 rule, or the Pareto principle, after the economist Vilfredo Pareto. The numbers are rough and change from case to case. The habit is useful anyway: before you start fixing things, find the few big causes and fix those first.',
     note: 'Often a few causes make most of the effect, so find and fix the big ones first.' },
   init(g) {
-    const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.bugs = []; s.hits = L.hits; s.whacks = []; s.amp = 1;
+    const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.v = SK.variant(g, 4); s.bugs = []; s.hits = L.hits; s.whacks = []; s.amp = 1;
     const wb = 80 / L.beetles, wa = 20 / L.ants;
     for (let i = 0; i < L.beetles; i++) s.bugs.push({ big: true, x: SCR.l + 60 + g.rand() * 170, y: SCR.t + 80 + g.rand() * 240, a: g.rand() * TAU, sp: L.sp, w: wb, ph: g.rand() * 6 });
     for (let i = 0; i < L.ants; i++) {
@@ -88,7 +94,7 @@ MG.add({
     c.fillStyle = 'rgba(30,14,30,0.3)'; c.beginPath(); c.roundRect(SCR.l - 10, SCR.t - 22, SCR.r - SCR.l + 28, SCR.b - SCR.t + 50, 30); c.fill();
     c.fillStyle = '#2a2034'; c.beginPath(); c.roundRect(SCR.l - 14, SCR.t - 26, SCR.r - SCR.l + 28, SCR.b - SCR.t + 50, 28); c.fill();
     c.fillStyle = '#4a3a54'; c.beginPath(); c.roundRect(150, SCR.t - 16, 60, 6, 3); c.fill();
-    c.drawImage(g.bake('squashapp', paintApp), 0, 0, 360, 640);
+    c.drawImage(g.bake('squashapp' + s.v, o => paintApp(o, THEMES[s.v])), 0, 0, 360, 640);
     // crash flashes: red glitch bars, more of them the harder it shakes
     if (amp > 0.3 && g.result !== 'win') { const n = Math.round(amp * 4); for (let i = 0; i < n; i++) { const k = (t * 3 + i * 0.37) % 1; if (k < 0.25) { c.fillStyle = 'rgba(255,60,80,0.35)'; c.fillRect(SCR.l, SCR.t + 50 + ((i * 97 + Math.floor(t * 3) * 53) % 290), SCR.r - SCR.l, 10 + (i % 3) * 6); } } }
     // bugs: ants first, then beetles (on level 2 the swarm crawls on top of the beetles)

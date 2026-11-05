@@ -34,7 +34,11 @@
     c.restore();
   }
   const H = { bread: 20, cheese: 13, tomato: 14, H2: 26, O2: 32 };
-  function phase(g) { return PHASES[Math.min(2, g.level)][g.s.ph]; }
+  // four sets of amounts per level, so the leftovers differ: sandwiches, then water, then three-ingredient sandwiches
+  const AMTS = { sandwich2: [{ bread: 8, cheese: 3 }, { bread: 7, cheese: 4 }, { bread: 9, cheese: 3 }, { bread: 6, cheese: 4 }],
+    water: [{ H2: 4, O2: 3 }, { H2: 5, O2: 2 }, { H2: 6, O2: 2 }, { H2: 4, O2: 4 }],
+    sandwich3: [{ bread: 8, cheese: 4, tomato: 3 }, { bread: 6, cheese: 4, tomato: 4 }, { bread: 8, cheese: 3, tomato: 4 }, { bread: 9, cheese: 4, tomato: 4 }] };
+  function phase(g) { const P0 = PHASES[Math.min(2, g.level)][g.s.ph], v = g.s.v || 0; const key = P0.kind === 'water' ? 'water' : Object.keys(P0.recipe).length === 3 ? 'sandwich3' : 'sandwich2'; return { ...P0, piles: AMTS[key][(v + g.s.ph) % 4] }; }
   function startPhase(g) {
     const s = g.s, P0 = phase(g), kinds = Object.keys(P0.piles), xs = PILE_X[kinds.length];
     s.piles = kinds.map((k, i) => ({ kind: k, n: P0.piles[k], x: xs[i], y: 568 }));
@@ -47,7 +51,7 @@
     card: { title: 'What runs out first', kind: 'Chemistry', ref: 'Limiting reactant',
       text: 'Each sandwich takes two slices of bread and one slice of cheese. With eight breads and three cheeses you can make only three sandwiches, because the cheese runs out first. Two breads are left over.\n\nReactions work the same way. Two hydrogen molecules and one oxygen molecule make two water molecules. With four hydrogens and three oxygens you make four waters, and one oxygen is left over. The ingredient that runs out first is called the limiting reactant: it decides how much you can make.',
       note: 'The ingredient that runs out first limits how much product you can make.' },
-    init(g) { const s = g.s; s.ph = 0; s.allMade = 0; s.toppleT = -9; startPhase(g); },
+    init(g) { const s = g.s; s.v = SK.variant(g, 4); s.ph = 0; s.allMade = 0; s.toppleT = -9; startPhase(g); },
     down(g, x, y) {
       const s = g.s; SK.touched(g); if (g.done || s.endT || s.busy) return; const P0 = phase(g);
       const p = s.piles.find(p => Math.abs(x - p.x) < 52 && y > 470); if (!p || p.n <= 0) { if (p) g.sfx('wrong'); return; }

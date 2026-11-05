@@ -7,13 +7,14 @@ const groundY = x => x < SLOPE_X ? GY : GY + (x - SLOPE_X) * 0.62;
 const CURL_HOLD = [1.7, 1.25, 0.95]; // seconds the hedgehog can stay curled, per level
 const FS = 1.35, NOSE = 34 * FS;     // fox scale and how far its nose sits ahead of its feet
 
-function paintWood(o) {
-  const sky = o.createLinearGradient(0, 0, 0, 470); sky.addColorStop(0, '#f39a6a'); sky.addColorStop(0.55, '#f8c58a'); sky.addColorStop(1, '#fbe2b0');
+function paintWood(o, v = 0) {
+  const SK2 = [['#f39a6a', '#f8c58a', '#fbe2b0'], ['#8ac8f0', '#d8ecf0', '#fbe8c0'], ['#c88ab8', '#f0b0a0', '#fbe0b0'], ['#9ad8c8', '#e8f0c8', '#fbecc0']][v];
+  const sky = o.createLinearGradient(0, 0, 0, 470); sky.addColorStop(0, SK2[0]); sky.addColorStop(0.55, SK2[1]); sky.addColorStop(1, SK2[2]);
   o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
   // a low sun glowing between the trees
   const sun = o.createRadialGradient(250, 300, 10, 250, 300, 190); sun.addColorStop(0, 'rgba(255,248,214,0.95)'); sun.addColorStop(0.25, 'rgba(255,230,170,0.55)'); sun.addColorStop(1, 'rgba(255,220,160,0)');
   o.fillStyle = sun; o.fillRect(0, 100, 360, 400);
-  const rnd = P.rng(23);
+  const rnd = P.rng(23 + v * 17);
   // two rows of trunks: far ones pale and hazy, near ones dark plum
   for (const [n, col, w0, a] of [[9, '#d98a6a', 10, 0.55], [5, '#7a3a4a', 22, 0.95]]) {
     for (let i = 0; i < n; i++) {
@@ -87,7 +88,7 @@ MG.add({
     note: 'Body parts that help an animal survive, like a hedgehog\'s spines, are called adaptations.' },
   init(g) {
     const s = g.s, f = 1 + (g.speed - 1) * 0.35, L = Math.min(2, g.level);
-    s.f = f; s.fox = { x: L < 2 ? 34 : 14, ph: 'creep', pt: 0, crouch: 0, flee: 0, wait: 0, faked: L < 2 }; s.curl = 0; s.curlAt = -1; s.used = false;
+    s.v = SK.variant(g, 4); s.f = f; s.fox = { x: L < 2 ? 34 : 14, ph: 'creep', pt: 0, crouch: 0, flee: 0, wait: 0, faked: L < 2 }; s.curl = 0; s.curlAt = -1; s.used = false;
     s.creepV = (L === 0 ? 46 : L === 1 ? 58 : 74) * f;
     s.fakeAt = HX - 30 - 82 - g.rand() * 14; // level 2: where the fox fakes a pounce
     s.pauseAt = [60 + g.rand() * 20, 100 + g.rand() * 20]; s.end = null; s.round = 0; s.rounds = [2, 3, 3][L]; s.roll = null; s.leaves = [];
@@ -134,7 +135,7 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, F = s.fox;
-    c.drawImage(g.bake('body_curl_wood', paintWood), 0, 0, 360, 640);
+    c.drawImage(g.bake('body_curl_wood' + s.v, o => paintWood(o, s.v)), 0, 0, 360, 640);
     // drifting leaves in the light
     for (let i = 0; i < 6; i++) { const x = (i * 71 + t * 22) % 400 - 20, y = 140 + i * 48 + Math.sin(t * 1.5 + i) * 18; c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = ['#e8873a', '#d4573a', '#f0b040'][i % 3]; c.globalAlpha = 0.85; c.beginPath(); c.moveTo(-6, 0); c.quadraticCurveTo(0, -4, 6, 0); c.quadraticCurveTo(0, 4, -6, 0); c.fill(); c.restore(); }
     // the hedgehog (or the tumbling ball)

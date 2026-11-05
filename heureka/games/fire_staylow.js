@@ -33,8 +33,9 @@
       text: 'Smoke from a fire is hot, and hot gas is lighter than the cooler air around it, so it rises. It spreads along the ceiling and fills the room from the top down. The cleanest, coolest air stays near the floor.\n\nSmoke is the most dangerous part of most house fires. It is full of poison gases and makes it hard to see. That is why you get low and crawl to the way out, and leave the building straight away.',
       note: 'Hot smoke rises and fills a room from the ceiling down, so crawl low under it to get out.' },
     init(g) {
-      const s = g.s, n = g.level >= 1 ? 3 : 2, xs = n === 3 ? [64, 140, 214] : [72, 176];
-      s.an = xs.map((x, i) => ({ kind: CAST[i], x, sy: 1, smk: 0, cough: 0, out: 0, ph: i * 1.7 }));
+      const s = g.s, n = g.level >= 1 ? 3 : 2, v = s.v = SK.variant(g, 4), xs = n === 3 ? [[64, 140, 214], [70, 156, 226], [60, 124, 200], [66, 150, 222]][v] : [[72, 176], [92, 210], [66, 150], [80, 196]][v];
+      const cast = [['fox', 'rabbit', 'penguin'], ['penguin', 'fox', 'frog'], ['rabbit', 'frog', 'fox'], ['frog', 'penguin', 'rabbit']][v];
+      s.an = xs.map((x, i) => ({ kind: cast[i], x, sy: 1, smk: 0, cough: 0, out: 0, ph: i * 1.7 }));
       s.cur = null; s.fy = null; s.tx = 0; s.fell = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; let best = null, bd = 90; for (const a of s.an) { if (a.out) continue; const d = Math.abs(a.x - x) + Math.max(0, FLOOR - 150 - y) * 0.5; if (d < bd) { bd = d; best = a; } } s.cur = best; s.fy = y; s.tx = x; },

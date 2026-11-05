@@ -42,7 +42,12 @@
       note: 'A thing floats when the water it pushes aside weighs as much as the thing itself.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.loads = [[[1], [1, 'crate']], [[1], [1, 'crate'], [1, 'crate', 'crate']], [[1, 'crate'], [1, 'crate', 'crate'], [1, 1]]][L].map(a => a.map(k => k === 1 ? 'peng' : k));
+      s.v = SK.variant(g, 4); const c1 = 'crate';
+      s.loads = [
+        [[[1], [1, c1]], [[1], [1, c1], [1, c1, c1]], [[1, c1], [1, c1, c1], [1, 1]]],
+        [[[c1, c1], [1]], [[c1, c1], [1, c1], [1, 1]], [[1, 1], [1, c1], [1, c1, c1]]],
+        [[[1, c1], [1]], [[1, c1], [1], [1, c1, c1]], [[1, c1, c1], [1, 1], [1, c1]]],
+        [[[c1], [1, c1]], [[c1], [1, c1, c1], [1, c1]], [[c1, c1, c1], [1, 1], [1, c1, c1]]]][s.v][L].map(a => a.map(k => k === 1 ? 'peng' : k));
       s.ri = 0; s.w = WMIN; s.drag = null; s.phase = 'shape'; s.pt = 0; s.y = CL.y; s.water = 0; s.sailX = 0; s.sunk = 0; s.board = 0; s.fails = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.phase !== 'shape') return; if (Math.abs(y - CL.y + 30) < 70 && Math.abs(x - CL.x) < 150) s.drag = { x0: x, w0: s.w }; },

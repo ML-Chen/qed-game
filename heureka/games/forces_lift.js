@@ -40,7 +40,7 @@
       note: 'With a lever, a small push over a long distance can lift a heavy load a short distance.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.ks = [[1.4, 2.0], [1.4, 2.0, 2.4], [1.8, 2.2, 2.6]][L]; s.ri = 0;
+      s.v = SK.variant(g, 4); s.ks = [[[1.4, 2.0], [1.4, 2.0, 2.4], [1.8, 2.2, 2.6]], [[1.6, 2.1], [1.5, 2.3, 1.9], [2.0, 2.5, 2.2]], [[1.3, 1.9], [2.0, 1.5, 2.4], [1.9, 2.6, 2.3]], [[2.0, 1.5], [1.7, 2.4, 2.1], [2.4, 2.1, 2.6]]][s.v][L]; s.ri = 0;
       s.px = 150; s.drag = null; s.phase = 'aim'; s.pt = 0; s.ang = 0; s.frog = { x: 17, y: GND - 34 }; s.rockA = 0; s.drop = 1; s.done = [];
       s.angNow = rockDownAng(s.px);
     },

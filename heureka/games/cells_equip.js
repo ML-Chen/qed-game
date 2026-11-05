@@ -17,8 +17,8 @@ const SLOTS = { // where each part settles inside the cell (offsets from the cen
 };
 const inCell = (an, x, y) => an ? ((x - CX) / 120) ** 2 + ((y - CY) / 124) ** 2 < 1.05 : Math.abs(x - CX) < 128 && Math.abs(y - CY) < 138;
 
-function paintPond(o) {
-  const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#bfeee8'); bg.addColorStop(0.5, '#7fd0d4'); bg.addColorStop(1, '#3f98b0');
+function paintPond(o, SUN, v = 0) {
+  const bg = o.createLinearGradient(0, 0, 0, 640); const TT = [['#bfeee8', '#7fd0d4', '#3f98b0'], ['#d8f0c8', '#90d0a8', '#3f9880']][v >> 1]; bg.addColorStop(0, TT[0]); bg.addColorStop(0.5, TT[1]); bg.addColorStop(1, TT[2]);
   o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
   const rnd = P.rng(7);
   // soft caustic light ripples
@@ -30,7 +30,7 @@ function paintPond(o) {
   for (const [x, y, w, h] of [[-50, 150, 80, 150], [330, 200, 90, 160], [-40, 460, 70, 120], [340, 440, 80, 110]]) { o.beginPath(); o.roundRect(x, y, w, h, 24); o.fill(); o.stroke(); }
   // the sun's glow in the corner
   const sg = o.createRadialGradient(SUN[0], SUN[1], 6, SUN[0], SUN[1], 150); sg.addColorStop(0, 'rgba(255,250,200,0.95)'); sg.addColorStop(0.3, 'rgba(255,236,150,0.45)'); sg.addColorStop(1, 'rgba(255,236,150,0)');
-  o.fillStyle = sg; o.fillRect(0, 0, 260, 360);
+  o.fillStyle = sg; o.fillRect(0, 0, 360, 360);
   // the parts' resting shelf: a soft lighter band
   const sh = o.createLinearGradient(0, 486, 0, 610); sh.addColorStop(0, 'rgba(255,255,255,0)'); sh.addColorStop(0.3, 'rgba(255,255,255,0.16)'); sh.addColorStop(1, 'rgba(255,255,255,0.05)');
   o.fillStyle = sh; o.fillRect(0, 486, 360, 124);
@@ -75,6 +75,7 @@ MG.add({
     note: 'A cell stays alive because each of its parts does its own job. Plant cells also have chloroplasts and a wall; animal cells do not.' },
   init(g) {
     const s = g.s, L = LEVELS[Math.min(2, g.level)];
+    s.v = SK.variant(g, 4); s.sun = s.v % 2 ? [316, 164] : [44, 164];
     s.L = L; s.parts = []; const kinds = L.need.concat(L.extra);
     // shuffle the waiting order with g.rand so it changes from game to game
     for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
@@ -114,15 +115,15 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, L = s.L, an = L.animal, alive = s.alive >= 0 ? Math.min(1, (t - s.alive) / 0.5) : 0, lost = g.result === 'fail';
-    c.drawImage(g.bake('cells_equip_pond', paintPond), 0, 0, 360, 640);
+    c.drawImage(g.bake('cells_equip_pond' + s.v, o => paintPond(o, s.sun, s.v)), 0, 0, 360, 640);
     // the sun
-    c.save(); c.translate(SUN[0], SUN[1]); c.rotate(t * 0.3); c.fillStyle = '#ffe36a'; for (let i = 0; i < 10; i++) { c.rotate(Math.PI / 5); c.beginPath(); c.moveTo(18, -4); c.lineTo(30, 0); c.lineTo(18, 4); c.fill(); } c.restore();
-    SK.ball(c, SUN[0], SUN[1], 17, '#ffd23a', { edge: '#e8a020' });
+    c.save(); c.translate(s.sun[0], s.sun[1]); c.rotate(t * 0.3); c.fillStyle = '#ffe36a'; for (let i = 0; i < 10; i++) { c.rotate(Math.PI / 5); c.beginPath(); c.moveTo(18, -4); c.lineTo(30, 0); c.lineTo(18, 4); c.fill(); } c.restore();
+    SK.ball(c, s.sun[0], s.sun[1], 17, '#ffd23a', { edge: '#e8a020' });
     const inn = s.parts.filter(p => p.state === 'in');
     // sunbeams: they reach the cell; a chloroplast inside turns them into sugar
     const chl = inn.filter(p => p.kind === 'chloro');
-    c.save(); c.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { const tx = CX - 40 + i * 60, ty = CY - 40 + i * 30; c.strokeStyle = `rgba(255,240,160,${0.16 + 0.06 * Math.sin(t * 3 + i)})`; c.lineWidth = 16; c.beginPath(); c.moveTo(SUN[0], SUN[1]); c.lineTo(tx, ty); c.stroke(); } c.restore();
-    for (const p of chl) { c.strokeStyle = 'rgba(255,240,150,0.75)'; c.lineWidth = 3; c.setLineDash([8, 8]); c.lineDashOffset = -t * 60; c.beginPath(); c.moveTo(SUN[0], SUN[1]); c.lineTo(p.x, p.y); c.stroke(); c.setLineDash([]);
+    c.save(); c.globalCompositeOperation = 'lighter'; for (let i = 0; i < 3; i++) { const tx = CX - 40 + i * 60, ty = CY - 40 + i * 30; c.strokeStyle = `rgba(255,240,160,${0.16 + 0.06 * Math.sin(t * 3 + i)})`; c.lineWidth = 16; c.beginPath(); c.moveTo(s.sun[0], s.sun[1]); c.lineTo(tx, ty); c.stroke(); } c.restore();
+    for (const p of chl) { c.strokeStyle = 'rgba(255,240,150,0.75)'; c.lineWidth = 3; c.setLineDash([8, 8]); c.lineDashOffset = -t * 60; c.beginPath(); c.moveTo(s.sun[0], s.sun[1]); c.lineTo(p.x, p.y); c.stroke(); c.setLineDash([]);
       for (let i = 0; i < 3; i++) { const k = (t * 0.8 + i / 3 + p.ph) % 1; c.fillStyle = `rgba(255,255,255,${1 - k})`; c.strokeStyle = `rgba(200,150,40,${1 - k})`; c.lineWidth = 1.2; c.beginPath(); c.roundRect(p.x - 4 + Math.sin(k * 9 + i) * 10, p.y + 12 + k * 30, 7, 7, 1.5); c.fill(); c.stroke(); } }
     // the cell: wall and membrane, cytoplasm
     const breathe = 1 + Math.sin(t * 2) * 0.01 + alive * Math.sin(t * 8) * 0.012, vac = inn.some(p => p.kind === 'vacuole') || L.need.indexOf('vacuole') < 0;

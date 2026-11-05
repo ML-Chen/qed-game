@@ -53,8 +53,9 @@
       text: 'Baking soda and vinegar react. Their atoms swap partners and make new substances. One of them is carbon dioxide, a gas. The gas makes the bubbles, and it has to go somewhere, so it blows up the balloon.\n\nThe gas comes only from soda that has reached the vinegar. Let the balloon flop back early and less soda falls in, so less gas is made and the balloon only half fills. Bubbles of a new gas are one sign that a chemical reaction has happened.',
       note: 'In a chemical reaction, atoms rearrange to make new substances. Here the new substance is a gas.' },
     init(g) {
-      const s = g.s, n = g.level >= 1 ? 3 : 2, xs = n === 3 ? [64, 180, 296] : [104, 256], k = n === 3 ? 0.56 : 0.72, cols = ['#e8384a', '#3a8ae8', '#e8a020'];
-      s.b = xs.map((x, i) => { const side = i % 2 ? 1 : -1; return { x, k, side, hang: 2.25 * side, a: 2.25 * side, va: 0, powder: 1, react: 0, made: 0, gas: 0, foam: 0, col: cols[i], ph: i * 2 }; });
+      const s = g.s, n = g.level >= 1 ? 3 : 2, v = s.v = SK.variant(g, 4), xs = n === 3 ? [64, 180, 296] : [[104, 256], [92, 248], [112, 266], [100, 260]][v], k = n === 3 ? 0.56 : 0.72;
+      const PAL = ['#e8384a', '#3a8ae8', '#e8a020', '#3ab070', '#b060d0'], cols = [0, 1, 2].map(i => PAL[(i + v) % 5]), SIDES = [[-1, 1, -1], [1, -1, 1], [-1, -1, 1], [1, 1, -1]][v];
+      s.b = xs.map((x, i) => { const side = SIDES[i]; return { x, k, side, hang: 2.25 * side, a: 2.25 * side, va: 0, powder: 1, react: 0, made: 0, gas: 0, foam: 0, col: cols[i], ph: i * 2 }; });
       s.grab = null;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; let best = null, bd = 60;

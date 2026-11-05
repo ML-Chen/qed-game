@@ -1,4 +1,4 @@
-// SAVE! (business EL-08) — a bike waits in the shop window; a glass jar has a line at the bike's price. Coins pop onto
+// SAVE UP TO BUY IT! (business EL-08) — a prize (bike, kite, guitar or skateboard: a new one each play) waits in the shop window; a glass jar has a line at its price. Coins pop onto
 // the sidewalk one at a time, and each time the fox's candy cart rolls up to grab it. Drag every coin into the jar: the
 // little coins pile up to the line and the bike rolls out to the rabbit. Let the cart grab one and the rabbit gets a
 // lollipop while the bike stays in the window. Level 2: one small treat is allowed, but the line is higher.
@@ -39,6 +39,15 @@ function bike(c, x, y, s, spin) { // a red bike, wheels on y
   c.strokeStyle = '#2a2430'; c.lineWidth = 4; c.beginPath(); c.moveTo(4, -60); c.lineTo(20, -58); c.stroke(); c.fillStyle = '#2a2430'; c.beginPath(); c.ellipse(-14, -54, 9, 3.5, 0, 0, 7); c.fill();
   c.fillStyle = '#fff'; c.globalAlpha = 0.5; c.beginPath(); c.arc(-6, -18, 3, 0, 7); c.fill(); c.restore();
 }
+const PRIZES = ['Bike', 'Kite', 'Guitar', 'Skateboard'];
+function prize(c, kind, x, y, s, spin) { // the thing in the shop window, standing on y
+  if (kind === 'Bike') return bike(c, x, y, s, spin);
+  c.save(); c.translate(x, y); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round';
+  if (kind === 'Kite') { c.rotate(Math.sin(spin * 0.5) * 0.1); c.fillStyle = '#e8566a'; c.strokeStyle = '#7a1a2a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -78); c.lineTo(26, -46); c.lineTo(0, -6); c.lineTo(-26, -46); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#f5c23a'; c.beginPath(); c.moveTo(0, -78); c.lineTo(26, -46); c.lineTo(0, -46); c.closePath(); c.fill(); c.beginPath(); c.moveTo(0, -6); c.lineTo(-26, -46); c.lineTo(0, -46); c.closePath(); c.fill(); c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -6); c.quadraticCurveTo(12, 0, 4, 8); c.quadraticCurveTo(-8, 14, 2, 20); c.stroke(); for (const [bx, by] of [[6, 4], [-2, 14]]) { c.fillStyle = '#5aa8e8'; c.beginPath(); c.moveTo(bx - 5, by - 3); c.lineTo(bx + 5, by + 3); c.lineTo(bx + 5, by - 3); c.lineTo(bx - 5, by + 3); c.closePath(); c.fill(); } }
+  if (kind === 'Guitar') { c.rotate(-0.25); c.fillStyle = '#d8843a'; c.strokeStyle = '#6a3a14'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(0, -16, 20, 16, 0, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.ellipse(0, -40, 15, 12, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#3a1a10'; c.beginPath(); c.arc(0, -26, 6, 0, 7); c.fill(); c.fillStyle = '#6a3a14'; c.fillRect(-4, -96, 8, 56); c.fillRect(-7, -104, 14, 12); c.strokeStyle = '#fff6ea'; c.lineWidth = 0.8; for (let i = -2; i <= 2; i += 2) { c.beginPath(); c.moveTo(i, -100); c.lineTo(i, -12); c.stroke(); } }
+  if (kind === 'Skateboard') { c.fillStyle = '#5aa8e8'; c.strokeStyle = '#1a4a7a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-46, -22); c.quadraticCurveTo(-54, -30, -42, -30); c.lineTo(42, -30); c.quadraticCurveTo(54, -30, 46, -22); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#f5c23a'; c.fillRect(-20, -29, 40, 4); for (const wx of [-30, 30]) { c.fillStyle = '#e8566a'; c.beginPath(); c.arc(wx, -12, 8, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(wx, -12, 3, 0, 7); c.fill(); } }
+  c.restore();
+}
 function lollipop(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 22); c.stroke(); c.fillStyle = '#ff6aa0'; c.beginPath(); c.arc(0, -8, 11, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.beginPath(); for (let a = 0; a < 9; a += 0.3) c.lineTo(Math.cos(a) * a * 1.1, -8 + Math.sin(a) * a * 1.1); c.stroke(); c.restore(); }
 function cart(c, x, y, t, moving) { // the candy cart: striped canopy, lollipop jars, two wheels; its front edge is at x
   c.save(); c.translate(x - 50, y);
@@ -54,12 +63,13 @@ function cart(c, x, y, t, moving) { // the candy cart: striped canopy, lollipop 
   c.restore();
 }
 MG.add({
-  id: 'save', stage: 'money', cmd: 'SAVE COINS FOR THE BIKE!', time: 6, mood: 'bright', winText: 'Saved enough!', failText: 'Spent on candy!', hold: 1.7,
+  id: 'save', stage: 'money', cmd: 'SAVE UP TO BUY IT!', time: 6, mood: 'bright', winText: 'Saved enough!', failText: 'Spent on candy!', hold: 1.7,
   card: { title: 'Saving adds up', kind: 'Money', ref: 'Saving toward a goal',
-    text: 'Each coin on its own is small. Put every one in the jar and the pile grows until it reaches the line, the price of the bike.\n\nSpend the coins as they come, on candy, and the jar never fills. Saving means keeping some money now so you can buy something bigger later.\n\nA goal helps. When you know the price of the thing you want, you can see how close you are, and a small treat now and then can still fit if you keep saving the rest.',
+    text: 'Each coin on its own is small. Put every one in the jar and the pile grows until it reaches the line, the price of the thing you want.\n\nSpend the coins as they come, on candy, and the jar never fills. Saving means keeping some money now so you can buy something bigger later.\n\nA goal helps. When you know the price of the thing you want, you can see how close you are, and a small treat now and then can still fit if you keep saving the rest.',
     note: 'Saving a little each time adds up to something big.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
+    s.prize = PRIZES[SK.variant(g, PRIZES.length)]; // a different thing in the window each play
     s.need = NEED[L]; s.treats = TOTAL_TREATS[L]; s.reach = REACH[L];
     s.saved = 0; s.eaten = 0; s.coin = null; s.next = 0.9; s.k = 0; s.cartX = 100; s.fall = []; s.wonT = 0; s.lolly = 0; s.lollyFly = null; s.happy = 0;
   },
@@ -108,7 +118,7 @@ MG.add({
     const wk = won ? SK.easeInOut((t - s.wonT - 0.15) / 1.0) : 0;
     const bx = SK.lerp(140, 236, wk), by = SK.lerp(322, 452, wk) - Math.sin(wk * Math.PI) * 30, bs = SK.lerp(1.2, 0.9, wk);
     if (wk > 0) { c.save(); c.globalAlpha = 1 - wk * 0.6; c.fillStyle = 'rgba(255,240,190,0.4)'; c.beginPath(); c.roundRect(30, 186, 220, 152, 8); c.fill(); c.restore(); }
-    bike(c, bx, by, bs, wk * 14 + (wk ? 0 : Math.sin(t * 0.8) * 0.2));
+    prize(c, s.prize, bx, by, bs, wk * 14 + (wk ? 0 : Math.sin(t * 0.8) * 0.2));
     if (!wk) { c.save(); c.globalAlpha = 0.3 + 0.2 * Math.sin(t * 3); c.fillStyle = '#fff4c0'; for (let i = 0; i < 3; i++) { const a = t * 1.3 + i * 2.1; c.beginPath(); c.arc(140 + Math.cos(a) * 70, 250 + Math.sin(a * 1.3) * 30, 2.5, 0, 7); c.fill(); } c.restore(); }
     // the jar, its price line with a little bike, and the coins saved so far
     const ly = lineY(s.need);
@@ -122,7 +132,7 @@ MG.add({
     B8.jarFront(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     const full = s.saved >= s.need;
     c.save(); c.strokeStyle = full ? '#5ad07a' : '#e8403a'; c.lineWidth = 4; c.setLineDash([9, 6]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 4, ly); c.lineTo(JAR.x + JAR.w / 2 + 4, ly); c.stroke(); c.restore();
-    c.save(); c.globalAlpha = 0.9; bike(c, JAR.x + 22, ly - 3, 0.36, 0); c.restore();
+    
     // the fox pushing the candy cart
     const cx = s.cartX, moving = k && !k.inJar && !k.gone && cx < k.x - CR - 6;
     if (cx > -150) { SK.animal(c, 'fox', cx - 118, FLOOR + 28, 0.8, { t, pose: moving ? 'walk' : s.lolly ? 'cheer' : 'idle', expr: s.lolly ? 'laugh' : 'happy' }); cart(c, cx, FLOOR + 26, t, moving); }
@@ -135,7 +145,7 @@ MG.add({
     // a lollipop flies from the cart to the rabbit
     if (lf && lk < 1) lollipop(c, SK.lerp(lf.x, 316, lk), SK.lerp(lf.y, 400, lk) - Math.sin(lk * Math.PI) * 60, 1.1);
     // labels: the real names of things
-    SK.tag(c, 'Savings', JAR.x, JAR.y0 - 16, 18); SK.tag(c, 'Bike price', JAR.x, ly - 24, 18, '#fff6ea', full ? 'rgba(40,140,70,0.85)' : 'rgba(190,40,40,0.85)');
+    SK.tag(c, 'Savings', JAR.x, JAR.y0 - 16, 18); SK.tag(c, s.prize + ' price', JAR.x, ly - 24, 18, '#fff6ea', full ? 'rgba(40,140,70,0.85)' : 'rgba(190,40,40,0.85)');
     if (s.cartX > 60) SK.tag(c, 'Candy cart', Math.max(64, s.cartX - 50), FLOOR - 112, 18);
     // guidance: drag the coin into the jar
     if (k && !k.inJar && !k.gone && k.onFloor) SK.demo(g, c, 'drag', [k.x, k.y], [JAR.x, JAR.y0 - 20], { arc: 60, delay: 0.6 });

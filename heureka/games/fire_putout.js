@@ -66,10 +66,10 @@
       note: 'Match the extinguisher to what is burning. Never use water on electrics or cooking oil.' },
     init(g) {
       const s = g.s, L2 = g.level >= 2;
-      const fk = L2 ? ['bin', 'toaster', 'fryer', 'metal'] : ['bin', 'toaster', 'fryer'], fx = L2 ? [46, 134, 224, 312] : [66, 180, 294];
+      const v = s.v = SK.variant(g, 4), fk = (L2 ? [['bin', 'toaster', 'fryer', 'metal'], ['fryer', 'metal', 'bin', 'toaster'], ['toaster', 'bin', 'metal', 'fryer'], ['metal', 'fryer', 'toaster', 'bin']] : [['bin', 'toaster', 'fryer'], ['fryer', 'bin', 'toaster'], ['toaster', 'fryer', 'bin'], ['bin', 'fryer', 'toaster']])[v], fx = L2 ? [46, 134, 224, 312] : [66, 180, 294];
       s.fires = fk.map((k, i) => ({ kind: k, x: fx[i], y: BENCH - 30, k: 1, out: false }));
       const ek = L2 ? ['water', 'co2', 'wet', 'metal'] : ['water', 'co2', 'wet'];
-      if (g.level >= 1) for (let i = ek.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [ek[i], ek[j]] = [ek[j], ek[i]]; }
+      for (let i = ek.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [ek[i], ek[j]] = [ek[j], ek[i]]; }
       const ex = L2 ? [40, 104, 168, 232] : [52, 128, 204];
       s.ext = ek.map((k, i) => ({ kind: k, x: ex[i], y: 548, hx: ex[i], hy: 548, tilt: 0 }));
       s.spray = null; s.flare = 0;

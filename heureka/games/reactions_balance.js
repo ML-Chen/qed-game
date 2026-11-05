@@ -49,8 +49,12 @@
       note: 'In a reaction, atoms rearrange but none are lost, so a balanced equation has the same atoms on both sides.' },
     init(g) {
       const s = g.s, L2 = g.level >= 2;
-      s.L = [{ kind: L2 ? 'C3H8' : 'CH4', base: true }, { kind: 'O2', base: true }];
-      s.R = [{ kind: 'CO2', base: true }, { kind: 'H2O', base: true }];
+      // four starting set-ups (how many fuel molecules, and what is already on each pan); every one needs at least two molecules added
+      const v = s.v = SK.variant(g, 4), START = L2 ? [[1, 1, 1, 1], [1, 2, 1, 1], [1, 1, 2, 1], [1, 1, 1, 2]][v] : [[1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 2], [1, 1, 1, 1]][v];
+      const B = k => ({ kind: k, base: true }), rep = (k, n) => Array.from({ length: n }, () => B(k));
+      s.L = [...rep(L2 ? 'C3H8' : 'CH4', START[0]), ...rep('O2', START[1])];
+      s.R = [...rep('CO2', START[2]), ...rep('H2O', START[3])];
+      if (v === 3 && !L2) s.flip = true; // the same reaction with the trays the other way round
       s.trays = [{ kind: 'O2', side: 'L', x: 62, y: 546 }];
       if (g.level >= 1) s.trays.push({ kind: 'CO2', side: 'R', x: 236, y: 546 });
       s.trays.push({ kind: 'H2O', side: 'R', x: g.level >= 1 ? 310 : 296, y: 546 });

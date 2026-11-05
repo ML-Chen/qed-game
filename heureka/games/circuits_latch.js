@@ -38,7 +38,8 @@ MG.add({
   init(g) {
     const s = g.s, C = CFG[Math.min(2, g.level)]; s.C = C;
     // the code: never all the same; the data stream: random bits, with every needed bit coming round often
-    s.code = []; for (let i = 0; i < C.n; i++) s.code.push(g.rand() < 0.5 ? 1 : 0); if (s.code.every(b => b === s.code[0])) s.code[1] = 1 - s.code[0];
+    const CODES = C.n === 4 ? [[1, 0, 1, 1], [0, 1, 1, 0], [1, 1, 0, 1], [0, 0, 1, 1], [1, 0, 0, 1], [0, 1, 0, 1]] : [[1, 0, 1, 1, 0], [0, 1, 1, 0, 1], [1, 1, 0, 0, 1], [0, 1, 0, 1, 1], [1, 0, 0, 1, 0], [0, 0, 1, 1, 0]];
+    s.v = SK.variant(g, CODES.length); s.code = CODES[s.v].slice(); // a different lock code from the last play
     s.bits = []; let last = 0; for (let i = 0; i < 80; i++) { let b = g.rand() < 0.5 ? 1 : 0; if (i > 1 && b === last && s.bits[i - 2] === last && g.rand() < 0.7) b = 1 - b; s.bits.push(b); last = b; }
     s.cells = []; s.q = 0; s.tick = 0; s.bad = 0; s.fly = null; s.taps = 0;
   },

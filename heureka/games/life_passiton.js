@@ -10,8 +10,10 @@
     [{ k: 'sun', x: 64, y: 176 }, { k: 'leaf', x: 286, y: 262 }, { k: 'caterpillar', x: 186, y: 352 }, { k: 'bird', x: 84, y: 520 }],
   ];
   const MUSH = [{ k: 'mushroom', x: 186, y: 556 }, { k: 'mushroom', x: 210, y: 560 }];
-  const NAME = { sun: 'Sun', grass: 'Grass', rabbit: 'Rabbit', fox: 'Fox', leaf: 'Leaf', caterpillar: 'Caterpillar', bird: 'Bird', mushroom: 'Mushroom' };
-  function chain(g, i) { const c = CHAINS[i].map(n => ({ ...n })); if (g.level >= 2) c.push({ ...MUSH[i] }); return c; }
+  const NAME = { owl: 'Owl', frog: 'Frog', sun: 'Sun', grass: 'Grass', rabbit: 'Rabbit', fox: 'Fox', leaf: 'Leaf', caterpillar: 'Caterpillar', bird: 'Bird', mushroom: 'Mushroom' };
+  // four variants: which predator ends each chain, and whether the scene is mirrored
+  const PRED = [['fox', 'bird'], ['owl', 'frog'], ['fox', 'frog'], ['owl', 'bird']];
+  function chain(g, i) { const v = g.s.v || 0, c = CHAINS[i].map(n => ({ ...n })); c[3].k = PRED[v][i]; if (g.level >= 2) c.push({ ...MUSH[i] }); if (v % 2) for (const n of c) if (n.k !== 'sun') n.x = 360 - n.x; return c; }
   function paintBg(o) {
     P.sky(o, 360, 640, ['#7ec8ea', '#c0e6f2', '#fff4dc'], null);
     P.hills(o, 360, 300, 26, '#a8d870', '#80b850', { seed: 6 });
@@ -28,7 +30,7 @@
     if (n.k === 'grass') { const col = P.mix('#a8a058', '#3aa030', k), h = 30 + k * 18; c.fillStyle = col; for (let i = 0; i < 9; i++) { const bx = x - 28 + i * 7, lean = Math.sin(t * 2 + i) * 3 + (1 - k) * (i - 4) * 2; c.beginPath(); c.moveTo(bx - 3, y + 14); c.quadraticCurveTo(bx + lean, y + 14 - h * 0.6, bx + lean * 2, y + 14 - h * (0.7 + 0.3 * B3.hash(i))); c.lineTo(bx + 3, y + 14); c.fill(); } }
     if (n.k === 'leaf') { c.save(); c.translate(x, y); c.rotate(-0.4 + Math.sin(t * 1.5) * 0.06); c.fillStyle = P.mix('#b8c060', '#3aa030', k); c.strokeStyle = '#2a6a20'; c.lineWidth = 2; c.beginPath(); c.moveTo(-24, 0); c.quadraticCurveTo(0, -18 - k * 4, 24, 0); c.quadraticCurveTo(0, 18 + k * 4, -24, 0); c.fill(); c.stroke(); c.beginPath(); c.moveTo(-24, 0); c.lineTo(22, 0); c.stroke(); c.restore(); }
     if (n.k === 'caterpillar') { const s = 1 + k * 0.3; for (let i = 0; i < 6; i++) { const bx = x - 24 * s + i * 9 * s, by = y + Math.sin(t * 6 + i) * 2 - (fed && i % 2 ? 2 : 0); c.fillStyle = i === 5 ? '#4aa030' : i % 2 ? '#7ac850' : '#6ab840'; c.beginPath(); c.arc(bx, by, 8 * s, 0, 7); c.fill(); } c.fillStyle = '#2a1424'; c.beginPath(); c.arc(x + 23 * s, y - 2, 2.2, 0, 7); c.fill(); }
-    if (n.k === 'rabbit' || n.k === 'fox' || n.k === 'bird') { const nap = n.k === 'fox' && fed && t - fed > 0.8;
+    if (n.k === 'rabbit' || n.k === 'fox' || n.k === 'bird' || n.k === 'owl' || n.k === 'frog') { const nap = n.k === 'fox' && fed && t - fed > 0.8;
       SK.animal(c, n.k, x, y + 26 - (fed && !nap ? Math.abs(Math.sin((t - fed) * 8)) * 10 * Math.max(0, 1 - (t - fed)) : 0), n.k === 'bird' ? 1.1 : 0.95, { t, facing: n.k === 'fox' ? -1 : 1, pose: fed ? (nap ? 'idle' : 'hop') : 'idle', expr: nap ? 'laugh' : fed ? 'laugh' : n.sniff && t - n.sniff < 1 ? 'sad' : 'wow' });
       if (nap) { c.fillStyle = '#fff6ea'; c.font = '900 18px Nunito, sans-serif'; c.textAlign = 'center'; for (let i = 0; i < 2; i++) { const q = (t * 0.6 + i * 0.5) % 1; c.globalAlpha = 1 - q; c.fillText('z', x + 26 + q * 14, y - 30 - q * 20); } c.globalAlpha = 1; } }
     if (n.k === 'mushroom') { const s = 0.7 + k * 0.4; c.fillStyle = '#7a5030'; c.beginPath(); c.ellipse(x, y + 10, 34, 7, 0, 0, 7); c.fill(); c.fillStyle = '#f4e8d0'; c.fillRect(x - 5 * s, y - 14 * s + 10, 10 * s, 14 * s); c.fillStyle = '#c87a4a'; c.beginPath(); c.ellipse(x, y - 14 * s + 10, 18 * s, 12 * s, 0, Math.PI, 0); c.fill(); if (fed) { c.fillStyle = 'rgba(90,60,30,0.6)'; for (let i = 0; i < 8; i++) c.fillRect(x - 30 + B3.hash(i) * 60, y + 6 + B3.hash(i * 2) * 6, 3, 3); } }
@@ -38,7 +40,7 @@
     card: { title: 'Energy flows along a food chain', kind: 'Biology', ref: 'Food chains and energy flow',
       text: 'Almost all the energy for life on land starts in the Sun. Plants catch sunlight and use it to make food. A rabbit gets that energy by eating the grass, and a fox gets it by eating the rabbit. That line of who eats whom is a food chain.\n\nAt every step most of the energy is used up just living: moving, breathing and keeping warm. Only about a tenth is passed on, so there is less and less to share. A rabbit cannot eat sunlight; it needs the plant in between. Mushrooms and other decomposers break down leftovers and return them to the soil.',
       note: 'Energy passes from the Sun to plants to plant-eaters to meat-eaters, and a lot is used up at each step.' },
-    init(g) { const s = g.s; s.ci = 0; s.ch = chain(g, 0); s.at = 0; s.dot = { x: s.ch[0].x, y: s.ch[0].y }; s.drag = false; s.fed = {}; s.next = 0; s.r = 14; },
+    init(g) { const s = g.s; s.v = SK.variant(g, 4); s.ci = 0; s.ch = chain(g, 0); s.at = 0; s.dot = { x: s.ch[0].x, y: s.ch[0].y }; s.drag = false; s.fed = {}; s.next = 0; s.r = 14; },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.next) return; if (SK.dist(x, y, s.dot.x, s.dot.y) < 50) { s.drag = true; s.dot.x = x; s.dot.y = y; } },
     move(g, x, y) {
       const s = g.s; if (!s.drag || g.done) return; s.dot.x = x; s.dot.y = y;

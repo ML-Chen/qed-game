@@ -9,6 +9,9 @@ const CHARTS = [
   { v: [31, 33, 30], fl: 28.5, top: 34, col: ['#f0b030', '#8ac850', '#b070d0'] },
   { v: [81, 84], fl: 78, top: 86, col: ['#4ab0a0', '#e870a0'] },
   { v: [62, 60, 64], fl: 58, top: 66, col: ['#5a9ad8', '#f08a3a', '#8ac850'] },
+  { v: [45, 47], fl: 43.5, top: 49, col: ['#d8a030', '#6a7ad8'] },
+  { v: [71, 68, 70], fl: 66, top: 73, col: ['#e85a7a', '#4ab0d0', '#a0c040'] },
+  { v: [93, 96], fl: 91, top: 98, col: ['#8a6ad8', '#f0a040'] },
 ];
 function paintRoom(o) {
   const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#3a4a7a'); bg.addColorStop(1, '#6a5a8a'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -30,7 +33,7 @@ MG.add({
     text: 'A bar chart shows each amount as the length of a bar. If the axis starts at zero, a bar twice as long means twice as much.\n\nThese charts started their axis near the top of the values, so a small difference looked huge: one bar looked three times taller than the other when it was only a little bigger. Dragging the bottom down to zero showed the true sizes.\n\nWhen you read a chart, check where the axis starts. Line charts are different: they show change over time, and they don\'t always need to start at zero.',
     note: 'A bar chart whose axis doesn\'t start at zero makes small differences look huge.' },
   init(g) {
-    const s = g.s; s.list = CHARTS.slice(0, g.level >= 2 ? 4 : 3); s.i = 0; s.F = F0; s.ok = 0; s.tol = g.level >= 2 ? 7 : 12; s.slide = 0; s.calm = 1;
+    const s = g.s; const v = SK.variant(g, 4), pool = SK.shuffled(g, CHARTS.filter((_, i) => i !== v)); s.v = v; s.list = [CHARTS[v], ...pool].slice(0, g.level >= 2 ? 4 : 3); s.i = 0; s.F = F0; s.ok = 0; s.tol = g.level >= 2 ? 7 : 12; s.slide = 0; s.calm = 1;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.ok) return; if (Math.abs(y - s.F) < 40 && x > 30 && x < 330) { s.drag = { y0: y, F0: s.F }; g.sfx('click'); } },
   move(g, x, y) {

@@ -60,13 +60,14 @@ MG.add({
     note: "An amplifier's output can't go past its power rails, so too much gain slices the wave's tops flat and makes it buzz." },
   init(g) {
     const s = g.s, L = CFG[Math.min(2, g.level)];
-    s.L = L; s.kn = B6.knob(180, AMP.y + 52, 30, 0.06); s.fz = 0; s.song = 0; s.songT0 = 0; s.swap = 0; s.nextStrum = 0.3; s.strum = 0; s.sleep = 0; s.bang = 0;
+    s.L = L; s.kn = B6.knob(180, AMP.y + 52, 30, 0.06); s.v = SK.variant(g, 6); s.songs = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]][s.v].map(i => SONGS[i]); // which instrument plays first, second, third
+    s.fz = 0; s.song = 0; s.songT0 = 0; s.swap = 0; s.nextStrum = 0.3; s.strum = 0; s.sleep = 0; s.bang = 0;
   },
   down(g, x, y) { SK.touched(g); if (!g.done) B6.knobDown(g, g.s.kn, x, y); },
   move(g, x, y) { if (!g.done) B6.knobMove(g, g.s.kn, x, y); },
   up(g) { B6.knobUp(g.s.kn); },
   update(g, dt) {
-    const s = g.s, L = s.L, gain = 1 + (L.gmax - 1) * s.kn.k, so = SONGS[s.song], peak = gain * L.A * so.A, fuzzy = s.swap <= 0 && peak >= L.R * 1.3;
+    const s = g.s, L = s.L, gain = 1 + (L.gmax - 1) * s.kn.k, so = s.songs[s.song], peak = gain * L.A * so.A, fuzzy = s.swap <= 0 && peak >= L.R * 1.3;
     s.gain = gain; s.fuzzy = fuzzy; s.strum = Math.max(0, s.strum - dt * 3);
     if (g.t >= s.nextStrum) { s.nextStrum += STRUM; s.strum = 1; if (!g.done || g.result === 'win') { if (fuzzy) { g.sfx('buzz', { pitch: 0.55, vol: 0.7 }); g.sfx('harp', { pitch: 0.5, vol: 0.5 }); } else g.sfx('harp', { pitch: 0.5, vol: 0.35 + 0.4 * Math.min(1, peak / L.R) }); } }
     if (g.done) { if (g.result === 'win') s.bang += dt; else s.sleep = Math.min(1, s.sleep + dt); return; }
@@ -81,7 +82,7 @@ MG.add({
     }
   },
   draw(g, c) {
-    const s = g.s, L = s.L, t = g.t, gain = s.gain || 1, so = SONGS[s.song];
+    const s = g.s, L = s.L, t = g.t, gain = s.gain || 1, so = s.songs[s.song];
     c.drawImage(g.bake('fuzz_club', paintClub), 0, 0, 360, 640);
     B6.motes(c, t, 18, 7, [0, 0, 360, 470], 'rgba(255,220,255,0.8)');
     // rails: the power supply's top and bottom, as glowing bars

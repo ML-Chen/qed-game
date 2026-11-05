@@ -54,8 +54,9 @@
       note: 'The harder you push a ball, the faster it starts and the farther it rolls before friction stops it.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      let hs = L === 0 ? [200, 286] : [196, 248, 300];
-      if (L) { hs = hs.map(x => x + Math.round((g.rand() - 0.5) * 16)); for (let i = 2; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [hs[i], hs[j]] = [hs[j], hs[i]]; } }
+      s.v = SK.variant(g, 4); // four hole layouts, never the same twice in a row
+      let hs = [[[200, 286], [196, 248, 300]], [[244, 192], [300, 200, 250]], [[286, 220], [250, 300, 196]], [[212, 270], [230, 290, 190]]][s.v][L === 0 ? 0 : 1];
+      if (L) hs = hs.map(x => x + Math.round((g.rand() - 0.5) * 12));
       s.holes = hs; s.hi = 0; s.cap = [300, 255, 215][L]; s.L = { pond: L === 2 }; s.wind = 0; s.hitT = 0; s.next = 0; s.bits = []; newBall(s);
     },
     down(g) { const s = g.s; if (g.done || s.phase !== 'ready' || g.t < s.next) { SK.touched(g); return; } SK.holdStart(g); s.phase = 'wind'; g.sfx('stretch', { vol: 0.4 }); },

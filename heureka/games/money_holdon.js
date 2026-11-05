@@ -39,7 +39,10 @@ MG.add({
     note: 'Selling in a crash turns a dip on paper into a real loss.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
-    s.T = TRACKS[L].map(([x, y], i) => [x, y + (i > 0 && i < TRACKS[L].length - 1 ? (g.rand() - 0.5) * 16 : 0)]);
+    // four ride shapes: the dip comes earlier or later, or runs deeper (a new one each play)
+    s.vr = SK.variant(g, 4); const dx = [0, -24, 22, 0][s.vr], deep = [1, 1, 1, 1.22][s.vr], n = TRACKS[L].length, y0 = TRACKS[L][0][1];
+    s.T = TRACKS[L].map(([x, y], i) => i === 0 || i === n - 1 ? [x, y] : [x + dx * Math.sin(Math.PI * i / (n - 1)), y0 + (y - y0) * (y > y0 ? deep : 1) + (g.rand() - 0.5) * 16]);
+    s.riders = [['fox', 'rabbit'], ['duck', 'frog'], ['penguin', 'hedgehog'], ['beaver', 'bird']][s.vr];
     s.v = SPEED[L]; s.x = 30; s.go = false; s.off = 0; s.offX = 0; s.ptr = null; s.startY = trackY(s.T, 30);
   },
   val(g, y) { return Math.max(1, Math.round(10 * (600 - y) / (600 - g.s.startY))); }, // the coins your money is worth at this height (10 at the start)
@@ -71,7 +74,7 @@ MG.add({
     // the Sell platform at the bottom of the dip: riders who jumped off wave you down
     let lowX = 18; for (let x = 18; x < 340; x += 2) if (trackY(T, x) > trackY(T, lowX)) lowX = x; const lowY = trackY(T, lowX);
     c.fillStyle = '#c8b8a0'; c.fillRect(lowX - 56, lowY + 30, 112, 9); c.fillStyle = '#a89880'; c.fillRect(lowX - 50, lowY + 39, 6, 600); c.fillRect(lowX + 44, lowY + 39, 6, 600);
-    for (const [dx, kind] of [[-34, 'fox'], [34, 'rabbit']]) SK.animal(c, kind, lowX + dx, lowY + 30, 0.6, { t, phase: dx, pose: won ? 'sad' : 'wave', expr: won ? 'sad' : 'happy', facing: dx < 0 ? 1 : -1 });
+    for (const [dx, kind] of [[-34, s.riders[0]], [34, s.riders[1]]]) SK.animal(c, kind, lowX + dx, lowY + 30, 0.6, { t, phase: dx, pose: won ? 'sad' : 'wave', expr: won ? 'sad' : 'happy', facing: dx < 0 ? 1 : -1 });
     if (won || s.x > lowX + 40) SK.tag(c, 'They sold for ' + this.val(g, lowY), lowX, lowY + 58, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); else SK.tag(c, 'Sell', lowX, lowY + 58, 18);
     const rattle = s.go && Math.abs(s.x - lowX) < 40 ? Math.sin(t * 50) * 2.5 : 0;
     cart(c, p.x + rattle, p.y - 6, p.ang, t, !s.off, s.go);

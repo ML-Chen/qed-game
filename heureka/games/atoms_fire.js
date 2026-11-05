@@ -4,9 +4,10 @@
 // others. From level 1 the ant strolls along the wall with a leaf; while it covers one slit, electrons land in one plain
 // blob instead, and those dots don't help. Level 2: more dots to build in the time, so fire faster.
 (() => {
-  const GUN = [180, 566], WALL = 410, SLITS = [160, 200], SCR = { t: 140, b: 282, l: 20, r: 340 }, FR = 36, ENV = 128;
+  const GUN = [180, 566], WALL = 410, SLITS = [160, 200], SCR = { t: 140, b: 282, l: 20, r: 340 }, ENV = 128;
+  const VAR = [{ fr: 36, col: '#9affc0', rgb: '90,255,160' }, { fr: 30, col: '#ffd27a', rgb: '255,200,90' }, { fr: 44, col: '#9ad8ff', rgb: '110,190,255' }, { fr: 40, col: '#ff9ad8', rgb: '255,120,200' }];
   const sinc2 = v => v === 0 ? 1 : Math.pow(Math.sin(v) / v, 2);
-  const two = u => Math.pow(Math.cos(Math.PI * u / FR), 2) * sinc2(Math.PI * u / ENV), one = (u, sx) => sinc2(Math.PI * (u - (sx - 180)) / (ENV * 0.9));
+  const two = (u, fr = 36) => Math.pow(Math.cos(Math.PI * u / fr), 2) * sinc2(Math.PI * u / ENV), one = (u, sx) => sinc2(Math.PI * (u - (sx - 180)) / (ENV * 0.9));
   function sample(g, f) { for (let i = 0; i < 200; i++) { const u = (g.rand() * 2 - 1) * 160; if (g.rand() < f(u)) return u; } return 0; }
   function antX(s, t) { if (!s.ant) return -99; const per = 5.2, q = ((t - 1.6) % per + per) % per; return t < 1.6 ? -60 : -40 + q * 85; } // walks left to right, again and again
   function paintLab(o) {
@@ -28,7 +29,7 @@
       text: 'Each electron lands on the screen as one tiny dot, like a particle. But where it lands is random, and after many electrons the dots form bright and dark stripes.\n\nStripes like these happen when waves pass through two slits: the waves add up in some places and cancel out in others. So each electron travels like a wave through both slits at once, then lands in one spot. Cover one slit and the stripes vanish: the dots pile into one plain blob. This is the heart of quantum physics.',
       note: 'Single electrons land as dots, but together they build stripes, as waves through both slits would.' },
     init(g) {
-      const s = g.s, lv = Math.min(2, g.level); s.need = [24, 30, 40][lv]; s.ant = lv >= 1;
+      const s = g.s, lv = Math.min(2, g.level); s.need = [24, 30, 40][lv]; s.ant = lv >= 1; s.V = VAR[SK.variant(g, 4)];
       s.dots = []; s.fly = []; s.good = 0; s.flashT = -9; s.lastFire = -9;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; s.fly.push({ t0: g.t }); s.lastFire = g.t; g.sfx('click'); },
@@ -38,7 +39,7 @@
         const age = g.t - e.t0;
         if (!e.through && age > 0.22) { // it reaches the wall: through both slits, or only the open one
           e.through = true; const ax = antX(s, g.t), cov = SLITS.findIndex(sx => Math.abs(ax - sx) < 16);
-          e.cov = cov; e.u = cov < 0 ? sample(g, two) : sample(g, u => one(u, SLITS[1 - cov]));
+          e.cov = cov; e.u = cov < 0 ? sample(g, u => two(u, s.V.fr)) : sample(g, u => one(u, SLITS[1 - cov]));
         }
         if (!e.done && age > 0.46) { e.done = true; const d = { x: 180 + e.u, y: SCR.t + 8 + g.rand() * (SCR.b - SCR.t - 16), t: g.t, blob: e.cov >= 0 }; s.dots.push(d); if (!d.blob) s.good++; else g.sfx('wrong'); g.sfx('pop'); }
       }
@@ -50,9 +51,9 @@
       c.drawImage(g.bake('fire_lab', paintLab), 0, 0, 360, 640);
       // the stripes, appearing as the dots pile up
       const k = Math.min(1, s.good / s.need);
-      if (k > 0.25) { c.save(); c.globalCompositeOperation = 'lighter'; for (let x = SCR.l; x < SCR.r; x += 2) { const v = two(x - 180); c.fillStyle = `rgba(90,255,160,${0.35 * v * (k - 0.25) / 0.75})`; c.fillRect(x, SCR.t, 2, SCR.b - SCR.t); } c.restore(); }
+      if (k > 0.25) { c.save(); c.globalCompositeOperation = 'lighter'; for (let x = SCR.l; x < SCR.r; x += 2) { const v = two(x - 180, s.V.fr); c.fillStyle = `rgba(${s.V.rgb},${0.35 * v * (k - 0.25) / 0.75})`; c.fillRect(x, SCR.t, 2, SCR.b - SCR.t); } c.restore(); }
       // every dot that has landed
-      for (const d of s.dots) { const age = t - d.t; c.fillStyle = d.blob ? '#ff9a6a' : '#9affc0'; c.beginPath(); c.arc(d.x, d.y, age < 0.25 ? 6 - age * 10 : 3.4, 0, 7); c.fill(); if (age < 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(160,255,200,${1 - age / 0.3})`; c.beginPath(); c.arc(d.x, d.y, 10, 0, 7); c.fill(); c.restore(); } }
+      for (const d of s.dots) { const age = t - d.t; c.fillStyle = d.blob ? '#ff9a6a' : s.V.col; c.beginPath(); c.arc(d.x, d.y, age < 0.25 ? 6 - age * 10 : 3.4, 0, 7); c.fill(); if (age < 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(160,255,200,${1 - age / 0.3})`; c.beginPath(); c.arc(d.x, d.y, 10, 0, 7); c.fill(); c.restore(); } }
       // electrons in flight: a dot up to the wall, then a wave spreading from the open slit(s)
       for (const e of s.fly) {
         const age = t - e.t0;

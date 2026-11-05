@@ -32,7 +32,8 @@ MG.add({
     note: 'A muscle pulls on a bone close to a joint, so a short pull swings the hand a long way, but it takes a big force.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
-    s.list = [[0, 1, 2], [0, 2, 3], [2, 3, 4, 3]][L].map(i => SNACKS[i]); s.i = 0; s.th = 0; s.tgt = 0; s.held = null; s.has = true; s.ate = -9; s.push = -9; s.trail = [];
+    s.v = SK.variant(g, 4); const pool = SK.shuffled(g, SNACKS.slice(0, 4 + (L ? 1 : 0))); pool.unshift(...pool.splice(s.v % pool.length, 1));
+    s.list = pool.slice(0, L >= 2 ? 4 : 3).map((q, i) => ({ k: q.k, w: L === 0 ? Math.min(1.3, q.w) : L === 1 ? Math.min(2, q.w) : Math.max(1.6, q.w) })); s.i = 0; s.th = 0; s.tgt = 0; s.held = null; s.has = true; s.ate = -9; s.push = -9; s.trail = [];
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const m = [(SH[0] + ins(s.th)[0]) / 2 + 22, (SH[1] + ins(s.th)[1]) / 2]; if (SK.dist(x, y, m[0], m[1]) < 90 || (x < 180 && y > 230 && y < 470)) s.held = { y0: y, th0: s.th }; },
   move(g, x, y) {

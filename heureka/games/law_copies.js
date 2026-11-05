@@ -4,8 +4,12 @@
 // swipe one who drew its own comic and the owl judge drops in and puts it back, because nobody owns the idea of a
 // space duck. Copyright protects how an idea is drawn, not the idea.
 const TAU = Math.PI * 2, PAGE = { x: 52, y: 150, w: 256, h: 96 }, EASEL = { x: 180, y: 410 }, EW = 270, EH = 100;
-const SEQ = [['trace', 'own', 'trace'], ['own', 'trace', 'trace', 'own'], ['trace', 'own', 'recolor', 'trace']];
-const WHO = ['rabbit', 'fox', 'hedgehog', 'bird'];
+// four running orders per level (one per variant); the artists are shuffled too
+const SEQ = [
+  [['trace', 'own', 'trace'], ['own', 'trace', 'trace'], ['trace', 'trace', 'own'], ['own', 'trace', 'own', 'trace']],
+  [['own', 'trace', 'trace', 'own'], ['trace', 'own', 'trace', 'trace'], ['trace', 'trace', 'own', 'trace'], ['own', 'own', 'trace', 'trace']],
+  [['trace', 'own', 'recolor', 'trace'], ['recolor', 'trace', 'own', 'trace'], ['own', 'recolor', 'trace', 'own'], ['trace', 'recolor', 'own', 'recolor']]];
+const WHO = ['rabbit', 'fox', 'hedgehog', 'bird', 'beaver', 'turtle'];
 const PAL = { orig: ['#e84a4a', '#f6c445', '#4a8ae8', '#1a1a4a'], recolor: ['#4ab070', '#e870c0', '#f08a3a', '#3a1a2a'] };
 function duck(c, x, y, s, col = '#f6d040') { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = col; c.beginPath(); c.ellipse(0, 4, 9, 7, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(5, -5, 5.5, 0, TAU); c.fill(); c.fillStyle = '#f08a2a'; c.beginPath(); c.moveTo(9, -5); c.lineTo(15, -3); c.lineTo(9, -1); c.closePath(); c.fill(); c.fillStyle = '#1a1020'; c.beginPath(); c.arc(6, -6, 1.3, 0, TAU); c.fill(); c.restore(); }
 // a three-panel comic. 'orig' and 'trace' are identical; 'recolor' is the same drawing in other colours; 'own' is a
@@ -49,7 +53,7 @@ MG.add({
     text: 'Copyright protects a creative work, such as a comic, from the moment it is written down or drawn. The frog owns its own pictures and the way it put them together. Nobody owns the idea of a duck in space.\n\nThe copiers traced the frog\'s pages, and changing only the colours still copies the drawing. The other artists drew their own space-duck comics, which the law allows. Copyright also has exceptions, such as fair use for things like reviews and teaching.\n\nGeneral information about US law, not legal advice.',
     note: 'Copyright protects the way an idea is expressed, not the idea itself.' },
   init(g) {
-    const s = g.s; s.seq = SEQ[Math.min(2, g.level)].map((k, i) => ({ kind: k, who: WHO[(i + g.level) % 4], st: 'wait' })); s.i = 0; s.at = 0.4;
+    const s = g.s; const who = SK.shuffled(g, WHO); s.seq = SEQ[Math.min(2, g.level)][SK.variant(g, 4)].map((k, i) => ({ kind: k, who: who[i], st: 'wait' })); s.i = 0; s.at = 0.4;
     s.dwell = SK.clamp(0.2 * g.dur, 1.6, 4.2); s.kept = [];
   },
   down(g, x, y) { const s = g.s; SK.touched(g); s.sw = { x, y, t: g.t }; },

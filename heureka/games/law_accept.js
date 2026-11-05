@@ -4,7 +4,10 @@
 // and your friend the duck leans in with a pencil and crosses out a coin: that changed card is a counteroffer, it flips
 // round to face the fox, and the fox keeps its goods.
 const TAU = Math.PI * 2, CY = 456, SY = 368;
-const OFFERS = [{ item: 'bike', coins: 3, x: 132 }, { item: 'kite', coins: 2, x: 232 }, { item: 'ball', coins: 4, x: 160 }];
+const ITEMS = ['bike', 'kite', 'ball', 'boat'], SPOTS = [112, 162, 212, 248];
+// this play's three offers: a different first item from last play (SK.variant), the rest shuffled, and each card's
+// price and spot on the table differ from the one before
+function makeOffers(g) { const v = SK.variant(g, 4), rest = SK.shuffled(g, ITEMS.filter((_, i) => i !== v)), spots = SK.shuffled(g, SPOTS); let last = 0; return [ITEMS[v], rest[0], rest[1]].map((item, i) => { let coins = 2 + Math.floor(g.rand() * 3); if (coins === last) coins = coins === 4 ? 2 : coins + 1; last = coins; return { item, coins, x: spots[i] }; }); }
 function paintTable(o) {
   // a cosy market tent: striped canvas behind the seller, lantern light, and a wooden table seen from the player's side
   const bg = o.createLinearGradient(0, 0, 0, 360); bg.addColorStop(0, '#5a2a4a'); bg.addColorStop(1, '#a8506a'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -29,6 +32,7 @@ function goods(c, kind, x, y, s = 1) {
   if (kind === 'bike') return bike(c, x, y, s);
   c.save(); c.translate(x, y); c.scale(s, s);
   if (kind === 'kite') { c.fillStyle = '#e84a6a'; c.beginPath(); c.moveTo(0, -24); c.lineTo(16, -4); c.lineTo(0, 16); c.lineTo(-16, -4); c.closePath(); c.fill(); c.fillStyle = '#f6c445'; c.beginPath(); c.moveTo(0, -24); c.lineTo(16, -4); c.lineTo(0, -4); c.closePath(); c.fill(); c.beginPath(); c.moveTo(0, 16); c.lineTo(-16, -4); c.lineTo(0, -4); c.closePath(); c.fill(); c.strokeStyle = '#5a3a5a'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 16); c.quadraticCurveTo(8, 22, 2, 28); c.quadraticCurveTo(-6, 32, 2, 36); c.stroke(); }
+  else if (kind === 'boat') { c.fillStyle = '#c8402a'; c.beginPath(); c.moveTo(-20, 4); c.lineTo(20, 4); c.lineTo(12, 15); c.lineTo(-12, 15); c.closePath(); c.fill(); c.strokeStyle = '#6a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, 4); c.lineTo(0, -22); c.stroke(); c.fillStyle = '#fff2c8'; c.beginPath(); c.moveTo(2, -20); c.lineTo(17, 0); c.lineTo(2, 0); c.closePath(); c.fill(); c.fillStyle = '#4aa0d8'; c.beginPath(); c.moveTo(-2, -16); c.lineTo(-14, 0); c.lineTo(-2, 0); c.closePath(); c.fill(); }
   else { const gr = c.createRadialGradient(-5, -6, 2, 0, 0, 16); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#d8e8f8'); c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 16, 0, TAU); c.fill(); for (const [col, a] of [['#e84a4a', 0], ['#4a8ae8', 2.1], ['#f6c445', 4.2]]) { c.fillStyle = col; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 16, a, a + 1.05); c.closePath(); c.fill(); } c.strokeStyle = '#5a4a6a'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, 16, 0, TAU); c.stroke(); }
   c.restore();
 }
@@ -66,16 +70,16 @@ function stampTool(c, x, y, press) { // a wooden paw stamp, pressed down by `pre
 MG.add({
   id: 'acceptoffer', stage: 'law', cmd: 'STAMP YES ON EACH OFFER!', time: 6, mood: 'desert', winText: 'Deal done!', failText: 'Counteroffer!',
   card: { title: 'Say yes to the offer as it stands', kind: 'Law', ref: 'Offer and acceptance; counteroffers',
-    text: 'An offer is a promise that waits for a yes. When you accept it exactly as it stands, a contract forms: here, a bike for three coins. Each side gives something of value, which the law calls consideration.\n\nA reply that changes the deal doesn\'t accept it. Crossing out a coin made a counteroffer: it turns down the first offer and makes a new one, which the seller is free to refuse. Until you accept, the seller can also take an offer back.\n\nGeneral information about US law, not legal advice.',
+    text: 'An offer is a promise that waits for a yes. When you accept it exactly as it stands, a contract forms: for example, a bike for three coins. Each side gives something of value, which the law calls consideration.\n\nA reply that changes the deal doesn\'t accept it. Crossing out a coin made a counteroffer: it turns down the first offer and makes a new one, which the seller is free to refuse. Until you accept, the seller can also take an offer back.\n\nGeneral information about US law, not legal advice.',
     note: 'A contract forms when an offer is accepted as it stands; changing the terms makes a counteroffer instead.' },
   init(g) {
     const s = g.s; s.i = 0; s.ph = 'slide'; s.at = 0.15; s.sx = 180; s.sa = -1.2; s.drop = 0; s.prints = []; s.done = [];
     s.spd = [1.9, 2.3, 3.1][Math.min(2, g.level)]; s.wait = SK.clamp(0.3 * g.dur, 2.0, 6);
-    s.card = { x: OFFERS[0].x, y: 300, rot: 0 };
+    s.offers = makeOffers(g); s.card = { x: s.offers[0].x, y: 300, rot: 0 };
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.drop || s.ph === 'seal' || s.ph === 'haggle') return; s.drop = g.t; s.dx = s.sx; g.sfx('whoosh'); },
   update(g, dt) {
-    const s = g.s, t = g.t, of = OFFERS[s.i];
+    const s = g.s, t = g.t, of = s.offers[s.i];
     if (!s.drop) { s.sa += dt * s.spd; s.sx = 180 + 128 * Math.sin(s.sa); }
     // the stamp lands 0.18 s after the tap, then lifts again
     if (s.drop && !s.hit && t - s.drop >= 0.18) {
@@ -91,15 +95,15 @@ MG.add({
     else if (s.ph === 'haggle') { if (e > 0.25 && !s.scrib) { s.scrib = true; g.sfx('sweep'); } if (e > 0.75) { const k = SK.easeInOut((e - 0.75) / 0.5); s.card.rot = Math.PI * k; s.card.y = SK.lerp(CY, 360, k); } if (e > 1.4 && !g.done) { g.sfx('laugh'); g.fail(); } }
     else if (s.ph === 'seal') {
       if (e > 0.35 && !s.sealed) { s.sealed = true; g.sfx('magic'); g.sfx('coin'); }
-      if (e > 0.85) { s.done.push({ i: s.i, t }); s.i++; s.sealed = false; if (s.i >= OFFERS.length) { s.ph = 'end'; if (!g.done) { g.win(); g.sfx('cheer'); } } else { s.ph = 'slide'; s.at = t; s.card = { x: OFFERS[s.i].x, y: 300, rot: 0 }; g.sfx('swoosh'); } }
+      if (e > 0.85) { s.done.push({ i: s.i, t }); s.i++; s.sealed = false; if (s.i >= s.offers.length) { s.ph = 'end'; if (!g.done) { g.win(); g.sfx('cheer'); } } else { s.ph = 'slide'; s.at = t; s.card = { x: s.offers[s.i].x, y: 300, rot: 0 }; g.sfx('swoosh'); } }
     }
   },
   draw(g, c) {
-    const s = g.s, t = g.t, e = t - s.at, of = OFFERS[s.i];
+    const s = g.s, t = g.t, e = t - s.at, of = s.offers[s.i];
     c.drawImage(g.bake('acceptoffer', paintTable), 0, 0, 360, 640);
     const won = g.result === 'win', lost = g.result === 'fail';
     // goods still for sale wait on the fox's side; bought ones sit on yours
-    OFFERS.forEach((o, i) => { const d = s.done.find(q => q.i === i), mine = i < s.i || (i === s.i && s.ph === 'seal' && s.sealed); const k = d ? SK.clamp((t - d.t + 0.5) / 0.5, 0, 1) : mine ? SK.clamp((e - 0.35) / 0.5, 0, 1) : 0; if (i === s.i && lost) return; goods(c, o.item, SK.lerp(40 + i * 26, 50 + i * 60, SK.easeInOut(k)), SK.lerp(312 - i * 6, 590, SK.easeInOut(k)), o.item === 'bike' ? 1.2 : 1.1); });
+    s.offers.forEach((o, i) => { const d = s.done.find(q => q.i === i), mine = i < s.i || (i === s.i && s.ph === 'seal' && s.sealed); const k = d ? SK.clamp((t - d.t + 0.5) / 0.5, 0, 1) : mine ? SK.clamp((e - 0.35) / 0.5, 0, 1) : 0; if (i === s.i && lost) return; goods(c, o.item, SK.lerp(40 + i * 26, 50 + i * 60, SK.easeInOut(k)), SK.lerp(312 - i * 6, 590, SK.easeInOut(k)), o.item === 'bike' ? 1.2 : 1.1); });
     SK.animal(c, 'fox', 190, 336, 1.45, { t, pose: won ? 'cheer' : lost ? 'wave' : 'idle', expr: won || lost ? 'laugh' : 'happy', noShadow: true });
     // sealed scrolls pile up at the side
     s.done.forEach((d, k) => scroll(c, 236, 566 - k * 26, Math.min(1, (t - d.t) / 0.2) * 0.55, t));
@@ -132,7 +136,7 @@ MG.add({
   },
   // the bot taps when the swinging stamp is about to pass over the card
   auto(g, dt, synth) {
-    const s = g.s, of = OFFERS[s.i]; if (!of || g.done || s.drop || (s.ph !== 'wait' && s.ph !== 'slide') || g.t < 1.0 || s.ph === 'slide' && g.t - s.at < 0.35) return;
+    const s = g.s, of = s.offers[s.i]; if (!of || g.done || s.drop || (s.ph !== 'wait' && s.ph !== 'slide') || g.t < 1.0 || s.ph === 'slide' && g.t - s.at < 0.35) return;
     if (Math.abs(s.sx - s.card.x) < 22) synth('down', 180, 560), synth('up', 180, 560);
   },
 });

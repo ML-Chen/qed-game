@@ -5,7 +5,7 @@
 // Level 2: boil it — a second stall at 100 °C, while particles escape as steam.
 // Heat amounts keep the real ratios: warming ice 20 °C ≈ 10, melting ≈ 80, warming water 100 °C ≈ 100, boiling ≈ 540.
 (() => {
-  const B = { l: 96, r: 252, t: 262, b: 498 }, TH = { x: 300, t: 236, b: 492 }, BTN = [62, 584], COLS = 6, ROWS = 5, PR = 9;
+  const B = { l: 96, r: 252, t: 262, b: 498 }, TH = { x: 300, t: 236, b: 492 }, BTN = [62, 584], PR = 9;
   const tY = T => SK.lerp(TH.b - 14, TH.t + 10, (T + 30) / 140);
   function paintLab(o) {
     const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#5a9ad0'); bg.addColorStop(0.6, '#a8d4ee'); bg.addColorStop(1, '#e8f4fa'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -26,15 +26,16 @@
       text: 'In ice, the particles are held in neat rows. Heating makes them jiggle faster, so the ice gets warmer. At 0 °C the heat goes into breaking particles out of their rows instead, so the thermometer stops rising until all the ice has melted. Melting ice takes about as much heat as warming the water from 0 to 80 °C.\n\nBoiling works the same way. At 100 °C the heat goes into setting particles free as steam, and the temperature stays at 100 °C until the water has boiled away.',
       note: 'While ice melts or water boils, the heat breaks particles free, so the temperature stops rising.' },
     init(g) {
-      const s = g.s, lv = Math.min(2, g.level); s.goals = [['melt', 'melt'], ['melt', 'melt'], ['melt', 'boil']][lv]; s.starts = [[-20, -40], [-30, -20], [-20, -30]][lv]; s.round = 0;
+      const s = g.s, lv = Math.min(2, g.level); s.goals = [['melt', 'melt'], ['melt', 'melt'], ['melt', 'boil']][lv]; s.v = SK.variant(g, 4); s.starts = [[-20, -40], [-35, -15], [-25, -45], [-10, -30]][s.v]; s.round = 0;
       s.rate = lv >= 2 ? 75 : 40; s.heat = false; this.fill(g);
     },
     fill(g) { // a fresh beaker of ice for each round
       const s = g.s; s.boil = s.goals[s.round] === 'boil'; s.T0 = s.starts[s.round]; s.Q = 0; s.offT = -9; s.okT = 0; s.born = g.t;
-      s.cells = []; const x0 = (B.l + B.r) / 2 - (COLS - 1) * PR, y0 = B.b - 14 - (ROWS - 1) * PR * 2;
-      for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) s.cells.push({ hx: x0 + c * PR * 2 + (r % 2 ? 4 : -4), hy: y0 + r * PR * 2, free: 0, gas: 0, ph: g.rand() * 6, vx: 0, vy: 0 });
+      [s.cols, s.rows] = [[6, 5], [7, 4], [5, 6], [8, 3]][(s.v + s.round) % 4];
+      s.cells = []; const x0 = (B.l + B.r) / 2 - (s.cols - 1) * PR, y0 = B.b - 14 - (s.rows - 1) * PR * 2;
+      for (let r = 0; r < s.rows; r++) for (let c = 0; c < s.cols; c++) s.cells.push({ hx: x0 + c * PR * 2 + (r % 2 ? 4 : -4), hy: y0 + r * PR * 2, free: 0, gas: 0, ph: g.rand() * 6, vx: 0, vy: 0 });
       // the outside particles break free first
-      const cx = (B.l + B.r) / 2, cy = y0 + (ROWS - 1) * PR; s.cells.forEach(q => { q.ord = -Math.hypot((q.hx - cx) * 0.8, q.hy - cy) + g.rand() * 8; }); const ord = s.cells.slice().sort((a, b) => a.ord - b.ord); ord.forEach((q, i) => { q.k = i / ord.length; });
+      const cx = (B.l + B.r) / 2, cy = y0 + (s.rows - 1) * PR; s.cells.forEach(q => { q.ord = -Math.hypot((q.hx - cx) * 0.8, q.hy - cy) + g.rand() * 8; }); const ord = s.cells.slice().sort((a, b) => a.ord - b.ord); ord.forEach((q, i) => { q.k = i / ord.length; });
       s.cells.forEach((q, i) => { q.x = q.hx; q.y = q.hy; q.gk = (i * 7 % 30) / 30; });
     },
     down(g) { const s = g.s; SK.holdStart(g); if (s.okT) return; s.heat = true; g.sfx('fire'); },
@@ -51,7 +52,7 @@
           const m = Math.hypot(q.vx, q.vy); if (m > sp) { q.vx *= sp / m; q.vy *= sp / m; }
           if (!q.gas && s.vap > 0.05 + q.gk * 0.4) { q.gas = 1; q.vy = -260 - g.rand() * 120; g.sfx('bubble'); }
           q.x += q.vx * dt; q.y += q.vy * dt;
-          if (!q.gas) { const top = B.b - 14 - (ROWS - 1) * PR * 2 - 6; if (q.x < B.l + 14) { q.x = B.l + 14; q.vx = Math.abs(q.vx); } if (q.x > B.r - 14) { q.x = B.r - 14; q.vx = -Math.abs(q.vx); } if (q.y > B.b - 12) { q.y = B.b - 12; q.vy = -Math.abs(q.vy); } if (q.y < top) { q.y = top; q.vy = Math.abs(q.vy); } }
+          if (!q.gas) { const top = B.b - 14 - (s.rows - 1) * PR * 2 - 6; if (q.x < B.l + 14) { q.x = B.l + 14; q.vx = Math.abs(q.vx); } if (q.x > B.r - 14) { q.x = B.r - 14; q.vx = -Math.abs(q.vx); } if (q.y > B.b - 12) { q.y = B.b - 12; q.vy = -Math.abs(q.vy); } if (q.y < top) { q.y = top; q.vy = Math.abs(q.vy); } }
           else q.vy -= 200 * dt;
         }
       }

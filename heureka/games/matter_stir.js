@@ -29,7 +29,7 @@
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
       s.grains = []; for (let i = 0; i < 60; i++) s.grains.push(makeGrain(g, 'sugar')); if (lv >= 1) for (let i = 0; i < 22; i++) s.grains.push(makeGrain(g, 'sand'));
-      s.cold = lv >= 2; s.temp = s.cold ? 0.4 : 1; s.heaps = [2, 2, 3][lv]; s.round = 0; s.pourT = -9; s.om = 0; s.dir = 1; s.spoon = null; s.lastA = null; s.doneT = 0; s.mag = 0;
+      s.tint = [['#6ab4e4', '#9ad0ee'], ['#c8904a', '#e0b878'], ['#d8d060', '#f0ea9a'], ['#d87ab0', '#eaa8cc']][SK.variant(g, 4)]; s.cold = lv >= 2; s.temp = s.cold ? 0.4 : 1; s.heaps = [2, 2, 3][lv]; s.round = 0; s.pourT = -9; s.om = 0; s.dir = 1; s.spoon = null; s.lastA = null; s.doneT = 0; s.mag = 0;
       s.ice = s.cold ? [[150, 0.8], [204, 1], [178, 0.7]].map(([x, k]) => ({ x, k })) : [];
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (x > G.l - 20 && x < G.r + 20 && y > G.top - 30 && y < G.bot + 10) { s.spoon = [x, y]; s.lastA = Math.atan2(y - MID[1], x - MID[0]); } },
@@ -65,7 +65,7 @@
       if (s.cold) { c.fillStyle = '#5a4a5a'; c.beginPath(); c.roundRect(G.l - 6, G.bot + 2, G.r - G.l + 12, 18, 6); c.fill(); for (let i = 0; i < 5; i++) { c.fillStyle = `rgba(255,${120 + 60 * Math.sin(t * 3 + i)},60,${0.5 + 0.4 * warm})`; c.beginPath(); c.arc(G.l + 20 + i * 32, G.bot + 11, 4, 0, 7); c.fill(); } }
       SK.shadow(c, G.cx, G.bot + (s.cold ? 20 : 2), 96, 12, 0.18);
       // the water: cold blue warming to clear, with a dip in the middle as it swirls
-      const dip = W * 26, wc = P.mix('#6ab4e4', '#9ad0ee', warm), wtop = WTOP;
+      const dip = W * 26, wc = P.mix(s.tint[0], s.tint[1], warm), wtop = WTOP;
       c.save(); c.beginPath(); c.moveTo(G.l + 8, wtop); c.quadraticCurveTo(G.cx, wtop + dip * 2, G.r - 8, wtop); c.lineTo(G.r - 14, G.bot - 6); c.quadraticCurveTo(G.cx, G.bot + 4, G.l + 14, G.bot - 6); c.closePath();
       const wg = c.createLinearGradient(0, wtop, 0, G.bot); wg.addColorStop(0, P.rgba(wc, 0.55)); wg.addColorStop(1, P.rgba(P.shade(wc, -0.15), 0.75)); c.fillStyle = wg; c.fill(); c.clip();
       // swirl streaks

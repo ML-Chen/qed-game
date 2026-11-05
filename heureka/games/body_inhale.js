@@ -74,7 +74,7 @@ MG.add({
     text: 'Your lungs have no muscles of their own to pull in air. Under them sits the diaphragm, a dome-shaped sheet of muscle.\n\nWhen you breathe in, the diaphragm tightens and pulls down, and muscles between your ribs lift your chest outward. The space inside your chest gets bigger, so the air pressure in your lungs drops below the pressure of the air outside. Air rushes in through your nose and mouth to fill the space.\n\nWhen the diaphragm relaxes, it springs back up, the space shrinks, and air is pushed out.',
     note: 'Pulling the diaphragm down makes more room in your chest, so air flows into your lungs.' },
   init(g) {
-    const s = g.s; s.ay = apexOf(REST); s.ayRest = apexOf(REST); s.fill = 0.25; s.air = []; s.cheeks = 0; s.held = false; s.full = -1;
+    const s = g.s; s.v = SK.variant(g, 4); s.ay = apexOf(REST); s.ayRest = apexOf(REST); s.fill = 0.25; s.air = []; s.cheeks = 0; s.held = false; s.full = -1;
     s.candles = Array.from({ length: [4, 6, 8][Math.min(2, g.level)] }, () => ({ lit: 1 })); s.blow = 0; s.vol = 0; s.outThis = 0; s.pushed = -1;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (Math.abs(y - s.ay) < 70 && x > 90 && x < 270) { s.held = true; s.grabDy = s.ay - y; } },
@@ -107,9 +107,9 @@ MG.add({
     c.drawImage(g.bake('body_inhale_room', paintRoom), 0, 0, 360, 640);
     // the cake (level 2)
     if (s.candles.length) { const n = s.candles.length;
-      c.fillStyle = '#fff0f4'; c.strokeStyle = '#c86a8a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(240, 276, 100, 40, 8); c.fill(); c.stroke();
-      c.fillStyle = '#ff9ab8'; c.beginPath(); c.roundRect(240, 276, 100, 12, 6); c.fill(); c.fillStyle = '#e8d0b0'; c.fillRect(230, 314, 120, 6);
-      for (const [i, cd] of s.candles.entries()) { const [x, y] = candleXY(i, n); c.fillStyle = ['#7ad0ff', '#ffd25a', '#9ae07a', '#ff7a8a'][i % 4]; c.fillRect(x - 3, y - 4, 6, 280 - y + 4); if (cd.lit > 0.05) { const f = cd.lit, w = Math.sin(t * 20 + i) * 1.5 - s.blow * 6; c.fillStyle = '#ffb030'; c.beginPath(); c.ellipse(x + w, y - 12, 4.5 * f, 9 * f, w * 0.06, 0, 7); c.fill(); c.fillStyle = '#fff4a0'; c.beginPath(); c.ellipse(x + w, y - 10, 2.2 * f, 5 * f, 0, 0, 7); c.fill(); } else { c.strokeStyle = 'rgba(120,110,120,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 6); c.quadraticCurveTo(x + 6, y - 18, x, y - 30 - (t % 1) * 6); c.stroke(); } }
+      const TH = [['#fff0f4', '#ff9ab8', '#c86a8a'], ['#f4e0c0', '#8a5a3a', '#6a4024'], ['#f0fff0', '#7ad08a', '#3a8a4a'], ['#f0f4ff', '#8aa8ff', '#4a5aa8']][s.v]; c.fillStyle = TH[0]; c.strokeStyle = TH[2]; c.lineWidth = 2.5; c.beginPath(); c.roundRect(240, 276, 100, 40, 8); c.fill(); c.stroke();
+      c.fillStyle = TH[1]; c.beginPath(); c.roundRect(240, 276, 100, 12, 6); c.fill(); c.fillStyle = '#e8d0b0'; c.fillRect(230, 314, 120, 6);
+      for (const [i, cd] of s.candles.entries()) { const [x, y] = candleXY(i, n); c.fillStyle = ['#7ad0ff', '#ffd25a', '#9ae07a', '#ff7a8a'][(i + s.v) % 4]; c.fillRect(x - 3, y - 4, 6, 280 - y + 4); if (cd.lit > 0.05) { const f = cd.lit, w = Math.sin(t * 20 + i) * 1.5 - s.blow * 6; c.fillStyle = '#ffb030'; c.beginPath(); c.ellipse(x + w, y - 12, 4.5 * f, 9 * f, w * 0.06, 0, 7); c.fill(); c.fillStyle = '#fff4a0'; c.beginPath(); c.ellipse(x + w, y - 10, 2.2 * f, 5 * f, 0, 0, 7); c.fill(); } else { c.strokeStyle = 'rgba(120,110,120,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 6); c.quadraticCurveTo(x + 6, y - 18, x, y - 30 - (t % 1) * 6); c.stroke(); } }
     }
     bunny(c, t, s.fill, s.ay, s.cheeks, won, lost);
     // air: dots stream in through the nose, down the windpipe into the lungs (or back out)

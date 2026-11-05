@@ -42,7 +42,7 @@
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level); s.fus = lv >= 2;
-      s.starts = [[[180, 540], [292, 544]], [[292, 544], [150, 530], [214, 548]], [[292, 544], [150, 530]]][lv]; s.round = 0; s.start = s.starts[0]; s.born = -9;
+      s.starts = [[[[180, 540], [292, 544]], [[292, 544], [180, 540]], [[214, 548], [150, 530]], [[150, 530], [292, 544]]], [[[292, 544], [150, 530], [214, 548]], [[180, 540], [292, 544], [150, 530]], [[214, 548], [292, 544], [180, 540]], [[150, 530], [214, 548], [292, 544]]], [[[292, 544], [150, 530]], [[214, 548], [180, 540]], [[150, 530], [292, 544]], [[180, 540], [214, 548]]]][lv][SK.variant(g, 4)]; s.round = 0; s.start = s.starts[0]; s.born = -9;
       s.n = { x: s.start[0], y: s.start[1], vx: 0, vy: 0, r: s.fus ? 16 : 9, st: 'ready', alpha: 1 };
       s.big = s.fus ? sunflower(3, 9.5) : sunflower(30, 27); s.bigR = s.fus ? 19 : 36; s.br = s.fus ? 9 : 6.5;
       s.proj = s.fus ? sunflower(2, 7) : null;

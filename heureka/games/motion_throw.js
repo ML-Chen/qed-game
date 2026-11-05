@@ -8,7 +8,7 @@
   const C = { x: 180, y: 360 }, R = 92, GM = 8.2e7, BR = 8, KV = 3.7, LOST = 178;
   const PEAKS = [{ a: -Math.PI / 2, h: 30 }, { a: Math.PI, h: 26 }, { a: 0.35, h: 20 }];
   const surf = th => { let r = R; for (const p of PEAKS) { let d = Math.atan2(Math.sin(th - p.a), Math.cos(th - p.a)); r += p.h * Math.exp(-d * d / 0.05); } return r; };
-  const ORDER = [[0, 1], [0, 1], [0, 1, 2]];
+  const ORDERS = [[[0, 1], [0, 1], [0, 1, 2]], [[1, 0], [1, 2], [1, 0, 2]], [[2, 0], [2, 1], [2, 0, 1]], [[0, 2], [0, 2], [0, 2, 1]]];
   function handOf(s) { const p = PEAKS[s.order[Math.min(s.k, s.order.length - 1)]], r0 = R + p.h + 30; return { x: C.x + Math.cos(p.a) * r0, y: C.y + Math.sin(p.a) * r0, r0, a: p.a }; }
   function paintSpace(o) {
     const bg = o.createRadialGradient(180, 340, 40, 180, 340, 460); bg.addColorStop(0, '#2a2a6a'); bg.addColorStop(0.6, '#141838'); bg.addColorStop(1, '#0a0c22'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -35,7 +35,7 @@
       note: 'A thing in orbit is falling the whole time, but it moves sideways fast enough to keep missing the ground.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.order = ORDER[L]; s.k = 0; s.ball = null; s.trail = []; s.marks = []; s.drag = null; s.bonkT = -9; s.next = 0; s.hopT = -9; s.lostT = -9; s.fx = null; s.orbits = 0;
+      s.v = SK.variant(g, 4); s.order = ORDERS[s.v][L]; s.k = 0; s.ball = null; s.trail = []; s.marks = []; s.drag = null; s.bonkT = -9; s.next = 0; s.hopT = -9; s.lostT = -9; s.fx = null; s.orbits = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.ball || g.t < s.next) return; const h = handOf(s); if (SK.dist(x, y, h.x, h.y) < 70) s.drag = { x, y, x0: x, y0: y }; },
     move(g, x, y) { const s = g.s; if (s.drag) { s.drag.x = x; s.drag.y = y; } },

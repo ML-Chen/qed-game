@@ -42,7 +42,7 @@
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
       s.steps = L === 0 ? 2 : 3; s.step = 0; s.back = L === 0; s.w = [92, 62, 50][L];
-      s.B = { x: L === 2 ? 288 + Math.round((g.rand() - 0.5) * 16) : 292, w: s.w }; s.need = 3;
+      s.v = SK.variant(g, 4); s.bandCol = ['#e8503a', '#3a7ae8', '#3aa050', '#d88a1a'][s.v]; s.B = { x: [292, 272, 304, 282][s.v] + (L === 2 ? Math.round((g.rand() - 0.5) * 12) : 0), w: s.w }; s.need = 3;
       s.amp = 0; s.ph = 0; s.pull = null; s.grains = []; s.got = 0; s.skin = 0; s.mute = -9; s.lastP = -9; s.peck = -9;
     },
     down(g, x, y) {
@@ -78,9 +78,9 @@
       c.drawImage(g.bake('pluck_room', paintRoom), 0, 0, 360, 640);
       // the band: pulled into a V while you hold it, a shaking blur after you let go
       c.save(); c.lineCap = 'round';
-      if (s.pull) { c.strokeStyle = '#e8503a'; c.lineWidth = 7; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.lineTo(BAND.x + s.pull.d, s.pull.y); c.lineTo(BAND.x, BAND.y1); c.stroke(); }
-      else if (s.amp > 0) { const a = s.amp * 46; for (let i = 0; i < 4; i++) { const k = Math.sin(s.ph + i * 1.6); c.strokeStyle = `rgba(232,80,58,${0.35 + (i === 0 ? 0.5 : 0)})`; c.lineWidth = 6; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.quadraticCurveTo(BAND.x + a * k * 2, (BAND.y0 + BAND.y1) / 2, BAND.x, BAND.y1); c.stroke(); } }
-      else { c.strokeStyle = '#e8503a'; c.lineWidth = 7; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.lineTo(BAND.x, BAND.y1); c.stroke(); }
+      if (s.pull) { c.strokeStyle = s.bandCol; c.lineWidth = 7; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.lineTo(BAND.x + s.pull.d, s.pull.y); c.lineTo(BAND.x, BAND.y1); c.stroke(); }
+      else if (s.amp > 0) { const a = s.amp * 46; for (let i = 0; i < 4; i++) { const k = Math.sin(s.ph + i * 1.6); c.strokeStyle = s.bandCol; c.globalAlpha = 0.35 + (i === 0 ? 0.5 : 0); c.lineWidth = 6; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.quadraticCurveTo(BAND.x + a * k * 2, (BAND.y0 + BAND.y1) / 2, BAND.x, BAND.y1); c.stroke(); } c.globalAlpha = 1; }
+      else { c.strokeStyle = s.bandCol; c.lineWidth = 7; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.lineTo(BAND.x, BAND.y1); c.stroke(); }
       c.restore();
       // the shaking air between band and drum
       if (s.amp > 0.04) { c.save(); c.lineCap = 'round'; const a0 = Math.atan2(DRUM.y - 380, DRUM.x - BAND.x); for (let i = 0; i < 5; i++) { const q = (t * 2.2 + i / 5) % 1, r = 24 + q * 120; c.strokeStyle = `rgba(255,255,255,${(1 - q * 0.6) * Math.min(1, s.amp * 1.8)})`; c.lineWidth = 5; c.beginPath(); c.arc(BAND.x + 10, 380, r, a0 - 0.55, a0 + 0.55); c.stroke(); c.strokeStyle = `rgba(232,80,58,${(1 - q) * Math.min(0.6, s.amp)})`; c.lineWidth = 2; c.beginPath(); c.arc(BAND.x + 10, 380, r + 4, a0 - 0.45, a0 + 0.45); c.stroke(); } c.restore(); }

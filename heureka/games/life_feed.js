@@ -8,8 +8,11 @@
   const LIVING = { puppy: 'snack', sapling: 'water', mushroom: 'water', seed: 'water' };
   function cast(g) {
     const L = g.level;
-    const kinds = L === 0 ? ['puppy', 'rock', 'sapling', null, 'robot'] : L === 1 ? ['puppy', 'mushroom', 'sapling', 'rock', 'robot'] : ['puppy', 'mushroom', 'seed', 'rock', 'fire'];
-    if (L >= 1) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+    const v = g.s.v = SK.variant(g, 4);
+    const base = L === 0 ? [['puppy', 'rock', 'sapling', 'robot'], ['puppy', 'robot', 'mushroom', 'rock'], ['sapling', 'rock', 'mushroom', 'robot'], ['mushroom', 'puppy', 'robot', 'rock']][v]
+      : L === 1 ? [['puppy', 'mushroom', 'sapling', 'rock', 'robot'], ['sapling', 'seed', 'puppy', 'robot', 'rock'], ['mushroom', 'puppy', 'seed', 'rock', 'robot'], ['puppy', 'sapling', 'mushroom', 'robot', 'rock']][v]
+      : [['puppy', 'mushroom', 'seed', 'rock', 'fire'], ['sapling', 'seed', 'puppy', 'fire', 'robot'], ['mushroom', 'sapling', 'seed', 'rock', 'fire'], ['puppy', 'seed', 'mushroom', 'fire', 'rock']][v];
+    const kinds = SK.shuffled(g, base); if (kinds.length === 4) kinds.splice(3, 0, null);
     return kinds.map((k, i) => k && { kind: k, x: SLOTS[i][0], y: SLOTS[i][1], fed: 0, wet: 0, crumbs: 0 }).filter(Boolean);
   }
   function paintBg(o) {

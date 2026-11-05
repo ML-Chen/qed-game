@@ -31,7 +31,7 @@
       note: 'Small pushes at a thing\'s own rhythm add up to a big motion. This is resonance.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.th = 0.34; s.w = 0; s.gain = [0.15, 0.13, 0.12][L]; s.cue = L < 2; s.pushT = -9; s.badT = -9; s.lastTurn = -9; s.rang = 0; s.miss = -9; s.pushes = 0;
+      s.v = SK.variant(g, 4); s.rider = ['rabbit', 'frog', 'duck', 'hedgehog'][s.v]; s.aw = [0.74, 0.7, 0.78, 0.72][s.v]; s.th = 0.34; s.w = 0; s.gain = [0.15, 0.13, 0.12][L]; s.cue = L < 2; s.pushT = -9; s.badT = -9; s.lastTurn = -9; s.rang = 0; s.miss = -9; s.pushes = 0;
     },
     down(g) {
       const s = g.s; SK.touched(g); if (g.done || g.t - s.pushT < 0.35) return; s.pushT = g.t;
@@ -44,14 +44,14 @@
       const s = g.s, n = 6, h = dt / n, w0 = s.w;
       for (let i = 0; i < n; i++) { s.w += (-W0 * W0 * Math.sin(s.th) - 0.06 * s.w) * h; s.th += s.w * h; }
       if (s.th < 0 && w0 < 0 && s.w >= 0) s.lastTurn = g.t; // the swing just turned round at the fox
-      if (!g.done && s.th >= A_WIN - 0.01) { s.rang = g.t; g.sfx('bell'); g.sfx('cheer'); const b = seat(A_WIN); g.burst(b.x - 10, b.y - 70, ['#ffd45a', '#ffffff', '#ff8ab0'], 26, 220); g.win(); }
+      if (!g.done && s.th >= s.aw - 0.01) { s.rang = g.t; g.sfx('bell'); g.sfx('cheer'); const b = seat(s.aw); g.burst(b.x - 10, b.y - 70, ['#ffd45a', '#ffffff', '#ff8ab0'], 26, 220); g.win(); }
       if (s.rang) s.bellSw = Math.sin((g.t - s.rang) * 18) * Math.exp(-(g.t - s.rang) * 2) * 0.6;
     },
     draw(g, c) {
       const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', p = seat(s.th), A = ampOf(s.th, s.w);
       c.drawImage(g.bake('pump_park', paintPark), 0, 0, 360, 640);
       // the golden bell up at the far end of the swing's path
-      const bp = seat(A_WIN), bx = bp.x - 6, by = bp.y - 62;
+      const bp = seat(s.aw), bx = bp.x - 6, by = bp.y - 62;
       c.strokeStyle = '#5a3020'; c.lineWidth = 2; c.beginPath(); c.moveTo(bx, 184); c.lineTo(bx, by - 18); c.stroke();
       c.save(); c.translate(bx, by - 18); c.rotate(s.bellSw || Math.sin(t * 1.5) * 0.04);
       const bg = c.createLinearGradient(-16, 0, 16, 0); bg.addColorStop(0, '#f8d870'); bg.addColorStop(0.4, '#fff2b0'); bg.addColorStop(1, '#c89020'); c.fillStyle = bg; c.strokeStyle = '#7a5010'; c.lineWidth = 2;
@@ -69,7 +69,7 @@
       c.save(); c.translate(PV.x, PV.y); c.rotate(-s.th);
       c.strokeStyle = '#c8a070'; c.lineWidth = 3; c.beginPath(); c.moveTo(-14, 0); c.lineTo(-22, LEN); c.moveTo(14, 0); c.lineTo(22, LEN); c.stroke();
       c.fillStyle = '#b8703a'; c.strokeStyle = '#6a3a1a'; c.lineWidth = 2; c.beginPath(); c.roundRect(-30, LEN - 2, 60, 9, 3); c.fill(); c.stroke();
-      SK.animal(c, 'rabbit', 2, LEN - 2, 1.05, { t, pose: won ? 'cheer' : 'balance', expr: won ? 'laugh' : t - s.badT < 1.4 ? 'sad' : A > 0.6 ? 'wow' : 'happy', noShadow: true, facing: s.w >= 0 ? 1 : -1 });
+      SK.animal(c, s.rider, 2, LEN - 2, 1.05, { t, pose: won ? 'cheer' : 'balance', expr: won ? 'laugh' : t - s.badT < 1.4 ? 'sad' : A > 0.6 ? 'wow' : 'happy', noShadow: true, facing: s.w >= 0 ? 1 : -1 });
       c.restore();
       if (t - s.badT < 1.2) SK.tag(c, 'Hey!', p.x, p.y - 96, 20);
       SK.shadow(c, p.x, GND + 2, 26, 5, 0.18);

@@ -26,8 +26,8 @@
       text: 'Gas particles fly about at random and bounce off the walls. Open the door and they soon fill the whole box. They never all gather back in one half by themselves, because there are far more ways to be spread out than to be bunched up.\n\nGetting them back takes work: you have to push them, and they keep slipping away. Pushing also speeds them up, so the gas gets warmer. Scientists call this tendency to spread out entropy, and it rises on its own.',
       note: 'Left alone, things spread out and mix, and never un-mix by themselves.' },
     init(g) {
-      const s = g.s, L = LV[Math.min(2, g.level)]; s.h = L.h;
-      s.ps = []; for (let i = 0; i < L.n; i++) { const a = g.rand() * Math.PI * 2, v = 95 + g.rand() * 45; s.ps.push({ x: BOX.l + 20 + g.rand() * (MID - BOX.l - 40), y: BOX.t + 20 + g.rand() * (BOX.b - BOX.t - 40), vx: Math.cos(a) * v, vy: Math.sin(a) * v, side: 0 }); }
+      const s = g.s, L = LV[Math.min(2, g.level)]; s.h = L.h; const v0 = SK.variant(g, 4), n = L.n + [0, 1, -1, 0][v0], sp = [95, 108, 88, 100][v0]; s.v = v0;
+      s.ps = []; for (let i = 0; i < n; i++) { const a = g.rand() * Math.PI * 2, v = sp + g.rand() * 45; s.ps.push({ x: BOX.l + 20 + g.rand() * (MID - BOX.l - 40), y: BOX.t + 20 + g.rand() * (BOX.b - BOX.t - 40), vx: Math.cos(a) * v, vy: Math.sin(a) * v, side: 0 }); }
       s.door = 1; s.open = false; s.broom = null; s.prev = null; s.shutT = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || !s.spread) return; s.broom = [SK.clamp(x, BOX.l + 4, BOX.r - 4), SK.clamp(y, BOX.t, BOX.b)]; s.prev = s.broom.slice(); s.ps.forEach(p => { p.side = 0; }); },

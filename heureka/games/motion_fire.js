@@ -42,7 +42,7 @@
       note: 'A ball fired sideways falls at the same rate as a ball that is simply dropped.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.speeds = [[70, 90], [80, 100, 120], [100, 120, 135]][L]; s.bi = 0; s.mark = L < 2;
+      s.v = SK.variant(g, 4); s.speeds = [[[70, 90], [80, 100, 120], [100, 120, 135]], [[90, 70], [120, 80, 100], [135, 100, 120]], [[80, 80], [100, 120, 80], [120, 135, 100]], [[75, 95], [110, 90, 120], [110, 135, 120]]][s.v][L]; s.bi = 0; s.mark = L < 2;
       s.boat = { x: 500, hit: 0 }; s.old = null; s.ball = null; s.snow = null; s.trail = []; s.lines = []; s.splash = []; s.cool = 0; s.recoil = -9;
     },
     down(g) { const s = g.s; SK.touched(g); if (g.done || s.ball || g.t < s.cool) return;
@@ -58,7 +58,7 @@
         s.trail.push([b.x, b.y]); if (s.trail.length > 40) s.trail.shift();
         if (b.y >= SEA - 6) {
           s.splash.push({ x: b.x, t: g.t }, { x: n.x, t: g.t, bucket: 1 }); g.sfx('splash'); g.sfx('drip');
-          if (!B.hit && Math.abs(b.x - B.x) < 46) { B.hit = g.t; g.sfx('ding'); g.sfx('cheer'); g.burst(b.x, SEA - 20, ['#ffd45a', '#ffffff'], 18, 180); s.old = B; s.oldCol = COLS[s.bi % 3]; s.bi++; if (s.bi >= s.speeds.length) { if (!g.done) g.win(); } else s.boat = { x: 470, hit: 0 }; }
+          if (!B.hit && Math.abs(b.x - B.x) < 46) { B.hit = g.t; g.sfx('ding'); g.sfx('cheer'); g.burst(b.x, SEA - 20, ['#ffd45a', '#ffffff'], 18, 180); s.old = B; s.oldCol = COLS[(s.bi + s.v) % 3]; s.bi++; if (s.bi >= s.speeds.length) { if (!g.done) g.win(); } else s.boat = { x: 470, hit: 0 }; }
           else g.sfx('laugh');
           s.ball = null; s.cool = g.t + 0.35; s.trail = [];
         }
@@ -69,7 +69,7 @@
       c.drawImage(g.bake('fire_cliff', paintCliff), 0, 0, 360, 640);
       // levels 0 and 1: a ring on the water where every cannonball lands
       if (s.mark && !g.done) { c.save(); c.strokeStyle = 'rgba(255,240,150,0.85)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(LAND, SEA + 2, 30, 7, 0, 0, 7); c.stroke(); c.restore(); }
-      if (s.old) boat(c, s.old.x, SEA - 4, t, 1, s.oldCol); if (!won) boat(c, B.x, SEA - 4, t, B.hit, COLS[s.bi % 3]);
+      if (s.old) boat(c, s.old.x, SEA - 4, t, 1, s.oldCol); if (!won) boat(c, B.x, SEA - 4, t, B.hit, COLS[(s.bi + s.v) % 3]);
       // the splashes
       for (const p of s.splash) { const k = (t - p.t) / 0.6; if (k > 1) continue; c.strokeStyle = `rgba(255,255,255,${1 - k})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(p.x, SEA + (p.bucket ? 0 : 2), 8 + k * 26, 3 + k * 7, 0, 0, 7); c.stroke(); }
       if (s.splash.length > 6) s.splash.splice(0, s.splash.length - 6);

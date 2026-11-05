@@ -58,8 +58,12 @@
   }
   const ball = (s, th) => ({ x: C.x + Math.cos(th) * R, y: C.y + Math.sin(th) * R });
   // the boards: [direction from the frog, distance]
-  const SPOTS = { up: [-Math.PI / 2, 236], left: [-Math.PI * 0.83, 150], right: [-0.35, 150] };
-  const ORDER = [['up', 'right'], ['up', 'left', 'right'], ['left', 'up', 'right']];
+  const SPOTS = { up: [-Math.PI / 2, 236], left: [-Math.PI * 0.83, 150], right: [-0.35, 150], upLeft: [-2.2, 190], upRight: [-0.95, 190] };
+  const ORDERS = [ // four layouts (rule 20: never the same one twice in a row), per level
+    [['up', 'right'], ['up', 'left', 'right'], ['left', 'up', 'right']],
+    [['left', 'upRight'], ['upRight', 'left', 'up'], ['upLeft', 'right', 'up']],
+    [['right', 'upLeft'], ['right', 'upLeft', 'up'], ['up', 'right', 'left']],
+    [['upRight', 'left'], ['left', 'upRight', 'right'], ['upRight', 'upLeft', 'right']]];
   const SNOW = { x: 306, y: 542 };
   const cur = s => s.tg.find(b => !b.hit);
   MG.add({
@@ -69,7 +73,7 @@
       note: 'Going round in a circle needs a pull toward the centre. Without the pull, the ball goes straight on.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.tg = ORDER[L].map(k => { const [ph0, D] = SPOTS[k], phi = ph0 + (L ? (g.rand() - 0.5) * 0.16 : 0); return { phi, D, x: C.x + Math.cos(phi) * D, y: C.y + Math.sin(phi) * D, rel: phi - Math.acos(R / D), hit: 0, wob: 0 }; });
+      s.v = SK.variant(g, 4); s.tg = ORDERS[s.v][L].map(k => { const [ph0, D] = SPOTS[k], phi = ph0 + (L ? (g.rand() - 0.5) * 0.16 : 0); return { phi, D, x: C.x + Math.cos(phi) * D, y: C.y + Math.sin(phi) * D, rel: phi - Math.acos(R / D), hit: 0, wob: 0 }; });
       s.w = (Math.PI * 2) / [1.7, 1.45, 1.4][L]; s.th = s.tg[0].rel + 2.4; // start well away from the first release point
       s.free = null; s.trail = []; s.hat = null; s.snapT = 0; s.missT = 0; s.reload = 0; s.balls = 0;
     },

@@ -41,7 +41,7 @@
       note: 'When you push on something, it pushes back on you just as hard in the opposite direction.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      const pick = L === 0 ? [0, 3] : L === 1 ? [1, 2, 4] : [3, 0, 5];
+      s.v = SK.variant(g, 4); const pick = [[[0, 3], [1, 2, 4], [3, 0, 5]], [[1, 2], [0, 5, 3], [2, 4, 1]], [[4, 5], [4, 0, 3], [1, 5, 0]], [[2, 1], [5, 1, 2], [4, 3, 2]]][s.v][L];
       s.doors = pick.map(i => ({ x: DOORS[i][0], y: DOORS[i][1] })); s.di = 0; s.dr = [36, 30, 26][L]; s.mb = L >= 2 ? 4 : 3;
       reset(s); s.next = 0; s.homeT = -9;
     },

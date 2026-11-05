@@ -44,8 +44,10 @@
       note: 'Smother an oil fire with a lid and turn off the heat. Water makes it explode.' },
     init(g) {
       const L = Math.min(2, g.level), s = g.s;
-      s.pans = LAY[L].map(([x, y], i) => ({ x, y, lid: false, off: false, a: 1.6, kx: 0 }));
-      const n = s.pans.length, kxs = n === 1 ? [180] : n === 2 ? [108, 252] : [86, 274, 180];
+      const v = s.v = SK.variant(g, 4), two = [[[108, 448], [252, 448]], [[110, 410], [252, 470]], [[100, 470], [258, 410]], [[180, 400], [180, 488]]], three = [LAY[1], [[90, 410], [270, 410], [180, 486]], [[86, 470], [180, 410], [274, 470]], [[100, 404], [260, 430], [140, 488]]];
+      s.pans = (L === 0 ? two : three)[v].map(([x, y], i) => ({ x, y, lid: false, off: false, a: 1.6, kx: 0 }));
+      const n = s.pans.length, kxs = n === 2 ? (v === 3 ? [130, 230] : [108, 252]) : [86, 274, 180];
+      s.pans.slice().sort((a, b) => a.x - b.x || a.y - b.y).forEach((p, i, arr) => { p.kx = kxs.slice().sort((a, b) => a - b)[i]; });
       s.pans.forEach((p, i) => { p.kx = kxs[i]; });
       s.lids = HOOK[L].map(([x, y]) => ({ x, y: y + 22, hx: x, hy: y + 22, on: null }));
       s.cup = { x: CUP.x, y: CUP.y, hx: CUP.x, hy: CUP.y }; s.turn = null; s.flare = 0; s.held = null;

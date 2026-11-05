@@ -27,7 +27,7 @@
     card: { title: 'Predators and prey', kind: 'Biology', ref: 'Predator and prey cycles (population ecology)',
       text: 'With no foxes, rabbits breed fast until they eat the meadow bare. When there are plenty of rabbits, foxes find food easily and raise more cubs. More foxes eat more rabbits, so the rabbits fall. Then the foxes go hungry and leave or die, which lets the rabbits recover.\n\nSo the two numbers rise and fall in a chase, with the foxes one step behind. Too many foxes at once can eat almost every rabbit, and then the foxes starve too. Records of lynx and snowshoe hares in Canada show a similar rise and fall about every ten years.',
       note: 'Predator and prey numbers rise and fall in turn: more prey feeds more predators, and more predators mean fewer prey.' },
-    init(g) { const s = g.s; s.R = 11; s.F = 0; s.u = 0; s.hist = [[0, 11, 0]]; s.rel = []; s.end = 0; },
+    init(g) { const s = g.s; s.v = SK.variant(g, 4); s.R = [11, 9, 13, 10][s.v]; s.F = 0; s.u = 0; s.hist = [[0, s.R, 0]]; s.rel = []; s.end = 0; },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (SK.dist(x, y, DEN.x, DEN.y - 14) < 70) { s.F += 1; s.rel.push(g.t); if (s.rel.length > 10) s.rel.shift(); g.sfx('roar'); g.sfx('whoosh'); } },
     update(g, dt) {
       const s = g.s; if (g.done) return; const N = SEASONS[Math.min(2, g.level)], du = dt / seasonLen(g);
@@ -40,14 +40,14 @@
       if (s.u >= N) { g.win(); g.sfx('cheer'); }
     },
     draw(g, c) {
-      const s = g.s, t = g.t, N = SEASONS[Math.min(2, g.level)], sp = s.u % 4, k0 = Math.floor(sp), kf = sp - k0;
+      const s = g.s, t = g.t, N = SEASONS[Math.min(2, g.level)], sp = (s.u + (s.v || 0)) % 4, k0 = Math.floor(sp), kf = sp - k0;
       c.drawImage(g.bake('unleash_bg' + k0, o => paintBg(o, k0)), 0, 0, 360, 640);
       if (kf > 0.75) { c.save(); c.globalAlpha = (kf - 0.75) * 4; c.drawImage(g.bake('unleash_bg' + (k0 + 1) % 4, o => paintBg(o, (k0 + 1) % 4)), 0, 0, 360, 640); c.restore(); }
       // bare patches as the rabbits strip the grass
       const bare = SK.clamp((s.R - 24) / (OVER - 24), 0, 1); if (bare > 0) for (let i = 0; i < 14; i++) { c.fillStyle = `rgba(150,110,60,${0.55 * bare})`; c.beginPath(); c.ellipse(30 + B3.hash(i) * 300, 350 + B3.hash(i * 3) * 250, 30 * bare + 6, 12 * bare + 3, 0, 0, 7); c.fill(); }
       // the rabbits, each hopping about its own spot
       const nR = Math.round(s.R), items = [];
-      for (let i = 0; i < nR; i++) { const hx = 30 + B3.hash(i * 1.3) * 300, hy = 352 + B3.hash(i * 2.9) * 240, hop = Math.max(0, Math.sin(t * 6 + i * 1.7)) * 6; items.push([hy, () => SK.animal(c, 'rabbit', hx + Math.sin(t * 0.8 + i) * 8, hy - hop, 0.38, { t, phase: i, noShadow: true, tint: k0 === 3 ? '#f4f4f8' : undefined })]); }
+      for (let i = 0; i < nR; i++) { const hx = 30 + B3.hash(i * 1.3 + s.v * 17) * 300, hy = 352 + B3.hash(i * 2.9 + s.v * 31) * 240, hop = Math.max(0, Math.sin(t * 6 + i * 1.7)) * 6; items.push([hy, () => SK.animal(c, 'rabbit', hx + Math.sin(t * 0.8 + i) * 8, hy - hop, 0.38, { t, phase: i, noShadow: true, tint: k0 === 3 ? '#f4f4f8' : undefined })]); }
       const nF = Math.round(s.F);
       for (let i = 0; i < nF; i++) { const a = t * 0.9 + i * 2.1, fx = 180 + Math.cos(a) * (110 + 20 * Math.sin(i)), fy = 470 + Math.sin(a * 1.3) * 90; items.push([fy, () => SK.animal(c, 'fox', fx, fy, 0.6, { t, phase: i, pose: 'walk', facing: Math.sin(a) > 0 ? -1 : 1, expr: s.R < M.low ? 'sad' : 'happy' })]); }
       items.sort((a, b) => a[0] - b[0]); for (const [, f] of items) f();

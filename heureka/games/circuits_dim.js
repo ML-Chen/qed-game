@@ -30,7 +30,7 @@ MG.add({
   card: { title: 'A narrow wire lets less through', kind: 'Engineering', ref: 'Resistance',
     text: 'A battery pushes electric charges round the loop. The charges have to squeeze through every part of it. Where the wire is narrow, fewer can pass each second. That slowing is called resistance.\n\nSqueeze a wire and its resistance goes up, so less current flows round that branch and the bulb glows more dimly. Squeeze it shut and no current flows at all, so the bulb goes out. A long, thin wire resists even more. Old dimmer switches worked like this, and every resistor in a circuit uses the same idea to set how much current flows.',
     note: 'Resistance slows the flow of charge: the narrower or longer the path, the less current gets through.' },
-  init(g) { const s = g.s; s.tol = TOL[Math.min(2, g.level)]; s.cl = ROWS.map((y, i) => ({ i, x: CLAMP_X, y: y - 40, w: 1, ok: false, okT: 0 })); s.flow = ROWS.map(() => 0); },
+  init(g) { const s = g.s; s.v = SK.variant(g, 6); s.room = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]][s.v].map(i => ROOM[i]); s.tol = TOL[Math.min(2, g.level)]; s.cl = ROWS.map((y, i) => ({ i, x: CLAMP_X, y: y - 40, w: 1, ok: false, okT: 0 })); s.flow = ROWS.map(() => 0); },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const k = SK.pick(s.cl.map(q => ({ q, x: CLAMP_X, y: hy(q) })), x, y, 46); if (k) { SK.dragStart(g, k.q, x, y); g.sfx('tap'); } },
   move(g, x, y) {
     const s = g.s, k = SK.dragMove(g, x, y); if (!k) return; const y0 = ROWS[k.i] - 40;
@@ -41,7 +41,7 @@ MG.add({
     const s = g.s;
     for (const k of s.cl) {
       const b = k.w * k.w; s.flow[k.i] += dt * (0.3 + 2.2 * k.w);
-      const ok = k.w > 0 && Math.abs(b - ROOM[k.i].want) <= s.tol; if (ok && !k.ok) { g.sfx('chime', { vol: 0.5, pitch: 0.8 + k.i * 0.2 }); } if (ok) k.okT += dt; else k.okT = 0; k.ok = ok;
+      const ok = k.w > 0 && Math.abs(b - s.room[k.i].want) <= s.tol; if (ok && !k.ok) { g.sfx('chime', { vol: 0.5, pitch: 0.8 + k.i * 0.2 }); } if (ok) k.okT += dt; else k.okT = 0; k.ok = ok;
     }
     if (!g.done && s.cl.every(k => k.okT > 0.25) && !SK.dragging(g)) { g.win(); g.sfx('cheer'); }
   },
@@ -49,7 +49,7 @@ MG.add({
     const s = g.s, t = g.t, won = g.result === 'win';
     c.drawImage(g.bake('dim_house', paintHouse), 0, 0, 360, 640);
     for (const k of s.cl) {
-      const y = ROWS[k.i], R = ROOM[k.i], b = k.w * k.w, ww = 1.5 + 12.5 * k.w;
+      const y = ROWS[k.i], R = s.room[k.i], b = k.w * k.w, ww = 1.5 + 12.5 * k.w;
       // the branch wire, narrow where the clamp squeezes it
       c.strokeStyle = '#8a6a4a'; c.lineCap = 'round'; c.lineWidth = 14; c.beginPath(); c.moveTo(BUS.l, y); c.lineTo(CLAMP_X - 26, y); c.moveTo(CLAMP_X + 26, y); c.lineTo(BUS.r, y); c.stroke();
       c.lineWidth = ww; c.strokeStyle = '#c88a5a'; c.beginPath(); c.moveTo(CLAMP_X - 26, y); c.lineTo(CLAMP_X + 26, y); c.stroke();
@@ -76,10 +76,10 @@ MG.add({
     }
     SK.tag(c, 'Battery', 180, 137, 18);
     // guidance: push down the first clamp whose bulb is off its ring
-    const nx = s.cl.find(k => !k.ok); if (nx && !g.done && !SK.dragging(g)) { const y0 = ROWS[nx.i] - 40, hT = y0 + (1 - Math.sqrt(ROOM[nx.i].want)) * 26 - 5; SK.grab(c, g, CLAMP_X, hy(nx) - 5, 24); SK.target(c, g, CLAMP_X, hT, 0, { w: 60, h: 24 }); if (Math.abs(hT - hy(nx)) > 6) SK.arrow(c, g, CLAMP_X + 40, hy(nx) - 5, CLAMP_X + 40, hT, { from: 0, to: 0 }); }
-    if (nx) { const y0 = ROWS[nx.i] - 40, wt = Math.sqrt(ROOM[nx.i].want), ty = y0 + (1 - wt) * SQ; SK.demo(g, c, 'drag', [CLAMP_X, hy(nx) - 4], [CLAMP_X, ty - (nx.y - hy(nx)) - 4]); }
+    const nx = s.cl.find(k => !k.ok); if (nx && !g.done && !SK.dragging(g)) { const y0 = ROWS[nx.i] - 40, hT = y0 + (1 - Math.sqrt(s.room[nx.i].want)) * 26 - 5; SK.grab(c, g, CLAMP_X, hy(nx) - 5, 24); SK.target(c, g, CLAMP_X, hT, 0, { w: 60, h: 24 }); if (Math.abs(hT - hy(nx)) > 6) SK.arrow(c, g, CLAMP_X + 40, hy(nx) - 5, CLAMP_X + 40, hT, { from: 0, to: 0 }); }
+    if (nx) { const y0 = ROWS[nx.i] - 40, wt = Math.sqrt(s.room[nx.i].want), ty = y0 + (1 - wt) * SQ; SK.demo(g, c, 'drag', [CLAMP_X, hy(nx) - 4], [CLAMP_X, ty - (nx.y - hy(nx)) - 4]); }
   },
   auto(g, dt, synth) {
-    const s = g.s; s.cl.forEach((k, i) => { const y0 = ROWS[i] - 40, ty = y0 + (1 - Math.sqrt(ROOM[i].want)) * SQ; SK.bot.drag(g, synth, 'c' + i, 1.0 + i * 0.6, [CLAMP_X, y0 - 4], [CLAMP_X, ty - 4], 0.4); });
+    const s = g.s; s.cl.forEach((k, i) => { const y0 = ROWS[i] - 40, ty = y0 + (1 - Math.sqrt(s.room[i].want)) * SQ; SK.bot.drag(g, synth, 'c' + i, 1.0 + i * 0.6, [CLAMP_X, y0 - 4], [CLAMP_X, ty - 4], 0.4); });
   },
 });

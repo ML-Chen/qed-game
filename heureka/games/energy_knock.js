@@ -6,7 +6,11 @@
   const P0 = [22, 176], P1 = [238, 470], FLOOR = 470, TX = 304, BW = 46, BH = 28;
   const DX = P1[0] - P0[0], DY = P1[1] - P0[1], L = Math.hypot(DX, DY), D = [DX / L, DY / L], N = [D[1], -D[0]];
   const ACC = 900 * D[1] * 5 / 7; // a rolling ball speeds up at 5/7 of g·sinθ
-  const TOWERS = [[[4, 150], [5, 300]], [[5, 300], [6, 400]], [[5, 300], [6, 400], [7, 470]]]; // per level, each tower: blocks, the speed a bowling ball needs to topple it
+  const TOWERS = [ // per level, four variants; each tower: blocks, the speed a bowling ball needs to topple it
+    [[[4, 150], [5, 300]], [[5, 280], [3, 120]], [[3, 120], [5, 300]], [[4, 200], [3, 140]]],
+    [[[5, 300], [6, 400]], [[6, 380], [4, 250]], [[4, 260], [6, 400]], [[6, 400], [5, 320]]],
+    [[[5, 300], [6, 400], [7, 470]], [[7, 460], [5, 320], [6, 410]], [[6, 400], [7, 470], [5, 300]], [[5, 320], [7, 470], [6, 380]]]];
+  const PALS = [['#e8563a', '#f2b33a', '#4aa8d8', '#7ac85a', '#b86ad8', '#f27aa0'], ['#4aa8d8', '#5ac8b8', '#f2e05a', '#e8563a', '#7a6ae8', '#f2a03a'], ['#f27aa0', '#b86ad8', '#7ac85a', '#f2b33a', '#4ad8e8', '#e8563a'], ['#8ad84a', '#e8b03a', '#e85a8a', '#5a8ae8', '#f2e8c8', '#c86a3a']]; // per level, each tower: blocks, the speed a bowling ball needs to topple it
   const BCOL = ['#e8563a', '#f2b33a', '#4aa8d8', '#7ac85a', '#b86ad8', '#f27aa0', '#e8563a'];
   function pathPos(b, sp) {
     if (sp <= L) return [P0[0] + D[0] * sp + N[0] * b.r, P0[1] + D[1] * sp + N[1] * b.r];
@@ -60,7 +64,7 @@
     }
     c.restore();
   }
-  function build(g, s) { const [n, need] = s.towers[s.round]; s.need = need; s.blocks = []; for (let i = 0; i < n; i++) s.blocks.push({ x: TX, y: FLOOR - BH / 2 - i * BH, a: 0, vx: 0, vy: 0, va: 0, col: BCOL[(i + s.round * 2) % BCOL.length], r: BH / 2, e: 0.2, mu: 1500, born: g.t + i * 0.06 }); }
+  function build(g, s) { const [n, need] = s.towers[s.round]; s.need = need; s.blocks = []; for (let i = 0; i < n; i++) s.blocks.push({ x: TX, y: FLOOR - BH / 2 - i * BH, a: 0, vx: 0, vy: 0, va: 0, col: PALS[s.v][(i + s.round * 2) % 6], r: BH / 2, e: 0.2, mu: 1500, born: g.t + i * 0.06 }); }
   function block(c, bl, t) {
     const k = SK.easeOut(SK.clamp((t - (bl.born ?? -9)) / 0.35, 0, 1));
     c.save(); c.translate(bl.x, bl.free ? bl.y : bl.y - (1 - k) * 360); c.rotate(bl.a + (bl.wob || 0));
@@ -81,7 +85,7 @@
         { k: 'pong', r: 9, m: 0.03, home: [160, 556], st: 'home', rot: 0 },
       ];
       for (const b of s.balls) { b.x = b.home[0]; b.y = b.home[1]; }
-      s.towers = TOWERS[lv]; s.round = 0; build(g, s); s.blocks.forEach(bl => { bl.born = -9; }); s.down = false; s.nextAt = 0; s.wob = -9; s.tik = -9; s.tries = 0;
+      s.v = SK.variant(g, 4); s.towers = TOWERS[lv][s.v]; s.round = 0; build(g, s); s.blocks.forEach(bl => { bl.born = -9; }); s.down = false; s.nextAt = 0; s.wob = -9; s.tik = -9; s.tries = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (s.down || s.balls.some(b => b.st === 'roll' || b.st === 'back')) return; const b = SK.pick(s.balls.filter(b => b.st === 'home'), x, y, 48); if (b) { b.st = 'drag'; SK.dragStart(g, b, x, y); g.sfx('tap'); } },
     move(g, x, y) { const b = SK.dragMove(g, x, y); if (b) { b.x = SK.clamp(b.x, 10, 350); b.y = SK.clamp(b.y, 130, 610); } },

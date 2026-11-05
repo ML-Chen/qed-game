@@ -39,7 +39,7 @@ MG.add({
     text: 'Before a cell divides, it copies every chromosome, the long strands of DNA that carry its genes. Each copy stays joined to its original, making an X shape.\n\nNext, fibres from the two ends of the cell grab every X and line them all up across the middle. The cell checks that every X is attached before it goes on. Then the fibres pull the two halves of each X apart, and the cell pinches in two.\n\nBecause everything was lined up first, each new cell gets exactly one copy of every chromosome.',
     note: 'A cell copies its chromosomes, lines them up and pulls them apart, so both new cells get a full set.' },
   init(g) {
-    const s = g.s; s.round = 0; s.rounds = 2; s.press = null; newCell(g); s.appear = -1;
+    const s = g.s; s.v = SK.variant(g, 4); s.round = 0; s.rounds = 2; s.press = null; newCell(g); s.appear = -1;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.split >= 0) return; s.press = { x, y, t: g.t, moved: false }; },
   move(g, x, y) { const s = g.s, p = s.press; if (!p) return; if (SK.dist(x, y, p.x, p.y) > 34) p.moved = true; p.cx = x; p.cy = y; },
@@ -124,9 +124,9 @@ MG.add({
 // a fresh cell for each round: new chromosome positions; the second cell divides top to bottom
 function newCell(g) {
   const s = g.s, L = Math.min(2, g.level), n = [4, 6, 8][L];
-  s.n = n; s.len = n > 4 ? 22 : 32; s.copy = 0; s.copied = -1; s.lined = -1; s.split = -1; s.axis = s.round % 2;
+  s.n = n; s.len = n > 4 ? 22 : 32; s.copy = 0; s.copied = -1; s.lined = -1; s.split = -1; s.axis = (s.round + (s.v >> 1)) % 2;
   s.lineDur = n > 4 ? 1.0 : 0.8; s.holdDur = L >= 2 ? 0.8 : 1.0;
-  s.ch = []; for (let i = 0; i < n; i++) { const a = (i + g.rand() * 0.6) / n * 6.283, d = 18 + g.rand() * 36; s.ch.push({ col: COLS[i], x0: CX + Math.cos(a) * d, y0: CY + Math.sin(a) * d * 0.9, a0: g.rand() * 3.14, dest: [0, 1] }); }
+  s.ch = []; for (let i = 0; i < n; i++) { const a = (i + g.rand() * 0.6) / n * 6.283, d = 18 + g.rand() * 36; s.ch.push({ col: COLS[(i + (s.v % 2) * 4 + s.round * 2) % COLS.length], x0: CX + Math.cos(a) * d, y0: CY + Math.sin(a) * d * 0.9, a0: g.rand() * 3.14, dest: [0, 1] }); }
   s.ok = true;
 }
 // pull the chromosomes apart: lined up, each X sends one half to each pole; otherwise they go astray

@@ -5,7 +5,7 @@
 // Level 0: frog then turtle; level 1: frog, turtle, rabbit; level 2: the same three in a shuffled order and a bigger fire.
 (() => {
   const Y = 470, FIRE = { x: 322, y: Y + 4 }, RATE = { fast: 2.4, slow: 0.12, boost: 2.6 }, NEED = [8, 9, 10];
-  const KIND = { frog: 'fast', rabbit: 'fast', turtle: 'slow' };
+  const KIND = { frog: 'fast', rabbit: 'fast', penguin: 'fast', turtle: 'slow' };
   function paintBg(o) {
     const sk = o.createLinearGradient(0, 0, 0, 470); sk.addColorStop(0, '#5a3a7a'); sk.addColorStop(0.55, '#e88a6a'); sk.addColorStop(1, '#ffd0a0'); o.fillStyle = sk; o.fillRect(0, 0, 360, 640);
     o.fillStyle = '#fff0c8'; o.beginPath(); o.arc(70, 330, 30, 0, 7); o.fill();
@@ -39,8 +39,8 @@
       note: 'In a chain of steps, the slowest step limits the speed of the whole chain.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      let kinds = L === 0 ? ['frog', 'turtle'] : ['frog', 'turtle', 'rabbit'];
-      if (L >= 2) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+      const v = s.v = SK.variant(g, 4);
+      const kinds = (L === 0 ? [['frog', 'turtle'], ['rabbit', 'turtle'], ['turtle', 'frog'], ['penguin', 'turtle']] : L === 1 ? [['frog', 'turtle', 'rabbit'], ['rabbit', 'penguin', 'turtle'], ['turtle', 'frog', 'penguin'], ['penguin', 'turtle', 'frog']] : [['rabbit', 'frog', 'turtle'], ['turtle', 'penguin', 'rabbit'], ['frog', 'turtle', 'penguin'], ['penguin', 'rabbit', 'turtle']])[v];
       const xs = kinds.length === 2 ? [104, 212] : [84, 160, 236];
       s.a = kinds.map((k, i) => ({ kind: k, x: xs[i], p: 0, busy: false, q: 0, boost: 0, hop: -9 }));
       s.need = NEED[L]; s.hits = 0; s.splash = -9; s.taps = []; s.grow = 0;

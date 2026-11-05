@@ -47,9 +47,11 @@ MG.add({
     text: 'This lock is wired through two switches in a row, one after the other. Electricity flows only around a complete loop, so current reaches the lock only when the first switch AND the second switch are both pressed. With one pressed, the loop is still broken at the other, and nothing flows.\n\nEngineers call this an AND gate. Wire the two switches side by side instead, and either one alone completes the loop: that is an OR gate. Computer chips are built from billions of tiny gates like these, made of transistors instead of buttons.',
     note: 'Switches in a row make an AND: every one must be closed before any current flows.' },
   init(g) {
-    const s = g.s, L = LAY[Math.min(2, g.level)];
-    s.pads = L.pads.map(x => ({ x, by: null })); s.pts = loopPts(L.pads);
-    s.ani = L.helpers.map((k, i) => ({ kind: k, x: 304 - i * 96, y: 612, hx: 304 - i * 96, hy: 612, pad: null }));
+    const s = g.s, L = LAY[Math.min(2, g.level)], v = s.v = SK.variant(g, 4);
+    const pads = L.pads.length === 2 ? [[118, 236], [96, 214], [140, 262], [104, 250]][v] : [[92, 176, 260], [100, 170, 248], [86, 182, 266], [110, 190, 262]][v];
+    const kinds = [['fox', 'duck'], ['rabbit', 'penguin'], ['penguin', 'fox'], ['duck', 'rabbit']][v], left = v % 2 === 1; // helpers wait on the right or the left
+    s.pads = pads.map(x => ({ x, by: null })); s.pts = loopPts(pads);
+    s.ani = L.helpers.map((k0, i) => { const x = left ? 90 + i * 96 : 304 - i * 96; return { kind: kinds[i], x, y: 612, hx: x, hy: 612, pad: null }; });
     s.hold = null; s.on = 0; s.flow = 0; s.open = 0; s.tries = 0;
   },
   down(g, x, y) {
@@ -105,7 +107,7 @@ MG.add({
     if (!all && !g.done) { const p = s.pads.find(q => !pressed(q)); if (p) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(p.x - 30, WY, 6, 0, 7); c.fill(); c.restore(); } }
     // the helpers, standing by or pressing a switch down
     const won = g.result === 'win', lost = g.result === 'fail';
-    for (const a of s.ani) { const sc = a.kind === 'duck' ? 1.1 : 1.2; SK.animal(c, a.kind, a.x, a.y, sc, { t, pose: won ? 'cheer' : SK.dragging(g) === a ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : a.pad ? 'think' : 'happy', facing: -1 }); }
+    for (const a of s.ani) { const sc = a.kind === 'duck' || a.kind === 'penguin' ? 1.1 : 1.2; SK.animal(c, a.kind, a.x, a.y, sc, { t, pose: won ? 'cheer' : SK.dragging(g) === a ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : a.pad ? 'think' : 'happy', facing: -1 }); }
     for (const a of s.ani) if (a.pad && !g.done) { const k = (g.t - a.onT) / STAY[Math.min(2, g.level)]; c.strokeStyle = '#ffe27a'; c.lineWidth = 4; c.beginPath(); c.arc(a.x, a.y - 96, 10, -Math.PI / 2, -Math.PI / 2 + (1 - k) * 6.283); c.stroke(); }
     // your finger on the held switch
     if (s.hold) SK.hand(c, s.hold.x, WY - 8, 1, 0.85);

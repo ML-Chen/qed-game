@@ -46,5 +46,7 @@ const B5 = (() => {
   }
   // a five-point star or sparkle
   function star(c, x, y, r, col = '#fff6c0') { c.fillStyle = col; c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); c.fill(); }
-  return { TAU, patient, vgrad, cottage, bush, blades, star };
+  // a drag hint: what moves (SK.grab at a), where it goes (SK.target at b) and the way between (SK.arrow)
+  function hint(c, g, a, b, o = {}) { if (!a || !b) return; SK.arrow(c, g, a[0], a[1], b[0], b[1], { from: o.ra ?? 30, to: (o.rb ?? 30) + 8 }); SK.target(c, g, b[0], b[1], o.rb ?? 30, o.tw ? { w: o.tw, h: o.th } : {}); SK.grab(c, g, a[0], a[1], o.ra ?? 26); }
+  return { TAU, patient, vgrad, cottage, bush, blades, star, hint };
 })();

@@ -43,7 +43,8 @@
       note: 'The taller the sound wave, the louder the sound. The spacing of the crests sets the pitch.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.who = (L === 0 ? [0, 2] : [0, 1, 2]).map(i => ({ ...SLEEP[i], awake: 0, hear: 0, prog: 0, fallT: -9 }));
+      s.v = SK.variant(g, 4); const kinds = [['owl', 'rabbit', 'fox'], ['bird', 'hedgehog', 'duck'], ['owl', 'frog', 'beaver'], ['bird', 'rabbit', 'turtle']][s.v];
+      s.who = (L === 0 ? [[0, 2], [0, 1], [1, 2], [0, 2]][s.v] : [0, 1, 2]).map(i => ({ ...SLEEP[i], kind: kinds[i], awake: 0, hear: 0, prog: 0, fallT: -9 }));
       s.band = BANDS[L]; s.A = 0.35; s.lam = 120; s.ph = 0; s.drag = null; s.lastNote = 0; s.cone = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (y > SCR.y0 - 40) s.drag = { dx: crestX(s) - x, dy: (SCR.mid - s.A * APX) - y }; },
