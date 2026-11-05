@@ -71,6 +71,8 @@
       if (!s.next || t - s.next < 0.6) { const r = s.r * (s.next ? 1 - (t - s.next) / 0.6 : 1) + Math.sin(t * 8) * 1.2; B3.glow(c, s.dot.x, s.dot.y, r * 3.2, '255,230,120', 0.7); c.fillStyle = '#fff8c8'; c.beginPath(); c.arc(s.dot.x, s.dot.y, Math.max(1, r), 0, 7); c.fill(); }
       const nx = show[s.at + 1]; if (nx && !s.drag && !s.next) { SK.grab(c, g, s.dot.x, s.dot.y, 26); SK.target(c, g, nx.x, nx.y, 34); SK.arrow(c, g, s.dot.x, s.dot.y, nx.x, nx.y, { from: 30, to: 44 }); }
       for (let i = 0; i < CHAINS.length; i++) { const x = 24 + i * 22, y = 604, d = i < s.ci || (i === s.ci && s.next); c.fillStyle = d ? '#ffe070' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(x, y, 7, 0, 7); c.fill(); }
+      if (!g.done && s.at === 0 && !s.drag) SK.tag(c, 'Energy', s.dot.x + 62, s.dot.y + 6, 18, '#fff3a0');
+      G2.count(c, 64, 44, s.ci + (s.next ? 1 : 0), CHAINS.length); // food chains fed so far
       SK.demo(g, c, 'drag', [s.dot.x, s.dot.y], nx ? [nx.x, nx.y] : [180, 400], { never: !nx || !!s.next });
     },
     // the bot carries the dot from node to node

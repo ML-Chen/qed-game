@@ -73,7 +73,9 @@
       const fy = this.barY(left); c.fillStyle = '#9a7048'; c.fillRect(BAR.x - 13, fy, 26, BAR.b - fy);
       for (const d of [2, 4, 8]) { const ny = this.barY(N / d), lit = left <= N / d; c.strokeStyle = lit ? '#9ad8ff' : 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(BAR.x - 16, ny); c.lineTo(BAR.x + 16, ny); c.stroke(); }
       for (const k of s.ticks) { const ky = this.barY(k); c.fillStyle = '#9ad8ff'; c.beginPath(); c.moveTo(BAR.x - 30, ky - 6); c.lineTo(BAR.x - 19, ky); c.lineTo(BAR.x - 30, ky + 6); c.fill(); } // one arrow per half-life turn
-      const ty = this.barY(s.target); c.strokeStyle = '#ffd45a'; c.lineWidth = 4; c.beginPath(); c.moveTo(BAR.x - 22, ty); c.lineTo(BAR.x + 22, ty); c.stroke();
+      const tol = Math.max(1, Math.round(s.target * 0.2)), inBand = Math.abs(left - s.target) <= tol && left < N;
+      c.fillStyle = inBand ? 'rgba(90,232,138,0.45)' : 'rgba(90,232,138,0.18)'; c.fillRect(BAR.x - 16, this.barY(s.target + tol + 0.5), 32, this.barY(s.target - tol - 0.5) - this.barY(s.target + tol + 0.5)); // the band to stop in
+      const ty = this.barY(s.target); c.strokeStyle = inBand ? '#5ae88a' : '#ffd45a'; c.lineWidth = 4; c.beginPath(); c.moveTo(BAR.x - 22, ty); c.lineTo(BAR.x + 22, ty); c.stroke();
       SK.tag(c, '1/' + s.fr[s.round], BAR.x, ty - 24, 18);
       // the clock ring: one full turn per half-life
       const ang = (s.tau / s.hl) * Math.PI * 2, DY = JAR.t + 11; c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(JAR.cx, DY, 24, 0, 7); c.fill(); c.strokeStyle = '#2a3a60'; c.lineWidth = 8; c.beginPath(); c.arc(JAR.cx, DY, 17, 0, 7); c.stroke();
@@ -84,7 +86,9 @@
       SK.tag(c, 'Unstable atoms', JAR.cx, JAR.b + 30, 18);
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'owl', 300, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.held ? 'think' : 'happy', facing: -1 });
-      if (!s.held && !s.okT) SK.glow(c, g, JAR.cx, JAR.t + 11, 30);
+      if (!s.held && !s.okT) SK.glow(c, g, JAR.cx, JAR.t + 11, 30, '#ffe27a', { level: 2 });
+      if (!g.done && !s.okT) { if (s.held && inBand) SK.tag(c, 'Let go!', JAR.cx, JAR.t - 30 - Math.abs(Math.sin(t * 8)) * 4, 22, '#9affb0', 'rgba(20,90,50,0.9)'); else SK.tag(c, s.held ? 'Time running...' : 'Hold to run time', JAR.cx, JAR.t - 30, 18); }
+      if (!g.done) SK.tag(c, 'Jar ' + Math.min(s.fr.length, s.round + 1) + ' / ' + s.fr.length, 300, 196, 18);
       SK.demo(g, c, 'hold', [JAR.cx, JAR.t + 14], null, { never: !!s.okT });
     },
     // the bot: hold until the jar is down to the mark, then let go

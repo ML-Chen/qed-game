@@ -3,7 +3,8 @@
 // shares the machine's cost, so the badge shrinks (economies of scale). Push far past what the factory can handle and
 // the ants crowd and bump, the machine smokes, and the badge grows again. When the shift whistle blows, the badge must
 // sit inside the ring. Level 1: a smaller factory. Level 2: smaller still, so the sweet spot is narrow.
-const FIXED = 10, VAR = 0.3, CROWD = 0.25, SHIFT = 4.2, BADGE = { x: 70, y: 214 }, MACH = { x: 168, y: 420 };
+const FIXED = 10, VAR = 0.3, CROWD = 0.25, SHIFTS = [7, 6.5, 4.2], // seconds of shift per level: at levels 0-1, tapping at the ghost hand's pace makes enough cups
+   BADGE = { x: 70, y: 214 }, MACH = { x: 168, y: 420 };
 const LVM = [{ cap: 18, price: 1.05 }, { cap: 16, price: 1.05 }, { cap: 14, price: 1.0 }];
 const ac = (q, cap) => q <= 0 ? 99 : FIXED / q + VAR + CROWD * Math.max(0, q - cap) ** 2 / q; // cost per cup
 function paintFactory(o) {
@@ -33,7 +34,7 @@ MG.add({
   },
   update(g, dt) {
     const s = g.s, L = s.L, target = Math.min(60, 16 * ac(s.q, L.cap)); s.badge += (target - s.badge) * Math.min(1, dt * 10);
-    if (s.start && !s.end && g.t - s.start >= SHIFT) { // the whistle: is each cup now cheaper than its price?
+    if (s.start && !s.end && g.t - s.start >= SHIFTS[Math.min(2, g.level)]) { // the whistle: is each cup now cheaper than its price?
       s.end = g.t; g.sfx('bell'); if (ac(s.q, L.cap) <= L.price) { g.win(); g.sfx('cheer'); g.burst(BADGE.x, BADGE.y, ['#7ad070', '#fff6ea', '#ffe27a'], 18, 160); } else { g.fail(); g.sfx('fail'); }
     }
     s.cups = s.cups.filter(cp => g.t - cp.t < 1.4);
@@ -43,7 +44,7 @@ MG.add({
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', L = s.L, over = Math.max(0, s.q - L.cap), cost = ac(s.q, L.cap);
     c.drawImage(g.bake('b8make_f', paintFactory), 0, 0, 360, 640);
     // the shift clock: a sun that crosses the window
-    const sk = s.start ? SK.clamp((t - s.start) / SHIFT, 0, 1) : 0;
+    const sk = s.start ? SK.clamp((t - s.start) / SHIFTS[Math.min(2, g.level)], 0, 1) : 0;
     c.fillStyle = '#5a6aa8'; c.beginPath(); c.roundRect(210, 150, 130, 70, 10); c.fill(); c.fillStyle = '#f8e8c8'; c.beginPath(); c.roundRect(216, 156, 118, 58, 8); c.fill();
     c.fillStyle = '#f5c23a'; c.beginPath(); c.arc(SK.lerp(226, 324, sk), 200 - Math.sin(sk * Math.PI) * 32, 9, 0, 7); c.fill();
     // the machine: a big press; it shakes and smokes when overworked
@@ -71,9 +72,10 @@ MG.add({
     c.save(); c.globalAlpha = 0.92; B8.coin(c, BADGE.x, BADGE.y, s.badge, 0, cost <= L.price ? {} : { col: '#f0a040' }); c.restore();
     SK.tag(c, 'Machine cost', MACH.x, MACH.y + 46, 18);
     if (cost <= L.price) { c.save(); c.strokeStyle = '#2a9a4a'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(BADGE.x + 28, BADGE.y - 4); c.lineTo(BADGE.x + 36, BADGE.y + 6); c.lineTo(BADGE.x + 52, BADGE.y - 16); c.stroke(); c.restore(); }
-    if (!s.start) SK.glow(c, g, MACH.x, MACH.y - 40, 70);
+    if (!s.end && cost > L.price && over === 0) SK.glow(c, g, MACH.x, MACH.y - 40, 70, '#ffe27a', { level: 2 }); // tap the machine until the cost fits the price
+    if (!s.end && !g.done) SK.tag(c, `Cups: ${s.q}`, MACH.x, MACH.y - 150, 18);
     SK.tag(c, 'Cost per cup', BADGE.x, 300, 18); SK.tag(c, 'Price', BADGE.x, 136, 18); SK.tag(c, 'Shift', 275, 238, 18); if (over > 0) SK.tag(c, 'Too crowded', MACH.x, MACH.y + 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
-    if (!s.end && cost > L.price && over === 0) SK.demo(g, c, 'tap', [MACH.x, MACH.y - 40], null, { delay: 0.7, period: 0.5 }); // keep mashing while the badge is outside the ring
+    if (!s.end && cost > L.price && over === 0) SK.demo(g, c, 'tap', [MACH.x, MACH.y - 40], null, { delay: 0.7, period: 0.4 }); // keep mashing while the badge is outside the ring
   },
   auto(g, dt, synth) { // mash until the badge is inside the ring with a little room to spare, then stop
     const s = g.s; const B = s._b8 = s._b8 || { next: 0.9 }; if (g.done || g.t < B.next || s.end) return;

@@ -113,7 +113,7 @@
           // a circular arrow in the glass: stir round and round
           c.save(); c.fillStyle = '#fff6ea'; c.globalAlpha = 0.85; const R = 58, n = 26, off = (t * 1.4) % 1;
           for (let i = 0; i < n - 3; i++) { const a = -Math.PI / 2 + ((i + off) / n) * Math.PI * 2; c.beginPath(); c.arc(MID[0] + Math.cos(a) * R, MID[1] + Math.sin(a) * R, 3.2, 0, 7); c.fill(); }
-          const ah = -Math.PI / 2 + (n - 2) / n * Math.PI * 2; c.translate(MID[0] + Math.cos(ah) * R, MID[1] + Math.sin(ah) * R); c.rotate(ah + Math.PI / 2); c.beginPath(); c.moveTo(12, 0); c.lineTo(-6, -9); c.lineTo(-6, 9); c.closePath(); c.fill(); c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.stroke(); c.restore();
+          const ah = -Math.PI / 2 + (n - 2.2) / n * Math.PI * 2, hx = MID[0] + Math.cos(ah) * R, hy = MID[1] + Math.sin(ah) * R, tx = -Math.sin(ah), ty = Math.cos(ah); c.globalAlpha = 1; c.beginPath(); c.moveTo(hx + tx * 16, hy + ty * 16); c.lineTo(hx - tx * 8 + ty * 8, hy - ty * 8 - tx * 8); c.lineTo(hx - tx * 8 - ty * 8, hy - ty * 8 + tx * 8); c.closePath(); c.fill(); c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.stroke(); c.restore();
         } else if (W < 0.35) SK.tag(c, 'Faster!', G.cx, G.top - 2, 20, '#fff6ea', 'rgba(200,90,30,0.9)'); // too slow to lift the sugar
         else SK.tag(c, 'Good!', G.cx, G.top - 2, 20, '#fff6ea', 'rgba(40,140,70,0.9)');
       }

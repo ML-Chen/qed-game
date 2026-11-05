@@ -77,7 +77,7 @@
       if (ok && Math.floor(s.steady / s.need * HOUSES) > (s.lit || 0)) { s.lit = Math.floor(s.steady / s.need * HOUSES); g.sfx('ding'); }
     },
     draw(g, c) {
-      const s = g.s, t = g.t, tip = CORE.t + s.d * (CORE.b - CORE.t), heat = SK.clamp((s.P - BAND[1]) / 20, 0, 1) + (s.hot ? 1 : 0);
+      const s = g.s, t = g.t, tip = CORE.t + s.d * (CORE.b - CORE.t), heat = g.result === 'win' ? 0 : SK.clamp((s.P - BAND[1]) / 20, 0, 1) + (s.hot ? 1 : 0);
       c.drawImage(g.bake('control_plant', paintPlant), 0, 0, 360, 640);
       // the town: its houses light up one by one while the power holds steady, and dim when it fails
       const supply = SK.clamp(s.P / BAND[0], 0, 1), lit = s.steady / s.need * HOUSES;
@@ -106,6 +106,19 @@
       // the town's progress: houses lit
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'beaver', 334, 626, 0.5, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost || heat > 0 ? 'wow' : 'happy', facing: -1 });
+      // the power gauge: the needle must sit in the green band; and how many houses are lit so far
+      { const G0 = 132, G1 = 336, GY = 146, sc = v => G0 + SK.clamp(v / 40, 0, 1) * (G1 - G0);
+        c.save(); c.fillStyle = 'rgba(10,14,40,0.75)'; c.beginPath(); c.roundRect(G0 - 10, GY - 16, G1 - G0 + 20, 32, 16); c.fill();
+        c.fillStyle = '#3a4a6a'; c.beginPath(); c.roundRect(G0, GY - 6, G1 - G0, 12, 6); c.fill();
+        c.fillStyle = s.ok ? '#5ae88a' : '#3aa86a'; c.beginPath(); c.roundRect(sc(BAND[0]), GY - 6, sc(BAND[1]) - sc(BAND[0]), 12, 4); c.fill();
+        c.fillStyle = '#e8503a'; c.beginPath(); c.roundRect(sc(30), GY - 6, G1 - sc(30), 12, 4); c.fill();
+        const nx = sc(s.P); c.fillStyle = '#fff'; c.strokeStyle = '#1a1430'; c.lineWidth = 2; c.beginPath(); c.moveTo(nx, GY + 2); c.lineTo(nx - 8, GY - 16); c.lineTo(nx + 8, GY - 16); c.closePath(); c.fill(); c.stroke(); c.restore();
+        SK.tag(c, 'Power', G0 - 46, GY, 18, s.ok ? '#9affb0' : '#fff6ea');
+        if (!g.done) SK.tag(c, Math.min(HOUSES, Math.floor(lit)) + ' / ' + HOUSES + ' lit', 250, 182, 18); }
+      // which way to move the rods: an arrow and a word by the lever while the power is out of the band
+      if (!g.done && !s.ok) { const up = s.P < BAND[0], bob = Math.sin(t * 6) * 4, ax = LEV.x - 2, ay = s.lev.y + (up ? -44 : 44) + (up ? -bob : bob);
+        c.save(); c.translate(ax, ay); c.scale(1, up ? 1 : -1); c.fillStyle = up ? '#7ac8ff' : '#ffb43a'; c.strokeStyle = '#1a1430'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -16); c.lineTo(13, 0); c.lineTo(6, 0); c.lineTo(6, 14); c.lineTo(-6, 14); c.lineTo(-6, 0); c.lineTo(-13, 0); c.closePath(); c.fill(); c.stroke(); c.restore();
+        SK.tag(c, up ? 'Rods out' : 'Rods in', LEV.x - 48, SK.clamp(ay + (up ? -30 : 30), LEV.t - 10, LEV.b + 30), 18, up ? '#bfe6ff' : '#ffd080'); }
       const tooLow = s.P < BAND[0], ty = SK.clamp(s.lev.y + (tooLow ? -80 : 60), LEV.t, LEV.b);
       if (!s.ok) { SK.grab(c, g, LEV.x, s.lev.y, 18); SK.target(c, g, LEV.x, ty, 16); SK.arrow(c, g, LEV.x, s.lev.y, LEV.x, ty, { from: 22, to: 24 }); }
       SK.demo(g, c, 'drag', [LEV.x, s.lev.y], [LEV.x, ty], { period: 2, never: s.ok });

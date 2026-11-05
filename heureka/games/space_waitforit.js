@@ -66,6 +66,11 @@ MG.add({
     // how many full Moons to catch: little moons along the top
     for (let i = 0; i < s.L.need; i++) { const x = 180 + (i - (s.L.need - 1) / 2) * 34; c.fillStyle = i < s.got ? '#fff6d0' : 'rgba(255,255,255,0.18)'; c.beginPath(); c.arc(x, 146, 11, 0, 7); c.fill(); c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2; c.stroke(); }
     if (!s.hold && !g.done) SK.glow(c, g, WF_M[0], WF_M[1], WF_MR + 12, '#e8f0ff', { level: 2 });
+    // what holding does, and while holding, how close the Moon is to full: a dashed ring that turns green in the full window
+    if (!g.done) { const d = Math.abs(((s.age % WF_MONTH) + WF_MONTH) % WF_MONTH - WF_MONTH / 2), full = d <= s.L.win;
+      if (!s.hold) SK.tag(c, 'Hold: nights pass', WF_M[0] - 20, WF_M[1] + WF_MR + 30, 18);
+      else { c.save(); c.strokeStyle = full ? '#7aff9a' : 'rgba(255,246,234,0.6)'; c.lineWidth = full ? 4 : 2.5; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.arc(WF_M[0], WF_M[1], WF_MR + 8, 0, 7); c.stroke(); c.restore();
+        SK.tag(c, full ? 'Let go!' : 'Not full yet', WF_M[0] - 20, WF_M[1] + WF_MR + 30, 18, full ? '#8affa8' : '#fff6ea'); } }
     SK.demo(g, c, 'hold', [WF_M[0], WF_M[1] + 4], null, { period: 2.4, never: !!(s.swoopT && t - s.swoopT < 1.0) || s.hold });
   },
   // the bot holds until the Moon is full, lets go, waits for the owl, and holds again

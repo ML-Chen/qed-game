@@ -97,6 +97,9 @@ MG.add({
       wedge(c, it.x, it.y - rr * 0.55, rr, a0 + Math.PI, da, COL[it.who]);
       if (!SK.dragging(g)) { SK.grab(c, g, it.x, it.y, 36); SK.target(c, g, PIE.x, PIE.y, s.r + 6); SK.arrow(c, g, it.x, it.y, PIE.x, PIE.y, { to: s.r + 20 }); }
     }
+    // how many funding rounds: one little slice per investor along the top, filled in its colour once it is in the pie
+    { const n = s.items.length, w = n * 32 + 14, x0 = 180 - w / 2; c.save(); c.globalAlpha = SK.clamp((t - 1.6) * 3, 0, 1); c.fillStyle = 'rgba(30,14,36,0.55)'; c.beginPath(); c.roundRect(x0, 124, w, 32, 16); c.fill();
+      s.items.forEach((it, i) => { const x = x0 + 23 + i * 32, y = 147; c.fillStyle = it.in ? COL[it.who] : 'rgba(255,246,234,0.18)'; c.strokeStyle = it.in ? '#fff6ea' : 'rgba(255,246,234,0.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y); c.arc(x, y, 18, -Math.PI / 2 - 0.45, -Math.PI / 2 + 0.45); c.closePath(); c.fill(); c.stroke(); }); c.restore(); }
     const first = s.items.find(i => !i.in && i.show && t > i.show + 0.3);
     SK.tag(c, 'Company', PIE.x, PIE.y - s.r - 20, 18); SK.tag(c, 'Founders', 172, 512, 18);
     for (const it of s.items) if (!it.in && it.show && t > it.show + 0.2) SK.tag(c, it.who === 'turtle' ? 'Staff pool' : 'Investor', it.hx, it.hy - 66, 18);

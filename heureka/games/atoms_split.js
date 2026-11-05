@@ -76,7 +76,7 @@
         }
         s.trail.push([n.x, n.y]); if (s.trail.length > 14) s.trail.shift();
         if (SK.dist(n.x, n.y, 60, 560) < 110) s.duck = g.t;
-        if (n.st === 'fly' && g.t - n.flyT > 1.8) { n.alpha = Math.max(0, 1 - (g.t - n.flyT - 1.8) * 3); if (n.alpha <= 0) { n.st = 'ready'; n.x = s.start[0]; n.y = s.start[1]; n.vx = n.vy = 0; n.alpha = 1; s.trail = []; } }
+        if (n.st === 'fly' && g.t - n.flyT > 1.8) { n.alpha = Math.max(0, 1 - (g.t - n.flyT - 1.8) * 3); if (n.alpha <= 0) { if (s.fus) s.slow = g.t; n.st = 'ready'; n.x = s.start[0]; n.y = s.start[1]; n.vx = n.vy = 0; n.alpha = 1; s.trail = []; } }
       }
       if (s.hit && !s.boom && g.t - s.hit > 0.3) { // the flash, the spare neutrons, and the lighter bowl
         s.boom = true; s.flash = g.t; g.sfx('thunder'); g.sfx('sparkle'); g.shake(8, 0.35);
@@ -149,6 +149,8 @@
         c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7 + fk; c.beginPath(); c.moveTo(cx + Math.cos(a) * (30 + fk * 60), cy + Math.sin(a) * (30 + fk * 60)); c.lineTo(cx + Math.cos(a) * (80 + fk * 240), cy + Math.sin(a) * (80 + fk * 240)); c.stroke(); }
         c.restore();
       }
+      if (!g.done) SK.tag(c, Math.min(s.starts.length, s.round + (s.boom ? 1 : 0)) + ' / ' + s.starts.length + (s.fus ? ' joined' : ' split'), 300, 140, 18);
+      if (s.fus && s.slow && t - s.slow < 1.6 && n.st === 'ready' && !g.done) SK.tag(c, 'Flick faster!', s.start[0] + (s.start[0] > 250 ? -60 : 0), s.start[1] - 46, 20, '#ffd080');
       SK.demo(g, c, 'swipe', s.start, [s.start[0] + (cx - s.start[0]) * 0.35, s.start[1] + (cy - s.start[1]) * 0.35], { never: n.st !== 'ready' || !!s.hit });
     },
     // the bot: flick straight at the nucleus (fast enough at level 2 to beat the push between two nuclei)

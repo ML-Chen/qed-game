@@ -105,6 +105,8 @@ MG.add({
     // the state of the market, live as you slide, and the labels
     const nb = k.b.filter(Boolean).length, na = k.a.filter(Boolean).length;
     SK.tag(c, na === nb ? 'All sold, nobody waits' : na < nb ? 'Shortage: buyers wait' : 'Surplus: ' + FRUITS[s.fruit][0].toLowerCase() + ' rot', 150, 584, 20, '#fff6ea', na === nb ? 'rgba(40,140,70,0.88)' : 'rgba(190,40,40,0.88)');
+    if (!R && !g.done) G2.dir(c, TRACK.x - 44, ty, na < nb ? 1 : na > nb ? -1 : 0); // shortage: raise the price; surplus: lower it; a tick when it clears
+    SK.tag(c, `Day ${Math.min(s.days.length, s.day + 1)} / ${s.days.length}`, 64, 44, 18); // market days to clear
     SK.tag(c, 'Price', TRACK.x, TRACK.y0 - 34, 18); SK.tag(c, 'Buyers', 40, 418, 18); SK.tag(c, FRUITS[s.fruit][0], 228, 270, 18);
     // guidance: slide the tag up from the bottom
     if (!R) SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(this.band(g))], { delay: 0.8, period: 2 }); // toward today's clearing price

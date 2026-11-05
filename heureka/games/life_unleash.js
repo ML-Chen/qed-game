@@ -65,9 +65,13 @@
       // the host fox by the den cheers or sulks
       const won = g.result === 'win', lost = g.result === 'fail';
       if (won || lost) SK.animal(c, 'fox', 120, 610, 0.8, { t, pose: won ? 'cheer' : 'sad', expr: won ? 'laugh' : 'wow' });
-      if (s.F < 0.5) SK.glow(c, g, DEN.x, DEN.y - 14, 40, s.R > 20 ? '#ffe27a' : 'rgba(255,240,200,0.5)');
+      // the boom: past this many rabbits (a dashed line on the graph) with no fox out, it is time to send one; the den
+      // lights up and says so. Below it, the den stays dim.
+      const boom = s.R > 18 && s.F < 0.5 && !g.done; { const by = gy + gh - 18 * gh / OVER; c.save(); c.strokeStyle = 'rgba(255,226,122,0.8)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(gx, by); c.lineTo(gx + gw, by); c.stroke(); c.restore(); }
+      if (s.F < 0.5) SK.glow(c, g, DEN.x, DEN.y - 14, 40, boom ? '#ffe27a' : 'rgba(255,240,200,0.5)', { level: 2 });
+      if (boom) SK.tag(c, 'Send a fox!', DEN.x + 70, DEN.y - 62, 20, '#ffe27a');
       SK.tag(c, 'Rabbits', 120, gy + gh + 26, 18, '#fff6ea'); SK.tag(c, 'Foxes', 240, gy + gh + 26, 18, '#ffb060'); SK.tag(c, 'Fox den', DEN.x + 40, DEN.y + 30, 18);
-      SK.demo(g, c, 'tap', [DEN.x, DEN.y - 14], null, { delay: 2.2, never: (g.s.touched || g.level > 0) && !(s.R > 20 && s.F < 0.5) });
+      SK.demo(g, c, 'tap', [DEN.x, DEN.y - 14], null, { never: !boom }); // the hand shows only at a boom, so copying it sends one fox at the right time
     },
     // the bot sends out one fox whenever the rabbits boom and no foxes are left
     auto(g, dt, synth) { const s = g.s; if (g.done) return; const B = s._b = s._b || { u: -9 }; if (s.R > 24 && s.F < 0.5 && s.u - B.u > 0.3) { B.u = s.u; synth('down', DEN.x, DEN.y - 14); synth('up', DEN.x, DEN.y - 14); } },

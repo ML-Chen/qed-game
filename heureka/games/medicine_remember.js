@@ -59,7 +59,7 @@ MG.add({
     note: 'A vaccine teaches the immune system a germ\'s shape ahead of time, so the real germ is stopped quickly.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), f = 1 + (g.speed - 1) * 0.35;
-    s.L = L; s.f = f; s.rounds = [2, 3, 3][L]; s.walk = [3.3, 2.5, 1.9][L] / f;
+    s.L = L; s.f = f; s.rounds = [2, 3, 3][L]; s.walk = [5.5, 4.3, 2.8][L] / f; // long enough to wait for the hand, copy it, and let the cells learn
     s.v = SK.variant(g, 4); const order = [[0, 1, 2, 3], [1, 3, 0, 2], [2, 0, 3, 1], [3, 2, 1, 0]][s.v];
     s.order = order; s.learned = []; s.fails = 0; s.mutated = false;
     startRound(g, 0, 0.5);
@@ -111,6 +111,7 @@ MG.add({
     SK.animal(c, 'duck', 40, 620, 0.65, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (p) SK.tag(c, 'Vaccine', p.x, p.y - 64, 18); SK.tag(c, 'Immune cells', 120, 534, 18); if (R && !R.beat && !R.spread && R.k < 0.5) SK.tag(c, 'Germ', 300, 232, 18);
     if (p && !p.on && !p.drag) { SK.target(c, g, BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2, 0, { w: BOARD.w + 10, h: BOARD.h + 10 }); SK.arrow(c, g, p.x, p.y, BOARD.x + BOARD.w / 2 + 20, BOARD.y + BOARD.h / 2 + 30); SK.grab(c, g, p.x, p.y, 50); }
+    if (R && !won && !lost) SK.tag(c, 'Germ ' + (R.i + 1) + ' / ' + s.rounds, 126, 168, 20);
     if (p && !p.on) SK.demo(g, c, 'drag', [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2]);
   },
   // the bot: put each poster on the board as soon as it appears

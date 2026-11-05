@@ -71,16 +71,20 @@ MG.add({
     { const px = dv => mx - 43 - dv, r0 = Math.hypot(LA_MUZ[0] + 6 - LA_C[0], LA_MUZ[1] - LA_C[1]), dOf = rx => LA_PULL * Math.sqrt(2 * LA_GM * rx / (r0 * (r0 + rx))) / LA_VC, d0 = dOf(L.rp), d1 = dOf(L.ra);
       c.save(); c.strokeStyle = 'rgba(255,230,160,0.5)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(px(0), my + 24); c.lineTo(px(150), my + 24); c.stroke();
       c.strokeStyle = '#5ad06a'; c.lineWidth = 8; c.beginPath(); c.moveTo(px(d0), my + 24); c.lineTo(px(d1), my + 24); c.stroke();
-      c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(px(d), my + 24, 6, 0, 7); c.fill(); c.restore();
+      const inB = d >= d0 && d <= d1; c.fillStyle = !s.grab ? '#fff6ea' : inB ? '#7aff9a' : '#ffb060'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.arc(px(d), my + 24, s.grab ? 8 : 6, 0, 7); c.fill(); c.stroke(); c.restore();
+      // while pulling: which way to go, more (further back) or less
+      if (s.grab && !g.done && !inB) SK.tag(c, d < d0 ? 'Pull more' : 'Less', px(d), my - 34, 18, '#ffe27a');
+      s.band = [d0, d1];
       if (!g.done) SK.tag(c, 'Orbit', px((d0 + d1) / 2), my + 48, 18, '#fff6ea', 'rgba(30,90,40,0.8)'); }
-    if (!g.done && !s.grab) SK.glow(c, g, mx - 24, my, 30, '#ffe27a', { level: 2 });
+    // the drag: grab the plunger, pull it back into the green stretch
+    if (!g.done && !s.grab && g.t >= s.reload && s.band) { const tx = mx - 40 - (s.band[0] + s.band[1]) / 2; SK.grab(c, g, mx - 40, my, 20); SK.target(c, g, tx, my, 18); SK.arrow(c, g, mx - 40, my, tx, my, { from: 24, to: 26 }); }
     // the rabbit on the mountain ducks as balls whizz round, cheers when they stay up
     const whizz = s.balls.some(b => b.st === 'orbit' && SK.dist(b.x, b.y, mx, my) < 60);
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'rabbit', LA_C[0] - 34, LA_C[1] - LA_TOP + 14, 0.52, { t, pose: won ? 'cheer' : whizz ? 'sad' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : whizz ? 'wow' : lost ? 'wow' : 'happy' });
     // how many must orbit: little gold rings under the command, filled as balls make it
     for (let i = 0; i < L.need; i++) { const x = 180 + (i - (L.need - 1) / 2) * 30; c.strokeStyle = '#ffd45a'; c.lineWidth = 3; c.beginPath(); c.arc(x, 150, 9, 0, 7); c.stroke(); if (i < s.good) SK.ball(c, x, 150, 7, '#ffcc3a'); }
-    SK.demo(g, c, 'drag', [mx - 24, my], [mx - 24 - LA_PULL, my]);
+    SK.demo(g, c, 'drag', [mx - 40, my], [mx - 40 - LA_PULL, my], { never: g.t < s.reload });
   },
   auto(g, dt, synth) { const s = g.s, B = s._bot = s._bot || {}; if (g.done) return; const n = B.n || 0; if (n >= s.L.need) return;
     B['t' + n] = B['t' + n] || Math.max(0.9 + n * 0.5, s.reload + 0.05, g.t); if (SK.bot.drag(g, synth, 'f' + n, B['t' + n], [LA_MUZ[0] - 24, LA_MUZ[1]], [LA_MUZ[0] - 24 - LA_PULL, LA_MUZ[1]], 0.25)) B.n = n + 1; },

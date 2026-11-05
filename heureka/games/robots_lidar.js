@@ -51,9 +51,7 @@ MG.add({
   down(g) { if (g.done) return; SK.holdStart(g); g.sfx('click'); },
   up(g) {
     const s = g.s; if (s._hold == null) return; SK.holdEnd(g); if (g.done || s.path) return;
-    if (s.swept >= TURN && s.stop < s.L.stops.length - 1) { // a full turn: the robot plans through the doorway it saw and drives
-      const L = s.L, i = s.stop; s.path = [...L.via[i], L.stops[i + 1]]; g.sfx('ding');
-    } else if (s.swept < TURN) { s.huh = 0.6; g.sfx('wrong'); } // not mapped yet: the robot won't drive into the unknown
+    if (s.swept < TURN) { s.huh = 0.6; g.sfx('wrong'); } // not mapped yet: the robot won't drive into the unknown
   },
   update(g, dt) {
     const s = g.s, b = s.bot; s.huh = Math.max(0, s.huh - dt);
@@ -72,7 +70,9 @@ MG.add({
       if (h) { s.dots.push([h.x, h.y, h.kind === 'cat' ? 1 : 0, g.t]); if (h.kind === 'cat' && !s.found) { s.found = g.t; } }
     }
     if (s.dots.length > 1400) s.dots.splice(0, s.dots.length - 1400);
-    s.ang += da; s.swept += da; if (Math.floor((s.ang - da) / 1.2) !== Math.floor(s.ang / 1.2)) g.sfx('tap', { vol: 0.3, pitch: 1.6 });
+    s.ang += da; s.swept += da;
+    // a full turn: the robot plans through the doorway it saw and drives on by itself (hold again in the next room)
+    if (s.swept >= TURN && s.stop < s.L.stops.length - 1) { const L = s.L, i = s.stop; s.path = [...L.via[i], L.stops[i + 1]]; g.sfx('ding'); SK.holdEnd(g); } if (Math.floor((s.ang - da) / 1.2) !== Math.floor(s.ang / 1.2)) g.sfx('tap', { vol: 0.3, pitch: 1.6 });
     if (s.stop === s.L.stops.length - 1 && s.swept >= TURN && s.found) { g.win(); g.sfx('meow'); g.sfx('cheer'); g.burst(s.L.tail[0] - 10, s.L.tail[1], ['#ff4a4a', '#ffe27a'], 18, 160); }
   },
   draw(g, c) {
@@ -99,9 +99,11 @@ MG.add({
     c.save(); c.translate(b.x, b.y); c.rotate(s.ang); c.fillStyle = '#2a2e44'; c.beginPath(); c.arc(0, 0, 10, 0, 7); c.fill(); c.fillStyle = '#ff4a5a'; c.fillRect(6, -3, 8, 6); c.restore();
     if (s.huh) SK.tag(c, '?', b.x, b.y - 42, 22);
     // a circular arrow round the robot shows the spin; the cat's eyes glint in the far dark room
-    if (!s.path && !g.done && s._hold == null) { c.save(); c.strokeStyle = 'rgba(255,120,130,0.8)'; c.lineWidth = 3; const a0 = t * 2; c.beginPath(); c.arc(b.x, b.y, 38, a0, a0 + 4.6); c.stroke(); const ax = b.x + Math.cos(a0 + 4.6) * 38, ay = b.y + Math.sin(a0 + 4.6) * 38, d = a0 + 4.6 + Math.PI / 2; c.fillStyle = 'rgba(255,120,130,0.9)'; c.beginPath(); c.moveTo(ax + Math.cos(d) * 8, ay + Math.sin(d) * 8); c.lineTo(ax + Math.cos(d + 2.3) * 7, ay + Math.sin(d + 2.3) * 7); c.lineTo(ax + Math.cos(d - 2.3) * 7, ay + Math.sin(d - 2.3) * 7); c.fill(); c.restore(); SK.tag(c, 'Lidar', b.x, b.y + 54, 18); }
+    if (!s.path && !g.done && s._hold == null) { c.save(); c.strokeStyle = 'rgba(255,120,130,0.8)'; c.lineWidth = 3; const a0 = t * 2; c.beginPath(); c.arc(b.x, b.y, 38, a0, a0 + 4.6); c.stroke(); const ax = b.x + Math.cos(a0 + 4.6) * 38, ay = b.y + Math.sin(a0 + 4.6) * 38, d = a0 + 4.6 + Math.PI / 2; c.fillStyle = 'rgba(255,120,130,0.9)'; c.beginPath(); c.moveTo(ax + Math.cos(d) * 8, ay + Math.sin(d) * 8); c.lineTo(ax + Math.cos(d + 2.3) * 7, ay + Math.sin(d + 2.3) * 7); c.lineTo(ax + Math.cos(d - 2.3) * 7, ay + Math.sin(d - 2.3) * 7); c.fill(); c.restore(); SK.tag(c, 'Hold to spin', b.x, b.y + 54, 18); }
     if (!s.found && !g.done) { const bl = Math.sin(t * 1.3) > 0.85 ? 0.2 : 1; c.fillStyle = `rgba(190,255,120,${0.75 * bl})`; for (const dx of [-5, 5]) { c.beginPath(); c.ellipse(L.tail[0] + s.eyeDx + dx, L.tail[1] + 8, 2.6, 3.6 * bl, 0, 0, 7); c.fill(); } }
     if (!s.path && !g.done && s._hold == null) SK.glow(c, g, b.x, b.y, 32);
+    // which room of how many: little squares, the current one outlined, the cleared ones ticked
+    { const n = L.stops.length; for (let i = 0; i < n; i++) { const x = 30 + i * 26, y = 112, done = i < s.stop; c.fillStyle = done ? '#5ad07a' : i === s.stop ? '#ff6a7a' : 'rgba(200,210,255,0.25)'; c.beginPath(); c.roundRect(x - 9, y - 9, 18, 18, 4); c.fill(); } }
     // the owl watches from the corner, wide-eyed in the dark
     SK.animal(c, 'owl', 306, 130, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'think', facing: -1 });
     if (!s.path) SK.demo(g, c, 'hold', [b.x, b.y], null, { period: 2.4 });
