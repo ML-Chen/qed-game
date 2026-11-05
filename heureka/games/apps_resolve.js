@@ -48,7 +48,7 @@ function picture(c, vals, x, y, t, o = {}) { // the frame beside a train: what i
 }
 function label(c, txt, x, y) { c.save(); c.font = '800 18px Nunito, system-ui'; const w = c.measureText(txt).width + 16; c.fillStyle = 'rgba(40,24,40,0.72)'; c.beginPath(); c.roundRect(x, y - 13, w, 26, 13); c.fill(); c.fillStyle = '#fff6ea'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(txt, x + 8, y + 1); c.restore(); }
 MG.add({
-  id: 'cs_resolve', stage: 'apps', cmd: 'KEEP BOTH CHANGES!', time: 7, mood: 'party', winText: 'Merged!', failText: 'Lost change!',
+  id: 'cs_resolve', stage: 'apps', cmd: 'KEEP BOTH CHANGES!', time: 7, mood: 'party', winText: 'Both changes kept!', failText: 'Lost change!',
   card: { title: 'Merging two changes', kind: 'Computer science', ref: 'Merge conflicts (version control with git)',
     text: 'In version control, people work on separate copies called branches and later merge them back together. Usually the computer combines the changes by itself.\n\nWhen two branches change the same line, it cannot tell which version to keep. That is a merge conflict, and a person has to decide what the line should say.\n\nOften the right answer keeps both changes. Here the fox made the frog blue and the rabbit made it bigger, so the merged line draws a big blue frog.',
     note: 'When two branches change the same line, a person writes the merged line, usually keeping both changes.' },

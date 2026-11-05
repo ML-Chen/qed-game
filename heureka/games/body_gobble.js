@@ -47,7 +47,7 @@ function rbc(c, r, t, badge) {
 const nearWall = b => Math.min(b.x - AR.l, AR.r - b.x, b.y - AR.t, AR.b - b.y) < 40;
 
 MG.add({
-  id: 'body_gobble', stage: 'body', cmd: 'SWALLOW ALL THE GERMS!', time: 7, mood: 'bright', winText: 'Phagocytosis!', failText: 'Multiplied!',
+  id: 'body_gobble', stage: 'body', cmd: 'SWALLOW ALL THE GERMS!', time: 8, mood: 'bright', winText: 'Germs eaten!', failText: 'Germs multiplied!',
   card: { title: 'White cells eat germs', kind: 'Biology', ref: 'Phagocytes and phagocytosis',
     text: 'When bacteria get in through a cut, white blood cells crawl out of the blood vessels to meet them. Some white cells, called phagocytes, swallow germs whole: the cell flows around a bacterium, wraps it in a bubble and breaks it down with strong chemicals. This is called phagocytosis.\n\nThe body\'s own cells carry markers that say "self", so phagocytes leave them alone.\n\nSome bacteria grow a slippery coat called a capsule that is hard to grip. Phagocytes catch them more easily when they are pinned against a surface or coated with antibodies.',
     note: 'White blood cells find bacteria, swallow them and digest them, and leave the body\'s own cells alone.' },
@@ -64,12 +64,12 @@ MG.add({
   update(g, dt) {
     const s = g.s, w = s.w;
     // the white cell flows toward the finger
-    if (s.tgt && !g.done && g.t - s.bump > 0.35) { const dx = s.tgt.x - w.x, dy = s.tgt.y - w.y, d = Math.hypot(dx, dy); const sp = Math.min(VMAX, d * 6); w.vx = SK.lerp(w.vx, d ? dx / d * sp : 0, Math.min(1, dt * 8)); w.vy = SK.lerp(w.vy, d ? dy / d * sp : 0, Math.min(1, dt * 8)); }
+    if (s.tgt && !g.done && g.t - s.bump > 0.2) { const dx = s.tgt.x - w.x, dy = s.tgt.y - w.y, d = Math.hypot(dx, dy); const sp = Math.min(VMAX, d * 6); w.vx = SK.lerp(w.vx, d ? dx / d * sp : 0, Math.min(1, dt * 8)); w.vy = SK.lerp(w.vy, d ? dy / d * sp : 0, Math.min(1, dt * 8)); }
     else { w.vx *= Math.exp(-dt * 4); w.vy *= Math.exp(-dt * 4); }
     w.x = SK.clamp(w.x + w.vx * dt, AR.l + WR, AR.r - WR); w.y = SK.clamp(w.y + w.vy * dt, AR.t + WR, AR.b - WR);
     // red blood cells drift past; bumping one makes the white cell back off
-    for (const r of s.rbc) { r.x += r.v * dt; if (r.x > 390) r.x = -30; r.a += dt * 0.3; r.badge = Math.max(0, r.badge - dt * 0.8);
-      if (SK.dist(r.x, r.y, w.x, w.y) < WR + 14 && g.t - s.bump > 0.35 && !g.done) { const dx = w.x - r.x, dy = w.y - r.y, d = Math.hypot(dx, dy) || 1; w.vx = dx / d * 240; w.vy = dy / d * 240; s.bump = g.t; r.badge = 1.4; g.sfx('boing'); } }
+    for (const r of s.rbc) { r.x += r.v * dt + (r.px || 0) * dt; r.y += (r.py || 0) * dt; r.px = (r.px || 0) * Math.exp(-dt * 3); r.py = (r.py || 0) * Math.exp(-dt * 3); r.y = SK.clamp(r.y, AR.t + 20, AR.b - 20); if (r.x > 390) r.x = -30; r.a += dt * 0.3; r.badge = Math.max(0, r.badge - dt * 0.8);
+      if (SK.dist(r.x, r.y, w.x, w.y) < WR + 14 && g.t - s.bump > 0.25 && !g.done) { const dx = w.x - r.x, dy = w.y - r.y, d = Math.hypot(dx, dy) || 1; w.vx = dx / d * 150; w.vy = dy / d * 150; r.px = -dx / d * 160; r.py = -dy / d * 160; s.bump = g.t; r.badge = 1.4; g.sfx('boing'); } }
     // bacteria swim, wiggle and turn; capsule ones squirt away unless pinned at a wall
     for (const b of s.bac) {
       if (b.eat >= 0) { const k = Math.min(1, (g.t - b.eat) / 0.45); b.x = SK.lerp(b.x, w.x, k * 0.5); b.y = SK.lerp(b.y, w.y, k * 0.5); continue; }
@@ -79,7 +79,7 @@ MG.add({
       if (b.x < AR.l + 12) { b.x = AR.l + 12; b.vx = Math.abs(b.vx); } if (b.x > AR.r - 12) { b.x = AR.r - 12; b.vx = -Math.abs(b.vx); }
       if (b.y < AR.t + 12) { b.y = AR.t + 12; b.vy = Math.abs(b.vy); } if (b.y > AR.b - 12) { b.y = AR.b - 12; b.vy = -Math.abs(b.vy); }
       b.a = Math.atan2(b.vy, b.vx);
-      if (!g.done && SK.dist(b.x, b.y, w.x, w.y) < WR + 15) {
+      if (!g.done && s.tgt && SK.dist(b.x, b.y, w.x, w.y) < WR + 15) { // it only swallows while you steer it (hunting), so an idle cell catches nothing
         if (b.cap && !nearWall(b)) { const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * 170; b.vy = dy / d * 170; b.x = w.x + dx / d * (WR + 16); b.y = w.y + dy / d * (WR + 16); if (g.t - (b.slip || -9) > 0.3) { g.sfx('slurp'); b.slip = g.t; } }
         else { b.eat = g.t; s.eaten++; g.sfx('munch'); g.sfx('pop'); g.burst(w.x, w.y, ['#fff6ea', '#a8f07a'], 8, 90); }
       }
@@ -111,8 +111,8 @@ MG.add({
     const la = near ? Math.atan2(near.y - w.y, near.x - w.x) : 0;
     for (const e of [-1, 1]) { const ex = w.x + e * 11, ey = w.y + 15; c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, 5, 0, 7); c.fill(); c.fillStyle = '#2a1424'; c.beginPath(); c.arc(ex + Math.cos(la) * 2, ey + Math.sin(la) * 2, 2.6, 0, 7); c.fill(); }
     SK.animal(c, 'rabbit', 330, 628, 0.55, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
-    if (!s.touched && !g.done) SK.glow(c, g, w.x, w.y, 40);
     if (!g.done) { SK.tag(c, 'White blood cell', SK.clamp(w.x, 92, 268), w.y + (w.y > 500 ? -62 : 58), 18); const r0 = s.rbc[1]; if (r0 && r0.x > 60 && r0.x < 300) SK.tag(c, 'Red blood cell', SK.clamp(r0.x, 86, 274), r0.y - 34, 18); }
+    if (near && !g.done) { SK.target(c, g, near.x, near.y, 22); SK.arrow(c, g, w.x, w.y, near.x, near.y, { from: 46, to: 34 }); SK.grab(c, g, w.x, w.y, 44); }
     if (near) SK.demo(g, c, 'drag', [w.x, w.y], [near.x, near.y]);
   },
   // the bot: chase the nearest germ around the red cells; corner capsule germs against the nearest wall
@@ -124,7 +124,8 @@ MG.add({
     if (b.cap) { // come at it from the open side so it squirts toward the wall
       const walls = [[b.x - AR.l, -1, 0], [AR.r - b.x, 1, 0], [b.y - AR.t, 0, -1], [AR.b - b.y, 0, 1]].sort((p, q) => p[0] - q[0])[0], nx = walls[1], ny = walls[2];
       const ox = b.x - nx * 70, oy = b.y - ny * 70, behind = (w.x - b.x) * -nx + (w.y - b.y) * -ny > 30;
-      if (behind) { tx = b.x + nx * 30; ty = b.y + ny * 30; } else { tx = ox; ty = oy; }
+      if (behind) { tx = b.x + nx * 30; ty = b.y + ny * 30; }
+      else { const px = -ny, py = nx, side = ((w.x - b.x) * px + (w.y - b.y) * py) >= 0 ? 1 : -1; tx = ox; ty = oy; if (SK.dist(w.x, w.y, b.x, b.y) < WR + 60) { tx += px * side * 90; ty += py * side * 90; } }
     }
     if (!s.tgt) synth('down', tx, ty); else synth('move', tx, ty);
   },

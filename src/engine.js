@@ -213,6 +213,7 @@ function makeG(def, level, speed, silent, mode, paceMul) {
   };
   // rec: everything the rewind scrubber needs to re-play this microgame exactly: each frame's dt, every input event
   // (k = how many updates came before it) and every random number drawn outside drawing
+  g.avoid = def._lastVariant; // the variant this microgame used last time (SK.variant avoids repeating it)
   g.rec = { dts: [], ev: [], rand: [] };
   g.rand = () => { const v = Math.random(); if (!g._norec) g.rec.rand.push(v); return v; };
   return g;
@@ -475,7 +476,7 @@ function openRewind() {
 function closeRewind() { if (!run || !run.rewind) return; run.rewind = null; A.sfx('click'); if (run.phase === 'play' && !run.paused) A.beat(true, { bpm: run.bpm, mood: run.g.def.mood || run.stage.mood }); }
 // a hidden copy of the microgame, re-played from init with the recorded inputs
 function simNew(live) {
-  const def = live.def, rec = live.rec, sg = makeG(def, live.level, live.speed, true, live.mode, live.paceMul); sg.replay = live.replay; sg.sim = true;
+  const def = live.def, rec = live.rec, sg = makeG(def, live.level, live.speed, true, live.mode, live.paceMul); sg.replay = live.replay; sg.sim = true; sg.avoid = live.avoid;
   let ri = 0; sg.rand = () => sg._norec ? Math.random() : ri < rec.rand.length ? rec.rand[ri++] : Math.random();
   const fx = Object.assign(Object.create(FX), { parts: [], texts: [], shakeT: 0, shakeA: 0 });
   sg.burst = (...a) => fx.burst(...a); sg.float = (...a) => fx.float(...a); sg.shake = () => { };

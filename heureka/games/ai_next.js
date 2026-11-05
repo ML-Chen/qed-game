@@ -74,7 +74,7 @@ function sceneCat(c, s, t, x, y) { // the picture of the sentence: where the cat
   c.strokeStyle = 'rgba(255,240,220,0.5)'; c.lineWidth = 3; c.beginPath(); c.roundRect(20, 214, 320, 116, 16); c.stroke();
 }
 MG.add({
-  id: 'cs_next', stage: 'ai', cmd: 'STOP THE WHEEL FOR EACH WORD!', time: 7, mood: 'night', winText: 'Next token!', failText: 'Unlikely!',
+  id: 'cs_next', stage: 'ai', cmd: 'STOP THE WHEEL FOR EACH WORD!', time: 7, mood: 'night', winText: 'Word by word!', failText: 'Odd word!',
   card: { title: 'One word at a time', kind: 'Artificial intelligence', ref: 'Next-token prediction (language models)',
     text: 'A language model writes one piece of text at a time. Each piece is called a token: a word or part of a word.\n\nFor each step, the model gives every possible next token a chance. After "The cat sat on the", "mat" gets a big chance and "moon" a tiny one. Then one token is drawn, like stopping a prize wheel, and added to the text.\n\nThen it starts again with the longer text, so every new word changes the chances for the next one. Usually a likely word comes up. Now and then a tiny slice wins, and the sentence goes strange.',
     note: 'A language model writes by drawing the next token again and again, each one picked by its chance of coming next.' },

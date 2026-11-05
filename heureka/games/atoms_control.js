@@ -9,7 +9,7 @@
   const CORE = { l: 34, r: 286, t: 300, b: 548 }, LEV = { x: 322, t: 300, b: 548 }, RODS = [92, 160, 228], RW = 14;
   const ATOMS = []; for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) ATOMS.push([56 + i * 42 - (i >= 3 ? 0 : 0), 322 + j * 42]);
   const SPEED = 230, LIFE = 1.5, HIT = 9, COOL = 0.35, BAND = [6, 22], MAXN = 70, HOUSES = 6;
-  const town = [[150, 214], [182, 206], [214, 216], [246, 204], [278, 212], [310, 202]];
+  const town = [[150, 226], [186, 218], [222, 228], [258, 216], [294, 224], [330, 212]];
   function paintPlant(o) {
     const sky = o.createLinearGradient(0, 0, 0, 290); sky.addColorStop(0, '#0c1236'); sky.addColorStop(1, '#2a2a5a'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
     const rnd = P.rng(8); for (let i = 0; i < 40; i++) { o.fillStyle = `rgba(255,250,220,${0.3 + rnd() * 0.5})`; o.beginPath(); o.arc(rnd() * 360, rnd() * 180, 0.6 + rnd() * 1.2, 0, 7); o.fill(); }
@@ -25,10 +25,12 @@
     o.fillStyle = 'rgba(255,255,255,0.25)'; for (let y = LEV.t; y <= LEV.b; y += 31) o.fillRect(LEV.x + 12, y - 1, 8, 2);
   }
   function house(c, x, y, b, i, t) {
+    c.save(); c.translate(x, y); c.scale(1.35, 1.35); c.translate(-x, -y);
     c.fillStyle = '#3a3048'; c.beginPath(); c.moveTo(x - 13, y); c.lineTo(x, y - 12); c.lineTo(x + 13, y); c.lineTo(x + 13, y + 18); c.lineTo(x - 13, y + 18); c.fill();
     const glow = b * (0.85 + 0.15 * Math.sin(t * 3 + i)); c.fillStyle = b > 0.05 ? `rgba(255,${200 + 30 * glow},${90 + 60 * glow},${0.25 + 0.75 * glow})` : '#1a1626';
     c.fillRect(x - 8, y + 3, 6, 6); c.fillRect(x + 2, y + 3, 6, 6);
     if (b > 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,210,120,${0.18 * b})`; c.beginPath(); c.arc(x, y + 6, 22, 0, 7); c.fill(); c.restore(); }
+    c.restore();
   }
   function splitAt(g, s, a, x, y) {
     a.cool = COOL; s.splits.push({ x, y, t: g.t }); s.count++;
@@ -88,19 +90,19 @@
       c.save(); c.beginPath(); c.roundRect(CORE.l, CORE.t, CORE.r - CORE.l, CORE.b - CORE.t, 8); c.clip();
       const wg = c.createRadialGradient(160, 424, 10, 160, 424, 180); wg.addColorStop(0, heat > 0 ? `rgba(255,${120 - 80 * Math.min(1, heat)},60,${0.3 + 0.4 * Math.min(1, heat)})` : `rgba(90,170,255,${0.1 + 0.35 * supply})`); wg.addColorStop(1, 'rgba(20,60,140,0)'); c.fillStyle = wg; c.fillRect(0, 0, 360, 640);
       for (const a of s.atoms) { if (a.cool > 0) { const k = a.cool / COOL; c.fillStyle = `rgba(120,140,90,${0.5 - 0.3 * k})`; c.beginPath(); c.arc(a.x - 4 * k, a.y, 4, 0, 7); c.arc(a.x + 4 * k, a.y, 4, 0, 7); c.fill(); } else SK.ball(c, a.x, a.y, 8, '#b8d84a', { lw: 1.2 }); }
-      for (const p of s.splits) { const q = (t - p.t) / 0.45; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#fff2a0'; c.beginPath(); c.arc(p.x, p.y, 6 + q * 16, 0, 7); c.fill(); c.restore(); }
+      for (const p of s.splits) { const q = (t - p.t) / 0.45; if (q >= 1 || q < 0) continue; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#fff2a0'; c.beginPath(); c.arc(p.x, p.y, 6 + q * 16, 0, 7); c.fill(); c.restore(); }
       for (const n of s.ns) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(n.x, n.y, 3.4, 0, 7); c.fill(); c.strokeStyle = 'rgba(154,216,255,0.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(n.x - n.vx * 0.04, n.y - n.vy * 0.04); c.stroke(); }
       // the control rods, hanging from the top down to their tips
       for (const rx of RODS) { const rg = c.createLinearGradient(rx - RW / 2, 0, rx + RW / 2, 0); rg.addColorStop(0, '#22222c'); rg.addColorStop(0.5, '#5a5a6a'); rg.addColorStop(1, '#22222c'); c.fillStyle = rg; c.fillRect(rx - RW / 2, CORE.t, RW, tip - CORE.t); }
-      for (const p of s.absorb) { const q = (t - p.t) / 0.3; c.fillStyle = `rgba(255,255,255,${0.8 * (1 - q)})`; c.beginPath(); c.arc(p.x, p.y, 3 + q * 5, 0, 7); c.fill(); }
+      for (const p of s.absorb) { const q = (t - p.t) / 0.3; if (q >= 1 || q < 0) continue; c.fillStyle = `rgba(255,255,255,${0.8 * (1 - q)})`; c.beginPath(); c.arc(p.x, p.y, 3 + q * 5, 0, 7); c.fill(); }
       c.restore();
       if (heat > 0) { const on = Math.sin(t * 16) > 0; c.fillStyle = on ? 'rgba(255,50,30,0.22)' : 'rgba(255,50,30,0.06)'; c.fillRect(0, 262, 360, 378); for (const x of [16, 344]) { c.fillStyle = on ? '#ff4a3a' : '#6a1a1a'; c.beginPath(); c.arc(x, 280, 10, Math.PI, 0); c.fill(); } }
       // the lever that moves the rods: its handle sits level with the rods' tips
       c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(CORE.r - 4, tip); c.lineTo(LEV.x - 12, tip); c.stroke(); c.setLineDash([]);
       SK.ball(c, LEV.x, s.lev.y, 15, '#e8b83a'); c.fillStyle = '#7a5a1a'; c.fillRect(LEV.x - 8, s.lev.y - 2, 16, 4);
       // labels
-      SK.tag(c, 'Control rods', 120, 282, 18); SK.tag(c, 'soak up neutrons', 120, 576, 18);
-      SK.tag(c, 'Uranium', 270, 576, 18); if (s.ns.length) { const n = s.ns[0]; if (n.y > 330) SK.tag(c, 'Neutrons', SK.clamp(n.x, 70, 250), n.y - 22, 18); }
+      SK.tag(c, 'Control rods: soak up neutrons', 160, 282, 18);
+      SK.tag(c, 'Uranium atoms', 110, 576, 18); if (s.ns.length) { const n = s.ns[0]; if (n.y > 330) SK.tag(c, 'Neutrons', SK.clamp(n.x, 70, 250), n.y - 22, 18); }
       // the town's progress: houses lit
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'beaver', 334, 626, 0.5, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost || heat > 0 ? 'wow' : 'happy', facing: -1 });

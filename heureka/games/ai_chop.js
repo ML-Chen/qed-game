@@ -23,7 +23,7 @@ function paintForest(o) {
   o.fillStyle = '#5a4030'; for (let x = 2; x < 360; x += 16) o.fillRect(x, TRAINY + 15, 7, 20);
 }
 MG.add({
-  id: 'cs_chop', stage: 'ai', cmd: 'CHOP THE WORD INTO TOKENS!', time: 7, mood: 'night', winText: 'Tokens!', failText: 'Too long!',
+  id: 'cs_chop', stage: 'ai', cmd: 'CHOP THE WORD INTO TOKENS!', time: 7, mood: 'night', winText: 'All tokens!', failText: 'Too long!',
   card: { title: 'Words in pieces', kind: 'Artificial intelligence', ref: 'Tokenization (subword tokens)',
     text: 'A language model does not read letters one by one, and it does not know every whole word. It reads tokens: pieces from a fixed list it learned. Common words are often one token. Rarer words are built from a few pieces, like "un" + "believ" + "able".\n\nIf a piece is not on the list, the model has to fall back to smaller pieces, sometimes single letters. Then the same text takes many more tokens, which costs more and fills the model\'s memory sooner.\n\nWords from languages that were rarer in the training text often need more pieces.',
     note: 'Models read tokens: common words whole, rarer words in a few pieces from a fixed list.' },

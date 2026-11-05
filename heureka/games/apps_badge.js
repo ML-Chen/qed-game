@@ -51,7 +51,7 @@ function request(c, r, x, y, s, t) { // an envelope: the asker's badge on the le
   c.restore();
 }
 MG.add({
-  id: 'cs_badge', stage: 'apps', cmd: 'ONLY SEND ORDERS TO THEIR OWNER!', time: 7, mood: 'party', winText: 'Authorized!', failText: 'Data leak!',
+  id: 'cs_badge', stage: 'apps', cmd: 'ONLY SEND ORDERS TO THEIR OWNER!', time: 7, mood: 'party', winText: 'Only owners got in!', failText: 'Data leak!',
   card: { title: 'Logged in is not enough', kind: 'Computer science', ref: 'Authorization (broken access control)',
     text: 'Logging in proves who you are. That is called authentication. It does not prove that you may see a particular thing.\n\nSo every time a request asks the server for something, like order 42, the server must also check that order 42 belongs to the person asking. That check is called authorization.\n\nForgetting it is one of the most common security mistakes in real apps. A stranger just changes the number in the address and sees someone else\'s order, with their name and address on it.',
     note: 'The server checks every request: is this thing yours? Being logged in only proves who you are.' },

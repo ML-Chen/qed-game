@@ -41,7 +41,7 @@
       note: 'Sound is made by something shaking, and the shaking can travel through the air and make other things shake.' },
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
-      s.steps = L === 0 ? 2 : 3; s.step = 0; s.back = L === 0; s.w = [74, 60, 48][L];
+      s.steps = L === 0 ? 2 : 3; s.step = 0; s.back = L === 0; s.w = [92, 62, 50][L];
       s.B = { x: L === 2 ? 288 + Math.round((g.rand() - 0.5) * 16) : 292, w: s.w }; s.need = 3;
       s.amp = 0; s.ph = 0; s.pull = null; s.grains = []; s.got = 0; s.skin = 0; s.mute = -9; s.lastP = -9; s.peck = -9;
     },
@@ -58,9 +58,9 @@
       const s = g.s;
       s.ph += dt * 60; s.amp *= Math.exp(-dt * 1.6); if (s.amp < 0.02) s.amp = 0;
       // the shaking air reaches the drum a moment later and the skin shakes with it
-      const tgt = g.t - s.lastP > 0.12 ? s.amp : 0; s.skin = SK.lerp(s.skin, tgt, Math.min(1, dt * 20));
-      if (!s.hopped && s.amp > 0 && g.t - s.lastP > 0.14) { // the rice hops as high as the shake is big
-        s.hopped = true; g.sfx('drum', { vol: 0.3 + s.amp * 0.5 }); const A = s.amp / Math.exp(-0.14 * 1.6); s.batch = { n: 0, ok: 0, step: s.step };
+      const tgt = g.t - s.lastP > 0.12 ? s.amp * 1.6 : 0; s.skin = SK.lerp(s.skin, tgt, Math.min(1, dt * 20));
+      if (!s.hopped && s.amp > 0 && g.t - s.lastP > 0.3) { // the rice hops as high as the shake is big
+        s.hopped = true; g.sfx('drum', { vol: 0.3 + s.amp * 0.5 }); const A = s.amp / Math.exp(-0.3 * 1.6); s.batch = { n: 0, ok: 0, step: s.step };
         for (let i = 0; i < 7; i++) { const d = 125 * A * (0.88 + g.rand() * 0.24), H = 40 + 150 * A * A * (0.85 + g.rand() * 0.3), vy = -Math.sqrt(2 * G * H), T = 2 * -vy / G * 1.05; s.grains.push({ x: DRUM.x - 30 + g.rand() * 50, y: DRUM.y - 4, vx: d / T, vy, live: 1, a: g.rand() * 3 }); }
       }
       for (const q of s.grains) { if (!q.live) continue; q.vy += G * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.a += dt * 8;
@@ -83,9 +83,9 @@
       else { c.strokeStyle = '#e8503a'; c.lineWidth = 7; c.beginPath(); c.moveTo(BAND.x, BAND.y0); c.lineTo(BAND.x, BAND.y1); c.stroke(); }
       c.restore();
       // the shaking air between band and drum
-      if (s.amp > 0.04) { c.save(); for (let i = 0; i < 4; i++) { const q = (t * 2.5 + i / 4) % 1, r = 20 + q * 120; c.strokeStyle = `rgba(255,255,255,${(1 - q) * Math.min(1, s.amp * 1.5)})`; c.lineWidth = 3; c.beginPath(); c.arc(BAND.x + 10, 380, r, -0.5, 0.5); c.stroke(); } c.restore(); }
+      if (s.amp > 0.04) { c.save(); c.lineCap = 'round'; const a0 = Math.atan2(DRUM.y - 380, DRUM.x - BAND.x); for (let i = 0; i < 5; i++) { const q = (t * 2.2 + i / 5) % 1, r = 24 + q * 120; c.strokeStyle = `rgba(255,255,255,${(1 - q * 0.6) * Math.min(1, s.amp * 1.8)})`; c.lineWidth = 5; c.beginPath(); c.arc(BAND.x + 10, 380, r, a0 - 0.55, a0 + 0.55); c.stroke(); c.strokeStyle = `rgba(232,80,58,${(1 - q) * Math.min(0.6, s.amp)})`; c.lineWidth = 2; c.beginPath(); c.arc(BAND.x + 10, 380, r + 4, a0 - 0.45, a0 + 0.45); c.stroke(); } c.restore(); }
       // the drum skin, shaking
-      const sk = s.skin * 6 * Math.sin(s.ph * 0.8); c.fillStyle = '#fff6ea'; c.strokeStyle = '#c8a878'; c.lineWidth = 2; c.beginPath(); c.ellipse(DRUM.x, DRUM.y + sk * 0.3, DRUM.r, 12 + sk, 0, 0, 7); c.fill(); c.stroke();
+      const sk = s.skin * 8 * Math.sin(s.ph * 0.8); c.fillStyle = '#fff6ea'; c.strokeStyle = '#c8a878'; c.lineWidth = 2; c.beginPath(); c.ellipse(DRUM.x, DRUM.y + sk * 0.3, DRUM.r, 12 + sk, 0, 0, 7); c.fill(); c.stroke();
       // rice: a little pile on the drum plus the flying grains
       c.fillStyle = '#fff4d8'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.2;
       for (let i = 0; i < 18; i++) { const x = DRUM.x - 32 + (i * 13 % 64), y = DRUM.y - 3 - (i % 3) * 2.5 + sk * 0.3; c.beginPath(); c.ellipse(x, y, 4.6, 2.3, i, 0, 7); c.fill(); c.stroke(); }

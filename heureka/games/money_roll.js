@@ -40,7 +40,7 @@ function snowball(c, x, y, r, rot, nCoins) {
   c.restore();
 }
 MG.add({
-  id: 'rollsnow', stage: 'money', cmd: 'HOLD TO GROW, STOP IN THE RING!', time: 5, mood: 'bright', winText: 'Interest grew it!', failText: 'Missed the goal!', hold: 1.6,
+  id: 'rollsnow', stage: 'money', cmd: 'HOLD, THEN STOP IN RING!', time: 5, mood: 'bright', winText: 'Interest grew it!', failText: 'Missed the goal!', hold: 1.6,
   card: { title: 'Interest on interest', kind: 'Money', ref: 'Compound interest',
     text: 'Money in a savings account earns interest: the bank adds a little extra, a share of what is already there. If you leave that interest in, next time you earn interest on it too.\n\nSo the snowball grows faster as it gets bigger. A big ball picks up more snow with every roll than a small one. That is compound interest.\n\nTake the interest out to spend it each time, and the ball stays small the whole way down. A higher rate makes a steeper hill, and the ball grows even faster.',
     note: 'Leave the interest in and it earns interest too, so savings grow faster and faster.' },
@@ -84,9 +84,9 @@ MG.add({
     // spent snow: chunks tumbling away, each with a coin the rabbit spent
     for (const sp of s.spends) { const q = (t - sp.t) / 0.9; if (q > 1) continue; for (let i = 0; i < 6; i++) { const a = i * 1.05, d = sp.r * (0.4 + q * 1.5); c.globalAlpha = 1 - q; c.fillStyle = '#ffffff'; c.beginPath(); c.arc(sp.x + Math.cos(a) * d, sp.y + Math.sin(a) * d + q * q * 80, sp.r * 0.25 * (1 - q * 0.5), 0, 7); c.fill(); c.globalAlpha = 1; } }
     // the spender's ball rolls just behind: its interest is scraped off at every year flag, so it stays small
-    if (s.u > 0.03) { const uS = Math.min(1.02, Math.max(0.02, s.u - 0.1)), fr = (Math.min(1, uS) * 6) % 1, rS = R0 * Math.exp(L.k * fr / 6 / 0.98), [sx, sy] = ballAt(uS, rS);
+    if (s.u > 0.03) { const uS = Math.min(0.84, s.u + 0.12), fr = (Math.min(1, uS) * 6) % 1, rS = R0 * Math.exp(L.k * fr / 6 / 0.98), [sx, sy] = ballAt(uS, rS);
       c.save(); c.globalAlpha = 0.85; snowball(c, sx, sy, rS, s.rot * 0.9, 1); c.restore(); if (fr < 0.12 && uS < 1) { c.fillStyle = 'rgba(255,255,255,0.8)'; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(sx + 10 + i * 5, sy - 10 - i * 4, 3, 0, 7); c.fill(); } }
-      SK.tag(c, 'Spends interest', SK.clamp(sx - 30, 80, 280), sy + 34, 18, '#fff6ea', 'rgba(190,40,40,0.8)'); }
+      if (s.u < 0.8 || g.done) SK.tag(c, 'Spends interest', SK.clamp(sx + 20, 90, 290), sy + rS + 22, 18, '#fff6ea', 'rgba(190,40,40,0.8)'); }
     // the snowball
     const [bx, by0] = ballAt(s.u, s.r), sink = s.miss === 'splash' ? SK.clamp((t - s.end) * 2, 0, 1) : 0, by = by0 + sink * s.r * 1.6;
     if (sink >= 1) { /* gone under the ice */ } else snowball(c, bx, by, s.r, s.rot, Math.min(12, Math.max(1, Math.round(Math.sqrt(s.r * s.r / (R0 * R0)) * 0.8))));
@@ -94,7 +94,7 @@ MG.add({
     // the rabbit at the bottom, with a shovel for scraping
     const scr = s.spends.length && t - s.spends[s.spends.length - 1].t < 0.6;
     SK.animal(c, 'rabbit', 176, 612, 0.95, { t, pose: won ? 'cheer' : scr ? 'wave' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : scr ? 'wow' : 'happy', facing: 1 });
-    SK.tag(c, 'Savings goal', gx, gy - L.goal - 16, 18); if (!sink) SK.tag(c, 'Keeps interest', SK.clamp(bx, 80, 290), by - s.r - 18, 18);
+    if (!won) SK.tag(c, 'Savings goal', gx, gy - L.goal - 16, 18); if (!sink && s.u > 0.05 && (s.u < 0.8 || g.done)) SK.tag(c, 'Keeps interest', SK.clamp(bx - 20, 80, 290), by - s.r - 18, 18);
     if (s.spends.length && t - s.spends[s.spends.length - 1].t < 0.9) { const sp = s.spends[s.spends.length - 1]; SK.tag(c, 'Spent', sp.x + 40, sp.y - 40, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); }
     if (!s.rolling && !s.end) SK.demo(g, c, 'hold', [bx + 4, by + 6], null, { delay: 0.8, period: 2.4 });
     if (s.rolling && s.u > 0.8) SK.glow(c, g, gx, gy, L.goal * 0.6); // levels 0 and 1: the place to let go glows

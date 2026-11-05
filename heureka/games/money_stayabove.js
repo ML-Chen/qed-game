@@ -32,11 +32,12 @@ function good(c, kind, x, y, s = 1) {
   if (kind === 'gift') { c.fillStyle = '#9a5ad0'; c.strokeStyle = '#4a1a70'; c.lineWidth = 2; c.beginPath(); c.roundRect(-22, -40, 44, 40, 4); c.fill(); c.stroke(); c.fillStyle = '#f5c23a'; c.fillRect(-4, -40, 8, 40); c.fillRect(-22, -24, 44, 8); c.beginPath(); c.ellipse(-8, -44, 9, 5, -0.4, 0, 7); c.ellipse(8, -44, 9, 5, 0.4, 0, 7); c.fill(); }
   c.restore();
 }
-function coinStack(c, x, y, n) { c.fillStyle = 'rgba(255,246,234,0.85)'; c.beginPath(); c.roundRect(x - 19, y - n * 7 - 8, 38, n * 7 + 18, 9); c.fill(); for (let i = 0; i < n; i++) B8.flatCoin(c, x, y - i * 7, 13, 0); }
+function coinStack(c, x, y, n) { c.fillStyle = 'rgba(255,246,234,0.85)'; c.beginPath(); c.roundRect(x - 19, y - n * 7 - 8, 38, n * 7 + 18, 9); c.fill(); for (let i = 0; i < n; i++) B8.flatCoin(c, x, y - i * 8, 15, 0); }
 function cart(c, x, y, items, t) {
   c.save(); c.translate(x, y);
   c.strokeStyle = '#5a5a6a'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(58, -64); c.lineTo(76, -84); c.stroke();
   c.fillStyle = 'rgba(200,210,230,0.5)'; c.strokeStyle = '#5a5a6a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-60, -70); c.lineTo(60, -70); c.lineTo(48, -10); c.lineTo(-48, -10); c.closePath(); c.fill(); c.stroke();
+  for (let i = items.length; i < 4; i++) { c.save(); c.strokeStyle = 'rgba(90,90,106,0.7)'; c.lineWidth = 2; c.setLineDash([4, 4]); c.beginPath(); c.roundRect(-46 + i * 24, -50, 20, 34, 5); c.stroke(); c.restore(); } // empty spots to fill
   items.forEach((k, i) => good(c, k, -36 + (i % 4) * 24, -24 - Math.floor(i / 4) * 16, 1.0));
   c.strokeStyle = 'rgba(90,90,106,0.6)'; c.lineWidth = 2; for (let i = -40; i <= 40; i += 16) { c.beginPath(); c.moveTo(i, -68); c.lineTo(i * 0.8, -12); c.stroke(); }
   for (const wx of [-36, 36]) { c.fillStyle = '#2a2430'; c.beginPath(); c.arc(wx, 0, 9, 0, 7); c.fill(); }
@@ -50,7 +51,7 @@ MG.add({
   init(g) {
     const s = g.s, L = LVS[Math.min(2, g.level)];
     s.L = L; s.lev = FLOORY - L.budget * COINH; // the waterline (y; smaller = more money)
-    s.bills = L.bills.map((b, i) => ({ left: b, rate: b / 2.6, show: i ? 2.2 : 0 })); // coins still to drain; level 2's second bill appears later
+    s.bills = L.bills.map((b, i) => ({ left: b, rate: b / 5, show: i ? 2.2 : 0 })); // coins still to drain; level 2's second bill appears later
     s.belt = []; s.nextK = 0; s.spawn = 0.2; s.cart = []; s.flying = []; s.feeT = 0; s.okT = 0;
     // a shuffled stream of goods: cheap ones and pricey ones
     const base = ['bread', 'cake', 'milk', 'carrots', 'cheese', 'bread', 'gift', 'milk', 'carrots', 'bread'];
@@ -86,8 +87,9 @@ MG.add({
     B8.jarBack(c, TANK.x, TANK.y0, TANK.y1, TANK.w);
     const lev = Math.min(TANK.y1 - 4, s.lev);
     c.save(); c.beginPath(); c.roundRect(TANK.x - TANK.w / 2 + 2, TANK.y0 + 10, TANK.w - 4, TANK.y1 - TANK.y0 - 12, [8, 8, 20, 20]); c.clip();
-    if (lev < TANK.y1 - 6) B8.waterFill(c, TANK.x - 60, TANK.x + 60, lev, TANK.y1, t, '#4ab0e0');
-    if (lost) { c.fillStyle = '#7a5a3a'; c.beginPath(); c.ellipse(TANK.x, TANK.y1 - 4, 60, 16, 0, 0, 7); c.fill(); }
+    c.fillStyle = 'rgba(232,64,58,0.12)'; c.fillRect(TANK.x - 60, FLOORY, 120, TANK.y1 - FLOORY); // below zero: empty
+    if (lev < FLOORY) { c.save(); c.beginPath(); c.rect(TANK.x - 60, 0, 120, FLOORY); c.clip(); B8.waterFill(c, TANK.x - 60, TANK.x + 60, lev, FLOORY + 10, t, '#e8b030'); for (let y = FLOORY - 8, r = 0; y > lev + 6; y -= 13, r++) for (let i = 0; i < 4; i++) B8.flatCoin(c, TANK.x - 39 + i * 26 + (r % 2) * 6, y, 12, 0); c.restore(); } // the money in the account, as coins
+    else { c.fillStyle = 'rgba(200,40,40,0.55)'; c.fillRect(TANK.x - 60, FLOORY, 120, Math.min(TANK.y1, s.lev) - FLOORY); } // below zero: money owed
     c.restore();
     B8.jarFront(c, TANK.x, TANK.y0, TANK.y1, TANK.w);
     // the floor line, and the dashed line where the water will be once the bills are paid
@@ -95,8 +97,6 @@ MG.add({
     const after = s.lev + this.pending(g) * COINH;
     if (!g.done && this.pending(g) > 0.05) { c.strokeStyle = after > FLOORY ? '#e8403a' : '#3a1640'; c.globalAlpha = 0.7 + 0.3 * Math.sin(t * 6); c.lineWidth = 3; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(TANK.x - TANK.w / 2 + 6, Math.min(TANK.y1 - 4, after)); c.lineTo(TANK.x + TANK.w / 2 - 6, Math.min(TANK.y1 - 4, after)); c.stroke(); }
     c.restore();
-    // the duck: floating on the water, or sitting in the mud
-    SK.animal(c, 'duck', TANK.x + 6, (lost ? TANK.y1 - 6 : lev + 6) + Math.sin(t * 3) * 2, 0.75, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : after > FLOORY ? 'wow' : 'happy', noShadow: true });
     // the fee shark bites a chunk out
     if (s.feeT) { const k = SK.clamp((t - s.feeT) * 3, 0, 1); c.save(); c.translate(TANK.x + TANK.w / 2 + 20 - k * 30, TANK.y1 - 50); c.fillStyle = '#6a7a8a'; c.strokeStyle = '#2a3a4a'; c.lineWidth = 2; c.beginPath(); c.ellipse(0, 0, 34, 18, 0, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.moveTo(4, -16); c.lineTo(16, -34); c.lineTo(20, -14); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#fff'; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-30 + i * 7, 4); c.lineTo(-27 + i * 7, 11); c.lineTo(-24 + i * 7, 4); c.fill(); } c.fillStyle = '#2a1424'; c.beginPath(); c.arc(-14, -5, 3, 0, 7); c.fill(); c.restore(); }
     // the bills hanging off the drain tap, dripping
@@ -110,7 +110,7 @@ MG.add({
     for (const f of s.flying) { const q = SK.clamp((t - f.t) / 0.45, 0, 1); good(c, f.k, SK.lerp(f.x, CART.x, q), SK.lerp(f.y, CART.y - 36, q) - Math.sin(q * Math.PI) * 70, 1 - q * 0.25); }
     // you: the rabbit pushing the cart
     SK.animal(c, 'rabbit', 40, 604, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    SK.tag(c, 'Bank balance', TANK.x, TANK.y0 + 34, 18); SK.tag(c, 'Zero', TANK.x + 26, FLOORY - 16, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
+    SK.tag(c, 'Bank balance', TANK.x, TANK.y0 + 34, 18); if (!g.done && this.pending(g) > 0.05) SK.tag(c, 'After bills', TANK.x - 14, Math.min(TANK.y1 - 20, after) - 16, 18, '#fff6ea', after > FLOORY ? 'rgba(190,40,40,0.88)' : 'rgba(30,14,36,0.72)'); SK.tag(c, 'Zero', TANK.x + 26, FLOORY - 16, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     SK.tag(c, 'Bill', TANK.x - 112, TANK.y1 + 34, 18); if (s.feeT) SK.tag(c, 'Overdraft fee', TANK.x - 10, TANK.y1 - 96, 20, '#fff6ea', 'rgba(190,40,40,0.9)');
     // guidance: tap a cheap item as it rolls past
     const cheap = s.belt.find(b => !b.gone && GOODS[b.k] === 1 && b.x > 40 && b.x < 300);

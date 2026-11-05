@@ -89,6 +89,18 @@ const SK = (() => {
   // call from the microgame's down handler (or use SK.input) so the demo hand stops once the player has touched
   function touched(g) { g.s.touched = true; }
 
+  // ---------- variety ----------
+  // SK.variant(g, n): which of a microgame's n content variants to play (a word, a scene layout, a set of objects),
+  // drawn with g.rand and never the same one as this microgame's previous play (the owner: "I shouldn't be doing
+  // 'unbelievable' three times in a row"). Call it once in init and keep the result in g.s. Safe for rewind.
+  function variant(g, n) {
+    if (n <= 1) return 0; let v = Math.floor(g.rand() * n) % n;
+    if (v === g.avoid) v = (v + 1 + Math.floor(g.rand() * (n - 1))) % n;
+    if (!g.sim) g.def._lastVariant = v; return v;
+  }
+  // SK.shuffled(g, list): a copy of the list in a random order (g.rand), e.g. for picking several distinct items
+  function shuffled(g, list) { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
   // ---------- dragging and flinging ----------
   // pointer tracking for a drag: SK.dragStart(g, obj, x, y) on down (obj = whatever you grabbed, with x, y),
   // SK.dragMove(g, x, y) on move (moves obj keeping the grab offset; returns obj), SK.dragEnd(g) on up (returns
@@ -160,5 +172,5 @@ const SK = (() => {
     hold(g, synth, key, t, x, y, dur) { const B = g.s._bot = g.s._bot || {}; if (B[key] === 2 || g.t < t) return B[key] === 2; if (!B[key]) { B[key] = 1; synth('down', x, y); } if (g.t >= t + dur) { B[key] = 2; synth('up', x, y); } return B[key] === 2; },
   };
 
-  return { TAU, clamp, lerp, easeOut, easeInOut, dist, hand, demo, glow, grab, target, arrow, touched, dragStart, dragMove, dragEnd, dragging, pick, holdStart, holdEnd, held, step, tag, shadow, animal, ball, bot };
+  return { TAU, clamp, lerp, easeOut, easeInOut, dist, hand, demo, glow, grab, target, arrow, touched, variant, shuffled, dragStart, dragMove, dragEnd, dragging, pick, holdStart, holdEnd, held, step, tag, shadow, animal, ball, bot };
 })();

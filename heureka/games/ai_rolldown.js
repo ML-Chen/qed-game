@@ -22,7 +22,7 @@ function paintSnow(o, s) {
   const rnd = P.rng(12); for (let i = 0; i < 60; i++) { const x = rnd() * 360, k = (x - 180) / s.dx, y = yAt(s, k) + 12 + rnd() * 120; o.fillStyle = `rgba(150,170,220,${0.2 + rnd() * 0.3})`; o.beginPath(); o.ellipse(x, y, 8 + rnd() * 14, 2 + rnd() * 2, 0, 0, 7); o.fill(); }
 }
 MG.add({
-  id: 'cs_rolldown', stage: 'ai', cmd: 'STEP DOWNHILL TO LESS ERROR!', time: 6, mood: 'night', winText: 'Descent!', failText: 'Uphill!',
+  id: 'cs_rolldown', stage: 'ai', cmd: 'STEP DOWNHILL TO LESS ERROR!', time: 6, mood: 'night', winText: 'Lowest error!', failText: 'Uphill!',
   card: { title: 'Learning by going downhill', kind: 'Artificial intelligence', ref: 'Gradient descent',
     text: 'A model learns by changing its settings, called weights, to make its error smaller. Picture every possible setting as a spot on a hilly landscape, where height is the error.\n\nThe model cannot see the whole landscape. It can only feel the slope right where it stands. So it takes a small step downhill, feels the slope again, and takes another step. That is gradient descent.\n\nIt can get stuck in a small valley that is not the lowest one. Real training uses tricks, like starting in several places, to find a better valley.',
     note: 'Gradient descent: feel the slope where you are, step downhill, and repeat until the error stops falling.' },
