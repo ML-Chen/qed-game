@@ -111,7 +111,7 @@
     // the bot: carry the jug over each glass (tilt so the spout sits over the opening), pour, ease off at the brim
     auto(g, dt, synth) {
       const s = g.s, j = s.jug; if (g.done || g.t < 1) return; const cup = s.cups.find(cc => cc.area < cc.cap * BRIM); if (!cup) return;
-      const B = s.bot = s.bot || { on: false, y: RAIL };
+      const B = s._bot2 = s._bot2 || { on: false, y: RAIL }; // bot-only bookkeeping (underscore: not game state)
       if (!B.on) { B.on = true; B.x = j.x - 36; B.y = RAIL + 12; synth('down', B.x, B.y); B.gy = B.y; return; }
       const fill = cup.area / cup.cap, over = Math.abs(j.x - cup.cx) < 4;
       if (!over && s.tiltS < 0.15) B.x += SK.clamp(cup.cx - j.x, -420 * dt, 420 * dt);

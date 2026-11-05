@@ -116,9 +116,9 @@ MG.add({
   },
   // the bot: put each poster on the board as soon as it appears
   auto(g, dt, synth) {
-    const s = g.s, p = s.post; if (g.done || !p || p.on) return; s.botN = s.botN || 0;
-    if (!s.botAt || s.botFor !== p) { s.botFor = p; s.botAt = g.t + 0.25; s.botN++; }
-    SK.bot.drag(g, synth, 'p' + s.botN, s.botAt, [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2], 0.35);
+    const s = g.s, p = s.post; if (g.done || !p || p.on) return; s._botN = s._botN || 0;
+    if (!s._botAt || s._botFor !== p) { s._botFor = p; s._botAt = g.t + 0.25; s._botN++; }
+    SK.bot.drag(g, synth, 'p' + s._botN, s._botAt, [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2], 0.35);
   },
 });
 function startRound(g, i, delay) {

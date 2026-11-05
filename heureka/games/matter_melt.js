@@ -98,8 +98,8 @@
     },
     // the bot: hold the burner on until it is done
     auto(g, dt, synth) {
-      const s = g.s; if (g.done || g.t < 1) return; if (!s.heat && !s.okT && g.t - s.born > 0.4 && s.botR !== s.round) { s.botR = s.round; synth('down', BTN[0], BTN[1]); return; }
-      if (s.okT && s.botUp !== s.round) { s.botUp = s.round; synth('up', BTN[0], BTN[1]); }
+      const s = g.s; if (g.done || g.t < 1) return; if (!s.heat && !s.okT && g.t - s.born > 0.4 && s._botR !== s.round) { s._botR = s.round; synth('down', BTN[0], BTN[1]); return; }
+      if (s.okT && s._botUp !== s.round) { s._botUp = s.round; synth('up', BTN[0], BTN[1]); }
     },
   });
 })();

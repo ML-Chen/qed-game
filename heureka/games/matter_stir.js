@@ -128,7 +128,7 @@
     // the bot: stir in circles until the sugar is gone
     auto(g, dt, synth) {
       const s = g.s; if (g.done || g.t < 1) return; const a = (g.t - 1) * 9, x = G.cx + Math.cos(a) * 50, y = MID[1] + Math.sin(a) * 50;
-      if (!s.botDown) { s.botDown = true; synth('down', x, y); } else if (!s.doneT) synth('move', x, y); else if (!s.botUp) { s.botUp = true; synth('up', x, y); }
+      if (!s._botDown) { s._botDown = true; synth('down', x, y); } else if (!s.doneT) synth('move', x, y); else if (!s._botUp) { s._botUp = true; synth('up', x, y); }
     },
   });
 })();

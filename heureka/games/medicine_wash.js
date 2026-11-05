@@ -163,9 +163,9 @@ MG.add({
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || s.rinse >= 0 || g.t < 0.5) return;
-    s.botK = (s.botK || 0) + dt; if (s.botK < 0.16) return; s.botK = 0; s.botI = (s.botI || 0) + 1;
+    s._botK = (s._botK || 0) + dt; if (s._botK < 0.16) return; s._botK = 0; s._botI = (s._botI || 0) + 1; // bot-only bookkeeping (underscore: not game state)
     const nail = s.germs.find(gm => gm.nail && gm.hits < 3);
     if (nail) { const q = gpos(nail, 0); synth('down', q[0], q[1] + 8); synth('up', q[0], q[1] + 8); }
-    else { const x = s.botI % 2 ? 150 : 210; synth('down', x, 440); synth('up', x, 440); }
+    else { const x = s._botI % 2 ? 150 : 210; synth('down', x, 440); synth('up', x, 440); }
   },
 });

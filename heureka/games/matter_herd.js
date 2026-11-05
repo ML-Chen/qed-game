@@ -89,7 +89,7 @@
     // the bot: sweep the broom from the right wall toward the middle, keeping it in front of whichever particle is about to
     // slip past; if one gets away to the right, lift the broom and sweep again from the right wall
     auto(g, dt, synth) {
-      const s = g.s; if (g.done || !s.spread) return; const B = s.bot = s.bot || { x: BOX.r - 10, y: 358, on: false, wait: 0 };
+      const s = g.s; if (g.done || !s.spread) return; const B = s._hb = s._hb || { x: BOX.r - 10, y: 358, on: false, wait: 0 };
       if (!B.on) { if (g.t < B.wait) return; B.x = BOX.r - 10; B.on = true; synth('down', B.x, B.y); return; }
       const left = s.ps.filter(p => p.x < B.x), right = s.ps.filter(p => p.x > B.x + PR);
       if (right.length && B.x < BOX.r - 40) { B.on = false; B.wait = g.t + 0.05; synth('up', B.x, B.y); return; }

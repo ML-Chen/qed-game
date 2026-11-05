@@ -152,9 +152,9 @@ MG.add({
   auto(g, dt, synth) {
     const s = g.s; if (g.done) return; const B = g.s._bot || {}, dur = 0.2, T = 0.85;
     if (s._bp && B[s._bp.key] === 1) { SK.bot.drag(g, synth, s._bp.key, s._bp.t, s._bp.a, s._bp.b, dur); return; }
-    if (g.t < (s.nb || 1.0) || SK.dragging(g) || s.cards.some(cd => cd.state === 'fly' || cd.state === 'in')) return;
+    if (g.t < (s._nb || 1.0) || SK.dragging(g) || s.cards.some(cd => cd.state === 'fly' || cd.state === 'in')) return;
     const fail = typeof window !== 'undefined' && window.B7FAIL, cd = s.cards.find(c2 => c2.state === 'tray' && (fail ? !isBug(c2.k) : isBug(c2.k))); if (!cd) return;
     const K = 1.2, hx = hopX(g, s, g.t + dur + T), vx = (hx - cd.x) / (T + K * dur), vy = (HOP.y + 4 - cd.y - 0.5 * GRAV * T * T) / (T + K * dur); // the release speed reads about 1/K of the finger's
-    s._bp = { key: 'f' + s.throws + '_' + cd.i, t: g.t, a: [cd.x, cd.y], b: [cd.x + vx * dur * K, cd.y + vy * dur * K] }; SK.bot.drag(g, synth, s._bp.key, g.t, s._bp.a, s._bp.b, dur); s.nb = g.t + 0.25;
+    s._bp = { key: 'f' + s.throws + '_' + cd.i, t: g.t, a: [cd.x, cd.y], b: [cd.x + vx * dur * K, cd.y + vy * dur * K] }; SK.bot.drag(g, synth, s._bp.key, g.t, s._bp.a, s._bp.b, dur); s._nb = g.t + 0.25;
   },
 });
