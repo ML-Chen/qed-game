@@ -27,7 +27,9 @@ MG.add({
     else for (;;) { offs = [r(1, 9), r(1, 9), r(1, 9)].sort((a, b) => a - b); if (offs[1] - offs[0] >= 2 && offs[2] - offs[1] >= 2 && offs.some(o => o < 5) && offs.some(o => o >= 5)) break; }
     S.balls = offs.map((o, i) => ({ v: S.lo + o, to: o >= 5 ? S.lo + 10 : S.lo, pos: S.lo + o, done: false, roll: null, i }));
     S.build = () => {
-      const parts = S.balls.flatMap((b, i) => [i ? M.gap(26) : null, M.num(b.v, 'v' + i), M.op('≈'), b.shown != null ? M.num(b.shown, 'r' + i, { pop: b.popT, col: '#2f7a4a' }) : M.slot('q' + i)]);
+      // the same node objects are kept between rewrites, so the kit glides them instead of fading them in again
+      for (const [i, b] of S.balls.entries()) { b.nv = b.nv || M.num(b.v, 'v' + i); b.nop = b.nop || M.op('≈'); b.nres = b.shown != null ? (b.nres && b.nres.id === 'r' + i ? b.nres : M.num(b.shown, 'r' + i, { pop: b.popT, col: '#2f7a4a' })) : (b.nres || M.slot('q' + i)); }
+      const parts = S.balls.flatMap((b, i) => [i ? M.gap(26) : null, b.nv, b.nop, b.nres]);
       const node = M.row(...parts), w = M.lay(M.row(...S.balls.flatMap((b, i) => [i ? M.gap(26) : null, M.num(b.v), M.op('≈'), M.num(b.to)])), 32).w;
       M.place(g, 'eq', node, 180, 252, Math.min(32, 32 * 316 / w), { col: INK });
     };
@@ -70,7 +72,7 @@ MG.add({
     c.fillStyle = '#f4ecd8'; c.fillRect(X0 - 14, BASE + 8, X1 - X0 + 28, 6);
     c.textAlign = 'center'; c.textBaseline = 'alphabetic';
     for (let k = 0; k <= 10; k++) { const x = vx(S, S.lo + k), big = k === 0 || k === 10; c.fillStyle = '#f4ecd8'; c.fillRect(x - 1.5, BASE + 2, 3, big ? 20 : k === 5 ? 15 : 10);
-      if (k === 5 || big) { c.font = big ? '700 24px Fredoka, Nunito, sans-serif' : '600 15px Fredoka, Nunito, sans-serif'; c.fillStyle = big ? '#fff6dc' : 'rgba(255,246,220,0.75)'; c.fillText(String(S.lo + k), x, BASE + (big ? 46 : 36)); } }
+      if (k === 5 || big) { c.font = big ? '700 24px Fredoka, Nunito, sans-serif' : '700 17px Fredoka, Nunito, sans-serif'; c.fillStyle = big ? '#fff6dc' : '#ffe8b0'; c.fillText(String(S.lo + k), x, BASE + (big ? 46 : 36)); } }
     // a flag at each ten
     for (const v of [S.lo, S.lo + 10]) { const x = vx(S, v); c.strokeStyle = '#5a4a3a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x, BASE); c.lineTo(x, BASE - 42); c.stroke(); c.fillStyle = v === S.lo ? '#ff8a5a' : '#5ab0f0'; c.beginPath(); c.moveTo(x, BASE - 42); c.lineTo(x + (v === S.lo ? 16 : -16), BASE - 36 + Math.sin(t * 5) * 2); c.lineTo(x, BASE - 30); c.fill(); }
     // the balls (a dragged ball leans along the slope toward the finger)

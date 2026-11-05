@@ -21,15 +21,17 @@ MG.add({
     [S.sides, S.deg] = g.level === 0 ? [4, 90] : g.level === 1 ? R([[4, 180], [3, 120]]) : R([[6, 120], [6, 240], [6, 180]]);
     S.ord = 360 / gcd(S.deg, 360); S.k = 0; S.ang = 0; S.spin = null; S.home = -9;
     function gcd(a, b) { return b ? gcd(b, a % b) : a; }
-    S.line = () => { const pw = S.k === 0 ? M.vr('e') : S.k === 1 ? M.vr('r') : M.sup(M.vr('r'), M.num(S.k, null, { pop: g.t })), done = S.k === S.ord;
-      M.place(g, 'pw', done ? M.row(pw, M.op('='), M.vr('e', null, { col: M.GOOD })) : M.row(pw), 180, 236, 42, { col: INK }); };
+    // the same node objects are kept between rewrites, so the kit glides them instead of fading them in again
+    const rN = M.vr('r'), eN = M.vr('e'), expN = M.num(2), supN = M.sup(rN, expN), eqN = M.op('='), e2 = M.vr('e', null, { col: M.GOOD });
+    S.line = () => { if (S.k >= 2) { expN.v = String(S.k); expN.pop = g.t; } const pw = S.k === 0 ? eN : S.k === 1 ? rN : supN;
+      M.place(g, 'pw', S.k === S.ord ? M.row(pw, eqN, e2) : M.row(pw), 180, 236, 42, { col: INK }); };
     S.line();
-    M.place(g, 'ord', M.row(M.txt('|'), M.vr('r'), M.txt('|'), M.op('='), M.slot('q')), 180, 288, 32, { col: INK });
+    S.ordRow = M.row(M.txt('|'), M.vr('r'), M.txt('|'), M.op('='), M.slot('q')); M.place(g, 'ord', S.ordRow, 180, 288, 32, { col: INK });
     M.place(g, 'key', M.row(M.vr('r'), M.op('='), M.txt('turn ' + S.deg + '°'), M.gap(18), M.txt('|'), M.vr('r'), M.txt('|'), M.op('='), M.txt('order of'), M.gap(5), M.vr('r')), 180, 320, 14, { col: '#5a3a6a' });
     M.inert(g, ['q']);
     M.zone(g, 'rot', { x: BTN.x, y: BTN.y, w: BTN.r * 2, h: BTN.r * 2 }); M.zone(g, 'tile', { x: CX, y: CY, w: RAD * 1.5, h: RAD * 1.5 });
     g.dur *= (2.6 + 1.05 * S.ord) / 8;
-    const fill = g => { M.place(g, 'ord', M.row(M.txt('|'), M.vr('r'), M.txt('|'), M.op('='), M.num(S.ord, 'qa', { pop: g.t, col: M.GOOD })), 180, 288, 32, { col: INK }); M.inert(g, ['qa']); g.sfx('coin'); };
+    const fill = g => { S.ordRow.items[4] = M.num(S.ord, 'qa', { pop: g.t, col: M.GOOD }); M.place(g, 'ord', S.ordRow, 180, 288, 32, { col: INK }); M.inert(g, ['qa']); g.sfx('coin'); };
     M.play(g, {
       moves(g) {
         if (S.k >= S.ord) return [];

@@ -46,17 +46,17 @@ MG.add({
     M.place(g, 'tiles', M.row(...KEYS.flatMap((k, i) => [i ? M.gap(30) : null, nm(k, 'k_' + k)])), 180, 248, 36);
     M.place(g, 'key', M.row(M.vr('r'), M.op('='), M.txt('rotate 120°'), M.gap(22), M.vr('f'), M.op('='), M.txt('flip')), 180, 296, 15, { col: LIGHT });
     S.label = (i, node) => { const w = M.lay(node, 30).w; M.place(g, 'lab' + i, node, TX[i], 360, Math.min(30, 30 * 160 / w), { col: DARK }); };
-    S.T.forEach((t, i) => { S.label(i, M.row(invOf(t.k), M.op('='), M.slot('q' + i))); M.zone(g, 'tu' + i, { x: TX[i], y: 428, w: 150, h: 150 }); });
+    S.T.forEach((t, i) => { t.inv = invOf(t.k); t.eq = M.op('='); S.label(i, M.row(t.inv, t.eq, M.slot('q' + i))); M.zone(g, 'tu' + i, { x: TX[i], y: 428, w: 150, h: 150 }); });
     g.dur *= (2.6 + 1.05 * 2) / 8;
     M.play(g, {
       moves(g) {
         return S.T.map((t, i) => t.done ? null : {
           drag: 'k_' + t.ans, to: ['tu' + i, 'q' + i], busy: 0.1, askAt: 0, after: 0.1,
           ask: { v: nm('e'), wrong: [...new Set([t.k, t.ans, 'r', 'f', 'r2'])].map(k => nm(k)) },
-          then(g) { t.done = true; g.sfx('whoosh'); if (g.mode === 'medium') S.label(i, M.row(nm(t.ans), M.op('∘'), nm(t.k), M.op('='), M.slot('q' + i))); },
+          then(g) { t.done = true; g.sfx('whoosh'); if (g.mode === 'medium') S.label(i, M.row(nm(t.ans), M.op('∘'), nm(t.k), t.eq, M.slot('q' + i))); },
           resolve(g) {
             t.anim = { from: t.A, key: t.ans, t0: g.t, dur: 0.3 }; t.A = MAT.e; g.sfx('coin');
-            S.label(i, M.row(invOf(t.k), M.op('='), nm(t.ans, 'a' + i, { pop: g.t }))); M.inert(g, ['a' + i]);
+            S.label(i, M.row(t.inv, t.eq, nm(t.ans, 'a' + i, { pop: g.t }))); M.inert(g, ['a' + i]);
             M.later(g, 0.3, g => { t.landAt = g.t; g.sfx('ding'); g.burst(TX[i], TY - 46, ['#ffd45a', '#fff4dc', '#9ae07a'], 14, 130); });
           },
         }).filter(Boolean);
