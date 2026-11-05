@@ -27,7 +27,7 @@ function paintRoom(o) {
 }
 const tY = k => TH.y1 - (TH.y1 - TH.y0) * SK.clamp(k, 0, 1.04);
 MG.add({
-  id: 'holdtemp', stage: 'robots', cmd: 'HOLD TEMP!', time: 6, mood: 'night', winText: 'Thermostat!', failText: 'Out of band!',
+  id: 'holdtemp', stage: 'robots', cmd: 'KEEP THE ROOM IN THE GREEN!', time: 6, mood: 'night', winText: 'Thermostat!', failText: 'Out of band!',
   card: { title: 'On, off, on, off', kind: 'Control', ref: 'On-off (bang-bang) control, the thermostat',
     text: 'A thermostat keeps a room near a set temperature with a very simple rule. Too cold: switch the heater on. Warm enough: switch it off. The temperature wiggles up and down in a narrow band instead of sitting still.\n\nA heater takes time to warm up and to cool down, so the room keeps warming for a moment after you switch off. Switching a little early stops it overshooting. Real thermostats add a small gap, called a dead band, between the "on" and "off" temperatures, so the heater does not flick on and off every second.',
     note: 'An on-off controller switches the heater on below the target and off above it, so the temperature stays in a band.' },
@@ -67,6 +67,7 @@ MG.add({
     // the heater's switch light
     c.fillStyle = s.on ? '#5aff7a' : '#4a2a2a'; c.beginPath(); c.arc(HEAT.x + 2, HEAT.y - 86, 9, 0, 7); c.fill(); if (s.on) { c.fillStyle = 'rgba(90,255,122,0.35)'; c.beginPath(); c.arc(HEAT.x + 2, HEAT.y - 86, 16, 0, 7); c.fill(); }
     if (!g.done) SK.glow(c, g, HEAT.x + 4, HEAT.y - 30, 56);
+    SK.tag(c, 'Heater', HEAT.x + 4, HEAT.y + 44, 18); SK.tag(c, 'Thermometer', TH.x - 40, TH.y0 - 30, 18);
     // the thermometer: green band and the red liquid
     c.fillStyle = 'rgba(90,220,120,0.45)'; c.fillRect(TH.x - 10, tY(C.hi), 20, tY(C.lo) - tY(C.hi));
     c.strokeStyle = '#3ac86a'; c.lineWidth = 2; c.strokeRect(TH.x - 16, tY(C.hi), 32, tY(C.lo) - tY(C.hi));

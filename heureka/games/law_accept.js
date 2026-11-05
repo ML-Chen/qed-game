@@ -64,7 +64,7 @@ function stampTool(c, x, y, press) { // a wooden paw stamp, pressed down by `pre
   c.restore();
 }
 MG.add({
-  id: 'acceptoffer', stage: 'law', cmd: 'ACCEPT!', time: 6, mood: 'desert', winText: 'Acceptance!', failText: 'Counteroffer!',
+  id: 'acceptoffer', stage: 'law', cmd: 'STAMP YES ON EACH OFFER!', time: 6, mood: 'desert', winText: 'Acceptance!', failText: 'Counteroffer!',
   card: { title: 'Say yes to the offer as it stands', kind: 'Law', ref: 'Offer and acceptance; counteroffers',
     text: 'An offer is a promise that waits for a yes. When you accept it exactly as it stands, a contract forms: here, a bike for three coins. Each side gives something of value, which the law calls consideration.\n\nA reply that changes the deal doesn\'t accept it. Crossing out a coin made a counteroffer: it turns down the first offer and makes a new one, which the seller is free to refuse. Until you accept, the seller can also take an offer back.\n\nGeneral information about US law, not legal advice.',
     note: 'A contract forms when an offer is accepted as it stands; changing the terms makes a counteroffer instead.' },
@@ -116,11 +116,17 @@ MG.add({
     if (!s.drop && !g.done) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.35)'; c.lineWidth = 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(sx, SY + 26); c.lineTo(sx, CY + 20); c.stroke(); c.restore(); }
     stampTool(c, sx, SK.lerp(SY, CY + 4, SK.easeOut(dk)), dk);
     // your friend the duck, who leans in with a pencil to haggle
-    const lean = s.ph === 'haggle' ? SK.clamp(e / 0.25, 0, 1) * Math.max(0, 1 - Math.max(0, e - 0.75) * 3) : 0;
+    // the duck's pencil creeps toward the card while you wait (a visible clock), then crosses out a coin
+    const lean = s.ph === 'wait' ? 0.55 * SK.clamp(e / s.wait, 0, 1) : s.ph === 'haggle' ? SK.clamp(0.55 + e / 0.25 * 0.45, 0, 1) * Math.max(0, 1 - Math.max(0, e - 0.75) * 3) : 0;
     SK.animal(c, 'duck', 318 - lean * 30, 616, 1.0, { t, pose: lean ? 'point' : 'idle', expr: lost ? 'wow' : won ? 'happy' : lean ? 'think' : 'happy', facing: -1 });
     if (lean > 0) { const px = SK.lerp(300, s.card.x + 48 + Math.sin(t * 30) * 6, lean), py = SK.lerp(560, CY + 10, lean); c.save(); c.translate(px, py); c.rotate(-0.7); c.scale(1.5, 1.5); c.fillStyle = '#f6c445'; c.fillRect(-4, -36, 8, 32); c.fillStyle = '#e8a0a0'; c.fillRect(-4, -42, 8, 7); c.fillStyle = '#f0d8b0'; c.beginPath(); c.moveTo(-4, -4); c.lineTo(4, -4); c.lineTo(0, 6); c.closePath(); c.fill(); c.restore(); }
     // your coins: they hop over to the fox with each deal
     if (s.ph === 'seal' && s.sealed && of) for (let i = 0; i < of.coins; i++) { const k = SK.clamp((e - 0.35 - i * 0.06) / 0.45, 0, 1); if (k < 1) B9.coin(c, SK.lerp(150 + i * 20, 230 + i * 16, k), SK.lerp(600, 350, k) - Math.sin(k * Math.PI) * 40, 11, Math.cos(t * 14)); }
+    // labels: the seller, the offer (or what the duck turned it into), your stamp
+    SK.tag(c, 'Seller', 252, 214, 18);
+    if (of && s.ph !== 'end' && !(s.ph === 'seal' && s.sealed)) { const counter = s.ph === 'haggle' && e > 0.6; SK.tag(c, counter ? 'Counteroffer' : 'Offer', s.card.x, s.card.y + (counter ? 62 : -66), 18, counter ? '#ffd0d0' : '#fff6ea'); }
+    if (s.ph === 'seal' && s.sealed) SK.tag(c, 'Contract', 236, 520 - s.done.length * 26, 18, '#ffe9a0');
+    if (!s.done.length && s.ph !== 'seal') { const lx = s.drop ? s.dx : s.sx; SK.tag(c, 'Your stamp', lx + (lx < 180 ? 74 : -74), SY - 16, 18); }
     if (of && s.ph === 'wait' && !s.drop) SK.glow(c, g, s.card.x, CY, 50);
     if (of && (s.ph === 'wait' || s.ph === 'slide')) SK.demo(g, c, 'tap', [s.card.x, CY + 20], null, { delay: 1.0 });
   },

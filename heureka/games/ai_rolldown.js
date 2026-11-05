@@ -2,9 +2,10 @@
 // model's error, shown on the gauge at the top. Only the slope right under the penguin shows through the fog. Tap on the
 // downhill side to nudge it one step that way, again and again, until the error reaches the green zone at the bottom of
 // the valley; the fog lifts. Push uphill and the gauge climbs into the red. Level 2: a shallow valley that is a trap.
-const GY0 = 588, GH = 300, GAUGE = { x0: 44, x1: 316, y: 158 };
+const GY0 = 592, GH = 300, GAUGE = { x0: 96, x1: 324, y: 246 }, CH = { x0: 30, x1: 330, y0: 130, y1: 222 };
+const DOTS = [[0.08, 0.18], [0.3, 0.36], [0.5, 0.47], [0.72, 0.66], [0.92, 0.78]]; // the data the model is fitting
 function errAt(s, k) { // the error landscape, at step position k (fractional between steps)
-  if (s.L === 2) return 0.62 - 0.56 * Math.exp(-(((k - 3) / 1.5) ** 2)) - 0.30 * Math.exp(-(((k + 2.5) / 1.2) ** 2)) + 0.012 * k * k;
+  if (s.two) { k *= s.mir; } if (s.two) return 0.62 - 0.56 * Math.exp(-(((k - 3) / 1.5) ** 2)) - 0.30 * Math.exp(-(((k + 2.5) / 1.2) ** 2)) + 0.012 * k * k;
   const d = (k - s.kmin) / 5; return s.a * d * d + 0.05 + 0.025 * Math.sin(k * 1.7 + s.ph) * Math.min(1, Math.abs(k - s.kmin));
 }
 const xAt = (s, k) => 180 + k * s.dx, yAt = (s, k) => GY0 - errAt(s, k) * GH;
@@ -27,7 +28,7 @@ MG.add({
     note: 'Gradient descent: feel the slope where you are, step downhill, and repeat until the error stops falling.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level); s.L = L; s.ph = g.rand() * 6;
-    if (L === 2) { s.dx = 30; s.k = -1; s.kmin = 3; s.target = 0.2; s.red = 0.8; s.fogR = 62; }
+    if (L >= 1) { s.two = true; s.mir = L === 1 ? -1 : 1; s.dx = 30; s.k = -1 * s.mir; s.kmin = 3 * s.mir; s.target = 0.2; s.red = 0.8; s.fogR = L === 1 ? 72 : 60; } // two valleys: the nearer one is shallow
     else { s.dx = 26; s.kmin = L ? (g.rand() < 0.5 ? -1 : 1) : 0; s.a = L ? 0.6 : 0.85; const side = g.rand() < 0.5 ? -1 : 1; s.k = s.kmin + side * (L ? 5 : 4); s.target = errAt(s, s.kmin) + 0.03; s.red = 0.95; s.fogR = 76; }
     s.anim = null; s.res = null; s.trail = [];
   },
@@ -62,8 +63,16 @@ MG.add({
     // the fog: everything but a small window round the penguin, lifting at the end
     const lift = s.res ? Math.min(1, (t - s.res.t) * 1.2) : 0, R = s.fogR + lift * 500;
     c.save(); const fg = c.createRadialGradient(px, py - 20, R * 0.55, px, py - 20, R * 1.25); fg.addColorStop(0, 'rgba(206,214,236,0)'); fg.addColorStop(1, `rgba(206,214,236,${0.97 * (1 - lift)})`);
-    c.fillStyle = fg; c.fillRect(0, 196, 360, 444); c.restore();
+    c.fillStyle = fg; c.fillRect(0, 270, 360, 370); c.restore();
     for (let i = 0; i < 5; i++) { const fx = ((t * 12 + i * 90) % 460) - 50, fy = 300 + i * 60; c.fillStyle = `rgba(255,255,255,${0.18 * (1 - lift)})`; c.beginPath(); c.ellipse(fx, fy, 70, 16, 0, 0, 7); c.fill(); }
+    // the model's guess: a line through the data; the red sticks are its errors, and they shrink as the penguin goes down
+    { const C = CH, w = C.x1 - C.x0, h = C.y1 - C.y0, m = 0.62 + (kk - s.kmin) * 0.11, b0 = 0.13, px = u => C.x0 + 12 + u * (w - 24), py = v => C.y1 - 8 - v * (h - 16);
+      c.save(); c.fillStyle = 'rgba(255,255,255,0.92)'; c.beginPath(); c.roundRect(C.x0, C.y0, w, h, 10); c.fill(); c.beginPath(); c.roundRect(C.x0, C.y0, w, h, 10); c.clip();
+      c.strokeStyle = 'rgba(60,70,120,0.25)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(C.x0, C.y0 + i * h / 4); c.lineTo(C.x1, C.y0 + i * h / 4); c.stroke(); }
+      for (const [u, v] of DOTS) { const lv = b0 + (u - 0.5) * m + 0.35; c.strokeStyle = '#e83a5a'; c.lineWidth = 3; c.beginPath(); c.moveTo(px(u), py(v)); c.lineTo(px(u), py(lv)); c.stroke(); }
+      c.strokeStyle = '#3a6ad8'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(px(0), py(b0 - 0.5 * m + 0.35)); c.lineTo(px(1), py(b0 + 0.5 * m + 0.35)); c.stroke();
+      for (const [u, v] of DOTS) { c.fillStyle = '#2a2040'; c.beginPath(); c.arc(px(u), py(v), 5, 0, 7); c.fill(); }
+      c.restore(); SK.tag(c, "Model's guess", C.x0 + 72, C.y0 + 16, 18); }
     // the error gauge: green at the low end, red at the high end, the penguin's marker sliding along it
     const G = GAUGE, gw = G.x1 - G.x0, e = errAt(s, kk), ex = G.x0 + Math.min(1, e) * gw;
     c.save(); c.fillStyle = 'rgba(30,20,60,0.6)'; c.beginPath(); c.roundRect(G.x0 - 14, G.y - 20, gw + 28, 40, 20); c.fill();
@@ -71,12 +80,12 @@ MG.add({
     c.fillStyle = 'rgba(255,255,255,0.9)'; c.fillRect(G.x0 + s.target * gw, G.y - 13, 3, 26); c.fillRect(G.x0 + s.red * gw, G.y - 13, 3, 26);
     c.fillStyle = 'rgba(40,140,80,0.5)'; c.beginPath(); c.roundRect(G.x0, G.y - 8, s.target * gw, 16, 8); c.fill();
     c.fillStyle = '#fff'; c.strokeStyle = '#2a2040'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(ex, G.y + 4); c.lineTo(ex - 9, G.y - 16); c.lineTo(ex + 9, G.y - 16); c.closePath(); c.fill(); c.stroke();
-    c.restore();
+    c.restore(); SK.tag(c, 'Error', 50, GAUGE.y, 18);
     // a tap ripple
     if (s.tapT && t - s.tapT < 0.3) { const q = (t - s.tapT) / 0.3; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(s.tapX, py - 20, 10 + q * 24, 0, 7); c.stroke(); c.restore(); }
     // guidance: a pulsing arrow on the downhill side (levels 0 and 1); the ghost hand taps it
-    const down = s.L === 2 ? (s.kmin > s.k ? 1 : -1) : errAt(s, s.k - 1) < errAt(s, s.k + 1) ? -1 : 1; // at level 2 the hand points the way to the deep valley
-    if (!g.done && !s.anim && g.level <= 1) { const ax = xAt(s, s.k) + down * 48, ay = yAt(s, s.k) - 30, p = 0.5 + 0.5 * Math.sin(t * 6); c.save(); c.globalAlpha = 0.5 + 0.4 * p; c.fillStyle = '#ffd45a'; c.strokeStyle = '#6a4a10'; c.lineWidth = 2; c.translate(ax + down * p * 4, ay); c.scale(down, 1); c.beginPath(); c.moveTo(-10, -9); c.lineTo(6, -9); c.lineTo(6, -16); c.lineTo(18, 0); c.lineTo(6, 16); c.lineTo(6, 9); c.lineTo(-10, 9); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    const down = s.two ? (s.kmin > s.k ? 1 : -1) : errAt(s, s.k - 1) < errAt(s, s.k + 1) ? -1 : 1; // at level 2 the hand points the way to the deep valley
+    if (!g.done && !s.anim && g.level === 0) { const ax = xAt(s, s.k) + down * 48, ay = yAt(s, s.k) - 30, p = 0.5 + 0.5 * Math.sin(t * 6); c.save(); c.globalAlpha = 0.5 + 0.4 * p; c.fillStyle = '#ffd45a'; c.strokeStyle = '#6a4a10'; c.lineWidth = 2; c.translate(ax + down * p * 4, ay); c.scale(down, 1); c.beginPath(); c.moveTo(-10, -9); c.lineTo(6, -9); c.lineTo(6, -16); c.lineTo(18, 0); c.lineTo(6, 16); c.lineTo(6, 9); c.lineTo(-10, 9); c.closePath(); c.fill(); c.stroke(); c.restore(); }
     SK.demo(g, c, 'tap', [xAt(s, s.k) + down * 52, yAt(s, s.k) - 30]);
   },
   // the bot steps toward the deepest valley (B7FAIL: steps uphill)

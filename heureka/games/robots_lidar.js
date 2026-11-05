@@ -36,7 +36,7 @@ function cast(S, tail, x, y, a) { // nearest hit of a ray from (x, y) at angle a
 }
 function tailBalls(L) { const [x, y] = L.tail; return [[x, y + 12, 5.5], [x - 6, y + 4, 6], [x - 14, y, 6], [x - 22, y + 2, 5]]; }
 MG.add({
-  id: 'lidar', stage: 'robots', cmd: 'SPIN LIDAR!', time: 7, mood: 'night', winText: 'Lidar map!', failText: 'Pounce!',
+  id: 'lidar', stage: 'robots', cmd: 'SPIN THE LIDAR, FIND THE CAT!', time: 7, mood: 'night', winText: 'Lidar map!', failText: 'Pounce!',
   card: { title: 'Seeing with a spinning laser', kind: 'Robotics', ref: 'Lidar (light detection and ranging)',
     text: 'A lidar sends out a quick flash of laser light and times how long the light takes to bounce back. Light is so fast that the time is tiny, but it tells the robot exactly how far away the thing it hit is.\n\nSpin the laser all the way round and you get a ring of distances, one in every direction. Drawn as dots, they show the walls, the doorways and the furniture, even in the dark. Robot vacuums, warehouse robots and many self-driving cars build their maps this way. Glass and mirrors fool it, because the light passes through or bounces away.',
     note: 'Lidar measures the distance in every direction with a spinning laser, so a robot can map a room even in the dark.' },
@@ -95,6 +95,9 @@ MG.add({
     if (!s.path && !g.done) { c.strokeStyle = '#ff4a5a'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.arc(b.x, b.y, 28, -Math.PI / 2, -Math.PI / 2 + Math.min(1, s.swept / TURN) * TURN); c.stroke(); }
     c.save(); c.translate(b.x, b.y); c.rotate(s.ang); c.fillStyle = '#2a2e44'; c.beginPath(); c.arc(0, 0, 10, 0, 7); c.fill(); c.fillStyle = '#ff4a5a'; c.fillRect(6, -3, 8, 6); c.restore();
     if (s.huh) SK.tag(c, '?', b.x, b.y - 42, 22);
+    // a circular arrow round the robot shows the spin; the cat's eyes glint in the far dark room
+    if (!s.path && !g.done && s._hold == null) { c.save(); c.strokeStyle = 'rgba(255,120,130,0.8)'; c.lineWidth = 3; const a0 = t * 2; c.beginPath(); c.arc(b.x, b.y, 38, a0, a0 + 4.6); c.stroke(); const ax = b.x + Math.cos(a0 + 4.6) * 38, ay = b.y + Math.sin(a0 + 4.6) * 38, d = a0 + 4.6 + Math.PI / 2; c.fillStyle = 'rgba(255,120,130,0.9)'; c.beginPath(); c.moveTo(ax + Math.cos(d) * 8, ay + Math.sin(d) * 8); c.lineTo(ax + Math.cos(d + 2.3) * 7, ay + Math.sin(d + 2.3) * 7); c.lineTo(ax + Math.cos(d - 2.3) * 7, ay + Math.sin(d - 2.3) * 7); c.fill(); c.restore(); SK.tag(c, 'Lidar', b.x, b.y + 54, 18); }
+    if (!s.found && !g.done) { const bl = Math.sin(t * 1.3) > 0.85 ? 0.2 : 1; c.fillStyle = `rgba(190,255,120,${0.75 * bl})`; for (const dx of [-5, 5]) { c.beginPath(); c.ellipse(L.tail[0] + 16 + dx, L.tail[1] + 8, 2.6, 3.6 * bl, 0, 0, 7); c.fill(); } }
     if (!s.path && !g.done && s._hold == null) SK.glow(c, g, b.x, b.y, 32);
     // the owl watches from the corner, wide-eyed in the dark
     SK.animal(c, 'owl', 306, 130, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'think', facing: -1 });

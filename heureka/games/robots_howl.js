@@ -21,7 +21,7 @@ function paintStage(o) {
   }
 }
 MG.add({
-  id: 'howl', stage: 'robots', cmd: 'STOP THE HOWL!', time: 6, mood: 'party', winText: 'Feedback!', failText: 'SCREECH!',
+  id: 'howl', stage: 'robots', cmd: 'MOVE MICS AWAY FROM SPEAKERS!', time: 6, mood: 'party', winText: 'Feedback!', failText: 'SCREECH!',
   card: { title: 'When each echo comes back bigger', kind: 'Control', ref: 'Positive feedback (audio feedback)',
     text: 'A microphone picks up sound, an amplifier makes it louder, and a loudspeaker plays it. If the speaker\'s sound reaches the microphone again, it goes round the loop again. That is called feedback.\n\nWhen the microphone is close, each trip round comes back louder than the last, and in a moment it becomes a howl. Move the microphone away and each trip comes back quieter, so the sound dies out. The test is whether one trip round the loop makes the sound bigger or smaller. The same rule decides whether any feedback loop, in a robot, a market or a climate, settles down or runs away.',
     note: 'A feedback loop runs away when each trip round makes the signal bigger, and dies down when it makes it smaller.' },
@@ -46,7 +46,7 @@ MG.add({
       m.peak = Math.max(m.peak, m.a); loud = Math.max(loud, m.a);
       if (m.a >= 1) { s.screech = 0.001; g.sfx('stretch', { pitch: 3, vol: 1.2 }); g.sfx('buzz', { pitch: 3.5, vol: 1 }); g.shake(7, 0.5); g.fail(); return; }
     }
-    if (loud > 0.15 && Math.floor((s.lap - dt) * 4) !== Math.floor(s.lap * 4)) g.sfx('buzz', { pitch: 2 + loud * 2, vol: 0.2 + loud * 0.7 });
+    if (loud > 0.15 && Math.floor((s.lap - dt) * 4) !== Math.floor(s.lap * 4)) { g.sfx('buzz', { pitch: 2 + loud * 2, vol: 0.2 + loud * 0.7 }); if (loud > 0.45) g.shake(2 + loud * 4, 0.2); }
     if (s.mics.every(m => g.t >= m.live && m.calm && m.G < 1)) { g.win(); g.sfx('cheer'); }
   },
   draw(g, c) {
@@ -58,10 +58,15 @@ MG.add({
       let best = SPK[0], bd = 1e9; for (const p of SPK) { const d = SK.dist(p[0], p[1], m.x, m.y); if (d < bd) { bd = d; best = p; } }
       const a = Math.min(1, m.a), run = m.G > 1;
       if (run) { const mx = (best[0] + m.x) / 2, my = (best[1] + m.y) / 2, R = 40 + 90 * a; const gr = c.createRadialGradient(mx, my, 4, mx, my, R); gr.addColorStop(0, `rgba(255,70,50,${0.15 + 0.5 * a})`); gr.addColorStop(1, 'rgba(255,70,50,0)'); c.fillStyle = gr; c.beginPath(); c.arc(mx, my, R, 0, 7); c.fill(); }
-      for (let i = 0; i < 4; i++) {
-        const k = ((t * 2.2 + i / 4) % 1), x = SK.lerp(best[0], m.x, k), y = SK.lerp(best[1], m.y, k), r = 10 + k * 16 + a * 30 * (run ? (0.6 + 0.4 * k) : (1 - 0.6 * k));
-        c.strokeStyle = run ? `rgba(255,${200 - 160 * a},${120 - 100 * a},${0.25 + 0.6 * a})` : `rgba(140,220,255,${0.2 + 0.5 * a})`; c.lineWidth = 3 + a * 6;
-        const ang = Math.atan2(m.y - best[1], m.x - best[0]); c.beginPath(); c.arc(x, y, r, ang - 0.9, ang + 0.9); c.stroke();
+      // the loop: sound rings fly from the speaker to the mic, the mic's signal (dots) runs back along the cable to the
+      // speaker, louder each lap while the loop gain is over 1, softer each lap once it is under 1
+      const ang = Math.atan2(m.y - best[1], m.x - best[0]);
+      for (let i = 0; i < 5; i++) {
+        const k = ((t * 1.8 + i / 5) % 1), lap = run ? 0.55 + 0.45 * k : 1 - 0.6 * k, x = SK.lerp(best[0], m.x - 10, k), y = SK.lerp(best[1], m.y - 40, k), r = 12 + k * 14 + a * 34 * lap;
+        c.strokeStyle = run ? `rgba(255,${200 - 160 * a},${120 - 100 * a},${0.3 + 0.65 * a})` : `rgba(140,220,255,${0.25 + 0.5 * a})`; c.lineWidth = 3 + a * 7 * lap;
+        c.beginPath(); c.arc(x, y, r, ang - 0.8, ang + 0.8); c.stroke();
+        const kb = ((t * 1.8 + i / 5 + 0.5) % 1), bx = SK.lerp(m.x + 16, best[0], kb), by = SK.lerp(m.y - 4, best[1] + 24, kb) + Math.sin(kb * Math.PI) * 24;
+        c.fillStyle = run ? `rgba(255,${180 - 120 * a},90,${0.4 + 0.5 * a})` : 'rgba(140,220,255,0.5)'; c.beginPath(); c.arc(bx, by, 3 + a * 5, 0, 7); c.fill();
       }
       if (a > 0.3) { c.save(); c.translate(m.x, m.y - 30); c.strokeStyle = '#ff5a3a'; c.lineWidth = 3; c.beginPath(); for (let i = 0; i < 9; i++) { const r = (i % 2 ? 12 : 24) * (0.6 + a * 0.6) + Math.sin(t * 40 + i) * 2, aa = i / 8 * Math.PI * 2; c.lineTo(Math.cos(aa) * r, Math.sin(aa) * r); } c.closePath(); c.stroke(); c.restore(); }
     }
@@ -76,9 +81,10 @@ MG.add({
       if (singing && !m.calm && !g.done && SK.dragging(g) !== m) SK.glow(c, g, m.x, m.y - 30, 40);
       if (m.calm && !lost) { c.fillStyle = '#7aff9a'; c.font = '900 22px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('♪', m.x + 26 + Math.sin(t * 3) * 3, m.y - 74); }
     }
+    SK.tag(c, 'Speaker', SPK[2][0], SPK[2][1] + 46, 18); { const m = s.mics[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 40, m.y - 66, 18); }
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
-    // guidance: drag the first squealing singer away from its speaker, to a quiet spot (shown as a dashed ring)
-    const m0 = s.mics.find(m => t >= m.live && !m.calm); if (m0 && !g.done) { const i = s.mics.indexOf(m0); c.save(); c.strokeStyle = 'rgba(140,230,255,0.55)'; c.lineWidth = 3; c.setLineDash([7, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(SAFE[i][0], SAFE[i][1], 30, 12, 0, 0, 7); c.stroke(); c.restore(); }
+    // guidance: drag the first squealing singer away from its speaker (the ghost hand shows one quiet spot; any will do)
+    const m0 = s.mics.find(m => t >= m.live && !m.calm);
     if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [SAFE[i][0], SAFE[i][1] - 30], { delay: m0.live }); }
   },
   auto(g, dt, synth) {
