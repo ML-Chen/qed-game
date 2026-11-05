@@ -60,9 +60,9 @@ const BL = (() => {
   }
   const K = 1.4, base = (L, leg) => [L.x + leg.base * K, L.y + 21 * K];
   function newLed(x, side, col, pin, gnd) {
-    const L = { x, y: 246, side, col, pin, gnd, legs: {} };
+    const L = { x, y: 262, side, col, pin, gnd, legs: {} };
     L.legs.long = { long: true, base: side * 9, rx: x + side * 34, ry: 362, hole: null };
-    L.legs.short = { long: false, base: -side * 9, rx: x - side * 22, ry: 314, hole: null };
+    L.legs.short = { long: false, base: -side * 9, rx: x - side * 22, ry: 326, hole: null };
     for (const k of ['long', 'short']) { L.legs[k].x = L.legs[k].rx; L.legs[k].y = L.legs[k].ry; }
     return L;
   }
@@ -121,7 +121,6 @@ MG.add({
       else { BL.bulbIcon(c, sx[i] - 12, 168, i === 0, 0.95, BL.LEDC[s.leds[0].col]); BL.bulbIcon(c, sx[i] + 12, 168, i === 2, 0.95, BL.LEDC[s.leds[1].col]); }
       if (i < 3) { c.fillStyle = '#8a92d0'; c.beginPath(); c.moveTo(sx[i] + 33, 160); c.lineTo(sx[i] + 41, 166); c.lineTo(sx[i] + 33, 172); c.fill(); }
     }
-    SK.tag(c, 'Program', 180, 212, 18);
     // pins glow while the program has them on
     s.pins.forEach((p, i) => { if (def.pinOn(g, i)) { const x = BL.holeX(p), gr = c.createRadialGradient(x, BL.HY, 2, x, BL.HY, 26); gr.addColorStop(0, 'rgba(255,230,120,0.95)'); gr.addColorStop(1, 'rgba(255,230,120,0)'); c.fillStyle = gr; c.beginPath(); c.arc(x, BL.HY, 26, 0, 7); c.fill(); } });
     s.pins.forEach((p, i) => SK.tag(c, 'Pin ' + (13 - i), SK.clamp(BL.holeX(p), 56, 304), BL.HY + 38 + (i % 2) * 0, 18, '#fff6ea', 'rgba(140,90,10,0.92)'));
@@ -137,6 +136,7 @@ MG.add({
       }
       BL.led(c, L, t, L.lit, L.back && pinOn);
     }
+    SK.tag(c, 'Program', 180, 212, 18); // drawn after the LEDs so their glow never covers it
     // labels for the legs while they still dangle
     const tl = s.leds.find(L => !L.legs.long.hole); if (tl && !g.done && !SK.dragging(g)) SK.tag(c, 'Long leg', SK.clamp(tl.x + tl.side * 74, 60, 300), tl.y + 70, 18);
     // the owl, by the lamp
