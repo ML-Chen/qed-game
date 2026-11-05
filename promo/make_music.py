@@ -10,17 +10,15 @@ out = sys.argv[1]; secs = float(sys.argv[2]) if len(sys.argv) > 2 else 62
 key = os.environ.get('ELEVENLABS_API_KEY', '').strip()
 if not key: sys.exit('ELEVENLABS_API_KEY is not set')
 os.makedirs(out, exist_ok=True)
-COMMON = ('Instrumental music for a 60-second trailer of a cheerful video game about math, from grade 3 arithmetic '
-          'to college calculus, played as fast WarioWare-style microgames with cute animals. Exactly 150 BPM, steady '
-          'tempo, major key, curious, clever, joyful and bouncy. No vocals. A short sparkling 3-second intro, an '
-          'energetic groove, a brief quieter build around 20 to 30 seconds, a big happy chorus starting at 32 seconds, '
-          'and a clean ending with one bright final hit at 60 seconds.')
+COMMON = ('Instrumental music for a 60-second trailer of a cheerful video game about science, engineering, coding and '
+          'money, played as fast WarioWare-style microgames: pucks sliding on ice, circuits lighting up, rockets, robots. '
+          'Exactly 150 BPM, steady tempo, major key, curious, bright and bouncy. No vocals. A one-second sparkling hit at '
+          'the very start, an energetic groove from 2 seconds, a brief quieter build around 20 to 30 seconds, a big happy '
+          'chorus starting at 32 seconds, and a clean ending with one bright final hit at 60 seconds.')
 PROMPTS = {
-    'playful_marimba': COMMON + ' Bouncy marimba, pizzicato strings, glockenspiel, ukulele, handclaps and light drums.',
-    'chiptune_orchestra': COMMON + ' A playful blend of 16-bit video game chiptune leads with a small orchestra: '
-                          'brass stabs, strings, timpani, glockenspiel, and a fun bass line.',
-    'future_bass_bright': COMMON + ' Bright, friendly future bass: plucky synth chords, sparkly arpeggios, a warm sub '
-                          'bass, crisp claps and a big but gentle drop at 32 seconds.',
+    'heureka_lab_funk': COMMON + ' Playful funk: slap bass, clavinet, wah guitar, synth bleeps, handclaps and a tight drum kit.',
+    'heureka_bright_pop': COMMON + ' Bright electro-pop: sparkling synth plucks, glockenspiel, marimba, punchy kick, claps and rising sweeps.',
+    'heureka_chip_orchestra': COMMON + ' A blend of 16-bit chiptune leads with a small orchestra: pizzicato strings, brass stabs, timpani and glockenspiel.',
 }
 ok = 0
 for name, prompt in PROMPTS.items():
