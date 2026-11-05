@@ -162,8 +162,8 @@
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.phase !== 'play' || s.back) return; const D = s.D, A = s.A; if (D.out <= 0) return;
       const [ex, ey] = donorXY(D, D.out - 1, g.t), [gx, gy] = slotXY(A, nextGap(A), g.t), key = 'e' + s.round + '_' + D.out;
-      s.botT = s.botT || {}; if (s.botT[key] == null) s.botT[key] = Math.max(g.t + 0.25, s.round === 0 && D.out === EL[D.k].shells.slice(-1)[0] ? 1.0 : 0);
-      SK.bot.drag(g, synth, key, s.botT[key], [ex, ey], [gx, gy], 0.45);
+      const BT = (s._bot = s._bot || {}).T = (s._bot.T || {}); if (BT[key] == null) BT[key] = Math.max(g.t + 0.25, s.round === 0 && D.out === EL[D.k].shells.slice(-1)[0] ? 1.0 : 0);
+      SK.bot.drag(g, synth, key, BT[key], [ex, ey], [gx, gy], 0.45);
     },
   });
 })();

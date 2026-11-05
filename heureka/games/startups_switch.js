@@ -103,7 +103,6 @@
       const kick = s.phase === 'sold' && !s.res && t - s.pt > 0.35;
       SK.animal(c, s.inv.k, s.gx + (kick ? 14 : 0), iy, 0.85, { t, pose: won || ok ? 'cheer' : kick ? 'sad' : 'idle', expr: won || ok ? 'laugh' : kick ? 'sad' : live && s.side !== big ? 'think' : 'happy', facing: kick ? -1 : 1 });
       if (!drop) { c.fillStyle = '#c8845a'; c.strokeStyle = '#6a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(s.gx - 30, RAIL + 52, 60, 28, 6); c.fill(); c.stroke(); }
-      if (kick) { const q = Math.min(1, (t - s.pt - 0.35) * 3); c.save(); c.translate(JX[s.side], JB); c.rotate(Math.sin(q * 9) * 0.06 * (1 - q)); c.restore(); g.s.kickq = q; }
       SK.tag(c, 'Investor', s.gx, RAIL - 22, 18);
       // the big switch
       const sa = s.side ? 0.5 : -0.5; c.fillStyle = '#3a2a3a'; c.beginPath(); c.roundRect(SW.x - 28, SW.y + 6, 56, 22, 8); c.fill();

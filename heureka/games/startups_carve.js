@@ -65,9 +65,9 @@
       const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', L = s.L;
       c.drawImage(g.bake('n7carve', paintRoom), 0, 0, 360, 640);
       // the pie
-      const fr = s.sl.map((o, i) => SK.lerp(s.from[i] ?? o.f, o.f, SK.easeInOut(s.tw))), sum = fr.reduce((a, b) => a + b, 0); let a = s.rot;
+      const fr = s.sl.map((o, i) => SK.lerp(s.from[i] ?? o.f, o.f, SK.easeInOut(s.tw))), sum = fr.reduce((a, b) => a + b, 0); let a = s.rot; const mid = [], span = [];
       for (let i = 0; i < s.sl.length; i++) { const o = s.sl[i], da = fr[i] / sum * TAU; c.fillStyle = COL[o.w]; c.beginPath(); c.moveTo(PC.x, PC.y); c.arc(PC.x, PC.y, PC.r, a, a + da); c.closePath(); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.stroke();
-        o._m = a + da / 2; o._da = da; a += da; }
+        mid[i] = a + da / 2; span[i] = da; a += da; }
       c.strokeStyle = '#7a4a20'; c.lineWidth = 3; c.beginPath(); c.arc(PC.x, PC.y, PC.r, 0, TAU); c.stroke();
       // the dashed wedge still to carve, and the cuts made
       const E = this.edges(s);
@@ -78,7 +78,7 @@
       if (s.miss && t - s.miss.t < 0.5) { c.save(); c.globalAlpha = 1 - (t - s.miss.t) * 2; c.strokeStyle = '#e8403a'; c.lineWidth = 4; c.beginPath(); c.moveTo(PC.x, PC.y); c.lineTo(PC.x + Math.cos(s.miss.a) * (PC.r + 10), PC.y + Math.sin(s.miss.a) * (PC.r + 10)); c.stroke(); c.restore(); }
       if (s.trail) { c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.trail.x0, s.trail.y0); c.lineTo(s.trail.x, s.trail.y); c.stroke(); c.lineCap = 'butt'; }
       // labels on the slices
-      for (const o of s.sl) if (o._da > 0.4) { const lx = PC.x + Math.cos(o._m) * PC.r * 0.62, ly = PC.y + Math.sin(o._m) * PC.r * 0.62; SK.tag(c, { fox: 'Fox', beaver: 'Beaver', inv: 'Investor', inv2: 'Investor', pool: 'Pool' }[o.w], lx, ly, 18); }
+      s.sl.forEach((o, i) => { if (!(span[i] > 0.4)) return; const lx = PC.x + Math.cos(mid[i]) * PC.r * 0.62, ly = PC.y + Math.sin(mid[i]) * PC.r * 0.62; SK.tag(c, { fox: 'Fox', beaver: 'Beaver', inv: 'Investor', inv2: 'Investor', pool: 'Pool' }[o.w], lx, ly, 18); });
       // the knife at the centre
       if (s.phase === 'carve' && !g.done) { const kx = s.trail ? s.trail.x : PC.x, ky = s.trail ? s.trail.y : PC.y; c.save(); c.translate(kx, ky); c.rotate(s.trail ? Math.atan2(s.trail.y - s.trail.y0, s.trail.x - s.trail.x0) : -0.6); c.fillStyle = '#d8dce4'; c.strokeStyle = '#5a5a68'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -5); c.lineTo(34, -2); c.lineTo(38, 2); c.lineTo(0, 5); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#6a3a1a'; c.beginPath(); c.roundRect(-22, -5, 22, 10, 4); c.fill(); c.restore(); }
       // the investor walking over (or already in), the founders, the hires
