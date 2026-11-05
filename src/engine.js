@@ -60,9 +60,9 @@ const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
 // servers (the artifact 'db' capability, data/users/<id>/save) when the page runs inside Claude. On load the two
 // are merged so nothing earned in either place is lost.
 // settings: timer (false: the fuse never runs out and no acorn is lost), anim ('slow' | 'normal' | 'fast': how long the
-// working animations take), speedups (false: the run never gets faster). Mode and sound are SAVE.d.mode and SAVE.d.muted.
+// working animations take), speedups (false: the run never gets faster), steps ('auto' | 'tap': tap through the working beat by beat). Mode and sound are SAVE.d.mode and SAVE.d.muted.
 // learn: { [microgame id]: { s: 'got' | 'confused', at } } from the check-in after each microgame.
-const SETTINGS_DEFAULT = { timer: true, anim: 'normal', speedups: true };
+const SETTINGS_DEFAULT = { timer: true, anim: 'normal', speedups: true, steps: 'auto' };
 const SAVE = {
   key: 'qed1', d: { best: {}, cleared: {}, cards: {}, remixBest: 0, muted: false, mode: 'easy', settings: { ...SETTINGS_DEFAULT }, learn: {}, savedAt: 0 },
   db: null, uid: null, busy: false, again: false, timer: null,
@@ -113,6 +113,9 @@ function learnOf(id) { const v = (SAVE.d.learn || {})[id]; return v ? v.s : null
 // how much slower than normal a microgame's working plays (MK.pace multiplies by g.paceMul): the animation-speed
 // setting, times 1.6 while the player's last check-in on it was "Confused", or 2 for a "Replay slower"
 const ANIM_MUL = { slow: 1.5, normal: 1, fast: 0.75 }, CONFUSED_MUL = 1.6, REPLAY_MUL = 2;
+// step mode (tap through the working): the Steps setting, or while the player's last check-in on this microgame was
+// "Confused", or a "Replay slower"
+function stepsFor(def, replay) { return setting('steps') === 'tap' || !!replay || learnOf(def.id) === 'confused'; }
 function paceMulFor(def, replay) { return (ANIM_MUL[setting('anim')] || 1) * (replay ? REPLAY_MUL : learnOf(def.id) === 'confused' ? CONFUSED_MUL : 1); }
 
 // ---------------- canvas, scaling and input ----------------
@@ -240,7 +243,7 @@ function nextMicro(replay) {
     if (!run.list[run.i]) run.list.push(...playlist(run.stage.id, run.only)); // remix ran past its list
     def = run.list[run.i]; level = Math.min(2, Math.floor(run.i / 4)); // guidance fades: games 1-4 level 0, 5-8 level 1, 9-12 level 2
   }
-  run.g = makeG(def, level, run.speed, false, undefined, paceMulFor(def, replay)); run.g.replay = !!replay; run.checkin = null; FX.clear();
+  run.g = makeG(def, level, run.speed, false, undefined, paceMulFor(def, replay)); run.g.replay = !!replay; run.g.steps = stepsFor(def, replay); run.checkin = null; FX.clear();
   try { def.init && def.init(run.g); } catch (e) { console.error(def.id, 'init', e); run.g.win(); }
   run.phase = 'play'; run.pt = 0; A.beat(true, { bpm: run.bpm, mood: def.mood || run.stage.mood });
 }
@@ -311,9 +314,10 @@ function updateRun(dt) {
   if (run.phase === 'intro' && run.pt > Math.max(2.2, run.wait, 1.2 + run.stage.line.split(' ').length * 0.3)) between(); // time to read the host's sentence (a tap skips it)
   else if (run.phase === 'between' && betweenDone()) leaveBetween();
   else if (run.phase === 'play') {
-    const g = run.g; g.t += dt; g.rec.dts.push(dt);
-    try { g.def.update && g.def.update(g, dt); } catch (e) { console.error(g.def.id, 'update', e); }
-    if (testMode && g.def.auto && window.HM_AUTO) { g._norec = true; try { g.def.auto(g, dt, synth); } catch (e) { console.error(g.def.id, 'auto', e); } g._norec = false; } // the bot's own random numbers are not part of the replay (its moves are recorded as input)
+    const g = run.g;
+    tickMicro(g, dt, (g, d) => { g.t += d; g.rec.dts.push(d);
+      try { g.def.update && g.def.update(g, d); } catch (e) { console.error(g.def.id, 'update', e); }
+      if (testMode && g.def.auto && window.HM_AUTO) { g._norec = true; try { g.def.auto(g, d, synth); } catch (e) { console.error(g.def.id, 'auto', e); } g._norec = false; } }); // the bot's own random numbers are not part of the replay (its moves are recorded as input)
     if (!g.done && timerOn() && g.fuse() >= g.dur) { /* timer off: the fuse (hidden) never runs out */ g.rec.ev.push({ k: g.rec.dts.length, type: 'timeout' }); if (g.def.winOnTimeout) g.win(); else g.fail(); }
     if (g.done && g.t - g.doneAt > holdOf(g)) endMicro();
   }
@@ -324,6 +328,43 @@ function updateRun(dt) {
   else if (run.phase === 'play' && !run.g.done && timerOn() && run.g.fuse() > run.g.dur + 3) { console.error(run.g.def.id, 'watchdog'); run.g.rec.ev.push({ k: run.g.rec.dts.length, type: 'fail' }); run.g.fail(); }
   else if (run.phase === 'play' && run.g.done && run.g.t - run.g.doneAt > 3) endMicro();
   else if (run.phase !== 'over' && run.phase !== 'play' && run.pt > 8) { console.error('watchdog', run.phase); if (run.phase === 'between') leaveBetween(); else if (run.phase === 'result') afterResult(); else if (run.phase === 'grace') { run.loaves = 1; continueRun(); } else between(); }
+}
+// ---------------- step mode: tap through the working ----------------
+// The owner: "maybe if I had to tap through every step, it would be clearer." With g.steps on, the microgame's clock
+// stops just before each beat of working (MK.stepStop) and waits for a tap anywhere; a small "tap ▸" cue pulses at
+// the bottom. Everything runs on g.t, so while it waits nothing moves and the fuse stands still. A tap while a beat is
+// still playing fast-forwards it to the next stop. Step taps are not moves (never misses) and are not recorded, and
+// neither are the frames spent waiting, so the rewind copy (which plays without stops) matches the live game exactly.
+const STEP_EPS = 1e-4, STEP_FF = 8, STEP_BOT_WAIT = 0.3;
+// tickMicro(g, dt, adv): one frame of a live microgame; adv(g, d) advances its clock by d and updates it once
+function tickMicro(g, dt, adv) {
+  if (!g.steps || g.done || typeof MK === 'undefined' || !g.s.mk) { adv(g, dt); return; }
+  if (g.stepWait) { g.stepWaitT = (g.stepWaitT || 0) + dt; if (testMode && window.HM_AUTO && g.stepWaitT > STEP_BOT_WAIT) { synth('down', 180, 600); synth('up', 180, 600); } return; } // the test bot taps through
+  let left = g.stepFF ? Math.max(dt, 1 / 60) * STEP_FF : dt;
+  while (left > 1e-9 && !g.stepWait && !g.done) {
+    const d = Math.min(left, 1 / 60), stop = MK.stepStop(g);
+    if (g.t + d >= stop - STEP_EPS) { adv(g, Math.max(0, stop - STEP_EPS - g.t)); g.stepWait = true; g.stepAt = stop; g.stepWaitT = 0; g.stepFF = false; g.stepCount = (g.stepCount || 0) + 1; break; }
+    adv(g, d); left -= d;
+    if (g.stepFF && !MK.stepBusy(g)) g.stepFF = false;
+  }
+}
+// a tap in step mode: go on from the stop, or finish the beat that is playing
+function stepTap(g) { if (g.stepWait) { MK.stepGo(g, g.stepAt); g.stepWait = false; A.sfx('tap'); } else g.stepFF = true; }
+// true when this input event is a step tap (or the rest of one) rather than a move
+function stepInput(g, type) {
+  if (!g.steps || typeof MK === 'undefined' || !g.s.mk) return false;
+  if (type === 'down') { g.stepSwallow = false; if (g.stepWait || (MK.stepBusy(g) && g.s.mk.busyT > 0)) { stepTap(g); g.stepSwallow = true; return true; } return false; }
+  if (g.stepSwallow) { if (type === 'swipe') g.stepSwallow = false; return true; }
+  return false;
+}
+// the cue that says the game is waiting for a tap: small, at the bottom centre, pulsing gently
+function drawStepCue(c, g, t) {
+  if (!g.stepWait || g.done) return; const k = Math.min(1, (g.stepWaitT || 0) * 5), p = 0.5 + 0.5 * Math.sin(t * 4);
+  c.save(); c.globalAlpha = k * (0.78 + 0.22 * p); c.translate(180, 596); c.scale(1 + 0.04 * p, 1 + 0.04 * p);
+  c.fillStyle = 'rgba(30,14,36,0.74)'; roundRect(c, -38, -15, 76, 30, 15); c.fill(); c.strokeStyle = 'rgba(255,246,234,0.5)'; c.lineWidth = 1.5; c.stroke();
+  P.label(c, 'tap', -8, 1, 18, '#fff6ea', 'center', 900);
+  c.fillStyle = '#ffd45a'; c.beginPath(); c.moveTo(14 + 3 * p, -7); c.lineTo(25 + 3 * p, 0); c.lineTo(14 + 3 * p, 7); c.closePath(); c.fill();
+  c.restore();
 }
 // synthetic input for automated tests: synth('down', x, y) etc.
 function synth(type, ...a) { if (type === 'down') { ptr.down = true; ptr.x = a[0]; ptr.y = a[1]; ptr.sx = a[0]; ptr.sy = a[1]; } if (type === 'move') { ptr.x = a[0]; ptr.y = a[1]; } if (type === 'up') ptr.down = false; input(type, ...a); }
@@ -336,7 +377,7 @@ function input(type, x, y, vx, vy) {
     if (run.paused) { pauseInput(type, x, y); return; }
     if (run.phase === 'intro' && type === 'down' && run.pt > 0.6 && !hit(x, y, 336, 24, 52, 52)) { between(); return; }
     if (run.phase === 'between' && type === 'down' && run.checkin && !run.checkin.choice) { for (const b of CHECKIN) if (hit(x, y, CHECKIN_BOX.x, b.y, CHECKIN_BOX.w + 8, CHECKIN_BOX.h + 6)) { press('ck:' + b.id); checkIn(b.id); return; } return; }
-    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; g.rec.ev.push({ k: g.rec.dts.length, type, a: [x, y, vx, vy] }); const nr = g._norec; g._norec = false; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } g._norec = nr; return; }
+    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; if (stepInput(g, type)) return; g.rec.ev.push({ k: g.rec.dts.length, type, a: [x, y, vx, vy] }); const nr = g._norec; g._norec = false; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } g._norec = nr; return; }
     if (run.phase === 'over' && type === 'down') { if (hit(x, y, 180, 548, 220, 56)) { press('again'); A.sfx('pop'); setTimeout(() => startRun(run.stage.id, run.only), 140); } else if (hit(x, y, 180, 612, 160, 40)) { press('home'); A.sfx('click'); setTimeout(() => goStages(), 120); } }
     return;
   }
@@ -508,11 +549,12 @@ const SET = { open: false, t0: 0 };
 const SET_ROWS = [
   { id: 'timer', label: 'Timer', opts: [['on', 'On'], ['off', 'Off']], get: () => timerOn() ? 'on' : 'off', set: v => setSetting('timer', v === 'on') },
   { id: 'anim', label: 'Animations', opts: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']], get: () => setting('anim'), set: v => setSetting('anim', v) },
+  { id: 'steps', label: 'Steps', opts: [['auto', 'Auto'], ['tap', 'Tap']], get: () => setting('steps') === 'tap' ? 'tap' : 'auto', set: v => setSetting('steps', v) },
   { id: 'speedups', label: 'Speed-ups', opts: [['on', 'On'], ['off', 'Off']], get: () => setting('speedups') !== false ? 'on' : 'off', set: v => setSetting('speedups', v === 'on') },
   { id: 'mode', label: 'Mode', opts: [['easy', 'Easy'], ['medium', 'Medium']], get: () => SAVE.d.mode || 'easy', set: v => { SAVE.d.mode = v; SAVE.save(); } },
   { id: 'sound', label: 'Sound', opts: [['on', 'On'], ['off', 'Off']], get: () => SAVE.d.muted ? 'off' : 'on', set: v => { SAVE.d.muted = v === 'off'; SAVE.save(); A.call('mute', SAVE.d.muted); } },
 ];
-const SET_LAYOUT = { y0: 84, dy: 92, x0: 28, w: 304, h: 50, back: [180, 594, 180, 54] };
+const SET_LAYOUT = { y0: 80, dy: 82, x0: 28, w: 304, h: 50, back: [180, 594, 180, 54] };
 function setRowY(i) { return SET_LAYOUT.y0 + i * SET_LAYOUT.dy; } // the label's centre; the choices sit 38 px below
 function setOptBox(i, j) { const L = SET_LAYOUT, n = SET_ROWS[i].opts.length, w = L.w / n; return { x: L.x0 + w * (j + 0.5), y: setRowY(i) + 40, w, h: L.h }; }
 function openSettings() { SET.open = true; SET.t0 = T; ui.pressed = null; A.sfx('click'); }
@@ -844,7 +886,7 @@ function speech(c, text, x, y, k) {
 function easeOut(k) { return 1 - Math.pow(1 - k, 3) + Math.sin(k * Math.PI) * 0.15; }
 // command banner, input hint and the fuse timer over a running microgame
 function drawPlayOverlay(c, g, t) {
-  const d = g.def, a = g.t;
+  const d = g.def, a = g.t; drawStepCue(c, g, t);
   if (a < 1.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > 1.0 ? 1 - (a - 1.0) / 0.25 : 1;
     c.save(); c.globalAlpha = Math.max(0, fade); P.command(c, d.cmd, 180, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
   // fuse (hidden when the timer is off)
@@ -924,28 +966,29 @@ window.HM = {
   // run one microgame headless with a fixed timestep; returns {result, t} and optional frames as data URLs
   test(id, opts = {}) {
     const def = MG.byId[id]; if (!def) return { error: 'no such microgame ' + id };
-    const { level = 0, speed = 1, auto = false, frames = [], overlay = true, events = [], mode = 'easy', paceMul = 1, timer = true, maxT = 45 } = opts; // paceMul: working slower (2) or faster; timer: false never times out
+    const { level = 0, speed = 1, auto = false, frames = [], overlay = true, events = [], mode = 'easy', paceMul = 1, timer = true, maxT = 45, steps = false, wall = false } = opts; // paceMul: working slower (2) or faster; timer: false never times out; steps: tap through the working (the bot taps); wall: frames at wall-clock times (step mode waits too), not game times
     const errors = []; const oe = console.error; console.error = (...a) => { errors.push(a.map(String).join(' ')); oe(...a); };
     scene = 'run'; run = { stage: STAGE[def.stage] || STAGES[0], list: [def], i: 0, loaves: 4, phase: 'play', pt: 0, speed, bpm: 108, newCards: [] };
-    window.HM_AUTO = auto; FX.clear(); const g = makeG(def, level, speed, false, mode, paceMul); run.g = g; try { def.init && def.init(g); } catch (e) { errors.push('init: ' + e); }
+    window.HM_AUTO = auto; FX.clear(); const g = makeG(def, level, speed, false, mode, paceMul); g.steps = !!steps; run.g = g; let wallDone = null; try { def.init && def.init(g); } catch (e) { errors.push('init: ' + e); }
     const shots = [], dt = 1 / 60; let fi = 0; const ev = events.slice().sort((a, b) => a.t - b.t); let ei = 0;
     const off = document.createElement('canvas'); off.width = W * 2; off.height = H * 2; const oc = off.getContext('2d');
     for (let step = 0; step < 60 * maxT; step++) {
       while (ei < ev.length && ev[ei].t <= g.t) { const e = ev[ei++]; synth(e.type, ...(e.args || [])); }
-      while (fi < frames.length && frames[fi] <= g.t) { oc.setTransform(2, 0, 0, 2, 0, 0); oc.clearRect(0, 0, W, H); try { def.draw(g, oc); } catch (e) { errors.push('draw: ' + e); } FX.draw(oc); if (overlay) drawPlayOverlay(oc, g, g.t); shots.push(off.toDataURL('image/jpeg', 0.85)); fi++; }
-      g.t += dt; try { def.update && def.update(g, dt); } catch (e) { errors.push('update: ' + e); }
-      if (auto && def.auto) { try { def.auto(g, dt, synth); } catch (e) { errors.push('auto: ' + e); } }
-      FX.update(dt);
+      const now = wall ? step * dt : g.t;
+      while (fi < frames.length && frames[fi] <= now) { oc.setTransform(2, 0, 0, 2, 0, 0); oc.clearRect(0, 0, W, H); try { def.draw(g, oc); } catch (e) { errors.push('draw: ' + e); } FX.draw(oc); if (overlay) drawPlayOverlay(oc, g, g.t); shots.push(off.toDataURL('image/jpeg', 0.85)); fi++; }
+      tickMicro(g, dt, (g, d) => { g.t += d; try { def.update && def.update(g, d); } catch (e) { errors.push('update: ' + e); }
+        if (auto && def.auto) { try { def.auto(g, d, synth); } catch (e) { errors.push('auto: ' + e); } } });
+      FX.update(dt); if (g.done && wallDone == null) wallDone = (step + 1) * dt;
       if (!g.done && timer && g.fuse() >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
       if (g.done && g.t - g.doneAt > 0.8 && fi >= frames.length) break;
     }
     console.error = oe; window.HM_AUTO = false; scene = 'title'; run = null;
-    return { result: g.result, doneAt: +g.doneAt.toFixed(2), dur: +g.dur.toFixed(2), t: +g.t.toFixed(2), held: +(g.held || 0).toFixed(2), errors, shots };
+    return { result: g.result, doneAt: +g.doneAt.toFixed(2), dur: +g.dur.toFixed(2), t: +g.t.toFixed(2), held: +(g.held || 0).toFixed(2), stops: g.stepCount || 0, moves: (g.s.mk && g.s.mk.log || []).length, wallDoneAt: wallDone == null ? null : +wallDone.toFixed(2), errors, shots };
   },
   list() { return MG.list.map(d => ({ id: d.id, stage: d.stage, cmd: d.cmd, hint: d.hint, time: d.time, winOnTimeout: !!d.winOnTimeout, hasAuto: !!d.auto, card: !!(d.card && d.card.text) })); },
   goto(s, arg) { if (s === 'run') startRun(arg); else { scene = s; } },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) { T += dt; step(dt); } render(); },
-  state() { return { scene, phase: run && run.phase, i: run && run.i, loaves: run && run.loaves, speed: run && run.speed, graceUsed: run && run.graceUsed, won: run && run.won, cleared: run && run.cleared, paused: !!(run && run.paused), cardViewerOpen: !!CV.list, settingsOpen: SET.open, checkin: !!(run && run.checkin), choice: run && run.checkin ? run.checkin.choice : null, final: run && run.final, replay: !!(run && run.g && run.g.replay), replays: run ? run.replays : 0, gameId: run && run.g ? run.g.def.id : null, paceMul: run && run.g ? run.g.paceMul : null, next: run && run.list && run.list.slice(run.i, run.i + 4).map(d => d.id) }; },
+  state() { return { scene, phase: run && run.phase, i: run && run.i, loaves: run && run.loaves, speed: run && run.speed, graceUsed: run && run.graceUsed, won: run && run.won, cleared: run && run.cleared, paused: !!(run && run.paused), cardViewerOpen: !!CV.list, settingsOpen: SET.open, checkin: !!(run && run.checkin), choice: run && run.checkin ? run.checkin.choice : null, final: run && run.final, replay: !!(run && run.g && run.g.replay), replays: run ? run.replays : 0, gameId: run && run.g ? run.g.def.id : null, paceMul: run && run.g ? run.g.paceMul : null, steps: !!(run && run.g && run.g.steps), next: run && run.list && run.list.slice(run.i, run.i + 4).map(d => d.id) }; },
   pause() { pauseRun(); }, resume() { resumeRun(); },
   // the rewind scrubber: open it, show time t (re-playing the hidden copy), read where it is, close it
   rewind: { open() { openRewind(); return !!(run && run.rewind); }, seek(t) { const v = rewindSeek(t); if (v != null) render(); return v; }, close() { closeRewind(); },

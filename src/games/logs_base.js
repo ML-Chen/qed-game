@@ -4,7 +4,8 @@
 //   1. Drag the converter onto the log (or the log onto the converter): a working line "= log₂ 64 / log₂ 4" builds
 //      itself under the problem: the fraction bar draws, 64 and the small 4 fly down into top and bottom, and two copies
 //      of the converter fly in and stamp "log₂" on each.
-//   2. Tap the top (and 3. the bottom, either order): 64 rewrites itself as 2⁶ with a pen, log₂ and the 2 light up
+//   2. Tap the top (and 3. the bottom, either order): "2 × 2 × 2 × 2 × 2 × 2 = 64" writes itself under the fraction
+//      (the reason), 64 rewrites itself as 2⁶ with a pen, log₂ and the 2 light up
 //      together and fade (log₂ undoes "2 to the power"), and the exponent 6 glides down to stand alone: log₂ 64 = 6.
 //   4. Tap the fraction: "6 ÷ 2 = 3" writes itself under it, the 3 flies into the working line and then up into the ?.
 //      At level 2 the answer is a fraction (log₄ 8 = 3/2), which glides up into the ? as it is.
@@ -67,38 +68,43 @@ MG.add({
     // 2/3. log₂ N: N rewrites itself as 2^k, log₂ and the 2 cancel, and k glides down to stand alone
     const evalMove = (side) => { const top = side === 't', k = top ? kN : ka, v = top ? N : a, row = top ? 'tp' : 'bt';
       const wrong = [v / b, k + 1, k - 1, b * k].filter(w => Number.isInteger(w) && w > 0 && w !== k);
-      return { tap: row, busy: 0.1, askAt: 0.45 * T, after: 1.3 * T, ask: { v: k, wrong },
+      return { tap: row, busy: 0.1, askAt: 0.45 * T, after: 1.95 * T, ask: { v: k, wrong },
         then(g) { S[side + 'Go'] = true; M.show(g, 0.45 * T); S.point = true; hop(g, 'think');
           M.circle(g, row, { col: CONV, dur: 0.5 * T }); M.light(g, top ? S.tn : S.bn, { col: RES }); },
-        resolve(g) { M.show(g, 1.3 * T); const R = top ? S.tp : S.bt, lg = top ? S.tl : S.bl, old = top ? S.tn : S.bn;
-          // v = b^k, written in place
-          const base = M.num(b, side + 'b', { col: CONV }), kn = M.num(k, side + 'k', { col: RES }), pw = M.sup(base, kn);
-          R.items[2] = pw; relay(); M.writeIn(g, pw, { dur: 0.32 * T }); g.sfx('tap');
+        resolve(g) { M.show(g, 1.95 * T); const R = top ? S.tp : S.bt, lg = top ? S.tl : S.bl, old = top ? S.tn : S.bn;
+          // the reason first: v is k copies of b multiplied together ("3 × 3 × 3 × 3 = 81"), written under the fraction
+          const fac = []; for (let i = 0; i < k; i++) fac.push(i ? M.op('×') : null, M.num(b));
+          const why = k <= 6 ? M.row(...fac.filter(Boolean), M.op('='), M.num(v)) : M.row(M.sup(M.num(b), M.num(k)), M.op('='), M.num(v));
+          M.note(g, { node: why, at: [180, NOTEY], s: 26, col: NOTE, write: 0.45 * T, hold: 0.7 * T });
           M.at(g, [
-            [0.42 * T, g => { M.circle(g, [side + 'l', side + 'b'], { col: CONV, dur: 0.5 * T }); M.indicate(g, lg, { col: CONV, sc: 1.15, dur: 0.4 * T }); M.indicate(g, base, { col: CONV, sc: 1.25, dur: 0.4 * T }); M.indicate(g, kn, { col: RES, sc: 1.4, dur: 0.45 * T, delay: 0.1 * T }); }],
-            [0.85 * T, g => { for (const l of [...leaves(lg), base]) M.tween(g, l, { alpha: 0 }, 0.22 * T); g.sfx('swoosh'); }],
-            [1.08 * T, g => { // the exponent glides down and becomes the whole top (or bottom)
+            // v = b^k, written in place
+            [0.55 * T, g => { const base = M.num(b, side + 'b', { col: CONV }), kn = M.num(k, side + 'k', { col: RES }), pw = M.sup(base, kn); S[side + 'pw'] = { base, kn };
+              R.items[2] = pw; relay(); M.writeIn(g, pw, { dur: 0.32 * T }); g.sfx('tap'); }],
+            // log₃ undoes "3 to the power": the two light up together and fade, leaving the power
+            [1.1 * T, g => { const { base, kn } = S[side + 'pw']; M.circle(g, [side + 'l', side + 'b'], { col: CONV, dur: 0.5 * T }); M.indicate(g, lg, { col: CONV, sc: 1.15, dur: 0.4 * T }); M.indicate(g, base, { col: CONV, sc: 1.25, dur: 0.4 * T }); M.indicate(g, kn, { col: RES, sc: 1.4, dur: 0.45 * T, delay: 0.1 * T }); }],
+            [1.5 * T, g => { const { base } = S[side + 'pw']; for (const l of [...leaves(lg), base]) M.tween(g, l, { alpha: 0 }, 0.22 * T); g.sfx('swoosh'); }],
+            [1.75 * T, g => { const { kn } = S[side + 'pw']; // the exponent glides down and becomes the whole top (or bottom)
               kn.id = side + 'v'; kn.pop = g.t; if (top) S.fr.n = kn; else S.fr.d = kn; relay(); M.sparkle(g, kn.id, { n: 10, cols: [RES, '#fff', '#ffd0dc'] }); g.sfx('ding'); hop(g); S[side + 'Done'] = true; S.point = false; }],
           ]); } }; };
     // 4. the quotient
     const answerNode = () => S.whole ? M.num(kN / ka) : M.frac(M.num(kN), M.num(ka));
-    const divMove = { tap: 'fr', busy: 0.1, askAt: 0.45 * T, after: whole ? 1.45 * T : 1.0 * T,
+    const divMove = { tap: 'fr', busy: 0.1, askAt: 0.45 * T, after: whole ? 2.05 * T : 1.0 * T,
       ask: whole ? { v: kN / ka, wrong: [kN - ka, kN * ka, kN + ka] } : { v: M.frac(M.num(kN), M.num(ka)), wrong: [M.frac(M.num(ka), M.num(kN)), M.num(kN - ka), M.num(kN * ka)] },
       then(g) { S.divGo = true; M.show(g, 0.45 * T); S.point = true; hop(g, 'think');
         M.circle(g, 'fr', { col: RES, dur: 0.5 * T }); M.light(g, S.fr.n, { col: RES }); M.light(g, S.fr.d, { col: RES }); },
-      resolve(g) { M.show(g, whole ? 1.45 * T : 1.0 * T);
+      resolve(g) { M.show(g, whole ? 2.05 * T : 1.0 * T);
         const toSlot = (from, d) => M.fly(g, { node: answerNode(), from, to: 'q', delay: d, dur: 0.42 * T, arc: -40, s0: WS, s1: TS, col: RES,
-          then(g) { const an = Object.assign(answerNode(), { id: 'q', pop: g.t }); for (const l of leaves(an)) l.col = RES; S.top.items[2] = an; M.place(g, 'top', S.top, 180, TOPY, 48, { col: INK }); M.sparkle(g, 'q', { n: 16, cols: [RES, '#fff', '#ffe08a'] }); g.sfx('coin'); hop(g, 'laugh'); S.point = false; S.won = true; for (const l of leaves(S.work)) M.tween(g, l, { alpha: 0 }, 0.3 * T); } });
+          then(g) { const an = Object.assign(answerNode(), { id: 'q', pop: g.t }); for (const l of leaves(an)) l.col = RES; S.top.items[2] = an; M.place(g, 'top', S.top, 180, TOPY, 48, { col: INK }); M.sparkle(g, 'q', { n: 16, cols: [RES, '#fff', '#ffe08a'] }); g.sfx('coin'); hop(g, 'laugh'); S.point = false; S.won = true; for (const l of leaves(S.work)) M.tween(g, l, { alpha: 0 }, 0.3 * T); M.at(g, [[0.32 * T, g => { delete g.s.mk.ex.work; }]]); } }); // the fraction bar has no leaf to fade, so the faded line is removed
         if (whole) {
           const qv = M.num(kN / ka, 'nq', { alpha: 0, col: RES });
           S.note = M.row(M.num(kN), M.op('÷'), M.num(ka), M.op('='), qv); M.place(g, 'note', S.note, 180, NOTEY, 30, { col: NOTE }); M.writeIn(g, S.note, { dur: 0.42 * T });
           M.at(g, [
             [0.45 * T, g => { qv.alpha = 1; M.writeIn(g, qv, { dur: 0.18 * T }); M.indicate(g, qv, { delay: 0.15 * T, dur: 0.3 * T, col: RES }); g.sfx('ding'); }],
-            [0.8 * T, g => { const from = { ...M.box(g, 'nq') }; M.tween(g, S.note, { alpha: 0 }, 0.3 * T); S.res = M.num(kN / ka, 'res', { alpha: 0, col: RES });
+            [1.4 * T, g => { const from = { ...M.box(g, 'nq') }; M.tween(g, S.note, { alpha: 0 }, 0.3 * T); S.res = M.num(kN / ka, 'res', { alpha: 0, col: RES });
               S.work.items[2] = S.res; for (const l of leaves(S.fr)) l.alpha = 0; relay();
               M.fly(g, { node: M.num(kN / ka), from: [from.x, from.y], to: 'res', dur: 0.3 * T, arc: 16, s0: 30, s1: WS, col: RES, then(g) { S.res.alpha = 1; S.res.pop = g.t; g.sfx('pop'); } }); }],
-            [1.0 * T, g => toSlot('res', 0)],
-            [1.4 * T, g => { delete g.s.mk.ex.note; }],
+            [1.6 * T, g => toSlot('res', 0)],
+            [2.0 * T, g => { delete g.s.mk.ex.note; }],
           ]);
         } else { M.indicate(g, S.fr, { col: RES, sc: 1.12, dur: 0.4 * T }); g.sfx('ding'); M.at(g, [[0.45 * T, g => toSlot('fr', 0)]]); }
       } };

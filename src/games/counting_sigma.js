@@ -3,8 +3,8 @@
 //   1. Tap the Σ: for each k in turn, the k in the formula lights up in blue and a chalk note writes the formula with that
 //      k put in ("2 · 3 = 6", the 3 in blue) right above it; the value lifts off the note and lands as the next term of the
 //      written-out sum, with its "k = 3" under it. The bottom limit glows for the first term and the top limit for the last.
-//   2. Tap the written-out sum: a running total appears above it, and each term in turn flies up into the total, which
-//      rolls up like an odometer (2, 6, 12, 20); the finished total drops into the answer.
+//   2. Tap the written-out sum: a running total appears above it; each term in turn flies up beside it, the addition is
+//      written out ("2 + 4 = 6") and collapses to its result (2, 6, 12, 20); the finished total drops into the answer.
 // Level 0: c·k for k = 1 to 3 or 4. Level 1: k + c for k = 1 to 4 or 5. Level 2: k² for k from 1 or 2 to 4.
 // Medium mode: the total is picked from the tray, then the running total shows how it adds up.
 // The Σ is painted here (the fonts have no Σ glyph); its token is an invisible placeholder that keeps its box.
@@ -48,47 +48,65 @@ MG.add({
     // one size for every step, chosen so the widest step (the written-out sum) fits on the board
     for (S.build(); M.lay(g.s.mk.ex.ex.node, S.size).w > 300 && S.size > 26; S.build()) S.size -= 2;
     S.st = 0; S.shown = S.vals.map(() => false); S.build(); M.inert(g, ['eq', 'tot', 'run', ...S.vals.flatMap((v, i) => ['e' + i, 'p' + i])]);
-    const per = Math.min(0.45, 1.6 / n) * T, per2 = Math.min(0.4, 1.45 / n) * T;
+    // one term per beat, slow enough to read its note; one addition per beat, written out ("2 + 4 = 6")
+    const per = (n <= 4 ? 0.9 : 0.75) * T, add = 1.15 * T, first = 0.5 * T, sumLen = first + (n - 1) * add + 0.6 * T;
     M.play(g, {
       moves(g) {
         // 1. expand: put each k into the formula, one after another
         if (S.st === 0) return [{ tap: 'sig', busy: 0.12, then(g) {
           S.st = 1; S.expAt = g.t; S.build(); g.sfx('whoosh'); S.point = true; hop(g, 'think');
-          M.show(g, 0.15 * T + (n - 1) * per + per + 0.1 * T);
+          M.show(g, 0.15 * T + n * per + 0.1 * T);
           S.vals.forEach((v, i) => M.at(g, [
             [0.15 * T + i * per, g => {
               S.hot = { lim: i === 0 ? 'lo' : i === n - 1 ? 'hi' : null, t0: g.t, dur: per };
               M.indicate(g, 'kv', { col: KC, dur: 0.45 * per, sc: 1.35 });
               const res = M.num(v), nd = Object.assign(M.row(S.sub(S.ks[i]), M.op('='), res), { id: 'nt' + i }), m = M.lay(nd, 28), bb = M.box(g, 'body');
               const nx = M.clamp(bb.x + 6, m.w / 2 + 28, 332 - m.w / 2), ny = bb.y - bb.h / 2 - 44;
-              M.place(g, 'nt' + i, nd, nx, ny + 10, 28, { col: GOLD }); M.writeIn(g, nd, { dur: 0.36 * per }); g.sfx('tap');
-              M.at(g, [[0.5 * per, g => { const rb = M.box(g, 'nt' + i), rw = M.lay(res, 28).w; res.alpha = 0; M.tween(g, nd, { alpha: 0 }, 0.28 * per);
-                  M.fly(g, { node: M.num(v, null, { col: GOLD }), from: [rb.x + rb.w / 2 - rw / 2, ny], to: 'e' + i, dur: 0.42 * per, arc: -26, s0: 28,
+              M.place(g, 'nt' + i, nd, nx, ny + 10, 28, { col: GOLD }); M.writeIn(g, nd, { dur: 0.3 * per }); g.sfx('tap');
+              // the note stays written while a copy of its value flies down into the sum; it leaves as the next note starts
+              M.at(g, [[0.5 * per, g => { const rb = M.box(g, 'nt' + i), rw = M.lay(res, 28).w; M.tween(g, res, { alpha: 0.45 }, 0.15 * per);
+                  M.fly(g, { node: M.num(v, null, { col: GOLD }), from: [rb.x + rb.w / 2 - rw / 2, ny], to: 'e' + i, dur: 0.35 * per, arc: -26, s0: 28,
                     then(g) { S.shown[i] = true; const e = M.node(g, 'e' + i), p = M.node(g, 'p' + i); if (e) { e.alpha = 1; e.pop = g.t; } if (p) p.alpha = 1; M.sparkle(g, 'e' + i, { n: 7, cols: [GOLD, '#fff', KC] }); g.sfx('pop'); hop(g); } }); }],
-                [0.85 * per, g => { delete g.s.mk.ex['nt' + i]; }]]);
+                [0.88 * per, g => { M.tween(g, nd, { alpha: 0 }, 0.12 * per); }],
+                [per, g => { delete g.s.mk.ex['nt' + i]; }]]);
             }]]));
           M.at(g, [[0.15 * T + n * per + 0.05 * T, g => { S.point = false; }]]);
         } }];
         // 2. add the terms up: each one flies into a running total that rolls up
         if (S.st === 1) {
           const v = S.vals, last = v[v.length - 1];
-          return [{ tap: ['sum', 'q'], busy: 0.1, askAt: 0.45 * T, after: per2 * n + 0.55 * T, ask: { v: S.total, wrong: [S.total - last, S.total + 1, S.total - 1, S.total + v[0]] },
+          return [{ tap: ['sum', 'q'], busy: 0.1, askAt: 0.45 * T, after: sumLen, ask: { v: S.total, wrong: [S.total - last, S.total + 1, S.total - 1, S.total + v[0]] },
             then(g) { M.show(g, 0.45 * T); M.circle(g, 'sum', { dur: 0.45 * T, col: GOLD }); S.point = true; hop(g, 'think'); },
             resolve(g) {
-              M.show(g, per2 * n + 0.55 * T); const sb = M.box(g, 'sum'), rx = sb.x, ry = sb.y - sb.h / 2 - 36; let acc = 0;
-              S.run = M.num(v[0], 'run', { alpha: 0 }); M.place(g, 'run', S.run, rx, ry + 11, 32, { col: GOLD });
-              v.forEach((val, i) => M.at(g, [[i * per2, g => {
-                M.indicate(g, 'e' + i, { col: GOLD, dur: 0.4 * per2, sc: 1.25 }); if (i) M.indicate(g, 'p' + i, { col: GOLD, dur: 0.4 * per2 });
-                M.fly(g, { node: M.num(val, null, { col: GOLD }), from: 'e' + i, to: 'run', dur: 0.5 * per2, arc: -24, s1: 30,
-                  then(g) { acc += val; const e = M.node(g, 'e' + i); if (e) M.tween(g, e, { alpha: 0.35 }, 0.15 * T); if (i) { const p = M.node(g, 'p' + i); if (p) M.tween(g, p, { alpha: 0.35 }, 0.15 * T); }
-                    if (i === 0) { S.run.alpha = 1; S.run.pop = g.t; } else M.roll(g, S.run, acc, { dur: 0.3 * per2 + 0.08 }); M.sparkle(g, 'run', { n: 6, cols: [GOLD, '#fff'] }); g.sfx('tap'); hop(g); } }); }]]));
+              // the running total sits above the sum; each term flies up beside it and the addition is written out in full
+              // ("2 + 4 = 6"), then it collapses to its result, which is the start of the next addition
+              M.show(g, sumLen); const sb = M.box(g, 'sum'), rx = sb.x, ry = sb.y - sb.h / 2 - 38; let acc = v[0];
+              const putRun = (...items) => { const nd = Object.assign(M.row(...items), { id: 'run' }); M.place(g, 'run', nd, rx, ry + 11, 30, { col: GOLD }); };
+              const dim = i => { M.tween(g, 'e' + i, { alpha: 0.35 }, 0.15 * T); if (i) M.tween(g, 'p' + i, { alpha: 0.35 }, 0.15 * T); };
+              S.run = M.num(v[0], null, { alpha: 0 }); putRun(S.run);
+              M.indicate(g, 'e0', { col: GOLD, dur: 0.3 * T, sc: 1.25 });
+              M.fly(g, { node: M.num(v[0], null, { col: GOLD }), from: 'e0', to: 'run', dur: 0.3 * T, arc: -24, s1: 30,
+                then(g) { S.run.alpha = 1; S.run.pop = g.t; dim(0); M.sparkle(g, 'run', { n: 6, cols: [GOLD, '#fff'] }); g.sfx('tap'); hop(g); } });
+              for (let i = 1; i < n; i++) { const t0 = first + (i - 1) * add, val = v[i];
+                M.at(g, [[t0, g => {
+                  M.indicate(g, 'e' + i, { col: GOLD, dur: 0.3 * T, sc: 1.25 }); M.indicate(g, 'p' + i, { col: GOLD, dur: 0.3 * T });
+                  const rb = M.box(g, 'run'), plus = M.op('+', null, { alpha: 0 }), term = M.num(val, null, { alpha: 0, _born: -1 });
+                  putRun(S.run, plus, term); const tb = M.box(g, 'run'), tw = M.lay(term, 30).w;
+                  M.fly(g, { node: M.num(val, null, { col: GOLD }), from: 'e' + i, to: [tb.x + tb.w / 2 - tw / 2, rb.y], dur: 0.3 * T, arc: -24, s1: 30,
+                    then(g) { plus.alpha = 1; term.alpha = 1; term.pop = g.t; dim(i); g.sfx('tap'); hop(g); } });
+                  M.at(g, [[0.32 * T, g => { // "= 6" writes itself
+                      const eq = M.op('='), res = M.num(acc + val); S.next = res; putRun(S.run, plus, term, eq, res);
+                      M.writeIn(g, eq, { dur: 0.1 * T }); M.writeIn(g, res, { delay: 0.08 * T, dur: 0.16 * T }); g.sfx('ding'); }],
+                    [1.05 * T, g => { // the addition collapses into its result
+                      acc += val; S.run = S.next; putRun(S.run); S.run.pop = g.t; M.sparkle(g, 'run', { n: 6, cols: [GOLD, '#fff'] }); }]]);
+                }]]); }
               M.at(g, [
-                [per2 * n + 0.05 * T, g => { // the finished total drops into the answer
+                [first + (n - 1) * add + 0.05 * T, g => { // the finished total drops into the answer
                   for (let i = 0; i < n; i++) { M.tween(g, 'e' + i, { alpha: 0 }, 0.2 * T); if (i) M.tween(g, 'p' + i, { alpha: 0 }, 0.2 * T); }
                   M.tween(g, S.run, { alpha: 0 }, 0.05);
-                  M.fly(g, { node: M.num(S.total, null, { col: GOLD }), from: 'run', to: 'q', dur: 0.35 * T, arc: -20, s0: 32, s1: S.size,
+                  M.fly(g, { node: M.num(S.total, null, { col: GOLD }), from: 'run', to: 'q', dur: 0.35 * T, arc: -20, s0: 30, s1: S.size,
                     then(g) { delete g.s.mk.ex.run; S.st = 2; S.build(); g.sfx('coin'); hop(g, 'laugh'); g.burst(180, 290, ['#fff6c0', '#ffd45a', '#bfe8ff'], 14, 140); } }); }],
-                [per2 * n + 0.5 * T, g => { S.point = false; }]]);
+                [first + (n - 1) * add + 0.5 * T, g => { S.point = false; }]]);
             } }];
         }
         return [];

@@ -246,10 +246,10 @@ const MK = (() => {
   function accept(g, mv, a, b) {
     const M = g.s.mk; const n = node(g, a); if (n) n.pop = g.t; g.sfx('pop');
     if (M.stepAdvance) M.stepAdvance(mv);
-    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t; (M.log = M.log || []).push(g.t); // M.log: when each move was made (the rewind scrubber's marks)
+    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t; M.stepFrom = g.t; (M.log = M.log || []).push(g.t); // M.log: when each move was made (the rewind scrubber's marks)
     try { if (mv.then) mv.then(g, a, b); } catch (e) { console.error('move', e); }
     if (mv.ask && mv.resolve) {
-      if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv)); else openAsk(g, mv); }
+      if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv), false, true); else openAsk(g, mv); }
       else if (mv.askAt) later(g, mv.askAt, mv.resolve, true); else mv.resolve(g);
     }
   }
@@ -258,7 +258,7 @@ const MK = (() => {
   // timer can end the microgame. M.wrong counts wrong moves (for stars).
   function miss(g, info) {
     const M = g.s.mk, id = info.to || info.tap || info.drag, n = node(g, id), src = info.drag ? node(g, info.drag) : null;
-    for (const q of [n, src]) if (q) { q.pop = g.t; if (q.mark !== 'good') { q.mark = 'bad'; later(g, 0.6, () => { if (q.mark === 'bad') q.mark = null; }); } }
+    for (const q of [n, src]) if (q) { q.pop = g.t; if (q.mark !== 'good') { q.mark = 'bad'; later(g, 0.6, () => { if (q.mark === 'bad') q.mark = null; }, false, true); } }
     M.missAt = g.t; M.missInfo = info; M.wrong = (M.wrong || 0) + 1; M.wobbleAt = g.t; g.sfx('boing');
     if (M.onMiss) M.onMiss(g, info);
     return false;
@@ -325,7 +325,7 @@ const MK = (() => {
   function askHit(g, x, y) { const A = g.s.mk.ask; if (!A) return -1; return A.list.findIndex(ch => Math.abs(x - ch.x) <= ch.w / 2 + 4 && Math.abs(y - ch.y) <= ch.h / 2 + 6); }
   function pickAsk(g, i) {
     const M = g.s.mk, A = M.ask, ch = A.list[i]; ch.at = g.t; A.pickAt = g.t;
-    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
+    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; M.stepFrom = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }, false, true); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
     else { if (ch.state === 'bad') return; ch.state = 'bad'; M.missAt = g.t; M.missInfo = { ask: ch.v }; M.wrong = (M.wrong || 0) + 1; g.sfx('boing'); if (M.onMiss) M.onMiss(g, M.missInfo); }
   }
   function drawAsk(g, c) {
@@ -384,12 +384,12 @@ const MK = (() => {
     M.flies = M.flies.filter(f => !f.landed || f.keep);
     M.fx = M.fx.filter(p => g.t - p.t0 < p.life);
     for (const tm of M.timers.filter(tm => g.t >= tm.at)) { M.timers.splice(M.timers.indexOf(tm), 1); try { tm.fn(g); } catch (e) { console.error('later', e); } }
-    runTweens(g); if (!g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold))) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown (and while its beats are still to come)
+    runTweens(g); if (g.steps) stepNotes(g); if (!g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold))) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown (and while its beats are still to come)
     if (M.busyT > 0) { M.busyT -= dt; if (M.busyT <= 0) { M.busyT = 0; M.moveT = g.t; } }
     if (!g.done && M.opts && !busy(M) && !showing(g) && !M.timers.some(tm => tm.hold) && !current(g).length) finish(g);
   }
   // MK.later(g, seconds, fn): run fn(g) after that many seconds of game time (for multi-beat animations)
-  function later(g, dt, fn, hold) { g.s.mk.timers.push({ at: g.t + dt, fn, hold }); } // hold: the microgame can't be won before it runs
+  function later(g, dt, fn, hold, nostep) { g.s.mk.timers.push(nostep ? { at: g.t + dt, fn, hold, nostep } : { at: g.t + dt, fn, hold }); } // hold: the microgame can't be won before it runs; nostep: never a step-mode stop (kit-internal)
   function finish(g) {
     const M = g.s.mk; if (g.done) return; const k = (g.t - (g.held || 0)) / (g.dur / (g.tf || 1)); // fraction of the base time (before the generous factor)
     M.stars = Math.max(1, (k < 0.6 ? 3 : k < 1.1 ? 2 : 1) - (M.wrong ? 1 : 0)); g.stars = M.stars; M.winAt = g.t;
@@ -457,19 +457,19 @@ const MK = (() => {
   // timing, because games line up its landing with later beats), and input waits (MK.show) until every note has gone.
   function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.to ? (o.hold ?? 0.3) : Math.max(o.hold ?? 0.3, NOTE_MIN_HOLD * pace(g)), fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
         const where = () => { const b = boxOf(g, o.at || [180, 300]) || { x: 180, y: 300 }; return { x: b.x + (o.off ? o.off[0] : 0), y: b.y + (o.off ? o.off[1] : 0) }; };
-    if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true); // the landing runs on the game clock, not in draw
+    if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true, true); // the landing runs on the game clock, not in draw (it ends the fly beat, so it is no step-mode stop)
     if (!g.done) show(g, (o.delay || 0) + dur);
-    return anim(g, { delay: o.delay, dur, draw(c, g, k, t) {
+    const A = { delay: o.delay, dur, ...(o.to ? { span: wr + hold + fl } : { leaveAt: wr + hold, fadeDur: fade }), draw(c, g, k, t) { // span / leaveAt: for step mode (a flight is one beat; a fading note waits for the next tap)
       const p = where(); let x = p.x, y = p.y, sz = s0, al = 1, wk = clamp(t / wr, 0, 1);
       if (t > wr + hold && o.to) { const kk = easeIO((t - wr - hold) / fl), b0 = boxOf(g, o.to) || p, b = o.toOff ? { ...b0, x: b0.x + o.toOff[0], y: b0.y + o.toOff[1] } : b0; x = lerp(p.x, b.x, kk); y = lerp(p.y, b.y, kk) - Math.sin(kk * Math.PI) * (o.arc ?? 36); sz = lerp(s0, o.s1 || (b.s || s0), kk); if (kk >= 1) return; }
-      else if (t > wr + hold) al = 1 - (t - wr - hold) / fade;
+      else if (t > wr + hold) al = 1 - (g.t - (A.rel ?? A.t0 + wr + hold)) / fade; // A.rel: step mode held the note until a later tap
       const m = lay(nd, sz); if (!(t > wr + hold && o.to)) x = clamp(x, m.w / 2 + 10, 350 - m.w / 2); // keep a note inside the 360-wide screen
       c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
       if (o.pill) { c.save(); c.shadowBlur = 0; c.fillStyle = typeof o.pill === 'string' ? o.pill : 'rgba(20,24,40,0.72)'; c.beginPath(); roundRectK(c, x - m.w / 2 - 9, y - sz * 0.72, m.w + 18, sz * 1.44, sz * 0.5); c.fill(); c.restore(); } // a dark pill behind the note, for busy scenes
       if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4, y - sz * 1.5, (m.w + 8) * easeIO(wk), sz * 3); c.clip(); }
       draw(c, nd, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col });
       if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }
-    } }); }
+    } }; return anim(g, A); }
   // a curved arrow that draws itself from one place to another, with an optional label at its middle
   function arrow(g, from, to, o = {}) { const T = pace(g), dur = o.dur || 0.45 * T, col = o.col || HL, linger = o.linger ?? 0.4 * T; // defaults follow the pace
     return anim(g, { delay: o.delay, dur, linger, draw(c, g, k, t) { const a = boxOf(g, from), b = boxOf(g, to); if (!a || !b) return;
@@ -480,9 +480,48 @@ const MK = (() => {
       const p1 = q(e), p0 = q(Math.max(0, e - 0.05)), an = Math.atan2(p1.y - p0.y, p1.x - p0.x); c.beginPath(); c.moveTo(p1.x + Math.cos(an) * 8, p1.y + Math.sin(an) * 8); c.lineTo(p1.x + Math.cos(an + 2.4) * 9, p1.y + Math.sin(an + 2.4) * 9); c.lineTo(p1.x + Math.cos(an - 2.4) * 9, p1.y + Math.sin(an - 2.4) * 9); c.fill();
       if (o.label && e > 0.4) { const lb = wrap(o.label), ls = o.ls || 22, m = lay(lb, ls), p = q(0.5); c.globalAlpha *= clamp((e - 0.4) / 0.3, 0, 1); draw(c, lb, p.x - m.w / 2, p.y - 8, ls, { t: g.t, col }); } } }); }
   // a burst of sparkles at a part (for landings)
-  function sparkle(g, tgt, o = {}) { return later(g, o.delay || 0, g => { const b = boxOf(g, tgt); if (b) g.burst(b.x, b.y, o.cols || ['#ffe9a0', '#fff', '#ffb21f'], o.n || 10, o.v || 120); }); }
+  function sparkle(g, tgt, o = {}) { return later(g, o.delay || 0, g => { const b = boxOf(g, tgt); if (b) g.burst(b.x, b.y, o.cols || ['#ffe9a0', '#fff', '#ffb21f'], o.n || 10, o.v || 120); }, false, true); }
   // run fn(g) at each time: MK.at(g, [[0, fn], [0.4, fn], ...])
   function at(g, list) { for (const [t, fn] of list) { if (t <= 0) fn(g); else later(g, t, fn, true); } }
+
+
+  // ---------------- step mode (tap through the working) ----------------
+  // The owner: "maybe if I had to tap through every step, it would be clearer." When g.steps is on, the engine stops
+  // the microgame's clock just before each beat of working and waits for a tap (see tickMicro in engine.js). Because
+  // every animation runs on g.t, a stopped clock holds everything exactly as it is: notes don't fade, nothing moves,
+  // the fuse stands still. A beat is anything the kit can see that changes or adds to the picture at a later time:
+  // an MK.at step (or any MK.later), a note starting or leaving, an MK.fly, an MK.circle / MK.arrow / MK.anim. Tweens
+  // (indicate, light, MK.tween) only emphasise, so they play with the beat they belong to. Beats within 0.2 s × pace of
+  // the tap (or the move) that started the current beat play with it. Nothing changes when g.steps is off.
+  const STEP_MERGE = 0.45, STEP_TAIL = 0.5;
+  function working(g) { const M = g.s && g.s.mk; return !!M && !g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold)); }
+  // MK.stepBusy(g): working is still playing (or waiting), and no answer tray is open
+  function stepBusy(g) { const M = g.s && g.s.mk; return working(g) && !(M.ask && !M.ask.closing); }
+  // MK.stepStop(g): the game time of the next stop (Infinity: none). The beat that is playing began at the last tap (or
+  // move) and runs STEP_MERGE × pace, and on through the flight of anything flying in it (a fly or a note flying into
+  // the expression lands, and its landing's rewrite plays, in the same beat). The last STEP_TAIL × pace of the working
+  // (the settle, a sparkle, the host's cheer) is no stop.
+  function stepStop(g) {
+    const M = g.s && g.s.mk; if (!stepBusy(g)) return Infinity;
+    const T = pace(g), beats = [], spans = [];
+    for (const tm of M.timers) if (!tm.nostep) beats.push(tm.at);
+    for (const a of M.anims || []) { beats.push(a.t0); if (a.span) spans.push([a.t0, a.t0 + a.span]); }
+    for (const f of M.flies) if (!f.landed) { beats.push(f.t0); spans.push([f.t0, f.t0 + f.dur]); }
+    const t0 = M.stepFrom ?? -1; let end = t0 + STEP_MERGE * T;
+    for (let more = true; more;) { more = false; for (const [a, b] of spans) if (a <= end + 1e-6 && b > t0 && b + 0.05 > end) { end = b + 0.05; more = true; } }
+    const from = Math.max(g.t, end); let best = Infinity, fin = M.showUntil || 0;
+    for (const b of beats) { if (b > fin) fin = b; if (b > from + 1e-6 && b < best) best = b; }
+    return fin - best <= STEP_TAIL * T ? Infinity : best;
+  }
+  // step mode: a note that fades waits, fully written, until the next tap (when there is a later stop), then fades
+  // with the beat that tap starts
+  function stepNotes(g) { const M = g.s.mk; if (!g.steps || !M.anims) return;
+    for (const a of M.anims) { if (a.leaveAt == null || a.rel != null) continue; const L = a.t0 + a.leaveAt; if (g.t < L) continue;
+      if (a.wait == null) a.wait = stepStop(g) < Infinity;
+      if (!a.wait) a.rel = L; else if ((M.stepFrom ?? -1) >= L - 1e-6) a.rel = M.stepFrom; else if (!stepBusy(g)) a.rel = g.t;
+      a.dur = a.rel != null ? a.rel - a.t0 + a.fadeDur : g.t - a.t0 + a.fadeDur + 1; } }
+  // MK.stepGo(g, t): the player tapped at the stop at time t; the beats from t on play
+  function stepGo(g, t) { const M = g.s && g.s.mk; if (M) M.stepFrom = t; }
 
   // ---------------- flying numbers ----------------
   // MK.fly(g, { node, from: [x, y] | 'id', to: [x, y] | 'id', dur, arc, s0, s1, then, keep }) — a copy of node travels on an arc.
@@ -518,5 +557,5 @@ const MK = (() => {
 
   return { INK, MID, GOOD, BAD, GLOW, NUMF, VARF, num, vr, txt, op, sup, frac, row, paren, mat, slot, gap, ddx, wrap, lay, draw, find,
     setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp,
-    HL, mix, pace, show, showing, track, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss };
+    HL, mix, pace, show, showing, track, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss, working, stepBusy, stepStop, stepGo };
 })();

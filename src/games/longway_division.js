@@ -66,7 +66,9 @@ MG.add({
     const stepMove = k => {
       const st = S.steps[k], last = k === n - 1, qn = node('q' + k), cur = S.curIds(k), ps = String(st.p);
       const prodIds = [...ps].map((_, j) => `p${k}_${j}`), divRow = k === 0 ? -1 : 2 * k;
-      const T0 = M.pace(g), askAt = 0.5 * T0, after = (last ? 1.45 : 1.5) * T0, D = 0.2; // D: room for the quotient's flight
+      // One idea at a time: each note is fully written, then stays still for about 0.9 s before the next one starts.
+      // Beat times (× pace): quotient 0–0.7, multiply 1.35–2.8, subtract 2.8–4.25, bring down 4.25–4.8.
+      const T0 = M.pace(g), askAt = 0.5 * T0, after = (last ? 4.4 : 4.95) * T0;
       return { busy: 0.1, askAt, after, ask: { v: st.qd, wrong: [st.qd + 1, st.qd - 1, st.rem, st.cur - S.d, st.p].filter(w => w >= 0 && w !== st.qd) },
         then(g) {
           const T = M.pace(g); S.next = k + 1; S.point = true; M.show(g, askAt); face('think', false); g.sfx('whoosh');
@@ -79,39 +81,38 @@ MG.add({
           if (g.mode === 'medium') { qn.v = '?'; qn.hide = false; qn.col = M.MID; qn.pop = g.t; }
         },
         resolve(g) {
-          const T = M.pace(g) * 0.82; M.show(g, after);
+          const T = M.pace(g); M.show(g, after);
           // "= 2" writes itself into the note, and the 2 flies up onto the bar
-          const eq = S.ndEq; eq.hide = false; M.relayout(g, 'nd' + k); M.writeIn(g, eq, { dur: 0.16 * T }); g.sfx('tap');
+          const eq = S.ndEq; eq.hide = false; M.relayout(g, 'nd' + k); M.writeIn(g, eq, { dur: 0.2 * T }); g.sfx('tap');
           qn.v = String(st.qd); qn.col = null; qn.hide = true;
-          M.at(g, [[0.16 * T, g => { const b = M.box(g, 'nq' + k); if (!b) return; M.tween(g, 'nq' + k, { alpha: 0.3 }, 0.12 * T);
-            M.fly(g, { node: M.num(st.qd, null, { col: NOTE }), from: [b.x, b.y], to: 'q' + k, dur: 0.3 * T, arc: 30, s0: G.ns, s1: G.big,
+          M.at(g, [[0.35 * T, g => { const b = M.box(g, 'nq' + k); if (!b) return; M.tween(g, 'nq' + k, { alpha: 0.3 }, 0.12 * T);
+            M.fly(g, { node: M.num(st.qd, null, { col: NOTE }), from: [b.x, b.y], to: 'q' + k, dur: 0.35 * T, arc: 30, s0: G.ns, s1: G.big,
               then(g) { qn.hide = false; qn.alpha = 1; qn.pop = g.t; M.indicate(g, qn, { dur: 0.3 * T, sc: 1.25 }); M.sparkle(g, qn); g.sfx('ding'); } }); }]]);
-          noteOff('nd' + k, (0.18 + D + 0.06) * T, 0.2 * T);
-          for (const id of ['dv', ...cur]) M.unlight(g, id, { delay: (0.2 + D) * T });
-          // the rest of the step starts once the quotient digit has landed
-          const at0 = (list) => M.at(g, list.map(([t, fn]) => [t + D * T, fn]));
-          at0([
-            [0.2 * T, g => face('wow')],
+          noteOff('nd' + k, 1.15 * T, 0.2 * T);
+          for (const id of ['dv', ...cur]) M.unlight(g, id, { delay: 1.1 * T });
+          M.at(g, [
+            [0.75 * T, g => face('wow')],
             // multiply: quotient digit × divisor, written under the part being divided
-            [0.34 * T, g => { M.light(g, qn, { col: NOTE }); M.light(g, 'dv', { col: NOTE });
-              noteOn('nm' + k, M.row(M.num(st.qd), M.op('×'), M.num(S.d), M.op('='), M.num(st.p)), 2 * k + 1, 0.26 * T); g.sfx('tap'); }],
-            [0.52 * T, g => { prodIds.forEach((id, j) => { writeDigit(id, 0.18 * T); M.indicate(g, id, { delay: 0.14 * T + j * 0.04 * T, dur: 0.26 * T, sc: 1.2, col: NOTE }); }); S.birdAt = g.t; }],
-            [0.72 * T, g => { M.unlight(g, qn); M.unlight(g, 'dv'); noteOff('nm' + k, 0, 0.2 * T);
-              // subtract: a minus sign and the line draw themselves under the product, then "7 − 6 = 1"
-              const x0 = S.cx(k + 1 - Math.max(ps.length, cur.length)) - G.cw / 2 + 6, x1 = S.cx(k) + G.cw / 2 - 6;
-              S.lines.push({ x0, x1, y: S.rowY(2 * k + 1) + G.ws * 0.24, mx: x0 - 12, my: S.rowY(2 * k + 1) - G.ws * 0.3, t0: g.t, dur: 0.24 * T });
-              noteOn('ns' + k, M.row(M.num(st.cur), M.op('−'), M.num(st.p), M.op('='), M.num(st.rem)), 2 * k + 2, 0.28 * T); g.sfx('swoosh'); }],
-            [0.98 * T, g => { writeDigit('df' + k, 0.18 * T); M.indicate(g, 'df' + k, { delay: 0.14 * T, dur: 0.28 * T, sc: 1.25 }); M.sparkle(g, 'df' + k, { delay: 0.16 * T, n: 6 }); face('happy'); g.sfx('pop'); }],
-            [1.22 * T, g => noteOff('ns' + k, 0, 0.22 * T)],
+            [1.35 * T, g => { M.light(g, qn, { col: NOTE }); M.light(g, 'dv', { col: NOTE });
+              noteOn('nm' + k, M.row(M.num(st.qd), M.op('×'), M.num(S.d), M.op('='), M.num(st.p)), 2 * k + 1, 0.3 * T); g.sfx('tap'); }],
+            [1.75 * T, g => { prodIds.forEach((id, j) => { writeDigit(id, 0.2 * T); M.indicate(g, id, { delay: 0.16 * T + j * 0.05 * T, dur: 0.3 * T, sc: 1.2, col: NOTE }); }); S.birdAt = g.t; }],
+            [2.5 * T, g => { M.unlight(g, qn); M.unlight(g, 'dv'); }],
+            [2.6 * T, g => noteOff('nm' + k, 0, 0.2 * T)],
+            // subtract: a minus sign and the line draw themselves under the product, then "7 − 6 = 1"
+            [2.8 * T, g => { const x0 = S.cx(k + 1 - Math.max(ps.length, cur.length)) - G.cw / 2 + 6, x1 = S.cx(k) + G.cw / 2 - 6;
+              S.lines.push({ x0, x1, y: S.rowY(2 * k + 1) + G.ws * 0.24, mx: x0 - 12, my: S.rowY(2 * k + 1) - G.ws * 0.3, t0: g.t, dur: 0.25 * T });
+              noteOn('ns' + k, M.row(M.num(st.cur), M.op('−'), M.num(st.p), M.op('='), M.num(st.rem)), 2 * k + 2, 0.3 * T); g.sfx('swoosh'); }],
+            [3.2 * T, g => { writeDigit('df' + k, 0.2 * T); M.indicate(g, 'df' + k, { delay: 0.16 * T, dur: 0.3 * T, sc: 1.25 }); M.sparkle(g, 'df' + k, { delay: 0.18 * T, n: 6 }); face('happy'); g.sfx('pop'); }],
+            [4.05 * T, g => noteOff('ns' + k, 0, 0.2 * T)],
             ...(last ? [
               // done: the quotient lights up digit by digit
-              [1.18 * T, g => { S.point = false; S.digs.forEach((_, j) => { M.indicate(g, 'q' + j, { delay: j * 0.08 * T, dur: 0.3 * T, sc: 1.25, col: '#3aa860' }); M.sparkle(g, 'q' + j, { delay: j * 0.08 * T + 0.1 * T, n: 8 }); }); face('laugh'); S.birdAt = g.t; g.sfx('sparkle'); }],
+              [3.9 * T, g => { S.point = false; S.digs.forEach((_, j) => { M.indicate(g, 'q' + j, { delay: j * 0.1 * T, dur: 0.35 * T, sc: 1.25, col: '#3aa860' }); M.sparkle(g, 'q' + j, { delay: j * 0.1 * T + 0.1 * T, n: 8 }); }); face('laugh'); S.birdAt = g.t; g.sfx('sparkle'); }],
             ] : [
               // bring down: the next digit lights up and drops down along an arrow beside the difference
-              [1.02 * T, g => { const dn = 'd' + (k + 1), bd = node('bd' + (k + 1)), a = M.box(g, dn), b = M.box(g, 'bd' + (k + 1));
+              [4.25 * T, g => { const dn = 'd' + (k + 1), bd = node('bd' + (k + 1)), a = M.box(g, dn), b = M.box(g, 'bd' + (k + 1));
                 M.light(g, dn, { col: RED, dur: 0.15 * T });
-                M.arrow(g, [a.x, a.y + a.h / 2 + 6], [b.x, b.y - b.h / 2 - 8], { dur: 0.26 * T, bend: 16, col: RED, linger: 0.5 * T });
-                M.fly(g, { node: M.num(S.digs[k + 1], null, { col: INK }), from: [a.x, a.y], to: [b.x, b.y], delay: 0.14 * T, dur: 0.36 * T, arc: 0, s0: G.big, s1: G.ws,
+                M.arrow(g, [a.x, a.y + a.h / 2 + 6], [b.x, b.y - b.h / 2 - 8], { dur: 0.3 * T, bend: 16, col: RED, linger: 0.5 * T });
+                M.fly(g, { node: M.num(S.digs[k + 1], null, { col: INK }), from: [a.x, a.y], to: [b.x, b.y], delay: 0.14 * T, dur: 0.4 * T, arc: 0, s0: G.big, s1: G.ws,
                   then(g) { bd.hide = false; bd.alpha = 1; bd.pop = g.t; M.sparkle(g, bd, { n: 8, cols: ['#ffd45a', '#fff', '#ff9a7a'] }); M.unlight(g, dn, { dur: 0.3 * T }); face('wow'); S.birdAt = g.t; g.sfx('tweet');
                     if (st.rem === 0) M.tween(g, 'df' + k, { alpha: 0 }, 0.25 * T); } }); }],
             ]),
