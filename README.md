@@ -3,7 +3,7 @@
 This repo holds two free learning games that run in a web browser and on Android phones. Both are built like the WarioWare video games: a round is a fast series of tiny games, called microgames, each lasting a few seconds.
 
 - **Q.E.D.!** covers math, from grade 3 arithmetic to college topics such as calculus, linear algebra and abstract algebra. Play it at https://ml-chen.github.io/qed-game/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk.
-- **Heurēka!** covers the rest of science and engineering, plus the practical subjects people use at work: physics, chemistry, biology and medicine, earth and space, engineering, robotics and hardware, computer science and AI, personal finance, startups and economics, law, government and consulting. It has 109 microgames in 26 topics so far. Play it at https://ml-chen.github.io/qed-game/heureka/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/download/heureka-android-v1.2/heureka.apk.
+- **Heurēka!** covers the rest of science and engineering, plus the practical subjects people use at work: physics, chemistry, biology and medicine, earth and space, engineering, robotics and hardware, computer science and AI, personal finance, startups and economics, law, government and consulting. It has 209 microgames in 26 topics so far. Play it at https://ml-chen.github.io/qed-game/heureka/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/download/heureka-android-v1.2/heureka.apk.
 
 ## Heurēka!
 
