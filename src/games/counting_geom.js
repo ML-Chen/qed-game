@@ -17,7 +17,6 @@ function pick(g) {
 const half = q => q === 0.5;
 const qNode = (q, o) => half(q) ? M.frac(M.num(1), M.num(2), null, o) : q < 0 ? M.paren(M.num(q), null, o) : M.num(q, null, o);
 const qTile = q => half(q) ? M.frac(M.num(1), M.num(2)) : q;
-const qText = q => '× ' + (half(q) ? '½' : q < 0 ? '(−' + -q + ')' : q);
 function host(g, c, kind, x, y, s, facing) {
   const S = g.s, mk = S.mk, t = g.t, hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
   const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
@@ -40,7 +39,7 @@ MG.add({
     // every symbol is a node object that lives for the whole game, so the symbols glide when the line is rewritten
     const N = S.N = { q: M.slot('q'), last: M.num(S.T[2], 'w0'), op: M.op('×', 'w1'), rv: qNode(q, { id: 'w2' }) };
     const terms = S.T.map((v, i) => M.num(v, 't' + i)), commas = [1, 2, 3].map(i => [M.op(',', 'c' + i), M.gap(14)]);
-    S.size = 42;
+    S.size = 50;
     S.build = () => {
       const items = [];
       terms.forEach((n, i) => { if (i) items.push(...commas[i - 1]); items.push(n); });
@@ -57,42 +56,48 @@ MG.add({
         if (S.found < 0) {
           const out = [];
           for (let i = 0; i < 2; i++) for (const [p, k] of [[i, i + 1], [i + 1, i]]) out.push({
-            drag: 't' + p, to: 't' + k, busy: 0.1, askAt: 0.5 * T, after: 1.3 * T,
+            drag: 't' + p, to: 't' + k, busy: 0.1, askAt: 0.55 * T, after: 2.3 * T,
             ask: { v: qTile(q), wrong: half(q) ? [2, -S.T[1], M.frac(M.num(1), M.num(4))] : [S.T[i + 1] - S.T[i], -q, q + 1, S.T[i + 1]] },
-            then(g) { S.found = i; M.show(g, 0.5 * T); S.point = true; hop(g, 'think'); g.sfx('whoosh');
+            then(g) { S.found = i; M.show(g, 0.55 * T); S.point = true; hop(g, 'think'); g.sfx('whoosh');
               M.indicate(g, 't' + (i + 1), { col: NOTE, dur: 0.4 * T }); M.indicate(g, 't' + i, { col: NOTE, dur: 0.4 * T, delay: 0.1 * T });
               const b0 = M.box(g, 't' + i), b1 = M.box(g, 't' + (i + 1)); S.res = qNode(q, { id: 'rn', alpha: 0 });
               S.note = Object.assign(M.row(M.num(S.T[i + 1]), M.op('÷'), M.num(S.T[i]), M.op('='), S.res), { id: 'nt' });
-              const m = M.lay(S.note, 28), x = M.clamp((b0.x + b1.x) / 2, m.w / 2 + 20, 340 - m.w / 2);
-              M.place(g, 'rat', S.note, x, b0.y - b0.h / 2 - 30, 28, { col: NOTE }); M.writeIn(g, S.note, { dur: 0.35 * T, delay: 0.08 * T }); },
-            resolve(g) { M.show(g, 1.3 * T); S.res.alpha = 1; M.writeIn(g, S.res, { dur: 0.18 * T }); g.sfx('ding');
-              M.at(g, [[0.3 * T, g => { for (const it of S.note.items) if (it !== S.res) M.tween(g, it, { alpha: 0 }, 0.18 * T); }],
-                [0.5 * T, g => { // the note shrinks into the chip "× 3" over the gap
+              const m = M.lay(S.note, 32), x = M.clamp((b0.x + b1.x) / 2, m.w / 2 + 20, 340 - m.w / 2);
+              M.place(g, 'rat', S.note, x, b0.y - b0.h / 2 - 34, 32, { col: NOTE }); M.writeIn(g, S.note, { dur: 0.4 * T, delay: 0.08 * T }); },
+            resolve(g) { M.show(g, 2.3 * T); S.res.alpha = 1; M.writeIn(g, S.res, { dur: 0.25 * T }); M.indicate(g, S.res, { delay: 0.2 * T, dur: 0.4 * T, sc: 1.3, col: '#fff' }); g.sfx('ding');
+              // the whole note stays up to be read, then everything but the ratio fades and it becomes the chip "× 3"
+              M.at(g, [[1.05 * T, g => { for (const it of S.note.items) if (it !== S.res) M.tween(g, it, { alpha: 0 }, 0.2 * T); }],
+                [1.3 * T, g => { // the note shrinks into the chip "× 3" over the gap
                   for (const it of S.note.items) if (it !== S.res) it.alpha = 0;
                   const chip = Object.assign(M.row(M.op('×', null, { _born: -1 }), S.res), { id: 'r', pop: g.t }); S.note = chip;
-                  const e = g.s.mk.ex.rat; M.place(g, 'rat', chip, e.x + M.lay(e.node, 28).w / 2, e.y, 30, { col: NOTE });
-                  S.qShown = true; S.qAt = g.t; g.sfx('sparkle'); hop(g); M.at(g, [[0.25 * T, g => g.sfx('tap')]]); }],
-                [1.3 * T, g => { S.point = false; }]]); },
+                  const e = g.s.mk.ex.rat; M.place(g, 'rat', chip, e.x + M.lay(e.node, 32).w / 2, e.y, 34, { col: NOTE });
+                  S.qShown = true; S.qAt = g.t; S.hopT = 0.45 * T; g.sfx('sparkle'); hop(g); M.at(g, [[S.hopT, g => g.sfx('tap')]]); }],
+                [2.3 * T, g => { S.point = false; }]]); },
           });
           return out;
         }
         // 2. carry the ratio to the end of the sequence
         if (S.st === 0) return [{ drag: 'r', to: ['t2', 'q'], busy: 0.1, then(g) {
-          M.show(g, 0.85 * T); S.point = true; hop(g, 'think'); const db = { ...M.box(g, 'r') }; M.node(g, 'r').hide = true; g.sfx('whoosh');
+          M.show(g, 1.0 * T); S.point = true; hop(g, 'think'); const db = { ...M.box(g, 'r') }; M.node(g, 'r').hide = true; g.sfx('whoosh');
           for (const n of [N.last, N.op, N.rv]) n.alpha = 0; S.st = 1; S.build(); delete g.s.mk.ex.rat;
-          M.fly(g, { node: M.num(S.T[2]), from: 't2', to: 'w0', dur: 0.4 * T, arc: -40, s0: S.size, s1: S.size, col: INK, then(g) { N.last.alpha = 1; N.last.pop = g.t; N.op.alpha = 1; } });
-          M.fly(g, { node: M.row(M.op('×'), qNode(q)), from: [db.x, db.y], to: 'w2', dur: 0.45 * T, delay: 0.2 * T, arc: -50, s0: 30, s1: S.size, col: NOTE,
+          M.fly(g, { node: M.num(S.T[2]), from: 't2', to: 'w0', dur: 0.5 * T, arc: -40, s0: S.size, s1: S.size, col: INK, then(g) { N.last.alpha = 1; N.last.pop = g.t; N.op.alpha = 1; } });
+          M.fly(g, { node: M.row(M.op('×'), qNode(q)), from: [db.x, db.y], to: 'w2', dur: 0.5 * T, delay: 0.3 * T, arc: -50, s0: 34, s1: S.size, col: NOTE,
             then(g) { N.rv.alpha = 1; N.op.alpha = 1; M.sparkle(g, 'w2', { n: 8, cols: [NOTE, '#fff'] }); g.sfx('pop'); hop(g); } });
-          M.at(g, [[0.85 * T, g => { S.point = false; }]]); } }];
+          M.at(g, [[1.0 * T, g => { S.point = false; }]]); } }];
         // 3. multiply: the × 3 slides into the 18, which rolls over to 54
-        if (S.st === 1) return [{ tap: ['sm', 'q'], busy: 0.1, askAt: 0.4 * T, after: 0.75 * T, ask: { v: S.next, wrong: [S.T[2] + q, -S.next, S.next * q, S.T[2] * 2 === S.next ? S.T[2] + 1 : S.T[2] * 2] },
-          then(g) { M.show(g, 0.4 * T); S.point = true; hop(g, 'think'); M.circle(g, 'sm', { dur: 0.4 * T, col: NOTE }); [N.last, N.op, N.rv].forEach((n, i) => M.light(g, n, { col: '#9ad8ff', delay: i * 0.05 * T })); },
-          resolve(g) { M.show(g, 0.75 * T); const kb = M.box(g, 'w0');
-            for (const n of [N.op, N.rv]) { const b = M.box(g, n.id); M.tween(g, n, { dx: (kb.x - b.x) * 0.7, alpha: 0 }, 0.22 * T); }
-            M.at(g, [[0.24 * T, g => { for (const n of [N.op, N.rv]) { n.alpha = 0; n.dx = 0; } S.st = 2; S.build(); M.roll(g, N.last, S.next, { dur: 0.28 * T }); g.sfx('ding'); }],
-              [0.4 * T, g => { S.extra = g.t; }],
-              [0.55 * T, g => { N.last.pop = g.t; M.unlight(g, N.last); M.sparkle(g, N.last, { n: 10, cols: [NOTE, '#fff', '#ffe9a0'] }); g.sfx('coin'); hop(g, 'laugh'); }],
-              [0.75 * T, g => { S.point = false; }]]); } }];
+        if (S.st === 1) return [{ tap: ['sm', 'q'], busy: 0.1, askAt: 0.6 * T, after: 1.95 * T, ask: { v: S.next, wrong: [S.T[2] + q, -S.next, S.next * q, S.T[2] * 2 === S.next ? S.T[2] + 1 : S.T[2] * 2] },
+          then(g) { M.show(g, 0.6 * T); S.point = true; hop(g, 'think'); M.circle(g, 'sm', { dur: 0.45 * T, col: NOTE }); [N.last, N.op, N.rv].forEach((n, i) => M.light(g, n, { col: '#9ad8ff', delay: i * 0.05 * T }));
+            // the working note "18 × 3 =" writes itself above the slot; its value comes once it is known
+            const sb = M.box(g, 'sm'); S.mq = M.num(S.next, 'mq', { alpha: 0 }); S.mn = M.row(M.num(S.T[2]), M.op('×'), qNode(q), M.op('='), S.mq);
+            const m = M.lay(S.mn, 32); M.place(g, 'mul', S.mn, M.clamp(sb.x, m.w / 2 + 12, 348 - m.w / 2), sb.y - sb.h / 2 - 34, 32, { col: NOTE }); M.writeIn(g, S.mn, { dur: 0.45 * T, delay: 0.05 * T }); g.sfx('tap'); },
+          resolve(g) { M.show(g, 1.95 * T); S.mq.alpha = 1; M.writeIn(g, S.mq, { dur: 0.25 * T }); M.indicate(g, S.mq, { delay: 0.2 * T, dur: 0.4 * T, sc: 1.3, col: '#fff' }); g.sfx('ding');
+            const t0 = 1.05 * T; // the note stays up to be read; then the × 3 slides into the 18, which rolls over to 54
+            M.at(g, [[t0, g => { const kb = M.box(g, 'w0'); for (const n of [N.op, N.rv]) { const b = M.box(g, n.id); M.tween(g, n, { dx: (kb.x - b.x) * 0.7, alpha: 0 }, 0.3 * T); }
+                for (const q of S.mn.items) M.tween(g, q, { alpha: 0 }, 0.3 * T); g.sfx('swoosh'); }],
+              [t0 + 0.32 * T, g => { for (const n of [N.op, N.rv]) { n.alpha = 0; n.dx = 0; } S.st = 2; S.build(); M.roll(g, N.last, S.next, { dur: 0.4 * T }); delete g.s.mk.ex.mul; g.sfx('ding'); }],
+              [t0 + 0.5 * T, g => { S.extra = g.t; }],
+              [t0 + 0.75 * T, g => { N.last.pop = g.t; M.unlight(g, N.last); M.sparkle(g, N.last, { n: 10, cols: [NOTE, '#fff', '#ffe9a0'] }); g.sfx('coin'); hop(g, 'laugh'); }],
+              [1.95 * T, g => { S.point = false; }]]); } }];
         return [];
       },
       area(g) { const m = M.current(g)[0]; return m ? [].concat(m.tap || [m.drag, m.to]) : null; },
@@ -109,12 +114,15 @@ MG.add({
     const ids = ['t0', 't1', 't2', 'q'];
     if (S.qShown) {
       for (let k = 0; k < 3; k++) {
-        const t0 = k < 2 ? S.qAt + k * 0.25 : S.extra; if (t0 == null) continue;
-        const a = M.box(g, ids[k]), b = M.box(g, ids[k + 1]); if (!a || !b) continue; const kk = M.ease((t - t0) / 0.3); if (kk <= 0) continue;
+        const t0 = k < 2 ? S.qAt + k * (S.hopT || 0.45) : S.extra; if (t0 == null) continue;
+        const a = M.box(g, ids[k]), b = M.box(g, ids[k + 1]); if (!a || !b) continue; const kk = M.ease((t - t0) / 0.4); if (kk <= 0) continue;
         const y = a.y + a.h / 2 + 22, x1 = M.lerp(a.x, b.x, kk);
         c.save(); c.strokeStyle = 'rgba(190,232,255,0.85)'; c.lineWidth = 2.5; c.setLineDash([2, 6]); c.lineCap = 'round';
         c.beginPath(); c.moveTo(a.x, y); c.lineTo(x1, y); c.stroke(); c.setLineDash([]); c.globalAlpha = kk;
-        c.fillStyle = NOTE; c.font = M.NUMF(19); c.textAlign = 'center'; c.shadowColor = 'rgba(0,0,30,0.8)'; c.shadowBlur = 4; c.fillText(qText(S.q), (a.x + b.x) / 2, y + 24); c.restore();
+        c.shadowColor = 'rgba(0,0,30,0.9)'; c.shadowBlur = 5;
+        // the label shrinks a little to fit its gap (never below 19 px); if it still would touch its neighbour, every other one sits lower
+        const lb = M.row(M.op('×'), qNode(S.q)), fit = (b.x - a.x - 8) / M.lay(lb, 23).w, ls = M.clamp(23 * fit, 19, 23), lm = M.lay(lb, ls), dy = fit * 23 < 19 && k % 2 ? 26 : 0;
+        M.draw(c, lb, (a.x + b.x) / 2 - lm.w / 2, y + 30 + dy, ls, { col: NOTE }); c.restore();
       }
     }
     ids.forEach((id, k) => {
@@ -125,7 +133,7 @@ MG.add({
     });
     // a shooting star now and then
     const sk = (t * 0.35) % 1; if (sk < 0.25) { const x = 320 - sk * 900, y = 60 + sk * 300; c.strokeStyle = 'rgba(255,255,230,0.7)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 40, y - 14); c.stroke(); }
-    M.drawEx(g, c, 'seq'); M.drawEx(g, c, 'rat');
+    M.drawEx(g, c, 'seq'); c.save(); c.shadowColor = 'rgba(0,0,30,0.9)'; c.shadowBlur = 6; M.drawEx(g, c, 'rat'); M.drawEx(g, c, 'mul'); c.restore();
     M.drawUI(g, c);
   },
 });

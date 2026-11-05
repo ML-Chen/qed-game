@@ -47,7 +47,7 @@ MG.add({
     const S = g.s; M.setup(g); Object.assign(S, pick(g)); const { num, den, W } = S, T = M.pace(g);
     S.X = v => X0 + v * (X1 - X0) / W;
     S.nu = M.num(num, 'nu'); S.de = M.num(den, 'de');
-    M.place(g, 'fr', M.frac(S.nu, S.de, 'frac'), 180, 228, 58, { col: '#3a1a10' });
+    M.place(g, 'fr', M.frac(S.nu, S.de, 'frac'), 180, 228, 46, { col: '#3a1a10' }); // sized so the fraction (and its 1.12× pulse) stays inside the card
     for (let w = 0; w <= W; w++) M.place(g, 'w' + w, M.num(w, 'w' + w), S.X(w), LABY + 14, 38, { col: INK });
     M.inert(g, ['frac', 'lbx']);
     M.zone(g, 'seg', { x: (X0 + X1) / 2, y: LY + 6, w: X1 - X0, h: 30 });
@@ -134,8 +134,8 @@ MG.add({
     for (let k = 1; k <= num; k++) M.drawEx(g, c, 'lb' + k); c.restore();
     // the fraction on a sign hanging from the branch
     const sw = 0; c.strokeStyle = '#d8c090'; c.lineWidth = 2; c.beginPath(); c.moveTo(148, 176); c.lineTo(150 + sw, 184); c.moveTo(212, 175); c.lineTo(210 + sw, 184); c.stroke();
-    SCN.panel(c, 'sign', 180 + sw, 226, 94, 92, t);
-    c.fillStyle = 'rgba(255,244,220,0.85)'; c.beginPath(); c.roundRect(145 + sw, 189, 70, 74, 10); c.fill();
+    SCN.panel(c, 'sign', 180 + sw, 228, 100, 104, t);
+    c.fillStyle = 'rgba(255,244,220,0.85)'; c.beginPath(); c.roundRect(142 + sw, 184, 76, 88, 10); c.fill();
     M.drawEx(g, c, 'fr');
     // the rabbit on the rail
     let bx = S.bx, by = LY - 1, pose = 'idle';
