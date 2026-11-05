@@ -1,1 +1,6 @@
 dist/
+# signing keys never belong in the repository (docs/ANDROID.md)
+*.jks
+*.keystore
+*.pem
+*.b64.txt

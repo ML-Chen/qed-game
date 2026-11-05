@@ -32,5 +32,6 @@ if os.environ.get('HM_ARTIFACT'):  # the Artifact host adds its own doctype/html
     t = t.replace('</head><body>', '', 1).replace('</body></html>', '')
     t = t.replace('canvas{display:block;touch-action:none}', 'canvas{display:block;touch-action:none;position:fixed;inset:0}:root{color-scheme:dark}')
 out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, '..', 'dist', 'qed.html')
+os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)  # a fresh checkout (the Pages workflow) has no dist/ folder
 open(out, 'w', encoding='utf-8').write(t)
 print('wrote', out, len(t) // 1024, 'KB')

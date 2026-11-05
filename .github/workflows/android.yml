@@ -1,0 +1,112 @@
+# Builds the Android app (APK) on GitHub's servers, signs it with the release keystore, and keeps it as a download.
+#
+# It runs by itself whenever a push to main changes the Android app (android/**) or this workflow, and publishes a
+# release tagged android-v1.<run number> with the APK. Game changes (src/**) don't need a new APK: the installed app
+# downloads them as signed updates from GitHub Pages. You can also start it by hand:
+# - Actions > "Build Android APK" > Run workflow. Leave "release" empty to publish an automatic release, or type a
+#   tag such as android-v2.0 to use that tag.
+# - Push a tag that starts with android-v (for example: git tag android-v2.0 && git push origin android-v2.0).
+# The newest APK is always at https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk
+#
+# Secrets it needs (Settings > Secrets and variables > Actions; see docs/ANDROID.md for how to make them):
+#   QED_UPDATE_KEY         PEM private key for signed game updates; the app gets only its public half
+#   QED_KEYSTORE_B64       the release keystore, base64-encoded
+#   QED_KEYSTORE_PASSWORD  the keystore password (also used as the key password)
+# The key alias inside the keystore is set in one place, KEY_ALIAS_DEFAULT in android/build.sh. It is "holymoly"
+# because the owner reuses Holy Moly!'s keystore; a keystore made just for Q.E.D.! would use "qed".
+#
+# Third-party code: only actions/checkout and actions/upload-artifact, pinned to exact commits. The Android SDK
+# and JDK 17 are the ones preinstalled on GitHub's ubuntu-latest runners.
+name: Build Android APK
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release tag (for example android-v2.0). Leave empty for an automatic android-v1.<run number> tag.'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths: ['android/**', '.github/workflows/android.yml']
+    tags: ['android-v*']
+permissions:
+  contents: write
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+jobs:
+  apk:
+    if: github.repository == 'ML-Chen/qed-game'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0 # the version numbers are commit times of src/ and android/
+
+      - name: Check that the secrets are set
+        env:
+          QED_UPDATE_KEY: ${{ secrets.QED_UPDATE_KEY }}
+          QED_KEYSTORE_B64: ${{ secrets.QED_KEYSTORE_B64 }}
+          QED_KEYSTORE_PASSWORD: ${{ secrets.QED_KEYSTORE_PASSWORD }}
+        run: |
+          missing=0
+          for name in QED_UPDATE_KEY QED_KEYSTORE_B64 QED_KEYSTORE_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error title=Missing secret::The repository secret $name is not set. Add it under Settings > Secrets and variables > Actions (see docs/ANDROID.md)."
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Find the Android SDK and JDK 17
+        run: |
+          sdk="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          [ -d "$sdk" ] || { echo "::error::No Android SDK found on this runner (ANDROID_HOME is empty)"; exit 1; }
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          jdk="${JAVA_HOME_17_X64:-$JAVA_HOME}"
+          [ -x "$jdk/bin/javac" ] || { echo "::error::No JDK 17 found on this runner (JAVA_HOME_17_X64 is empty)"; exit 1; }
+          echo "JAVA_HOME=$jdk" >> "$GITHUB_ENV"
+          echo "$jdk/bin" >> "$GITHUB_PATH"
+          echo "build-tools installed: $(ls "$sdk/build-tools" | tr '\n' ' ')"
+          echo "platforms installed:   $(ls "$sdk/platforms" | tr '\n' ' ')"
+
+      - name: Build the single-file game
+        run: python3 src/build.py dist/qed.html
+
+      - name: Build and sign the APK
+        env:
+          QED_UPDATE_KEY: ${{ secrets.QED_UPDATE_KEY }}
+          QED_KEYSTORE_B64: ${{ secrets.QED_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.QED_KEYSTORE_PASSWORD }}
+        run: |
+          export ANDROID_KEYSTORE="$RUNNER_TEMP/qed-release.jks"
+          printf '%s' "$QED_KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > "$ANDROID_KEYSTORE" \
+            || { echo "::error::QED_KEYSTORE_B64 is not valid base64 (see docs/ANDROID.md)"; exit 1; }
+          # android/build.sh checks the password and the key alias (KEY_ALIAS_DEFAULT there) before building.
+          bash android/build.sh dist/qed.html dist/qed.apk || { rm -f "$ANDROID_KEYSTORE"; exit 1; }
+          rm -f "$ANDROID_KEYSTORE"
+          sha256sum dist/qed.apk | tee dist/qed.apk.sha256
+
+      - name: Keep the APK as a download on this run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: qed-apk
+          path: |
+            dist/qed.apk
+            dist/qed.apk.sha256
+          if-no-files-found: error
+
+      - name: Publish a GitHub Release with the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || inputs.release || format('android-v1.{0}', github.run_number) }}
+        run: |
+          case "$TAG" in android-v[0-9]*) ;; *) echo "::error::Release tags must look like android-v1.0 (got '$TAG')"; exit 1 ;; esac
+          notes="Q.E.D.! for Android. Download qed.apk below and open it on the phone; it installs over an earlier version and keeps your saves. SHA-256: $(cut -d' ' -f1 dist/qed.apk.sha256)"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/qed.apk --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" dist/qed.apk --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Q.E.D.! for Android ${TAG#android-v}" --notes "$notes" --latest
+          fi
+          echo "Published $TAG: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/qed.apk" >> "$GITHUB_STEP_SUMMARY"
