@@ -11,6 +11,7 @@
   function cluster(c, x, y, balls, br, t, jig = 1) {
     balls.forEach(([dx, dy, k], i) => { const jx = Math.sin(t * 9 + i * 1.7) * 0.9 * jig, jy = Math.cos(t * 8 + i * 2.3) * 0.9 * jig; SK.ball(c, x + dx + jx, y + dy + jy, br, k === 'p' ? '#e8503a' : '#9ab8e0', { lw: 1.2 }); });
   }
+  const t0 = (s, g) => s.round ? s.born + 0.6 : 1.2; // when the bot flicks in each round
   function ends(a) { return [[PIV[0] - BEAM * Math.cos(a), PIV[1] - BEAM * Math.sin(a)], [PIV[0] + BEAM * Math.cos(a), PIV[1] + BEAM * Math.sin(a)]]; }
   function bowlAt(s) { const [l] = ends(s.a); return [l[0], l[1] + STR]; } // the left bowl's rim centre
   function paintLab(o) {
@@ -33,13 +34,13 @@
     c.beginPath(); c.moveTo(x - 44, y); c.quadraticCurveTo(x, y + (bowl ? 44 : 18), x + 44, y); c.closePath(); c.fill(); c.stroke();
   }
   MG.add({
-    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT!', time: 5, mood: 'night', winText: 'Boom!', failText: 'Missed!',
+    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT!', time: 6, mood: 'night', winText: 'E = mc²!', failText: 'Missed!',
     card: { title: 'Splitting a nucleus', kind: 'Physics', ref: 'Nuclear fission and E = mc²',
       text: 'The middle of an atom is its nucleus, a tight ball of protons and neutrons. A neutron has no electric charge, so it flies straight in. A big nucleus such as uranium can wobble and split in two when a neutron hits it, and two or three spare neutrons fly out.\n\nWeigh all the pieces and they come to a tiny bit less than the nucleus did. That missing mass has turned into a huge amount of energy, the flash. Nuclear power stations run on this. Joining two small nuclei (fusion) also loses mass and powers the Sun.',
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level); s.fus = lv >= 2;
-      s.start = lv === 0 ? [180, 540] : [292, 544];
+      s.starts = [[[180, 540], [292, 544]], [[292, 544], [150, 530], [214, 548]], [[292, 544], [150, 530]]][lv]; s.round = 0; s.start = s.starts[0]; s.born = -9;
       s.n = { x: s.start[0], y: s.start[1], vx: 0, vy: 0, r: s.fus ? 16 : 9, st: 'ready', alpha: 1 };
       s.big = s.fus ? sunflower(3, 9.5) : sunflower(30, 27); s.bigR = s.fus ? 19 : 36; s.br = s.fus ? 9 : 6.5;
       s.proj = s.fus ? sunflower(2, 7) : null;
@@ -82,7 +83,11 @@
         g.burst(cx, cy, ['#fff6ea', '#ffe27a', '#ff9a4a', '#9ad8ff'], 30, 320);
       }
       for (const p of s.spare) { const hit = SK.step(p, dt, { gy: 900, floor: 22, left: -32, right: 32 }); p.e = 0.45; p.mu = 200; if (hit === 'floor') g.sfx('click'); }
-      if (s.boom && !g.done && g.t - s.flash > 0.7) { g.win(); g.sfx('cheer'); }
+      if (s.boom && !g.done && g.t - s.flash > 0.7 && s.round + 1 >= s.starts.length) { g.win(); g.sfx('cheer'); }
+      if (s.boom && g.t - s.flash > 1.1 && s.round + 1 < s.starts.length) { // a fresh nucleus drops into the bowl; the neutron waits somewhere new
+        s.round++; s.start = s.starts[s.round]; s.hit = 0; s.boom = false; s.frag = null; s.he = null; s.spare = []; s.born = g.t;
+        s.mL = s.fus ? 3 : 30; Object.assign(n, { x: s.start[0], y: s.start[1], vx: 0, vy: 0, st: 'ready', alpha: 1 }); s.trail = []; g.sfx('pop');
+      }
     },
     draw(g, c) {
       const s = g.s, n = s.n, t = g.t;
@@ -99,7 +104,7 @@
       // the nucleus (or, after the hit, its pieces) in the left bowl
       pan(c, bx, by, true);
       const cx = bx, cy = by + 2 - s.bigR * 0.55;
-      if (!s.hit) { cluster(c, cx, cy, s.big, s.br, t); SK.glow(c, g, cx, cy, s.bigR + 12); }
+      if (!s.hit) { const dk = SK.easeOut(SK.clamp((t - s.born) / 0.35, 0, 1)); cluster(c, cx, cy - (1 - dk) * 200, s.big, s.br, t); if (dk >= 1) SK.glow(c, g, cx, cy, s.bigR + 12); }
       else {
         const k = SK.clamp((t - s.hit) / 0.3, 0, 1), sep = SK.easeOut(SK.clamp((t - s.hit - 0.2) / 0.3, 0, 1));
         if (s.fus) { // two small nuclei join into one helium nucleus
@@ -142,9 +147,9 @@
     },
     // the bot: flick straight at the nucleus (fast enough at level 2 to beat the push between two nuclei)
     auto(g, dt, synth) {
-      const s = g.s, n = s.n; if (s.shots || g.done || n.st !== 'ready') return;
+      const s = g.s, n = s.n; if (s.shots > s.round || g.done || n.st !== 'ready' || s.hit || t0(s, g) > g.t) return;
       const [bx, by] = bowlAt(s), tx = bx, ty = by + 2 - s.bigR * 0.55, dx = tx - n.x, dy = ty - n.y, L = Math.hypot(dx, dy), v = s.fus ? 920 : 650, dur = 0.16;
-      SK.bot.drag(g, synth, 'flick', 1.2, [n.x, n.y], [n.x + dx / L * v * dur, n.y + dy / L * v * dur], dur);
+      SK.bot.drag(g, synth, 'flick' + s.round, t0(s, g), [n.x, n.y], [n.x + dx / L * v * dur, n.y + dy / L * v * dur], dur);
     },
   });
 })();

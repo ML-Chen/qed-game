@@ -6,7 +6,7 @@
   const P0 = [22, 176], P1 = [238, 470], FLOOR = 470, TX = 304, BW = 46, BH = 28;
   const DX = P1[0] - P0[0], DY = P1[1] - P0[1], L = Math.hypot(DX, DY), D = [DX / L, DY / L], N = [D[1], -D[0]];
   const ACC = 900 * D[1] * 5 / 7; // a rolling ball speeds up at 5/7 of g·sinθ
-  const NEED = [150, 330, 450], TOWER = [4, 5, 7]; // speed a bowling ball needs at the bottom; blocks per level
+  const TOWERS = [[[4, 150], [5, 300]], [[5, 300], [6, 400]], [[5, 300], [6, 400], [7, 470]]]; // per level, each tower: blocks, the speed a bowling ball needs to topple it
   const BCOL = ['#e8563a', '#f2b33a', '#4aa8d8', '#7ac85a', '#b86ad8', '#f27aa0', '#e8563a'];
   function pathPos(b, sp) {
     if (sp <= L) return [P0[0] + D[0] * sp + N[0] * b.r, P0[1] + D[1] * sp + N[1] * b.r];
@@ -57,15 +57,17 @@
     }
     c.restore();
   }
+  function build(g, s) { const [n, need] = s.towers[s.round]; s.need = need; s.blocks = []; for (let i = 0; i < n; i++) s.blocks.push({ x: TX, y: FLOOR - BH / 2 - i * BH, a: 0, vx: 0, vy: 0, va: 0, col: BCOL[(i + s.round * 2) % BCOL.length], r: BH / 2, e: 0.2, mu: 1500, born: g.t + i * 0.06 }); }
   function block(c, bl, t) {
-    c.save(); c.translate(bl.x, bl.y); c.rotate(bl.a + (bl.wob || 0));
+    const k = SK.easeOut(SK.clamp((t - (bl.born ?? -9)) / 0.35, 0, 1));
+    c.save(); c.translate(bl.x, bl.free ? bl.y : bl.y - (1 - k) * 360); c.rotate(bl.a + (bl.wob || 0));
     c.fillStyle = bl.col; c.strokeStyle = P.shade(bl.col, -0.5); c.lineWidth = 2; c.beginPath(); c.roundRect(-BW / 2, -BH / 2, BW, BH, 5); c.fill(); c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(-BW / 2 + 4, -BH / 2 + 3, BW - 8, 4);
     c.fillStyle = P.shade(bl.col, -0.25); c.beginPath(); c.arc(0, 2, 6, 0, 7); c.fill();
     c.restore();
   }
   MG.add({
-    id: 'energy_knock', stage: 'energy', cmd: 'KNOCK DOWN!', time: 5, mood: 'night', winText: 'Crash!', failText: 'Still up!',
+    id: 'energy_knock', stage: 'energy', cmd: 'KNOCK DOWN!', time: 7, mood: 'night', winText: 'Momentum!', failText: 'Still up!',
     card: { title: 'Heavy and fast hits hard', kind: 'Physics', ref: 'Kinetic energy and momentum',
       text: 'A ball rolling down the ramp speeds up, because gravity keeps pulling it. The higher you let it go, the faster it is at the bottom.\n\nA moving ball carries energy. At the same speed, a heavier ball carries more energy than a light one, and a faster ball carries more than a slower one. The bowling ball has plenty, so it sends the blocks flying. The ping-pong ball is so light that it only taps the tower and bounces off.',
       note: 'Heavier and faster things carry more energy, so they hit harder.' },
@@ -76,8 +78,7 @@
         { k: 'pong', r: 9, m: 0.03, home: [158, 560], st: 'home', rot: 0 },
       ];
       for (const b of s.balls) { b.x = b.home[0]; b.y = b.home[1]; }
-      s.blocks = []; for (let i = 0; i < TOWER[lv]; i++) s.blocks.push({ x: TX, y: FLOOR - BH / 2 - i * BH, a: 0, vx: 0, vy: 0, va: 0, col: BCOL[i], r: BH / 2, e: 0.2, mu: 1500 });
-      s.need = NEED[lv]; s.down = false; s.wob = -9; s.tik = -9; s.tries = 0;
+      s.towers = TOWERS[lv]; s.round = 0; build(g, s); s.blocks.forEach(bl => { bl.born = -9; }); s.down = false; s.nextAt = 0; s.wob = -9; s.tik = -9; s.tries = 0;
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (s.down || s.balls.some(b => b.st === 'roll' || b.st === 'back')) return; const b = SK.pick(s.balls.filter(b => b.st === 'home'), x, y, 48); if (b) { b.st = 'drag'; SK.dragStart(g, b, x, y); g.sfx('tap'); } },
     move(g, x, y) { const b = SK.dragMove(g, x, y); if (b) { b.x = SK.clamp(b.x, 10, 350); b.y = SK.clamp(b.y, 130, 610); } },
@@ -99,7 +100,7 @@
               if (hit >= s.need) { // the tower goes: each block takes off, the bottom ones fastest
                 s.down = true; b.u *= 0.55; b.st = 'back'; b.backT = 9e9; g.sfx('crunch'); g.sfx('thud'); g.shake(7, 0.3); g.burst(TX - 10, FLOOR - 30, ['#ffd45a', '#fff6ea', '#e8563a'], 20, 220);
                 s.blocks.forEach((bl, j) => { bl.free = true; bl.vx = hit * (1.15 - j * 0.09) * (0.75 + 0.5 * g.rand()); bl.vy = -120 - g.rand() * 260; bl.va = (g.rand() - 0.3) * 9; });
-                s.wonAt = g.t + 0.45;
+                if (s.round + 1 >= s.towers.length) s.wonAt = g.t + 0.45; else { s.wonAt = 9e9; s.nextAt = g.t + 1.1; }
               } else { // not enough: the ball bounces back (tik) and the tower only wobbles
                 b.st = 'back'; b.backT = g.t; b.sp -= 1; b.u = -b.u * (b.k === 'pong' ? 0.8 : 0.12); s.wob = g.t; s.tik = g.t; s.tikK = b.k;
                 g.sfx(b.k === 'pong' ? 'click' : 'thud'); if (b.k === 'pong') g.sfx('boing');
@@ -114,6 +115,10 @@
         if (!bl.free) { bl.wob = g.t - s.wob < 0.8 ? Math.sin((g.t - s.wob) * 30) * 0.05 * (1 - (g.t - s.wob) / 0.8) * (bl.y < FLOOR - 40 ? 1 : 0.4) : 0; continue; }
         const hit = SK.step(bl, dt, { gy: 900, floor: FLOOR, right: 354 }); bl.a += bl.va * dt; if (bl.onFloor) { bl.va *= Math.exp(-6 * dt); bl.a = SK.lerp(bl.a, Math.round(bl.a / (Math.PI / 2)) * Math.PI / 2, Math.min(1, dt * 6)); }
         if (hit) g.sfx('thud');
+      }
+      if (s.nextAt && g.t > s.nextAt) { // the next, taller tower drops in, and the bowling ball comes home
+        s.nextAt = 0; s.round++; build(g, s); s.down = false; g.sfx('drum');
+        for (const b of s.balls) { b.st = 'home'; b.x = b.home[0]; b.y = b.home[1]; b.alpha = 1; b.rot = 0; }
       }
       if (s.down && !g.done && g.t > s.wonAt) { g.win(); g.sfx('cheer'); }
     },
@@ -136,13 +141,14 @@
       if (bowl.st === 'home' && !s.down) SK.glow(c, g, P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23, 30);
       SK.demo(g, c, 'drag', bowl.home, [P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23], { period: 2 });
     },
-    // the bot: carry the bowling ball to near the top of the ramp and let it go (level 1: try the ping-pong ball first)
+    // the bot: carry the bowling ball to near the top of the ramp and let it go, once per tower (level 1: try the ping-pong ball first)
     auto(g, dt, synth) {
-      const s = g.s, [bw, pp] = s.balls, top = [P0[0] + D[0] * 40 + N[0] * 23, P0[1] + D[1] * 40 + N[1] * 23]; if (g.done) return;
+      const s = g.s, [bw, pp] = s.balls, top = [P0[0] + D[0] * 40 + N[0] * 23, P0[1] + D[1] * 40 + N[1] * 23]; if (g.done || s.down) return;
       if (g.level === 1 && !(s._bot && s._bot.pong === 2)) { SK.bot.drag(g, synth, 'pong', 1.0, pp.home, [top[0] - 8, top[1] - 8], 0.5); return; }
-      if (!(s._bot && s._bot.carry) && (pp.st !== 'home' || bw.st !== 'home')) return;
-      const t0 = g.level === 1 ? Math.max(g.t, 1.6) : 1.0; s._bt = s._bt ?? t0;
-      SK.bot.drag(g, synth, 'carry', s._bt, bw.home, top, 0.5);
+      const key = 'carry' + s.round, B = s._bot || {};
+      if (!B[key] && (pp.st !== 'home' || bw.st !== 'home')) return;
+      s._bt = s._bt || {}; s._bt[key] = s._bt[key] ?? Math.max(g.t, 1.0) + 0.15;
+      SK.bot.drag(g, synth, key, s._bt[key], bw.home, top, 0.45);
     },
   });
 })();

@@ -110,6 +110,15 @@ To install a newer APK later, do the same steps. Android installs it over the ol
 
 You don't need a new APK when you change the game. When the app is open and online, it checks https://ml-chen.github.io/qed-game/update/ at most every 3 hours for a newer signed build, downloads it, checks its signature and SHA-256 checksum, and starts using it the next time the app is opened. A new APK is only needed when something in the `android/` folder changes, and the workflow above makes one by itself when that happens.
 
+## Heurēka! on Android
+
+Heurēka! is a second app (`app.heureka`, called "Heurēka!" on the phone) built from the same Android code with `APP=heureka android/build.sh`. Its manifest and launcher icons are in `heureka/android`. It installs next to Q.E.D.!, not over it, and keeps its own saves.
+
+- **Where the APK comes from:** the workflow "Build Heurēka! Android APK" (`.github/workflows/android-heureka.yml`). It runs by itself when a push to `main` changes `heureka/android/` or `android/`, and you can start it by hand the same ways as above: **Actions → Build Heurēka! Android APK → Run workflow**, or push a tag that starts with `heureka-android-v` (for example `git tag heureka-android-v2.0` and `git push origin heureka-android-v2.0`). Each run publishes a Release named `heureka-android-v1.<run number>` with `heureka.apk` attached.
+- **The download link:** these releases are not marked "Latest", so the `releases/latest` link above keeps giving Q.E.D.!. To get Heurēka!, open https://github.com/ML-Chen/qed-game/releases on the phone, find the newest release whose name starts with "Heurēka! for Android", and tap `heureka.apk`. Then install it as described in "Install it on a phone".
+- **Secrets:** none to add. It uses the same three secrets (`QED_UPDATE_KEY`, `QED_KEYSTORE_B64`, `QED_KEYSTORE_PASSWORD`) and the same key alias as Q.E.D.!.
+- **Game updates:** the app checks https://ml-chen.github.io/qed-game/heureka/update/ (published by "Publish to GitHub Pages" along with Q.E.D.!) and only installs builds whose signed manifest says `"app": "heureka"`. Changes to the game itself don't need a new APK.
+
 ## Back up your keys
 
 If you reuse Holy Moly's keys, your existing Holy Moly! backup already covers Q.E.D.!. If you made new keys, store `qed_update_key.pem`, `qed-release.jks` and the keystore password in a safe place outside the repository, for example a password manager plus an encrypted USB stick. GitHub never shows a secret's value again after you save it, so the GitHub secret is not a backup.
