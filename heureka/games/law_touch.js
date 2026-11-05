@@ -109,7 +109,7 @@ MG.add({
     if (!s.bonk) SK.tag(c, 'Copyright', sx, sy - 64, 18, '#ffd0d0');
     if (s.parts.some(p => p.st === 'tray')) SK.tag(c, 'Your art', 212, 498, 18, '#d0ffd8');
     const nx = s.parts.find(p => p.st === 'tray');
-    if (nx && !held && !g.done) { SK.glow(c, g, nx.x, nx.y, 30); SK.glow(c, g, nx.slot[0], nx.slot[1], 30, '#fff6ea'); }
+    if (nx && !held && !g.done) { SK.grab(c, g, nx.x, nx.y, 30); SK.target(c, g, nx.slot[0], nx.slot[1], 30); SK.arrow(c, g, nx.x, nx.y, nx.slot[0], nx.slot[1]); }
     if (nx && !held) SK.demo(g, c, 'drag', [nx.x, nx.y], nx.slot);
   },
   auto(g, dt, synth) {

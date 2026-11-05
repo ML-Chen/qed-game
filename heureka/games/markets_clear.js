@@ -3,7 +3,7 @@
 // price brings buyers but fewer apples. Let go when every apple sits above a buyer: they all trade and the curves draw
 // themselves crossing at the tag. Too low: buyers wait empty-handed (a shortage). Too high: apples rot (a surplus).
 // Each new market day brings a different crowd (more buyers: the price must rise). Level 2: three days, the last with fewer buyers.
-const COLS = 6, CX = i => 42 + i * 40, COUNTER = 330, QUEUE = 474, TRACK = { x: 312, y0: 178, y1: 566 };
+const COLS = 6, CX = i => 42 + i * 40, COUNTER = 330, QUEUE = 474, TRACK = { x: 296, y0: 178, y1: 566 };
 const KINDS = ['frog', 'duck', 'penguin', 'rabbit', 'bird', 'turtle'];
 // each buyer's top price (willingness to pay) and each apple's cost to bring (0 = slider bottom, 1 = top)
 const C = [0.06, 0.18, 0.3, 0.42, 0.74, 0.86]; // each apple's cost to bring

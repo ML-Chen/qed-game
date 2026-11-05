@@ -60,7 +60,7 @@
     if (f.spark && t - f.spark < 0.9) for (let i = 0; i < 8; i++) { const q = (t * 3 + i / 8) % 1; c.strokeStyle = '#ffe85a'; c.lineWidth = 2; const sx = x - 30 + B3.hash(i + Math.floor(t * 8)) * 60, sy = top - 10 - q * 30; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + 5, sy - 6); c.lineTo(sx + 1, sy - 8); c.lineTo(sx + 7, sy - 15); c.stroke(); }
   }
   MG.add({
-    id: 'putout', stage: 'fire', cmd: 'PUT OUT ALL THE FIRES!', time: 6, mood: 'storm', winText: 'Fire classes!', failText: 'Still burning!',
+    id: 'putout', stage: 'fire', cmd: 'PUT OUT ALL THE FIRES!', time: 6, mood: 'storm', winText: 'All fires out!', failText: 'Still burning!',
     card: { title: 'The right extinguisher for the fire', kind: 'Chemistry', ref: 'Classes of fire and extinguishers',
       text: 'Different fires need different extinguishers. Water cools burning paper and wood. Water conducts electricity, so it must never go on live electrics; carbon dioxide smothers the fire without wetting the wires. On burning cooking oil, water sinks, boils into steam at once and throws burning oil out, so a wet-chemical extinguisher is used: it cools the oil and makes a soapy crust that keeps the air out. Burning metals need a special powder.\n\nThis is general safety information. If a fire is big or spreading, get out, stay out and call the fire service. Unplug electrics only if it is safe to.',
       note: 'Match the extinguisher to what is burning. Never use water on electrics or cooking oil.' },

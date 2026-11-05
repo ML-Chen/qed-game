@@ -78,7 +78,7 @@ MG.add({
       if (kind === 'duck' && s.faint) { c.save(); c.translate(x, y - 10); c.rotate(-1.5 * SK.clamp((t - s.faint) * 3, 0, 1)); SK.animal(c, kind, 0, 10, 0.75, { t, expr: 'sad', pose: 'sad', noShadow: true }); c.restore(); return; }
       SK.animal(c, kind, x, y + (alarm ? -Math.abs(Math.sin(t * 9 + k)) * 6 : 0), 0.72, { t, phase: k, pose: won ? 'cheer' : alarm ? 'hop' : 'idle', expr: won ? 'laugh' : alarm ? 'wow' : 'happy' });
     });
-    if (!s.ok && !s.end && !s.drag && !g.done) { SK.glow(c, g, 180, s.F, 26); SK.glow(c, g, 180, Z, 20, '#8ad0a0'); }
+    if (!s.ok && !s.end && !s.drag && !g.done) { SK.grab(c, g, 180, s.F, 26); SK.target(c, g, 180, Z, 26, { w: X1 - X0 + 30, h: 26 }); SK.arrow(c, g, 180, s.F, 180, Z); }
     if (!s.ok && !s.end && !g.done) SK.demo(g, c, 'drag', [180, s.F], [180, Z]);
   },
   auto(g, dt, synth) {

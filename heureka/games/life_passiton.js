@@ -34,7 +34,7 @@
     if (n.k === 'mushroom') { const s = 0.7 + k * 0.4; c.fillStyle = '#7a5030'; c.beginPath(); c.ellipse(x, y + 10, 34, 7, 0, 0, 7); c.fill(); c.fillStyle = '#f4e8d0'; c.fillRect(x - 5 * s, y - 14 * s + 10, 10 * s, 14 * s); c.fillStyle = '#c87a4a'; c.beginPath(); c.ellipse(x, y - 14 * s + 10, 18 * s, 12 * s, 0, Math.PI, 0); c.fill(); if (fed) { c.fillStyle = 'rgba(90,60,30,0.6)'; for (let i = 0; i < 8; i++) c.fillRect(x - 30 + B3.hash(i) * 60, y + 6 + B3.hash(i * 2) * 6, 3, 3); } }
   }
   MG.add({
-    id: 'passiton', stage: 'life', cmd: 'PASS THE ENERGY DOWN THE CHAIN!', time: 6, mood: 'bright', winText: 'Food chain!', failText: 'Still hungry!',
+    id: 'passiton', stage: 'life', cmd: 'PASS THE ENERGY DOWN THE CHAIN!', time: 6, mood: 'bright', winText: 'The energy fed everyone!', failText: 'Still hungry!',
     card: { title: 'Energy flows along a food chain', kind: 'Biology', ref: 'Food chains and energy flow',
       text: 'Almost all the energy for life on land starts in the Sun. Plants catch sunlight and use it to make food. A rabbit gets that energy by eating the grass, and a fox gets it by eating the rabbit. That line of who eats whom is a food chain.\n\nAt every step most of the energy is used up just living: moving, breathing and keeping warm. Only about a tenth is passed on, so there is less and less to share. A rabbit cannot eat sunlight; it needs the plant in between. Mushrooms and other decomposers break down leftovers and return them to the soil.',
       note: 'Energy passes from the Sun to plants to plant-eaters to meat-eaters, and a lot is used up at each step.' },

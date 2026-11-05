@@ -23,11 +23,11 @@
   }
   function seasonLen(g) { return Math.min(SEASON_S, (g.dur - 0.7) / SEASONS[Math.min(2, g.level)]); }
   MG.add({
-    id: 'unleash', stage: 'life', cmd: 'SEND FOXES WHEN RABBITS BOOM!', time: 6, mood: 'bright', winText: 'Predator-prey!', failText: 'Overrun!',
+    id: 'unleash', stage: 'life', cmd: 'SEND FOXES WHEN RABBITS BOOM!', time: 6, mood: 'bright', winText: 'Foxes and rabbits both made it!', failText: 'The grass is all eaten!',
     card: { title: 'Predators and prey', kind: 'Biology', ref: 'Predator and prey cycles (population ecology)',
       text: 'With no foxes, rabbits breed fast until they eat the meadow bare. When there are plenty of rabbits, foxes find food easily and raise more cubs. More foxes eat more rabbits, so the rabbits fall. Then the foxes go hungry and leave or die, which lets the rabbits recover.\n\nSo the two numbers rise and fall in a chase, with the foxes one step behind. Too many foxes at once can eat almost every rabbit, and then the foxes starve too. Records of lynx and snowshoe hares in Canada show a similar rise and fall about every ten years.',
       note: 'Predator and prey numbers rise and fall in turn: more prey feeds more predators, and more predators mean fewer prey.' },
-    init(g) { const s = g.s; s.R = 5; s.F = 0; s.u = 0; s.hist = [[0, 5, 0]]; s.rel = []; s.end = 0; },
+    init(g) { const s = g.s; s.R = 11; s.F = 0; s.u = 0; s.hist = [[0, 11, 0]]; s.rel = []; s.end = 0; },
     down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (SK.dist(x, y, DEN.x, DEN.y - 14) < 70) { s.F += 1; s.rel.push(g.t); if (s.rel.length > 10) s.rel.shift(); g.sfx('roar'); g.sfx('whoosh'); } },
     update(g, dt) {
       const s = g.s; if (g.done) return; const N = SEASONS[Math.min(2, g.level)], du = dt / seasonLen(g);
@@ -54,18 +54,19 @@
       // a fox just released runs out of the den
       for (const rt of s.rel) { const q = (t - rt) * 2; if (q > 1) continue; SK.animal(c, 'fox', DEN.x + q * 90, DEN.y - 4 - Math.sin(q * Math.PI) * 20, 0.65, { t, pose: 'hop', expr: 'laugh' }); }
       // the graph: rabbits (white) and foxes (orange) through the seasons, the overrun line in red
-      const gx = 30, gy = 134, gw = 300, gh = 56;
+      const gx = 40, gy = 150, gw = 270, gh = 84;
       c.save(); c.fillStyle = 'rgba(30,14,36,0.62)'; c.beginPath(); c.roundRect(gx - 10, gy - 8, gw + 20, gh + 16, 12); c.fill();
       c.strokeStyle = 'rgba(255,90,90,0.8)'; c.setLineDash([5, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + gw, gy); c.stroke(); c.setLineDash([]);
       for (let i = 1; i < N; i++) { c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(gx + gw * i / N, gy, 1, gh); }
       for (const [col, idx, sc] of [['#fff6ea', 1, gh / OVER], ['#ff9a3a', 2, gh / 8]]) { c.strokeStyle = col; c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath(); s.hist.forEach(([u, R, F], j) => { const x = gx + gw * u / N, y = gy + gh - Math.min(gh, (idx === 1 ? R : F) * sc); j ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); }
-      SK.animal(c, 'rabbit', gx + gw * s.u / N, gy + gh - Math.min(gh, s.R * gh / OVER) + 6, 0.2, { t, noShadow: true });
       c.restore();
+      { const hx = gx + gw * s.u / N; SK.animal(c, 'rabbit', hx, gy + gh - Math.min(gh, s.R * gh / OVER) + 8, 0.3, { t, noShadow: true }); SK.animal(c, 'fox', hx, gy + gh - Math.min(gh, s.F * gh / 8) + 8, 0.3, { t, noShadow: true }); }
+      SK.tag(c, 'Too many rabbits', 180, gy - 4, 18, '#ffd0c8', 'rgba(120,30,30,0.8)');
       // the host fox by the den cheers or sulks
       const won = g.result === 'win', lost = g.result === 'fail';
       if (won || lost) SK.animal(c, 'fox', 120, 610, 0.8, { t, pose: won ? 'cheer' : 'sad', expr: won ? 'laugh' : 'wow' });
       if (s.F < 0.5) SK.glow(c, g, DEN.x, DEN.y - 14, 40, s.R > 20 ? '#ffe27a' : 'rgba(255,240,200,0.5)');
-      SK.tag(c, 'Rabbits', 120, 218, 18, '#fff6ea'); SK.tag(c, 'Foxes', 240, 218, 18, '#ffb060'); SK.tag(c, 'Fox den', DEN.x + 40, DEN.y + 30, 18);
+      SK.tag(c, 'Rabbits', 120, gy + gh + 26, 18, '#fff6ea'); SK.tag(c, 'Foxes', 240, gy + gh + 26, 18, '#ffb060'); SK.tag(c, 'Fox den', DEN.x + 40, DEN.y + 30, 18);
       SK.demo(g, c, 'tap', [DEN.x, DEN.y - 14], null, { delay: 2.2, never: (g.s.touched || g.level > 0) && !(s.R > 20 && s.F < 0.5) });
     },
     // the bot sends out one fox whenever the rabbits boom and no foxes are left

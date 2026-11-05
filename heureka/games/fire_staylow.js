@@ -28,7 +28,7 @@
 
   }
   MG.add({
-    id: 'staylow', stage: 'fire', cmd: 'CRAWL OUT UNDER THE SMOKE!', time: 6, mood: 'storm', winText: 'Smoke rises!', failText: 'Cough!',
+    id: 'staylow', stage: 'fire', cmd: 'CRAWL OUT UNDER THE SMOKE!', time: 6, mood: 'storm', winText: 'Everyone got out!', failText: 'Too much smoke!',
     card: { title: 'Clean air is near the floor', kind: 'Chemistry', ref: 'Fire safety: smoke layering',
       text: 'Smoke from a fire is hot, and hot gas is lighter than the cooler air around it, so it rises. It spreads along the ceiling and fills the room from the top down. The cleanest, coolest air stays near the floor.\n\nSmoke is the most dangerous part of most house fires. It is full of poison gases and makes it hard to see. That is why you get low and crawl to the way out, and leave the building straight away.',
       note: 'Hot smoke rises and fills a room from the ceiling down, so crawl low under it to get out.' },

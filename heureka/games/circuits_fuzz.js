@@ -103,7 +103,7 @@ MG.add({
     c.restore();
     SK.tag(c, 'Power rail', SC.x1 - 62, top + 20, 18, '#ffd0c0'); SK.tag(c, 'Power rail', SC.x1 - 62, bot - 20, 18, '#c8e8ff');
     // the gain knob
-    SK.glow(c, g, s.kn.x, s.kn.y, 44); SK.tag(c, 'Gain', s.kn.x + 70, s.kn.y, 18); SK.tag(c, 'Amplifier', 180, AMP.y + 114, 18);
+    if (!s.kn.grab) SK.grab(c, g, s.kn.x, s.kn.y, 44); SK.tag(c, 'Gain', s.kn.x + 70, s.kn.y, 18); SK.tag(c, 'Amplifier', 180, AMP.y + 114, 18);
     B6.drawKnob(c, s.kn, { col: '#2a2420', cap: '#e8d8b0', arc: s.fuzzy ? '#ff5ad0' : '#ffb43a' });
     // the speaker grille thumps with the sound
     const thump = s.strum * Math.min(1, gain * L.A * so.A / L.R);

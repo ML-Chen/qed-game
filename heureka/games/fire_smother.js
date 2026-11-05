@@ -59,7 +59,7 @@
     c.restore();
   }
   MG.add({
-    id: 'smother', stage: 'fire', cmd: 'PUT OUT EACH CAMPFIRE!', time: 6, mood: 'storm', winText: 'Fire triangle!', failText: 'Toasted!',
+    id: 'smother', stage: 'fire', cmd: 'PUT OUT EACH CAMPFIRE!', time: 6, mood: 'storm', winText: 'No heat, air or fuel: out!', failText: 'More air, bigger fire!',
     card: { title: 'The fire triangle', kind: 'Chemistry', ref: 'The fire triangle (combustion)',
       text: 'A fire needs three things at the same time: fuel to burn, heat, and oxygen from the air. These are the three sides of the fire triangle. Take away any one side and the fire goes out.\n\nRaking the logs apart takes away the fuel. Sand over the fire smothers it: it keeps the air out. Water cools the fire until it is too cold to keep burning. Bellows do the opposite: they blow in more oxygen, so the flames grow.\n\nEmbers can stay hot for hours and start a fire again. Put out a campfire with an adult, and keep cooling and stirring it until it feels cold.',
       note: 'Fire needs fuel, heat and oxygen at once. Remove any one and it goes out.' },

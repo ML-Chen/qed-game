@@ -72,12 +72,12 @@ MG.add({
       const tooBright = b > R.want + s.tol, dark = k.w === 0;
       SK.animal(c, R.kind, 296, y + 40, R.kind === 'owl' ? 0.85 : 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won || k.ok ? (R.kind === 'rabbit' ? 'happy' : 'laugh') : dark ? 'sad' : tooBright ? 'wow' : 'think', facing: -1 });
       if (R.kind === 'rabbit' && (k.ok || won)) { c.fillStyle = '#d8d0ff'; c.font = '900 18px Nunito, system-ui, sans-serif'; c.fillText('z', 316 + Math.sin(t * 2) * 3, y - 34); }
-      if (!k.ok && !g.done && SK.dragging(g) !== k) SK.glow(c, g, CLAMP_X, hy(k) - 4, 30);
       if (k.i === 0) SK.tag(c, 'Narrow wire', CLAMP_X + 4, y + 36, 18);
     }
     SK.tag(c, 'Battery', 180, 137, 18);
     // guidance: push down the first clamp whose bulb is off its ring
-    const nx = s.cl.find(k => !k.ok); if (nx) { const y0 = ROWS[nx.i] - 40, wt = Math.sqrt(ROOM[nx.i].want), ty = y0 + (1 - wt) * SQ; SK.demo(g, c, 'drag', [CLAMP_X, hy(nx) - 4], [CLAMP_X, ty - (nx.y - hy(nx)) - 4]); }
+    const nx = s.cl.find(k => !k.ok); if (nx && !g.done && !SK.dragging(g)) { const y0 = ROWS[nx.i] - 40, hT = y0 + (1 - Math.sqrt(ROOM[nx.i].want)) * 26 - 5; SK.grab(c, g, CLAMP_X, hy(nx) - 5, 24); SK.target(c, g, CLAMP_X, hT, 0, { w: 60, h: 24 }); if (Math.abs(hT - hy(nx)) > 6) SK.arrow(c, g, CLAMP_X + 40, hy(nx) - 5, CLAMP_X + 40, hT, { from: 0, to: 0 }); }
+    if (nx) { const y0 = ROWS[nx.i] - 40, wt = Math.sqrt(ROOM[nx.i].want), ty = y0 + (1 - wt) * SQ; SK.demo(g, c, 'drag', [CLAMP_X, hy(nx) - 4], [CLAMP_X, ty - (nx.y - hy(nx)) - 4]); }
   },
   auto(g, dt, synth) {
     const s = g.s; s.cl.forEach((k, i) => { const y0 = ROWS[i] - 40, ty = y0 + (1 - Math.sqrt(ROOM[i].want)) * SQ; SK.bot.drag(g, synth, 'c' + i, 1.0 + i * 0.6, [CLAMP_X, y0 - 4], [CLAMP_X, ty - 4], 0.4); });

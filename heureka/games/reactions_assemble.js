@@ -43,7 +43,7 @@
   function nextNeed(s, P0) { const n = {}; for (const k of s.station) n[k] = (n[k] || 0) + 1; for (const k of P0.order) { if (n[k] > 0) n[k]--; else return k; } return null; }
   function canMore(s, P0) { return Object.keys(P0.recipe).every(k => { const p = s.piles.find(p => p.kind === k); return p.n + s.station.filter(x => x === k).length >= P0.recipe[k]; }); }
   MG.add({
-    id: 'assemble', stage: 'reactions', cmd: 'MAKE AS MANY AS YOU CAN!', time: 6, mood: 'desert', winText: 'Limiting!', failText: 'Toppled!',
+    id: 'assemble', stage: 'reactions', cmd: 'MAKE AS MANY AS YOU CAN!', time: 6, mood: 'desert', winText: 'One ran out first!', failText: 'The stack fell over!',
     card: { title: 'What runs out first', kind: 'Chemistry', ref: 'Limiting reactant',
       text: 'Each sandwich takes two slices of bread and one slice of cheese. With eight breads and three cheeses you can make only three sandwiches, because the cheese runs out first. Two breads are left over.\n\nReactions work the same way. Two hydrogen molecules and one oxygen molecule make two water molecules. With four hydrogens and three oxygens you make four waters, and one oxygen is left over. The ingredient that runs out first is called the limiting reactant: it decides how much you can make.',
       note: 'The ingredient that runs out first limits how much product you can make.' },

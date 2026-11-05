@@ -3,7 +3,9 @@
 // beetles: they cause most of the crashing, so the shaking almost stops (the 80/20 rule). Spend the squashes on ants and
 // the screen keeps shaking until the hedgehog's coffee spills.
 const TAU = Math.PI * 2, SCR = { l: 34, r: 326, t: 146, b: 500 };
-const LV = [{ beetles: 2, ants: 20, hits: 3, sp: 70 }, { beetles: 2, ants: 22, hits: 2, sp: 85 }, { beetles: 3, ants: 22, hits: 3, sp: 95, hide: true }];
+const LV = [{ beetles: 2, ants: 20, hits: 3, sp: 70 }, { beetles: 2, ants: 22, hits: 3, sp: 85, duck: true }, { beetles: 3, ants: 22, hits: 3, sp: 95, hide: true, duck: true }];
+// level 1+: beetles duck under the app's tiles now and then (no squashing them while they hide)
+function hidden(g, b) { return g.s.L.duck && b.big && !b.dead && Math.sin(g.t * 1.3 + b.ph * 3) > 0.45; }
 function paintDesk(o) {
   const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#5ab0e0'); bg.addColorStop(1, '#b8e2f2'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
   o.fillStyle = 'rgba(255,255,255,0.16)'; for (let i = 0; i < 8; i++) { o.beginPath(); o.arc(30 + i * 48, 40 + (i % 3) * 30, 18 + (i % 2) * 10, 0, TAU); o.fill(); }
@@ -13,7 +15,7 @@ function paintDesk(o) {
 function paintApp(o) { // the app on the screen: a cheerful little shop app
   o.fillStyle = '#fff6ea'; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, SCR.b - SCR.t, 14); o.fill();
   o.fillStyle = '#ff8a5a'; o.beginPath(); o.roundRect(SCR.l, SCR.t, SCR.r - SCR.l, 46, [14, 14, 0, 0]); o.fill();
-  o.fillStyle = 'rgba(255,255,255,0.8)'; o.beginPath(); o.arc(SCR.l + 26, SCR.t + 23, 11, 0, TAU); o.fill(); o.fillRect(SCR.l + 48, SCR.t + 17, 120, 12);
+  
   const cols = ['#ffd45a', '#8ad0a0', '#a8c8f0', '#f0a8c8'];
   for (let r = 0; r < 3; r++) for (let k = 0; k < 2; k++) { const x = SCR.l + 14 + k * 140, y = SCR.t + 60 + r * 96; o.fillStyle = cols[(r * 2 + k) % 4]; o.beginPath(); o.roundRect(x, y, 124, 84, 10); o.fill(); o.fillStyle = 'rgba(255,255,255,0.7)'; o.fillRect(x + 10, y + 60, 70, 10); o.beginPath(); o.arc(x + 62, y + 30, 18, 0, TAU); o.fill(); }
 }
@@ -36,9 +38,9 @@ function ant(c, x, y, a, t, ph, sq) {
   c.restore();
 }
 MG.add({
-  id: 'squashbeetles', stage: 'problems', cmd: 'SQUASH BEETLES!', time: 5, mood: 'party', winText: '80/20 rule!', failText: 'Still crashing!',
+  id: 'squashbeetles', stage: 'problems', cmd: 'SQUASH THE BIG BEETLES!', time: 6, mood: 'party', winText: 'Big bugs, most crashes!', failText: 'Still crashing!',
   card: { title: 'A few causes do most of the damage', kind: 'Problem solving', ref: 'The Pareto principle (the 80/20 rule)',
-    text: 'The two big beetles caused most of the crashing, and the swarm of ants caused only a little. With only a few squashes, hitting the beetles fixed almost everything.\n\nThis pattern is common: a few causes often make most of the effect. People call it the 80/20 rule, or the Pareto principle, after the economist Vilfredo Pareto. The numbers are rough and change from case to case. The habit is useful anyway: before you start fixing things, find the few big causes and fix those first.',
+    text: 'The crash meter showed it: the two big beetles caused most of the crashing, and the swarm of ants caused only a little. With only a few squashes, hitting the beetles fixed almost everything.\n\nThis pattern is common: a few causes often make most of the effect. People call it the 80/20 rule, or the Pareto principle, after the economist Vilfredo Pareto. The numbers are rough and change from case to case. The habit is useful anyway: before you start fixing things, find the few big causes and fix those first.',
     note: 'Often a few causes make most of the effect, so find and fix the big ones first.' },
   init(g) {
     const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.bugs = []; s.hits = L.hits; s.whacks = []; s.amp = 1;
@@ -52,7 +54,7 @@ MG.add({
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done || s.hits <= 0) return; s.hits--;
     // the mallet comes down: it squashes the bug under it (a beetle first, if one is there)
-    let hit = null, bd = 1e9; for (const b of s.bugs) { if (b.dead) continue; const d = SK.dist(x, y, b.x, b.y), r = b.big ? 34 : 16; if (d < r && (b.big ? d - 30 : d) < bd) { bd = b.big ? d - 30 : d; hit = b; } }
+    let hit = null, bd = 1e9; for (const b of s.bugs) { if (b.dead || hidden(g, b)) continue; const d = SK.dist(x, y, b.x, b.y), r = b.big ? 34 : 16; if (d < r && (b.big ? d - 30 : d) < bd) { bd = b.big ? d - 30 : d; hit = b; } }
     s.whacks.push({ x, y, t: g.t }); g.sfx('thud');
     if (hit) { hit.dead = g.t; g.sfx(hit.big ? 'crunch' : 'tap'); g.burst(hit.x, hit.y, hit.big ? ['#6ad0a0', '#1a6a5a', '#fff6ea'] : ['#8a2a1a'], hit.big ? 18 : 5, hit.big ? 180 : 60); if (hit.big) g.shake(5, 0.2); }
     if (hit && hit.big) for (const b of s.bugs) if (b.host >= 0 && s.bugs[b.host] === hit) b.host = -1; // the hiding ants scatter
@@ -90,10 +92,15 @@ MG.add({
     // crash flashes: red glitch bars, more of them the harder it shakes
     if (amp > 0.3 && g.result !== 'win') { const n = Math.round(amp * 4); for (let i = 0; i < n; i++) { const k = (t * 3 + i * 0.37) % 1; if (k < 0.25) { c.fillStyle = 'rgba(255,60,80,0.35)'; c.fillRect(SCR.l, SCR.t + 50 + ((i * 97 + Math.floor(t * 3) * 53) % 290), SCR.r - SCR.l, 10 + (i % 3) * 6); } } }
     // bugs: ants first, then beetles (on level 2 the swarm crawls on top of the beetles)
-    const drawBug = b => { const sq = b.dead ? 1 : 0; if (b.dead && t - b.dead > 1.2) { c.globalAlpha = Math.max(0, 1 - (t - b.dead - 1.2) * 2); } (b.big ? beetle : ant)(c, b.x, b.y, b.a, b.dead ? 0 : t, b.ph, sq); c.globalAlpha = 1; };
+    const drawBug = b => { const sq = b.dead ? 1 : 0; if (b.dead && t - b.dead > 1.2) { c.globalAlpha = Math.max(0, 1 - (t - b.dead - 1.2) * 2); } if (hidden(g, b)) c.globalAlpha = 0.16; (b.big ? beetle : ant)(c, b.x, b.y, b.a, b.dead ? 0 : t, b.ph, sq); c.globalAlpha = 1; };
     if (s.L.hide) { for (const b of s.bugs) if (b.big) drawBug(b); for (const b of s.bugs) if (!b.big) drawBug(b); }
     else { for (const b of s.bugs) if (!b.big) drawBug(b); for (const b of s.bugs) if (b.big) drawBug(b); }
+    // the crash meter in the app's top bar: one fat chunk per beetle, one thin sliver for all the ants together
+    { const mx = SCR.l + 104, mw = SCR.r - 14 - mx, my = SCR.t + 16; B9.txt(c, 'Crashes', SCR.l + 54, SCR.t + 24, 18, '#fff6ea', { stroke: 'rgba(120,40,20,0.5)' }); c.fillStyle = 'rgba(255,255,255,0.4)'; c.beginPath(); c.roundRect(mx, my, mw, 16, 8); c.fill(); let x = mx;
+      for (const b of s.bugs) if (b.big) { const k = b.dead ? Math.max(0, 1 - (t - b.dead) * 3) : 1, w = mw * b.w / 100 * k; if (w > 0.5) { c.fillStyle = '#d82a3a'; c.fillRect(x, my, w - 1, 16); x += w; } }
+      const aw = mw * s.bugs.filter(b => !b.big && !b.dead).reduce((a, b) => a + b.w, 0) / 100; c.fillStyle = '#f0a040'; c.fillRect(x, my, aw, 16); }
     c.restore();
+    SK.tag(c, 'Your app', 180, SCR.t - 40, 18);
     // the mallet strikes
     for (const w of s.whacks) { const k = (t - w.t) / 0.35; if (k < 1) { c.save(); c.translate(w.x, w.y); c.rotate(-0.6 + Math.min(1, k * 4) * 0.6); c.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3; c.fillStyle = '#8a5a2a'; c.fillRect(-4, -60, 8, 50); c.fillStyle = '#e84a4a'; c.beginPath(); c.roundRect(-22, -16, 44, 22, 6); c.fill(); c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(-18, -13, 36, 5); c.restore(); } }
     // the squashes left: one mallet each
@@ -105,11 +112,11 @@ MG.add({
     c.save(); c.translate(mx, my + 14); c.rotate(tip); c.fillStyle = '#fff6ea'; c.beginPath(); c.roundRect(-14, -30, 28, 30, [3, 3, 8, 8]); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 4; c.beginPath(); c.arc(16, -16, 7, -1.4, 1.4); c.stroke(); c.fillStyle = '#6a3a1a'; c.fillRect(-12, -27, 24, 5); c.restore();
     if (s.spill) { const k = SK.clamp((t - s.spill) * 2, 0, 1); c.fillStyle = 'rgba(106,58,26,0.85)'; c.beginPath(); c.ellipse(mx + 30 + k * 20, my + 22, 10 + k * 34, 4 + k * 6, 0, 0, TAU); c.fill(); }
     else if (amp > 0.4) { c.fillStyle = 'rgba(106,58,26,0.8)'; for (let i = 0; i < 2; i++) { const k = (t * 2 + i * 0.5) % 1; c.beginPath(); c.arc(mx + 6 + k * 14, my - 18 + k * k * 30, 2.5, 0, TAU); c.fill(); } }
-    const target = s.bugs.find(b => b.big && !b.dead);
+    const target = s.bugs.find(b => b.big && !b.dead && !hidden(g, b)) || s.bugs.find(b => b.big && !b.dead);
     if (target && !g.done) { SK.glow(c, g, target.x, target.y, 30); SK.demo(g, c, 'tap', [target.x, target.y], null, { delay: 1.0 }); }
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || g.t < 1.0 || s.hits <= 0) return; const B = s._plan = s._plan || {}; if (g.t < (B.next || 0)) return;
-    const b = s.bugs.find(q => q.big && !q.dead); if (!b) return; B.next = g.t + 0.5; synth('down', b.x, b.y); synth('up', b.x, b.y);
+    const b = s.bugs.find(q => q.big && !q.dead && !hidden(g, q)); if (!b) return; B.next = g.t + 0.5; synth('down', b.x, b.y); synth('up', b.x, b.y);
   },
 });

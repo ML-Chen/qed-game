@@ -47,7 +47,7 @@
     c.restore();
   }
   MG.add({
-    id: 'hunt', stage: 'life', cmd: 'EAT THE MOTHS YOU CAN SEE!', time: 6, mood: 'bright', winText: 'Selection!', failText: 'Still hungry!',
+    id: 'hunt', stage: 'life', cmd: 'EAT THE MOTHS YOU CAN SEE!', time: 6, mood: 'bright', winText: 'The hidden moths survived!', failText: 'Still hungry!',
     card: { title: 'Hidden moths survive', kind: 'Biology', ref: 'Natural selection (peppered moths)',
       text: 'In the 1800s, soot from factories blackened the tree trunks near English cities. Pale peppered moths stood out on the dark bark, so birds found and ate them. Dark moths were hard to see, so more of them lived long enough to lay eggs, and their young were dark too.\n\nWithin about fifty years, most moths near the cities were dark. No moth changed its colour. Each kept the colour it was born with; only the mix in the population changed. When clean-air laws cleared the soot, pale moths became common again. This is natural selection.',
       note: 'Living things that are better at surviving have more young, and the young are like their parents, so a population changes over generations.' },

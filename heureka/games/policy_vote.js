@@ -106,7 +106,8 @@ MG.add({
     const nf = s.flags.find(f => !f.planted); if (nf && !g.done) { const free = [88, 142, 196].find(x => !s.flags.some(o => o.planted && Math.abs(o.x - x) < 20)); if (free != null) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.8)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(free, BASE, 22, 8, 0, 0, TAU); c.stroke(); c.restore(); } }
     for (const f of s.flags) if (!f.planted && f !== held) flag(c, f, t, 60, { tilt: 0.25 });
     if (held) flag(c, held, t, 60, { tilt: 0.1 });
-    const nx = s.flags.find(f => !f.planted); if (nx && !held && !g.done) { SK.glow(c, g, nx.x + 40, nx.y - 96, 32); SK.demo(g, c, 'drag', [nx.x + 40, nx.y - 96], [110, BASE - 96]); }
+    const nx = s.flags.find(f => !f.planted), fs = [88, 142, 196].find(x => !s.flags.some(o => o.planted && Math.abs(o.x - x) < 20));
+    if (nx && !held && !g.done && fs != null) { const a = [nx.x + 40, nx.y - 96], b = [fs + 40, BASE - 96]; SK.grab(c, g, a[0], a[1], 32); SK.target(c, g, b[0], b[1], 34); SK.arrow(c, g, a[0], a[1], b[0], b[1]); SK.demo(g, c, 'drag', a, b); }
   },
   auto(g, dt, synth) {
     const s = g.s; s.flags.forEach((f, i) => { if (i < 2) return; const k = i - 2; SK.bot.drag(g, synth, 'f' + k, 1.0 + k * 1.3, [HOLD[k][0] + 40, HOLD[k][1] - 96], [110 + k * 50, BASE - 96], 0.4); });

@@ -100,7 +100,7 @@ MG.add({
     const lit = all || g.result === 'win'; c.fillStyle = lit ? '#5aff8a' : '#ff3a3a'; c.beginPath(); c.arc(RX, LOCK.y - 14, 8, 0, 7); c.fill(); c.fillStyle = lit ? 'rgba(90,255,138,0.35)' : 'rgba(255,58,58,0.3)'; c.beginPath(); c.arc(RX, LOCK.y - 14, 15, 0, 7); c.fill();
     SK.tag(c, 'Battery', BX + 4, 404, 18); SK.tag(c, 'Lock', RX - 6, LOCK.y - 52, 18);
     // the floor switches
-    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!p.by) SK.tag(c, 'Switch', p.x, WY - 36, 18); if (!pressed(p)) SK.glow(c, g, p.x, WY - 4, 32); }
+    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!p.by) SK.tag(c, 'Switch', p.x, WY - 36, 18); if (!pressed(p) && !s.ani.some(a => !a.pad)) SK.glow(c, g, p.x, WY - 4, 32); }
     // a spark where the live wire stops at an open switch
     if (!all && !g.done) { const p = s.pads.find(q => !pressed(q)); if (p) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(p.x - 30, WY, 6, 0, 7); c.fill(); c.restore(); } }
     // the helpers, standing by or pressing a switch down
@@ -110,6 +110,7 @@ MG.add({
     // your finger on the held switch
     if (s.hold) SK.hand(c, s.hold.x, WY - 8, 1, 0.85);
     // guidance: first drag a helper onto a free switch, then hold the last one
+    { const fr = s.pads.filter(q => !q.by), id = s.ani.find(a => !a.pad); if (id && fr.length > 1 && !SK.dragging(g) && !g.done) { SK.grab(c, g, id.x, id.y - 40, 40); SK.target(c, g, fr[0].x, WY - 4, 30); SK.arrow(c, g, id.x, id.y - 40, fr[0].x, WY - 4, { from: 46, to: 40 }); } }
     const free = s.pads.filter(q => !q.by), idle = s.ani.find(a => !a.pad);
     if (idle && free.length > 1) SK.demo(g, c, 'drag', [idle.hx, idle.hy - 30], [free[0].x, WY - 30]); else if (free.length) SK.demo(g, c, 'hold', [free[free.length - 1].x, WY - 6]);
   },

@@ -133,7 +133,7 @@ MG.add({
     if (b.mode === 'seek' && lit(0) > 0.3) { let best = null, bd = 1e9; for (const q of s.crumbs) { if (q.gone) continue; const d = SK.dist(q.x, q.y, b.x, b.y); if (d < bd) { bd = d; best = q; } } if (best) { c.strokeStyle = '#5ad8ff'; c.lineWidth = 3; c.beginPath(); c.arc(best.x, best.y, 14, 0, 7); c.stroke(); } }
     // the parts still on the tray (and the one being dragged)
     for (const p of s.parts) if (!p.on) { SK.shadow(c, p.x + 2, p.y + 18, 22, 6, 0.3); drawPart(c, p.kind, p.x, p.y, -Math.PI / 2, t, 0, p.kind === 'bumper' ? 0.9 : 1.4, true); if (!SK.dragging(g) || SK.dragging(g) !== p) { const j = s.parts.indexOf(p), up = s.parts.length > 3 && j % 2 === 1; SK.tag(c, { eye: 'Eye', brain: 'Brain', wheels: 'Wheels', bumper: 'Bumper' }[p.kind], p.hx, p.hy + (up ? -36 : 34), 18); } }
-    if (!SK.dragging(g)) SK.glow(c, g, b.x, b.y, RR + 8);
+    { const nxt = s.parts.find(p => !p.on); if (nxt && !SK.dragging(g) && !g.done) { SK.grab(c, g, nxt.hx, nxt.hy, 30); SK.target(c, g, b.x, b.y, RR + 4); SK.arrow(c, g, nxt.hx, nxt.hy, b.x, b.y, { from: 34, to: RR + 18 }); } }
     // the hedgehog, cheering crumbs away or groaning at the bonks
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'hedgehog', 326, 606, 0.95, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost || s.bonks ? 'wow' : 'happy', facing: -1 });

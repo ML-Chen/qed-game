@@ -38,7 +38,7 @@
     B3.flame(c, x + 31, y + 6, 0.16, 0, 1);
   }
   MG.add({
-    id: 'lidon', stage: 'fire', cmd: 'LID ON, THEN HEAT OFF!', time: 5, mood: 'storm', winText: 'No air!', failText: 'Whoosh!',
+    id: 'lidon', stage: 'fire', cmd: 'LID ON, THEN HEAT OFF!', time: 5, mood: 'storm', winText: 'No air, no fire!', failText: 'Water made it worse!',
     card: { title: 'Lid on, heat off, never water', kind: 'Chemistry', ref: 'Fire safety: cooking oil fires',
       text: 'Burning oil needs air, like every fire. A lid slid over the pan cuts off the air, so the flames go out at once. Turning the stove off stops the oil getting hotter, and leaving the lid on lets it cool so it cannot light again.\n\nNever throw water on burning oil. The water sinks under the oil, boils into steam in an instant and throws burning oil into the air. Never carry the pan outside. If the fire is not out at once, get out, close the door and call the fire service.',
       note: 'Smother an oil fire with a lid and turn off the heat. Water makes it explode.' },

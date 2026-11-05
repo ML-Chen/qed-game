@@ -48,7 +48,7 @@
   const toLoc = (b, x, y) => ({ x: (x - b.x) / b.k + 180, y: (y - TABLE) / b.k + TABLE });
   const RATE = [2.6, 1.8, 0.9];
   MG.add({
-    id: 'fizz', stage: 'reactions', cmd: 'FILL THE BALLOONS WITH GAS!', time: 5, mood: 'desert', winText: 'Reaction!', failText: 'Flop!',
+    id: 'fizz', stage: 'reactions', cmd: 'FILL THE BALLOONS WITH GAS!', time: 5, mood: 'desert', winText: 'New gas blew them up!', failText: 'Not enough gas!',
     card: { title: 'Mixing can make something new', kind: 'Chemistry', ref: 'Chemical reactions (baking soda and vinegar)',
       text: 'Baking soda and vinegar react. Their atoms swap partners and make new substances. One of them is carbon dioxide, a gas. The gas makes the bubbles, and it has to go somewhere, so it blows up the balloon.\n\nThe gas comes only from soda that has reached the vinegar. Let the balloon flop back early and less soda falls in, so less gas is made and the balloon only half fills. Bubbles of a new gas are one sign that a chemical reaction has happened.',
       note: 'In a chemical reaction, atoms rearrange to make new substances. Here the new substance is a gas.' },

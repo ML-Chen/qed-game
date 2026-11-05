@@ -68,7 +68,7 @@ function mouse(c, x, y, t, o = {}) { // a grey mouse; o.peek draws only the head
   c.restore();
 }
 MG.add({
-  id: 'tileit', stage: 'problems', cmd: 'TILE IT!', time: 6, mood: 'party', winText: 'MECE!', failText: 'It got out!',
+  id: 'tileit', stage: 'problems', cmd: 'COVER THE FLOOR, NO OVERLAPS!', time: 6, mood: 'party', winText: 'No gaps, no overlaps!', failText: 'It got out!',
   card: { title: 'No gaps, no overlaps', kind: 'Problem solving', ref: 'MECE (mutually exclusive, collectively exhaustive)',
     text: 'The floor is the whole problem, and each tile is one part of it. The tiles worked because together they covered every bit of the floor, and no two tiles sat on the same spot.\n\nConsultants call a split like that MECE: mutually exclusive (no part overlaps another) and collectively exhaustive (the parts cover everything). Overlaps make you do the same work twice. A gap is worse: the cause you are looking for can hide in the part nobody checked, like the mouse.',
     note: 'When you split a problem into parts, make the parts cover everything without overlapping.' },
@@ -121,14 +121,17 @@ MG.add({
       else piece(c, pc.p, pc.x, pc.y, pc.sc, t, { lift: !pc.placed });
     }
     // a little bump on the finished floor: the trapped mouse
-    if (s.trap) { const k = t - s.trap; c.fillStyle = 'rgba(255,255,255,0.6)'; c.font = '900 18px Nunito, system-ui'; c.textAlign = 'center'; if (k < 1.2) c.fillText('♪', mx + 10 + k * 20, my - 20 - k * 30); }
+    // the trapped mouse: a wriggling bump under the finished floor, squeaking
+    if (s.trap) { const k = t - s.trap, w = Math.sin(t * 18) * 3; c.save(); c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(mx + w, my, 18, 10 + Math.abs(w), 0, 0, TAU); c.fill(); c.strokeStyle = 'rgba(60,30,50,0.4)'; c.lineWidth = 2; c.stroke(); c.restore(); if (k < 1.5) B9.txt(c, '♪', mx + 14 + k * 20, my - 22 - k * 30, 22, '#fff6ea', { stroke: 'rgba(40,20,40,0.6)' }); }
+    SK.tag(c, 'Floor to cover', 180, FY - 16, 18); if (s.pcs.some(p => !p.placed)) SK.tag(c, 'Tiles', 300, 398, 18); if (!g.done && s.grid[s.mz.j][s.mz.i] < 0) SK.tag(c, 'Mouse', mx, my - 36, 18, '#ffd0d0');
     if (s.drag) { const pc = s.drag.pc, ci = Math.round((pc.x - fx) / C), cj = Math.round((pc.y - fy) / C); c.save(); c.globalAlpha = 0.3; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (const [i, j] of pc.p.cells) { c.beginPath(); c.roundRect(fx + (ci + i) * C + 3, fy + (cj + j) * C + 3, C - 6, C - 6, 8); c.stroke(); } c.restore(); piece(c, pc.p, pc.x, pc.y - 6, 1, t, { lift: true }); }
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'octopus', 318, 606, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: the next tile, and where it goes
     const nx = s.pcs.find(p => !p.placed); if (nx && !s.drag && !g.done) {
-      const [bw, bh] = bbox(nx.p); SK.glow(c, g, nx.x + bw * C * TS / 2, nx.y + bh * C * TS / 2, 34);
-      SK.demo(g, c, 'drag', [nx.x + bw * C * TS / 2, nx.y + bh * C * TS / 2], [fx + (nx.p.home[0] + bw / 2) * C, fy + (nx.p.home[1] + bh / 2) * C]);
+      const [bw, bh] = bbox(nx.p), a = [nx.x + bw * C * TS / 2, nx.y + bh * C * TS / 2], b = [fx + (nx.p.home[0] + bw / 2) * C, fy + (nx.p.home[1] + bh / 2) * C];
+      SK.grab(c, g, a[0], a[1], 34); SK.target(c, g, b[0], b[1], 30, { w: bw * C + 8, h: bh * C + 8 }); SK.arrow(c, g, a[0], a[1], b[0], b[1]);
+      SK.demo(g, c, 'drag', a, b);
     }
   },
   auto(g, dt, synth) {

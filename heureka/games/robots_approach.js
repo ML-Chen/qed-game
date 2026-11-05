@@ -69,11 +69,11 @@ MG.add({
       SK.animal(c, B.rider, b.x - B.w / 2, y + 8, B.rider === 'ant' ? 0.7 : 0.55, { t, pose: won || b.done ? 'cheer' : b.bonk ? 'hop' : 'idle', expr: b.done || won ? 'laugh' : b.bonk ? 'wow' : 'happy', noShadow: true });
       if (b.bonk) { for (let k = 0; k < 3; k++) { const a = t * 7 + k * 2.1; c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(WALL - 8 + Math.cos(a) * 12, y - 30 + Math.sin(a) * 6, 4, 0, 7); c.fill(); } }
       if (b.done) { c.fillStyle = '#5aff7a'; c.beginPath(); c.arc(KX[b.i] + 34, KY - 30, 6, 0, 7); c.fill(); }
-      if (!b.done && !g.done) SK.glow(c, g, KX[b.i], KY, 34);
       B6.drawKnob(c, b.kn, { col: P.shade(B.col, -0.45), cap: P.shade(B.col, 0.5), arc: B.col });
     }
     for (let i = 0; i < 3; i++) SK.tag(c, 'Gain', KX[i] - 2, KY + 40, 18);
     SK.tag(c, 'Wall', WALL + 4, LANES[0] - 64, 18); SK.tag(c, 'Sensor', 120, LANES[0] - 64, 18);
+    { const nb = s.b.find(b => !b.done); if (nb && !g.done && !nb.kn.grab) SK.grab(c, g, nb.kn.x, nb.kn.y, 30); }
     // guidance: turn the first unsettled robot's knob toward a good gain (up from a creep, down from a bounce)
     const nx = s.b.find(b => !b.done); if (nx) { const want = kOf(0.9 / (4 * nx.tau)), up = want > nx.kn.k, R = 38, ca = k => -Math.PI / 2 + (k - 0.5) * B6.SWEEP, a0 = ca(nx.kn.k), a1 = ca(SK.clamp(nx.kn.k + (up ? 0.25 : -0.25), 0, 1)); SK.demo(g, c, 'drag', [nx.kn.x + Math.cos(a0) * R, nx.kn.y + Math.sin(a0) * R], [nx.kn.x + Math.cos(a1) * R, nx.kn.y + Math.sin(a1) * R], { arc: 14 }); }
   },

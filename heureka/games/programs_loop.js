@@ -83,7 +83,7 @@ MG.add({
     const s = g.s, t = g.t, G = pathGeo(s);
     c.drawImage(g.bake('cs_loop' + Math.min(2, g.level), o => paintGarden(o, s)), 0, 0, 360, 640);
     B7.panel(c, g, { x: PX, y: PY, w: PW, lines: s.lines, cur: s.res && s.res.win ? -1 : s.pc, flash: s.b7flash, done: s.done, icons: ['loop', ...s.L.body.map(b => b === 'forward()' ? 'right' : 'gem'), 'say'] });
-    counterBoard(c, g, s, CX, s.cY); SK.tag(c, 'Lap counter', 290, s.cY, 18);
+    counterBoard(c, g, s, CX, s.cY); SK.tag(c, 'Lap counter', CX, s.cY + 38, 18);
     if (s.i >= s.L.n) { c.save(); c.fillStyle = '#ff5a6a'; c.beginPath(); c.roundRect(CX + 76, s.cY - 14, 32, 28, 6); c.fill(); c.fillStyle = '#fff'; c.font = `800 20px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(s.L.n), CX + 92, s.cY + 1); c.restore(); }
     for (const gm of s.gems) { const gx = G.at(gm.at); if (!gm.got) { const blink = s.res && s.res.early && Math.sin(t * 14) > 0; if (!blink) B7.gem(c, gx, G.y - 100 + Math.sin(t * 3 + gm.at) * 4, 1.3, '#5ee0ff', t); } else { const k = Math.min(1, (t - gm.got) * 3); if (k < 1) B7.gem(c, SK.lerp(gx, 300, k), SK.lerp(G.y - 100, s.panelB + 76, k), 1.3 * (1 - k * 0.5), '#5ee0ff', t); } }
     s.gems.filter(q => q.got && t - q.got > 0.33).forEach((q, i) => B7.gem(c, 250 + i * 22, s.panelB + 76, 0.8, '#5ee0ff', t));

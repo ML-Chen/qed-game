@@ -78,13 +78,13 @@ MG.add({
       c.strokeStyle = '#2a2a30'; c.lineWidth = 4; c.beginPath(); c.moveTo(m.x + 16, m.y); c.lineTo(m.x + 16, m.y - 52); c.lineTo(m.x + 4, m.y - 60); c.stroke();
       c.fillStyle = '#3a3a44'; c.beginPath(); c.ellipse(m.x + 3, m.y - 62, 6, 8, -0.5, 0, 7); c.fill(); c.fillStyle = '#8a8a96'; c.beginPath(); c.ellipse(m.x + 2, m.y - 64, 4, 5, -0.5, 0, 7); c.fill();
       const ears = lost || a > 0.55; SK.animal(c, m.kind, m.x - 10 + shake, m.y, m.kind === 'bird' ? 1.45 : 1.15, { t, pose: won ? 'cheer' : ears ? 'sad' : singing ? 'wave' : 'idle', expr: won ? 'laugh' : ears ? 'wow' : singing ? 'happy' : 'think', facing: 1 });
-      if (singing && !m.calm && !g.done && SK.dragging(g) !== m) SK.glow(c, g, m.x, m.y - 30, 40);
       if (m.calm && !lost) { c.fillStyle = '#7aff9a'; c.font = '900 22px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('♪', m.x + 26 + Math.sin(t * 3) * 3, m.y - 74); }
     }
     SK.tag(c, 'Speaker', SPK[2][0], SPK[2][1] + 46, 18); { const m = s.mics[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 40, m.y - 66, 18); }
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
     // guidance: drag the first squealing singer away from its speaker (the ghost hand shows one quiet spot; any will do)
     const m0 = s.mics.find(m => t >= m.live && !m.calm);
+    if (m0 && !g.done && !SK.dragging(g)) { let bs = SPK[0], bd = 1e9; for (const p of SPK) { const d = SK.dist(p[0], p[1], m0.x, m0.y); if (d < bd) { bd = d; bs = p; } } const ux = (m0.x - bs[0]) / bd, uy = (m0.y - bs[1]) / bd; SK.grab(c, g, m0.x, m0.y - 30, 36); SK.arrow(c, g, m0.x, m0.y - 30, m0.x + ux * 120, m0.y - 30 + uy * 120, { from: 40, to: 0 }); }
     if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [SAFE[i][0], SAFE[i][1] - 30], { delay: m0.live }); }
   },
   auto(g, dt, synth) {
