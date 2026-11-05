@@ -4,13 +4,13 @@
 // needle drops below the line. Switch off the drippers and the needle hardly moves, while the cat dozes on by the roaring
 // heater. Level 1 adds a hair dryer; level 2 adds the oven and the fridge must stay on (its ice cream starts to melt).
 (() => {
-  const MC = [180, 178], MR = 46, LINE = 600, MAXP = 7800;
+  const MC = [180, 178], MR = 46, LINES = [600, 600, 220], MAXP = 9000;
   const frac = p => Math.min(1.08, Math.sqrt(p / MAXP)), ang = f => Math.PI * (0.8 + 1.4 * Math.min(1, f)); // dial from lower left to lower right
   const KINDS = { // watts and where each sits (x, y of its top centre; floor 1 ceiling y 244, floor 2 ceiling 428)
     heater: { w: 2000, x: 62, y: 352, ceil: 244 }, lamp: { w: 10, x: 152, y: 334, ceil: 244 }, charger: { w: 5, x: 216, y: 380, ceil: 244 }, dryer: { w: 1500, x: 296, y: 350, ceil: 244 },
     kettle: { w: 2000, x: 58, y: 540, ceil: 428 }, fridge: { w: 150, x: 136, y: 486, ceil: 428 }, tv: { w: 100, x: 222, y: 528, ceil: 428 }, lights: { w: 8, x: 310, y: 470, ceil: 428 }, oven: { w: 2000, x: 306, y: 540, ceil: 428 },
   };
-  const LEVELS = [['heater', 'lamp', 'charger', 'kettle', 'fridge', 'tv', 'lights'], ['heater', 'lamp', 'charger', 'dryer', 'kettle', 'fridge', 'tv', 'lights'], ['heater', 'lamp', 'charger', 'dryer', 'kettle', 'fridge', 'tv', 'oven']];
+  const LEVELS = [['heater', 'lamp', 'charger', 'dryer', 'kettle', 'fridge', 'tv', 'lights'], ['heater', 'lamp', 'charger', 'dryer', 'kettle', 'fridge', 'tv', 'lights', 'oven'], ['heater', 'lamp', 'charger', 'dryer', 'kettle', 'fridge', 'tv', 'lights', 'oven']];
   function paintHouse(o) {
     const sky = o.createLinearGradient(0, 0, 0, 640); sky.addColorStop(0, '#0c1238'); sky.addColorStop(1, '#2a2a6a'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
     const rnd = P.rng(3); for (let i = 0; i < 50; i++) { o.fillStyle = `rgba(255,250,220,${0.3 + rnd() * 0.6})`; o.beginPath(); o.arc(rnd() * 360, rnd() * 230, 0.6 + rnd() * 1.3, 0, 7); o.fill(); }
@@ -54,7 +54,7 @@
     c.restore();
   }
   MG.add({
-    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF!', time: 5, mood: 'night', winText: 'Saved!', failText: 'Bill shock!',
+    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF!', time: 6, mood: 'night', winText: 'Power saved!', failText: 'Bill shock!',
     card: { title: 'Gulpers and sippers', kind: 'Physics', ref: 'Electrical power (watts)',
       text: 'Power is how fast something uses energy, measured in watts. Things that make heat are the big gulpers: a heater or a kettle uses about 2,000 watts. A TV or a fridge uses about 100. An LED lamp or a phone charger only sips about 5 to 10.\n\nSo switching off one heater saves as much as switching off two hundred LED lamps. To cut an energy bill, switch off or turn down the things that heat. A fridge runs all day, so it adds up too, but food needs it.',
       note: 'Things that heat use far more energy than lights and chargers.' },
@@ -71,7 +71,7 @@
       const s = g.s, P_ = s.apps.reduce((acc, a) => acc + (a.on ? KINDS[a.k].w : 0), 0), tgt = frac(P_);
       s.f += (tgt - s.f) * Math.min(1, dt * 5); s.disc += dt * P_ / 180;
       const fr = s.apps.find(a => a.k === 'fridge'); if (s.keepFridge && fr && !fr.on) s.melt = Math.min(1, s.melt + dt * 0.8); else s.melt = Math.max(0, s.melt - dt);
-      const ok = P_ < LINE && (!s.keepFridge || (fr && fr.on));
+      const LINE = LINES[Math.min(2, g.level)], ok = P_ < LINE && (!s.keepFridge || (fr && fr.on));
       s.under = ok && s.f < frac(LINE) ? s.under + dt : 0;
       if (s.under > 0.3 && !g.done) { g.win(); g.sfx('cheer'); }
     },
@@ -91,7 +91,7 @@
       // the meter: a dial with a red zone above the line, and a spinning disc
       c.fillStyle = '#3a3a50'; c.beginPath(); c.roundRect(MC[0] - 62, MC[1] - 60, 124, 98, 14); c.fill();
       c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(MC[0], MC[1], MR, 0, 7); c.fill();
-      const aL = ang(frac(LINE)); c.strokeStyle = '#7ac85a'; c.lineWidth = 9; c.beginPath(); c.arc(MC[0], MC[1], MR - 9, ang(0), aL); c.stroke(); c.strokeStyle = '#e84a3a'; c.beginPath(); c.arc(MC[0], MC[1], MR - 9, aL, ang(1)); c.stroke();
+      const aL = ang(frac(LINES[Math.min(2, g.level)])); c.strokeStyle = '#7ac85a'; c.lineWidth = 9; c.beginPath(); c.arc(MC[0], MC[1], MR - 9, ang(0), aL); c.stroke(); c.strokeStyle = '#e84a3a'; c.beginPath(); c.arc(MC[0], MC[1], MR - 9, aL, ang(1)); c.stroke();
       c.strokeStyle = '#2a1430'; c.lineWidth = 3; c.beginPath(); c.moveTo(MC[0] + Math.cos(aL) * (MR - 16), MC[1] + Math.sin(aL) * (MR - 16)); c.lineTo(MC[0] + Math.cos(aL) * (MR + 2), MC[1] + Math.sin(aL) * (MR + 2)); c.stroke();
       const jit = s.f > 0.9 ? Math.sin(t * 50) * 0.03 : 0, na = ang(s.f) + jit; c.strokeStyle = '#2a1430'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(MC[0], MC[1]); c.lineTo(MC[0] + Math.cos(na) * (MR - 8), MC[1] + Math.sin(na) * (MR - 8)); c.stroke(); SK.ball(c, MC[0], MC[1], 6, '#5a5a70');
       c.fillStyle = '#c8c8d8'; c.beginPath(); c.ellipse(MC[0], MC[1] + 30, 30, 5, 0, 0, 7); c.fill(); const dx = Math.sin(s.disc) * 28; c.fillStyle = '#e84a3a'; c.fillRect(MC[0] + dx - 3, MC[1] + 26, 6, 8);
@@ -104,7 +104,7 @@
     // the bot: switch off the big heat-makers, one by one
     auto(g, dt, synth) {
       const s = g.s; if (g.done) return; let i = 0;
-      for (const a of s.apps) if (KINDS[a.k].w >= 1000) { SK.bot.tap(g, synth, 'off' + a.k, 1.0 + i * 0.45, a.x, a.y); i++; }
+      for (const a of s.apps) if (KINDS[a.k].w >= 1000 || (g.level >= 2 && a.k === 'tv')) { SK.bot.tap(g, synth, 'off' + a.k, 1.0 + i * 0.45, a.x, a.y); i++; }
     },
   });
 })();

@@ -69,7 +69,7 @@ function chest(c, x, y, open, locked, t) {
 }
 function pinSpot(i) { const col = (i + 1) % 4, row = Math.floor((i + 1) / 4); return [70 + col * 74, 182 + row * 72]; } // spot 0 holds the board's own drawing
 MG.add({
-  id: 'cs_hide', stage: 'apps', cmd: 'HIDE!', time: 7, mood: 'party', winText: 'Safe!', failText: 'Snatched!',
+  id: 'cs_hide', stage: 'apps', cmd: 'HIDE!', time: 7, mood: 'party', winText: 'Private!', failText: 'Snatched!',
   card: { title: 'Keep private things private', kind: 'Computer science', ref: 'Personal information online (Code.org CS Fundamentals)',
     text: 'Some things about you are fine to share online, like a drawing of your cat or your favourite colour. Other things should stay private: your password, where you live and your phone number.\n\nOnce something is posted, anyone who can see the page can copy it, including strangers. A password lets someone pretend to be you. An address tells a stranger where to find you.\n\nIf someone online asks for one of these, keep it to yourself and tell a grown-up you trust.',
     note: 'Share the fun things; keep your password, address and phone number private.' },

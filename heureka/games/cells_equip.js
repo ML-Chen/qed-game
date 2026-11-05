@@ -66,7 +66,7 @@ function drawPart(c, kind, x, y, t, on, s = 1) {
 }
 
 MG.add({
-  id: 'cells_equip', stage: 'cells', cmd: 'EQUIP!', time: 6, mood: 'sea', winText: 'Alive!', failText: 'Hungry!',
+  id: 'cells_equip', stage: 'cells', cmd: 'EQUIP!', time: 6, mood: 'sea', winText: 'Organelles!', failText: 'Hungry!',
   card: { title: 'Every part has a job', kind: 'Biology', ref: 'Organelles of plant and animal cells',
     text: 'A cell is the smallest living unit. Inside it, small parts called organelles each do one job.\n\nThe nucleus holds the DNA, the instructions that run the cell. Chloroplasts catch sunlight and use it to make sugar from water and carbon dioxide. Mitochondria break sugar down to release the energy the cell uses. In a plant cell, a big water-filled sac called the vacuole pushes out against a stiff cell wall, which keeps the plant firm.\n\nAnimal cells have a nucleus and mitochondria too, but no chloroplasts and no cell wall.',
     note: 'A cell stays alive because each of its parts does its own job. Plant cells also have chloroplasts and a wall; animal cells do not.' },

@@ -22,14 +22,14 @@
   }
   function makeGrain(g, kind) { return { kind, a: g.rand() * Math.PI * 2, r: Math.pow(g.rand(), 0.8), h: 0, lift: 0.15 + g.rand() * 0.75, size: 1, sp: 0.7 + g.rand() * 0.6, gone: false }; }
   MG.add({
-    id: 'matter_stir', stage: 'matter', cmd: 'STIR!', time: 5, mood: 'sea', winText: 'Sweet!', failText: 'Gritty!', hold: 1.6,
+    id: 'matter_stir', stage: 'matter', cmd: 'STIR!', time: 7, mood: 'sea', winText: 'Dissolved!', failText: 'Gritty!', hold: 1.6,
     card: { title: 'Dissolving', kind: 'Chemistry', ref: 'Solutions',
       text: 'Stirring sugar into water makes it disappear, but the sugar is still there. Water knocks tiny bits off each grain, and the bits spread out between the bits of water. They are far too small to see, even with a magnifying glass, so the drink looks clear but tastes sweet. This mix is called a solution.\n\nSand does not dissolve in water. Stir it and it swirls round, then sinks back to the bottom. Sugar dissolves faster in warm water than in cold, because the bits move faster.',
       note: 'When sugar dissolves, it breaks into bits too small to see, and they spread through the water.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
       s.grains = []; for (let i = 0; i < 60; i++) s.grains.push(makeGrain(g, 'sugar')); if (lv >= 1) for (let i = 0; i < 22; i++) s.grains.push(makeGrain(g, 'sand'));
-      s.cold = lv >= 2; s.temp = s.cold ? 0.3 : 1; s.om = 0; s.dir = 1; s.spoon = null; s.lastA = null; s.doneT = 0; s.mag = 0;
+      s.cold = lv >= 2; s.temp = s.cold ? 0.4 : 1; s.heaps = [2, 2, 3][lv]; s.round = 0; s.pourT = -9; s.om = 0; s.dir = 1; s.spoon = null; s.lastA = null; s.doneT = 0; s.mag = 0;
       s.ice = s.cold ? [[150, 0.8], [204, 1], [178, 0.7]].map(([x, k]) => ({ x, k })) : [];
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (x > G.l - 20 && x < G.r + 20 && y > G.top - 30 && y < G.bot + 10) { s.spoon = [x, y]; s.lastA = Math.atan2(y - MID[1], x - MID[0]); } },
@@ -42,7 +42,7 @@
     up(g) { g.s.spoon = null; },
     update(g, dt) {
       const s = g.s; s.om *= Math.exp(-1.5 * dt); const W = SK.clamp(s.om / 8, 0, 1);
-      if (s.cold) { s.temp = Math.min(1, s.temp + dt * 0.12); for (const ic of s.ice) ic.k = Math.max(0, ic.k - dt * 0.16); }
+      if (s.cold) { s.temp = Math.min(1, s.temp + dt * 0.2); for (const ic of s.ice) ic.k = Math.max(0, ic.k - dt * 0.16); }
       let left = 0;
       for (const q of s.grains) {
         if (q.gone) continue;
@@ -50,7 +50,10 @@
         const rest = (1 - q.r) * (q.kind === 'sand' ? 0.07 : 0.11), want = W > 0.25 ? Math.max(rest, q.lift * W) : rest; q.h += (want > q.h ? (want - q.h) * 3 : -(q.kind === 'sand' ? 0.9 : 0.6)) * dt; q.h = Math.max(rest, Math.min(1, q.h));
         if (q.kind === 'sugar') { q.size -= dt * (0.02 + 0.6 * W * s.temp * (q.h > 0.12 ? 1.3 : 0.6)) * q.sp; if (q.size <= 0.12) { q.gone = true; } else left++; }
       }
-      if (!left && !s.doneT && !g.done) { s.doneT = g.t; g.sfx('sparkle'); g.sfx('magic'); }
+      if (!left && s.round + 1 < s.heaps && g.t - s.pourT > 0.8) { // the fox wants it sweeter: another spoonful pours in
+        s.round++; s.pourT = g.t; g.sfx('sweep'); g.sfx('pop');
+        for (let i = 0; i < 46; i++) { const q = makeGrain(g, 'sugar'); q.h = 0.85 + g.rand() * 0.15; q.r *= 0.5; q.size = 1.5; q.a = Math.PI / 2 + (g.rand() - 0.5) * 0.6; s.grains.push(q); }
+      } else if (!left && !s.doneT && !g.done) { s.doneT = g.t; g.sfx('sparkle'); g.sfx('magic'); }
       if (s.doneT) s.mag = Math.min(1, (g.t - s.doneT) / 0.6);
       if (s.doneT && !g.done && g.t - s.doneT > 0.6) { g.win(); g.sfx('slurp'); }
       s.W = W;
@@ -95,6 +98,8 @@
         c.restore(); c.strokeStyle = '#5a3a2a'; c.lineWidth = 9; c.beginPath(); c.arc(mx, my, R, 0, 7); c.stroke(); c.strokeStyle = '#c89a5a'; c.lineWidth = 4; c.stroke();
         c.strokeStyle = '#5a3a2a'; c.lineWidth = 14; c.beginPath(); c.moveTo(mx + R * 0.72, my + R * 0.72); c.lineTo(mx + R * 1.3, my + R * 1.3); c.stroke();
       }
+      // a heaped spoon tips sugar into the glass for the next round
+      const pk = (t - s.pourT) / 0.7; if (pk >= 0 && pk < 1) { const tip = Math.sin(Math.min(1, pk * 2) * Math.PI / 2) * 1.1; c.save(); c.translate(G.cx + 50, G.top - 26); c.rotate(-tip); c.strokeStyle = '#8a8aa0'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.lineTo(70, -30); c.stroke(); c.fillStyle = '#d0d0e0'; c.beginPath(); c.ellipse(-8, 4, 20, 11, -0.4, 0, 7); c.fill(); if (pk < 0.4) { c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-8, -2, 16, 8, -0.4, Math.PI, 0); c.fill(); } c.restore(); }
       // the fox waits for its drink
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'fox', 312, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : W > 0.4 ? 'wow' : 'happy', facing: -1 });

@@ -34,7 +34,7 @@
       text: 'Smoke from a fire is hot, and hot gas is lighter than the cooler air around it, so it rises. It spreads along the ceiling and fills the room from the top down. The cleanest, coolest air stays near the floor.\n\nSmoke is the most dangerous part of most house fires. It is full of poison gases and makes it hard to see. That is why you get low and crawl to the way out, and leave the building straight away.',
       note: 'Hot smoke rises and fills a room from the ceiling down, so crawl low under it to get out.' },
     init(g) {
-      const s = g.s, n = g.level >= 1 ? 3 : 2, xs = n === 3 ? [48, 120, 196] : [56, 150];
+      const s = g.s, n = g.level >= 1 ? 3 : 2, xs = n === 3 ? [74, 142, 210] : [80, 176];
       s.an = xs.map((x, i) => ({ kind: CAST[i], x, sy: 1, smk: 0, cough: 0, out: 0, ph: i * 1.7 }));
       s.cur = null; s.fy = null; s.tx = 0; s.fell = 0;
     },

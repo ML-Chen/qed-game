@@ -33,7 +33,7 @@
   }
   function board(c, x, y, wob, hit, t) { // a round target board on a post, seen from the front; once hit it tips over
     const k = hit ? SK.clamp((t - hit) * 3, 0, 1) : 0;
-    c.save(); c.translate(x, y + TR + 22); c.rotate(k * 1.35 + Math.sin(wob * 30) * wob * 0.6); c.scale(1, 1 - k * 0.3); c.translate(0, -TR - 22); if (k) c.globalAlpha = 1 - k * 0.45;
+    c.save(); c.translate(x, y + TR + 22); c.rotate((x > 200 ? -1 : 1) * k * 1.35 + Math.sin(wob * 30) * wob * 0.6); c.scale(1, 1 - k * 0.3); c.translate(0, -TR - 22); if (k) c.globalAlpha = 1 - k * 0.45;
     SK.shadow(c, 0, TR + 22, 26, 7, 0.2);
     c.fillStyle = '#8a5a3a'; c.fillRect(-4, 0, 8, TR + 22);
     const rings = ['#e8403a', '#fff6ea', '#e8403a', '#fff6ea', '#ffd45a'];
