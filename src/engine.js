@@ -181,11 +181,12 @@ function timeFactor(def, level, mode) {
 function makeG(def, level, speed, silent, mode) {
   mode = mode || SAVE.d.mode || 'easy';
   const g = {
-    W, H, def, level, speed, mode, t: 0, dur: def.time * timeFactor(def, level, mode) / (1 + (speed - 1) * 0.35), tf: timeFactor(def, level, mode), s: {}, done: false, result: null, doneAt: 0, ptr,
+    W, H, def, level, speed, mode, t: 0, dur: def.time * timeFactor(def, level, mode) / (1 + (speed - 1) * 0.35), tf: timeFactor(def, level, mode), s: {}, done: false, result: null, doneAt: 0, ptr, held: 0, // held: seconds the fuse stood still while a show-your-work animation played
+    fuse() { return this.t - this.held; },
     win() { if (this.done) return; this.done = true; this.result = 'win'; this.doneAt = this.t; if (!silent) A.sfx('chime'); },
     fail() { if (this.done) return; this.done = true; this.result = 'fail'; this.doneAt = this.t; if (!silent) A.sfx('fail'); },
     sfx: (n, o) => silent ? 0 : A.sfx(n, o), burst: (...a) => FX.burst(...a), float: (...a) => FX.float(...a), shake: (...a) => FX.shake(...a),
-    rand: Math.random, bake, left() { return Math.max(0, this.dur - this.t); },
+    rand: Math.random, bake, left() { return Math.max(0, this.dur - this.fuse()); },
   };
   return g;
 }
@@ -242,14 +243,14 @@ function updateRun(dt) {
     const g = run.g; g.t += dt;
     try { g.def.update && g.def.update(g, dt); } catch (e) { console.error(g.def.id, 'update', e); }
     if (testMode && g.def.auto && window.HM_AUTO) { try { g.def.auto(g, dt, synth); } catch (e) { console.error(g.def.id, 'auto', e); } }
-    if (!g.done && g.t >= g.dur) { if (g.def.winOnTimeout) g.win(); else g.fail(); }
+    if (!g.done && g.fuse() >= g.dur) { if (g.def.winOnTimeout) g.win(); else g.fail(); }
     if (g.done && g.t - g.doneAt > holdOf(g)) endMicro();
   }
   else if (run.phase === 'result' && run.pt > 0.9 / Math.sqrt(run.speed)) afterResult();
   else if (run.phase === 'speedup' && run.pt > Math.max(1.6, run.wait)) between();
   else if (run.phase === 'grace' && run.pt > 3.6) { run.loaves = 1; continueRun(); }
   // watchdog: no screen between games may last more than 8 seconds, and no game may run 3 seconds past its fuse
-  else if (run.phase === 'play' && !run.g.done && run.g.t > run.g.dur + 3) { console.error(run.g.def.id, 'watchdog'); run.g.fail(); }
+  else if (run.phase === 'play' && !run.g.done && run.g.fuse() > run.g.dur + 3) { console.error(run.g.def.id, 'watchdog'); run.g.fail(); }
   else if (run.phase === 'play' && run.g.done && run.g.t - run.g.doneAt > 3) endMicro();
   else if (run.phase !== 'over' && run.phase !== 'play' && run.pt > 8) { console.error('watchdog', run.phase); if (run.phase === 'between') nextMicro(); else if (run.phase === 'result') afterResult(); else if (run.phase === 'grace') { run.loaves = 1; continueRun(); } else between(); }
 }
@@ -433,7 +434,7 @@ function thumb(def, lazy) {
     const dt = 1 / 30;
     for (let i = 0; i < 330; i++) {
       g.t += dt; def.update && def.update(g, dt); if (def.auto) def.auto(g, dt, sy); FX.update(dt);
-      if (!g.done && g.t >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
+      if (!g.done && g.fuse() >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
       if (g.done && g.t - g.doneAt > 0.4) break; if (!def.auto && g.t > 1.2) break;
     }
     def.draw(g, o); FX.draw(o);
@@ -582,7 +583,7 @@ function drawPlayOverlay(c, g, t) {
   if (a < 1.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > 1.0 ? 1 - (a - 1.0) / 0.25 : 1;
     c.save(); c.globalAlpha = Math.max(0, fade); P.command(c, d.cmd, 180, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
   // fuse
-  const frac = Math.max(0, 1 - g.t / g.dur), x0 = 20, x1 = 340, y = 622;
+  const frac = Math.max(0, 1 - g.fuse() / g.dur), x0 = 20, x1 = 340, y = 622;
   c.save(); c.fillStyle = 'rgba(40,20,50,0.35)'; roundRect(c, x0, y - 6, x1 - x0, 12, 6); c.fill();
   const fx = x0 + (x1 - x0) * frac; const gr = c.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#ff8a4a'); c.fillStyle = gr; if (frac > 0) { roundRect(c, x0, y - 6, Math.max(12, fx - x0), 12, 6); c.fill(); }
   if (!g.done && frac > 0) { for (let i = 0; i < 4; i++) { c.fillStyle = ['#fff6c0', '#ffd45a', '#ff8a4a', '#fff'][i]; c.beginPath(); c.arc(fx + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8, 2 + Math.random() * 2, 0, 7); c.fill(); } }
@@ -653,7 +654,7 @@ window.HM = {
       g.t += dt; try { def.update && def.update(g, dt); } catch (e) { errors.push('update: ' + e); }
       if (auto && def.auto) { try { def.auto(g, dt, synth); } catch (e) { errors.push('auto: ' + e); } }
       FX.update(dt);
-      if (!g.done && g.t >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
+      if (!g.done && g.fuse() >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
       if (g.done && g.t - g.doneAt > 0.8 && fi >= frames.length) break;
     }
     console.error = oe; window.HM_AUTO = false; scene = 'title'; run = null;

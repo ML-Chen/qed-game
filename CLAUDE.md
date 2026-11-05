@@ -1,10 +1,11 @@
 # Q.E.D.! — notes for working on this repo
 
-Q.E.D.! is a WarioWare-style math game for grade 3 through college. Each microgame shows one real math problem, and the player solves it by tapping parts of the problem and dragging parts onto other parts, in any mathematically valid order. Every move plays an animation that does the arithmetic in real time, with animals doing the work. Medium mode also asks the player to pick each computed result from a tray. It is one self-contained HTML page with all art drawn in code. The engine and the art library come from the owner's earlier game Holy Moly! (ML-Chen/holy-moly).
+Q.E.D.! is a WarioWare-style math game for grade 3 through college. Each microgame shows one real math problem, and the player solves it by tapping parts of the problem and dragging parts onto other parts, in any mathematically valid order. Every move plays a manim-style animation that shows the working step by step by itself (the fuse pauses while it plays), with animals doing the work. Medium mode also asks the player to pick each computed result from a tray. It is one self-contained HTML page with all art drawn in code. The engine and the art library come from the owner's earlier game Holy Moly! (ML-Chen/holy-moly).
 
 ## Build and check
 - `python3 src/build.py dist/qed.html` inlines every module into one page. Each module and each microgame gets its own `<script>` tag.
 - `python3 tests/run.py` builds the page and runs the whole suite in headless Chromium (about a minute). `--only NAME` runs one test; `--out DIR` saves screenshots of every screen. Run it before reporting back on any change under `src/`.
+- `python3 tools/film.py OUT id [level] [mode] [step]` films one microgame played by its bot: a frame grid every `step` seconds and a GIF. Use it to check every animation.
 - `python3 tools/mgtest.py OUT [id ...]` plays microgames with their bots and writes a contact sheet per microgame. Look at the sheets after every change. `HM_ONLY=prefix_` and `HM_PAGE=path` let parallel workers test only their own files.
 
 ## Module map (src/)
@@ -22,6 +23,7 @@ Q.E.D.! is a WarioWare-style math game for grade 3 through college. Each microga
 How to write a microgame: docs/MICROGAMES.md. The reference microgame is `src/games/calc_power.js`.
 
 ## Rules the owner asked for
+- Show your work: every operation animates its working automatically, slowly enough to follow, and delightfully (docs/MICROGAMES.md, "Show your work").
 - Commands use the real names of the operations ("POWER RULE!", "REGROUP!", "DOT PRODUCT!").
 - Gorgeous graphics with animals in the background. No clutter: no explanatory subtitles, eyebrow text or long instructions.
 - Easy for someone who doesn't know the math (level-0 guidance shows what to tap), educational for a smart kid who learns patterns fast (guidance fades, fast answers earn stars).

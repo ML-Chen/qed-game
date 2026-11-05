@@ -5,7 +5,7 @@
 // shows the next move according to the guidance level, flies numbers around, and awards stars for answering fast.
 // See docs/MICROGAMES.md for how a microgame uses it; src/games/calc_power.js is the reference microgame.
 const MK = (() => {
-  const INK = '#3a1640', MID = '#7a4a5a', GOOD = '#2f9a5a', BAD = '#d8454a', GLOW = '#ffcf3a';
+  const INK = '#3a1640', MID = '#7a4a5a', GOOD = '#2f9a5a', BAD = '#d8454a', GLOW = '#ffcf3a', HL = '#ffb21f';
   const NUMF = (s, w = 600) => `${w} ${s}px Fredoka, Nunito, system-ui, sans-serif`;
   const VARF = s => `italic 700 ${s}px Georgia, 'Times New Roman', serif`;
   const mc = document.createElement('canvas').getContext('2d'); // measuring context
@@ -62,14 +62,23 @@ const MK = (() => {
     if (!n) return; const m = n._m || lay(n, s);
     if (n.id && X.box) X.box[n.id] = { x: x + m.w / 2, y: y - (m.a - m.d) / 2, w: m.w, h: m.a + m.d, s };
     if (n.hide) return;
-    const popK = n.pop != null && X.t != null ? clamp((X.t - n.pop) / 0.35, 0, 1) : 1, sc = 1 + Math.sin(popK * Math.PI) * 0.35;
+    const popK = n.pop != null && X.t != null ? clamp((X.t - n.pop) / 0.35, 0, 1) : 1, sc = (1 + Math.sin(popK * Math.PI) * 0.35) * (n.sc ?? 1);
     c.save(); c.translate((n.dx || 0) + (n._gx || 0), (n.dy || 0) + (n._gy || 0)); if (n.alpha != null) c.globalAlpha *= n.alpha;
     if (n._born != null && X.t != null) { const k = clamp((X.t - n._born) / 0.28, 0, 1); c.globalAlpha *= k; if (k >= 1) n._born = null; }
     if (sc !== 1) { const cx = x + m.w / 2, cy = y - (m.a - m.d) / 2; c.translate(cx, cy); c.scale(sc, sc); c.translate(-cx, -cy); }
-    const col = n.mark === 'good' ? GOOD : n.mark === 'bad' ? BAD : (n.col || X.col || INK);
+    // write-in (manim's Write): the node is revealed left to right, with a bright pen tip at the leading edge
+    let wk = 1; if (n.write && X.t != null) { wk = clamp((X.t - n.write.t0) / n.write.dur, 0, 1); if (wk >= 1) n.write = null; else { c.beginPath(); c.rect(x - s * 0.3, y - m.a - s, (m.w + s * 0.6) * easeIO(wk), m.a + m.d + s * 2); c.clip(); } }
+    let col = n.mark === 'good' ? GOOD : n.mark === 'bad' ? BAD : (n.col || X.col || INK);
+    if (n.hl > 0.01) { col = mix(col, n.hlc || HL, n.hl); c.shadowColor = n.hlc || HL; c.shadowBlur = 18 * n.hl; X = { ...X, col }; }
     c.fillStyle = col; c.strokeStyle = col; c.textBaseline = 'alphabetic'; c.textAlign = 'left';
     switch (n.k) {
-      case 'num': { c.font = NUMF(s); let xx = x; if (n.v.startsWith('−')) { c.lineWidth = s * 0.09; c.lineCap = 'round'; c.beginPath(); c.moveTo(xx + s * 0.06, y - s * 0.3); c.lineTo(xx + s * 0.34, y - s * 0.3); c.stroke(); xx += s * 0.42; c.fillText(n.v.slice(1), xx, y); } else c.fillText(n.v, xx, y); break; }
+      case 'num': { c.font = NUMF(s); let xx = x;
+        // odometer roll (n.roll = { from, t0, dur }): the old value slides up and out while the new one rolls in from below
+        if (n.roll && X.t != null) { const k = easeIO((X.t - n.roll.t0) / n.roll.dur), d = s * 0.95;
+          if (k < 1) { c.save(); c.beginPath(); c.rect(x - s * 0.5, y - s * 0.95, m.w + s, s * 1.12); c.clip(); const a0 = c.globalAlpha;
+            c.globalAlpha = a0 * (1 - k); c.fillText(String(n.roll.from).replace(/^-/, '−'), xx, y - k * d); c.globalAlpha = a0 * k; c.fillText(n.v, xx, y + (1 - k) * d); c.restore(); break; }
+          n.roll = null; }
+        if (n.v.startsWith('−')) { c.lineWidth = s * 0.09; c.lineCap = 'round'; c.beginPath(); c.moveTo(xx + s * 0.06, y - s * 0.3); c.lineTo(xx + s * 0.34, y - s * 0.3); c.stroke(); xx += s * 0.42; c.fillText(n.v.slice(1), xx, y); } else c.fillText(n.v, xx, y); break; }
       case 'var': c.font = VARF(s); c.fillText(n.v, x + s * 0.02, y); break;
       case 'txt': c.font = NUMF(s, 500); c.fillText(n.v, x, y); break;
       case 'op': {
@@ -87,7 +96,9 @@ const MK = (() => {
       case 'frac': {
         const bx = x + s * 0.06, cy = y - s * 0.3;
         draw(c, n.n, bx + (m.bw - m.na.w) / 2, cy - s * 0.1 - m.na.d, m.fs, X); draw(c, n.d, bx + (m.bw - m.nb.w) / 2, cy + s * 0.1 + m.nb.a, m.fs, X);
-        c.fillStyle = col; c.globalAlpha *= 1; c.beginPath(); roundRectK(c, bx, cy - s * 0.035, m.bw, s * 0.07, s * 0.035); c.fill(); break;
+        // n.bar = { t0, dur }: the fraction bar draws itself from left to right
+        const bk = n.bar && X.t != null ? easeIO((X.t - n.bar.t0) / n.bar.dur) : 1; if (bk >= 1) n.bar = null;
+        if (bk > 0) { c.fillStyle = col; c.beginPath(); roundRectK(c, bx, cy - s * 0.035, Math.max(s * 0.07, m.bw * bk), s * 0.07, s * 0.035); c.fill(); } break;
       }
       case 'row': { let xx = x; n.items.forEach((it, i) => { draw(c, it, xx, y, s, X); xx += m.ms[i].w; }); break; }
       case 'paren': { bracket(c, x + m.pw * 0.55, y - m.a, y + m.d, -1, s, n.br, col); draw(c, n.inner, x + m.pw, y, s, X); bracket(c, x + m.w - m.pw * 0.55, y - m.a, y + m.d, 1, s, n.br, col); break; }
@@ -106,8 +117,15 @@ const MK = (() => {
         break;
       }
     }
+    // n.strike = { t0, dur, col }: a stroke crosses the node out (factors cancelling, a term leaving)
+    if (n.strike && X.t != null) { const k = easeIO((X.t - n.strike.t0) / n.strike.dur); if (k > 0) { c.shadowBlur = 0; c.strokeStyle = n.strike.col || '#ff6a5a'; c.lineWidth = Math.max(3, s * 0.09); c.lineCap = 'round';
+      const x0 = x - s * 0.08, y0 = y + m.d + s * 0.02, x1 = x + m.w + s * 0.08, y1 = y - m.a + s * 0.02; c.beginPath(); c.moveTo(x0, y0); c.lineTo(lerp(x0, x1, k), lerp(y0, y1, k)); c.stroke(); } }
+    if (wk < 1 && wk > 0) { c.restore(); c.save(); const px = x + (m.w + s * 0.3) * easeIO(wk) - s * 0.3, py = y - (m.a - m.d) / 2; c.globalAlpha = 0.9; c.fillStyle = '#fffbe0'; c.shadowColor = HL; c.shadowBlur = 12; c.beginPath(); c.arc(px, py, Math.max(2.5, s * 0.07), 0, 7); c.fill(); }
     c.restore();
   }
+  // mix two colours ('#rrggbb' or '#rgb'); anything else returns b once k > 0.5
+  function hex(h) { h = String(h); if (/^#[0-9a-f]{3}$/i.test(h)) h = '#' + [...h.slice(1)].map(q => q + q).join(''); return /^#[0-9a-f]{6}$/i.test(h) ? [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)) : null; }
+  function mix(a, b, k) { const p = hex(a), q = hex(b); if (!p || !q) return k > 0.5 ? b : a; return `rgb(${p.map((v, i) => Math.round(v + (q[i] - v) * clamp(k, 0, 1))).join(',')})`; }
   function bracket(c, x, top, bot, dir, s, kind, col) {
     c.save(); c.strokeStyle = col; c.lineWidth = s * 0.075; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath();
     if (kind === '[]') { const w = s * 0.14; c.moveTo(x - dir * w, top); c.lineTo(x, top); c.lineTo(x, bot); c.lineTo(x - dir * w, bot); }
@@ -135,8 +153,10 @@ const MK = (() => {
     for (const n of all) n._pid = n._pid || ('_' + Math.random().toString(36).slice(2, 9)); // a private id so every node records a box
     const ids = new Map(all.map(n => [n, n.id])); for (const n of all) if (!n.id) n.id = n._pid;
     draw(nullCtx, e.node, e.x, e.y, e.s, { box: tmp });
+    const LEAF = /^(num|var|txt|op|slot)$/, isNew = n => !lastPos.has(n), allNew = n => { const q = []; collect(n, q); return q.filter(x => LEAF.test(x.k)).every(isNew); };
     for (const n of all) {
       const b = tmp[n.id]; if (!b) continue; const prev = lastPos.get(n), first = !M.seen || !M.seen[key];
+      if (!prev && !first && !n._born && !LEAF.test(n.k) && !allNew(n)) { lastPos.set(n, { x: b.x, y: b.y }); continue; } // a new wrapper around old symbols: the symbols glide, nothing fades
       if (prev && (Math.abs(prev.x - b.x) > 1.5 || Math.abs(prev.y - b.y) > 1.5)) n._glide = { dx: prev.x - b.x + (n._gx || 0), dy: prev.y - b.y + (n._gy || 0), t0: g.t };
       else if (!prev && !first && !n._born) n._born = g.t;
       lastPos.set(n, { x: b.x, y: b.y });
@@ -144,7 +164,7 @@ const MK = (() => {
     }
     // symbols that vanished since the last frame fly into the nearest newly born symbol and fade (4 and 3 merge into 12)
     const prev = (M.prevNodes = M.prevNodes || {})[key] || [], cur = new Set(all), born = all.filter(n => n._born === g.t && tmp[n.id]);
-    for (const p of prev) { if (cur.has(p.n) || !/^(num|var|txt|op)$/.test(p.n.k)) continue;
+    for (const p of prev) { if (cur.has(p.n) || p.n.alpha === 0 || !/^(num|var|txt|op)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost
       let best = null, bd = 160; for (const n of born) { const b = tmp[n.id], d = Math.hypot(b.x - p.b.x, b.y - p.b.y); if (d < bd) { bd = d; best = b; } }
       (M.ghosts = M.ghosts || []).push({ n: { ...p.n, alpha: 1, pop: null, mark: null, dx: 0, dy: 0, _gx: 0, _gy: 0, _born: null, id: undefined }, a: p.b, b: best || p.b, t0: g.t, s: p.s, merge: !!best }); }
     M.prevNodes[key] = all.filter(n => tmp[n.id]).map(n => ({ n, b: tmp[n.id], s: tmp[n.id].s }));
@@ -215,7 +235,7 @@ const MK = (() => {
     try { if (mv.then) mv.then(g, a, b); } catch (e) { console.error('move', e); }
     if (mv.ask && mv.resolve) {
       if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv)); else openAsk(g, mv); }
-      else if (mv.askAt) later(g, mv.askAt, mv.resolve); else mv.resolve(g);
+      else if (mv.askAt) later(g, mv.askAt, mv.resolve, true); else mv.resolve(g);
     }
   }
   // A wrong move never ends the microgame (the owner's rule: failing at once makes it hard to see what went wrong).
@@ -287,7 +307,7 @@ const MK = (() => {
   function askHit(g, x, y) { const A = g.s.mk.ask; if (!A) return -1; return A.list.findIndex(ch => Math.abs(x - ch.x) <= ch.w / 2 + 4 && Math.abs(y - ch.y) <= ch.h / 2 + 6); }
   function pickAsk(g, i) {
     const M = g.s.mk, A = M.ask, ch = A.list[i]; ch.at = g.t; A.pickAt = g.t;
-    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = A.mv.after ?? 0.05; }
+    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
     else { if (ch.state === 'bad') return; ch.state = 'bad'; M.missAt = g.t; M.missInfo = { ask: ch.v }; M.wrong = (M.wrong || 0) + 1; g.sfx('boing'); }
   }
   function drawAsk(g, c) {
@@ -346,13 +366,14 @@ const MK = (() => {
     M.flies = M.flies.filter(f => !f.landed || f.keep);
     M.fx = M.fx.filter(p => g.t - p.t0 < p.life);
     for (const tm of M.timers.filter(tm => g.t >= tm.at)) { M.timers.splice(M.timers.indexOf(tm), 1); try { tm.fn(g); } catch (e) { console.error('later', e); } }
+    runTweens(g); if (!g.done && g.t < (M.showUntil || 0)) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown
     if (M.busyT > 0) { M.busyT -= dt; if (M.busyT <= 0) { M.busyT = 0; M.moveT = g.t; } }
-    if (!g.done && M.opts && !busy(M) && !current(g).length) finish(g);
+    if (!g.done && M.opts && !busy(M) && !showing(g) && !M.timers.some(tm => tm.hold) && !current(g).length) finish(g);
   }
   // MK.later(g, seconds, fn): run fn(g) after that many seconds of game time (for multi-beat animations)
-  function later(g, dt, fn) { g.s.mk.timers.push({ at: g.t + dt, fn }); }
+  function later(g, dt, fn, hold) { g.s.mk.timers.push({ at: g.t + dt, fn, hold }); } // hold: the microgame can't be won before it runs
   function finish(g) {
-    const M = g.s.mk; if (g.done) return; const k = g.t / (g.dur / (g.tf || 1)); // fraction of the base time (before the generous factor)
+    const M = g.s.mk; if (g.done) return; const k = (g.t - (g.held || 0)) / (g.dur / (g.tf || 1)); // fraction of the base time (before the generous factor)
     M.stars = Math.max(1, (k < 0.6 ? 3 : k < 1.1 ? 2 : 1) - (M.wrong ? 1 : 0)); g.stars = M.stars; M.winAt = g.t;
     if (M.opts && M.opts.onWin) M.opts.onWin(g); g.win();
     for (let i = 0; i < 18; i++) M.fx.push({ t0: g.t + i * 0.01, life: 1.1, x: 180, y: 300, a: Math.random() * 7, v: 120 + Math.random() * 200, col: ['#ffd45a', '#ff8a5a', '#7ad0ff', '#9ae07a'][i % 4] });
@@ -368,6 +389,73 @@ const MK = (() => {
     else if (mv.drag) { const a = M.box[ids(mv.drag)[0]], b = M.box[ids(mv.to)[0]]; if (a && b) { synth('down', a.x, a.y); for (let i = 1; i <= 4; i++) synth('move', lerp(a.x, b.x, i / 4), lerp(a.y, b.y, i / 4)); synth('up', b.x, b.y); did = true; } }
     if (did) M.moveT = g.t + 5; // don't repeat while the move's animation starts (a move resets moveT when its busy time ends)
   }
+
+  // ---------------- show your work (manim-style beats) ----------------
+  // The owner's rule: every operation is acted out slowly enough to see what happens, and it plays by itself.
+  // A move's then() / resolve() schedule beats with the helpers below; MK.show(g, seconds) marks how long they run.
+  // While a show runs, input waits and the fuse stands still (g.held grows), so the animation never costs time.
+  // MK.pace(g) is the tempo factor (1 at level 0, quicker as guidance fades and the run speeds up): multiply every
+  // beat time by it. Targets are ids or node objects; positions are read from the boxes at draw time.
+  function pace(g) { return [1, 0.82, 0.68][Math.min(2, g.level || 0)] / Math.sqrt(Math.max(1, g.speed || 1)); }
+  function show(g, sec) { const M = g.s.mk; M.showUntil = Math.max(M.showUntil || 0, g.t + sec); M.busyT = Math.max(M.busyT, sec); return sec; }
+  function showing(g) { const M = g.s.mk; return M && g.t < (M.showUntil || 0); }
+  const nodeOf = (g, n) => typeof n === 'string' ? node(g, n) : n;
+  // MK.tween(g, target, { sc, hl, alpha, dx, dy }, dur, { delay, yoyo, ease }): animate node properties. With yoyo the
+  // values go to the target and back (a pulse). Returns the end time offset.
+  function tween(g, tgt, to, dur, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; (g.s.mk.tweens = g.s.mk.tweens || []).push({ n, to, from: null, t0: g.t + (o.delay || 0), dur, yoyo: o.yoyo, ease: o.ease || easeIO }); return (o.delay || 0) + dur; }
+  const DEF = { sc: 1, hl: 0, alpha: 1, dx: 0, dy: 0 };
+  function runTweens(g) { const M = g.s.mk; if (!M.tweens) return;
+    M.tweens = M.tweens.filter(tw => { if (g.t < tw.t0) return true; if (!tw.from) { tw.from = {}; for (const k in tw.to) tw.from[k] = tw.n[k] ?? DEF[k]; }
+      const k = clamp((g.t - tw.t0) / tw.dur, 0, 1), e = tw.yoyo ? Math.sin(k * Math.PI) : tw.ease(k);
+      for (const key in tw.to) tw.n[key] = tw.from[key] + (tw.to[key] - tw.from[key]) * e; if (k >= 1) { if (tw.yoyo) for (const key in tw.to) tw.n[key] = tw.from[key]; return false; } return true; }); }
+  // manim's Indicate: the part swells and lights up, then settles
+  function indicate(g, tgt, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; if (o.col) n.hlc = o.col; return tween(g, n, { sc: (n.sc ?? 1) * (o.sc || 1.3), hl: 1 }, o.dur || 0.5, { delay: o.delay, yoyo: true }); } // relative to the current size
+  // a lasting highlight (until MK.unlight)
+  function light(g, tgt, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; if (o.col) n.hlc = o.col; return tween(g, n, { hl: 1 }, o.dur || 0.2, { delay: o.delay }); }
+  function unlight(g, tgt, o = {}) { return tween(g, tgt, { hl: 0 }, o.dur || 0.25, { delay: o.delay }); }
+  // odometer: the number's value changes by rolling (3 rolls over to 4)
+  function roll(g, tgt, v, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; const from = n.v, d = o.dur || 0.4, t0 = g.t + (o.delay || 0);
+    if (o.delay) later(g, o.delay, () => { n.roll = { from, t0, dur: d }; n.v = String(v).replace(/^-/, '−'); if (g.s.mk.relay) g.s.mk.relay(); }); else { n.roll = { from, t0, dur: d }; n.v = String(v).replace(/^-/, '−'); }
+    return (o.delay || 0) + d; }
+  function writeIn(g, tgt, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; n.write = { t0: g.t + (o.delay || 0), dur: o.dur || 0.4 }; return (o.delay || 0) + (o.dur || 0.4); }
+  function strike(g, tgt, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; n.strike = { t0: g.t + (o.delay || 0), dur: o.dur || 0.25, col: o.col }; return (o.delay || 0) + (o.dur || 0.25); }
+  // overlay animations drawn on top of the expressions: { t0, dur, draw(c, g, k, t) }
+  function anim(g, a) { const M = g.s.mk; a.t0 = g.t + (a.delay || 0); (M.anims = M.anims || []).push(a); return (a.delay || 0) + a.dur; }
+  function drawAnims(g, c) { const M = g.s.mk; if (!M.anims) return; M.anims = M.anims.filter(a => g.t < a.t0 + a.dur + (a.linger || 0)); for (const a of M.anims) { if (g.t < a.t0) continue; c.save(); try { a.draw(c, g, clamp((g.t - a.t0) / a.dur, 0, 1), g.t - a.t0); } catch (e) { console.error('anim', e); } c.restore(); } }
+  const boxOf = (g, tgt) => Array.isArray(tgt) && typeof tgt[0] === 'number' ? { x: tgt[0], y: tgt[1], w: 0, h: 0, s: tgt[2] || 30 } : unionBox(ids(tgt).map(i => typeof i === 'string' ? g.s.mk.box[i] : i));
+  // manim's Circumscribe: a glowing loop is drawn around the part, then fades
+  function circle(g, tgt, o = {}) { const dur = o.dur || 0.6, col = o.col || HL, pad = o.pad ?? 7;
+    return anim(g, { delay: o.delay, dur, draw(c, g, k) { const b = boxOf(g, tgt); if (!b) return; const w = b.w + pad * 2, h = b.h + pad * 2, r = Math.min(h / 2, 16), per = 2 * (w + h);
+      c.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 12; c.lineWidth = 3.5; c.lineCap = 'round';
+      c.setLineDash([per * easeIO(Math.min(1, k / 0.6)), per * 2]); c.beginPath(); roundRectK(c, b.x - w / 2, b.y - h / 2, w, h, r); c.stroke(); } }); }
+  // MK.note(g, { node, at: [x, y] | id, off: [dx, dy], s, col, delay, write, hold, to: [x, y] | id, fly, s1, fade, then }):
+  // a small chalk-style working note ("+1", "6 ÷ 3 = 2") writes itself next to the problem, stays a moment, then either
+  // flies into its place in the expression (and calls then) or fades away. This is the "showing your work" voice.
+  function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.hold ?? 0.3, fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
+        const where = () => { const b = boxOf(g, o.at || [180, 300]) || { x: 180, y: 300 }; return { x: b.x + (o.off ? o.off[0] : 0), y: b.y + (o.off ? o.off[1] : 0) }; };
+    if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true); // the landing runs on the game clock, not in draw
+    return anim(g, { delay: o.delay, dur, draw(c, g, k, t) {
+      const p = where(); let x = p.x, y = p.y, sz = s0, al = 1, wk = clamp(t / wr, 0, 1);
+      if (t > wr + hold && o.to) { const kk = easeIO((t - wr - hold) / fl), b0 = boxOf(g, o.to) || p, b = o.toOff ? { ...b0, x: b0.x + o.toOff[0], y: b0.y + o.toOff[1] } : b0; x = lerp(p.x, b.x, kk); y = lerp(p.y, b.y, kk) - Math.sin(kk * Math.PI) * (o.arc ?? 36); sz = lerp(s0, o.s1 || (b.s || s0), kk); if (kk >= 1) return; }
+      else if (t > wr + hold) al = 1 - (t - wr - hold) / fade;
+      const m = lay(nd, sz); c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
+      if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4, y - sz * 1.5, (m.w + 8) * easeIO(wk), sz * 3); c.clip(); }
+      draw(c, nd, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col });
+      if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }
+    } }); }
+  // a curved arrow that draws itself from one place to another, with an optional label at its middle
+  function arrow(g, from, to, o = {}) { const dur = o.dur || 0.45, col = o.col || HL;
+    return anim(g, { delay: o.delay, dur, linger: o.linger ?? 0.4, draw(c, g, k, t) { const a = boxOf(g, from), b = boxOf(g, to); if (!a || !b) return;
+      const fadeK = t > dur ? 1 - (t - dur) / (o.linger ?? 0.4) : 1, e = easeIO(k), bend = o.bend ?? -40, L = Math.hypot(b.x - a.x, b.y - a.y) || 1, mx = (a.x + b.x) / 2 + (b.y - a.y) / L * bend, my = (a.y + b.y) / 2 - (b.x - a.x) / L * bend; // bend > 0: bows to the left of the direction of travel
+      const q = u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * mx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * my + u * u * b.y });
+      c.globalAlpha = clamp(fadeK, 0, 1); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 3; c.lineCap = 'round'; c.shadowColor = col; c.shadowBlur = 8; c.beginPath();
+      for (let i = 0; i <= 24; i++) { const p = q(e * i / 24); i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y); } c.stroke();
+      const p1 = q(e), p0 = q(Math.max(0, e - 0.05)), an = Math.atan2(p1.y - p0.y, p1.x - p0.x); c.beginPath(); c.moveTo(p1.x + Math.cos(an) * 8, p1.y + Math.sin(an) * 8); c.lineTo(p1.x + Math.cos(an + 2.4) * 9, p1.y + Math.sin(an + 2.4) * 9); c.lineTo(p1.x + Math.cos(an - 2.4) * 9, p1.y + Math.sin(an - 2.4) * 9); c.fill();
+      if (o.label && e > 0.4) { const lb = wrap(o.label), ls = o.ls || 22, m = lay(lb, ls), p = q(0.5); c.globalAlpha *= clamp((e - 0.4) / 0.3, 0, 1); draw(c, lb, p.x - m.w / 2, p.y - 8, ls, { t: g.t, col }); } } }); }
+  // a burst of sparkles at a part (for landings)
+  function sparkle(g, tgt, o = {}) { return later(g, o.delay || 0, g => { const b = boxOf(g, tgt); if (b) g.burst(b.x, b.y, o.cols || ['#ffe9a0', '#fff', '#ffb21f'], o.n || 10, o.v || 120); }); }
+  // run fn(g) at each time: MK.at(g, [[0, fn], [0.4, fn], ...])
+  function at(g, list) { for (const [t, fn] of list) { if (t <= 0) fn(g); else later(g, t, fn, true); } }
 
   // ---------------- flying numbers ----------------
   // MK.fly(g, { node, from: [x, y] | 'id', to: [x, y] | 'id', dur, arc, s0, s1, then, keep }) — a copy of node travels on an arc.
@@ -399,8 +487,9 @@ const MK = (() => {
     c.strokeStyle = o.edge || 'rgba(122,74,90,0.55)'; c.lineWidth = 2.5; c.stroke(); c.restore();
   }
   // everything a microgame usually draws on top of its scene, in order: guidance glow, tray, flying numbers, effects
-  function drawUI(g, c) { drawGuide(g, c); drawAsk(g, c); drawFlies(g, c); drawDrag(g, c); drawFx(g, c); }
+  function drawUI(g, c) { drawAnims(g, c); drawGuide(g, c); drawAsk(g, c); drawFlies(g, c); drawDrag(g, c); drawFx(g, c); }
 
   return { INK, MID, GOOD, BAD, GLOW, NUMF, VARF, num, vr, txt, op, sup, frac, row, paren, mat, slot, gap, ddx, wrap, lay, draw, find,
-    setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp };
+    setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp,
+    HL, mix, pace, show, showing, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at };
 })();

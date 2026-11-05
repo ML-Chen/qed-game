@@ -6,7 +6,28 @@ Q.E.D.! is a WarioWare-style math game for grade 3 through college. Each microga
 - Chain rule: drag the d/dx onto each layer of the function.
 - Solving 2x + 5 = 13: drag the + 5 across the = sign (it becomes − 5), tap 13 − 5 to compute it, then drag the 2 across to divide.
 
-**Pace.** The player never waits on an animation. Every computation happens because the player taps it (or drags something), and its result appears at once with a quick pop. For example, in the power rule, dragging the exponent onto the coefficient instantly turns 3x⁴ into (4 · 3) x^(4 − 1); tapping 4 · 3 makes 12 and tapping 4 − 1 makes 3, in either order. Animations last at most about 0.25 s and never block input (`busy` ≈ 0.1). Scale `g.dur` in init with the number of moves (calc_power.js: `g.dur *= (2.6 + 1.05 * nMoves) / 8`) so the fuse is tight but fair.
+**Show your work (the owner's rule, November 2026).** Every operation is acted out slowly enough that a player who doesn't know the math can see what happens, and it plays by itself: the player makes the move (a tap or a drag), and the working then animates automatically, manim-style, the way a 3Blue1Brown video would show it. The animation should make the math feel alive and delightful, not just correct. Examples:
+- Power rule ∫/d/dx: the exponent grows, a chalk "+1" writes itself beside it, the exponent reads "2 + 1", the "+ 1" slides in and the 2 rolls over to 3 like an odometer (see `src/games/integrals_reverse.js`, the reference for this style).
+- Column addition: the column's digits light up one after another, their sum writes itself as a small working note ("7 + 8 = 15"), the 5 drops into the answer row and the 1 visibly lifts off and arcs over to the top of the next column, where it lands with a sparkle.
+- Long multiplication: each partial product is written as a note ("6 × 7 = 42"), the 2 drops into place and the 4 is carried up and over, then added in (the note shows "+ 4") at the next step.
+- Dividing both sides: a "÷ 2" writes itself under both sides, then each side collapses into its result.
+
+Timing: each move's working lasts about 0.6–1.6 s at level 0 (multiply every beat by `MK.pace(g)`, which shortens beats as guidance fades and the run speeds up). Mark the length with `MK.show(g, seconds)`: input waits and the fuse stands still while it runs (the engine counts `g.held`), so the animation never costs the player time, and the microgame is not won until the show and every timer scheduled with `MK.at` have run. Keep beats overlapping and lively; never make the player stare at a still screen.
+
+Kit helpers (all in `src/mathkit.js`; targets are ids or node objects; every helper takes `delay` and `dur`):
+- `MK.show(g, sec)` — mark the working's length (fuse frozen, input waits).
+- `MK.at(g, [[t, fn], ...])` — run steps at times (holds the win until they run).
+- `MK.indicate(g, target, { sc, col })` — the part swells and glows, then settles (manim Indicate). `MK.light` / `MK.unlight` — a lasting highlight.
+- `MK.circle(g, target | [targets], { col })` — a glowing loop draws itself around the part, then fades (Circumscribe).
+- `MK.roll(g, numNode, newValue)` — odometer: the number rolls over to its new value.
+- `MK.writeIn(g, target)` — the node writes itself left to right with a pen tip. A fraction node with `bar: { t0: g.t, dur }` draws its bar.
+- `MK.strike(g, target)` — the part is crossed out (cancelling, a term leaving).
+- `MK.note(g, { node, at, off, s, col, write, hold, to, toOff, s1, then })` — a working note writes itself next to the problem, then flies into its place in the expression (calls `then` on landing) or fades. This is the "showing your work" voice.
+- `MK.arrow(g, from, to, { label, bend, col })` — a curved arrow with a label draws itself.
+- `MK.tween(g, target, { sc, hl, alpha, dx, dy }, dur, { yoyo })` — animate node properties; `MK.sparkle(g, target)` — a burst of sparkles.
+- Node properties the renderer understands: `sc` (scale), `hl` (0–1 highlight, colour `hlc`), `roll`, `write`, `strike`, `bar`, plus `alpha`, `dx`, `dy`, `pop`. A node created with `_born: -1` appears at once instead of fading in (use it for symbols that land from a note). A node faded to `alpha: 0` leaves no ghost when removed.
+- When an expression is rewritten, symbols that are still there glide to their new places by themselves (reuse the same node objects to get a glide; new symbols fade in; removed symbols fly into the nearest new one and fade).
+In medium mode, the tray opens at `askAt` (when the working has reached the computation, for example "3 + 1"), and `resolve` plays the rest; set `after` to the length of that rest. Film a microgame with `python3 tools/film.py OUTDIR id [level] [mode] [step]`, which writes a frame grid and a GIF of the bot playing it; look at the frames and fix anything that is unclear, cramped or glitchy.
 
 The player may do things in any order that is mathematically valid. The microgame's `moves(g)` lists every valid move at each moment.
 
@@ -27,7 +48,7 @@ Dragging numbers in similar-looking equations gets monotonous fast, so every mic
 - Expression size and placement can vary too: big and bold for a short problem, spread across the scene when the parts have a place in the world (a seesaw's two sides, a grid, a graph).
 
 ## Where the player looks (the owner's rule)
-The work happens where the player is already looking. Don't send the player's gaze to a side area to do or watch the work: no plates, napkins, benches, side tallies or second working lines in another part of the screen. The expression itself changes in place, and the animals act on the expression.
+The work happens where the player is already looking. Don't send the player's gaze to a side area to do or watch the work: no plates, napkins, benches, side tallies or second working lines in another part of the screen. The expression itself changes in place, and the animals act on the expression. A working note (`MK.note`, "6 ÷ 3 = 2") is fine when it writes itself right beside the part being worked on and then flies into the expression or fades.
 - Gestures match how people do the math by hand. Long addition is one swipe down a column; the column adds itself up and the carried 1 hops to the next column by itself (no separate "carry" tap).
 - Drops are forgiving. A part dropped near its target counts (the kit accepts drops within `reach`, 64 px by default), and a move can accept a whole region with `area: [x0, y0, x1, y1]`: moving a term to the other side of an equation works anywhere on that side, not only on top of a number. Accept every natural way of doing a move: for vector addition, dragging the second arrow's tail to the first arrow's tip, or the first's tip to the second's tail.
 - Keep each microgame to the few moves that carry the idea. If a procedure feels long or confusing to an adult, cut it down.
@@ -35,7 +56,7 @@ The work happens where the player is already looking. Don't send the player's ga
 ## Rules
 - Always use real math notation (xⁿ, d/dx, f ∘ r, P(A), matrices in brackets), never made-up symbols. When a symbol may be new to a player, add a small key in the scene that names it in words (COMPOSE! shows "r = rotate 120°   f = flip").
 - The command (`cmd`) is the real name of the operation, ALL CAPS, ending in "!", at most about 15 characters: `POWER RULE!`, `REGROUP!`, `SOLVE FOR x!`, `DOT PRODUCT!`.
-- Two to five moves per microgame. `time` 8–11 seconds at speed 1 (the engine shortens it as the run speeds up). Set `hold: 1.4` so the result stays up long enough to show the right move after a miss.
+- Two to five moves per microgame. `time` 8–11 seconds at speed 1 (the engine shortens it as the run speeds up); shown working doesn't count against it. Set `hold` to 1.4–1.9 so the result stays up long enough to show the right move after a miss.
 - Give every meaningful part of the problem an id, so that wrong moves are possible (the classic mistakes: the wrong column first, the wrong order of operations, the wrong row). Use `MK.inert(g, ids)` for parts that are never tappable (= signs, brackets, labels), and `MK.zone(g, id, box)` for tappable/droppable areas that are not tokens (a grid region, a seesaw pan).
 - Wrong moves never end a microgame: the kit turns the part red, wobbles it and counts it (`g.s.mk.wrong`, which costs a star), and the next move keeps glowing. To act a mistake out, watch `g.s.mk.missAt` / `g.s.mk.missInfo` (`{ tap }` or `{ drag, to }`) in `update`/`draw` and play a short (≤ 1 s) temporary animation that changes nothing permanently. The kit no longer calls `onMiss`.
 - The next valid move always glows, at every level (the owner's rule). The ghost hand demonstrates it at level 0, or after a 2-second pause.
