@@ -75,7 +75,6 @@ arrows_magnitude.js
 arrows_unit.js
 linalg_transform.js
 modular_mod.js
-modular_euclid.js
 numbers_lcm.js
 numbers_div.js
 modular_binary.js
