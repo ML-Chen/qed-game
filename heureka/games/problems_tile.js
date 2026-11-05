@@ -126,7 +126,7 @@ MG.add({
     // a little bump on the finished floor: the trapped mouse
     // the trapped mouse: a wriggling bump under the finished floor, squeaking
     if (s.trap) { const k = t - s.trap, w = Math.sin(t * 18) * 3; c.save(); c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(mx + w, my, 18, 10 + Math.abs(w), 0, 0, TAU); c.fill(); c.strokeStyle = 'rgba(60,30,50,0.4)'; c.lineWidth = 2; c.stroke(); c.restore(); if (k < 1.5) B9.txt(c, '♪', mx + 14 + k * 20, my - 22 - k * 30, 22, '#fff6ea', { stroke: 'rgba(40,20,40,0.6)' }); }
-    SK.tag(c, 'Floor to cover', 180, FY - 16, 18); if (s.pcs.some(p => !p.placed)) SK.tag(c, 'Tiles', 300, 398, 18); if (!g.done && s.grid[s.mz.j][s.mz.i] < 0) SK.tag(c, 'Mouse', mx, my - 36, 18, '#ffd0d0');
+    SK.tag(c, 'Floor to cover', 180, FY - 16, 18); if (s.pcs.some(p => !p.placed)) SK.tag(c, 'Tiles', 300, 398, 18); if (!g.done && s.grid[s.mz.j][s.mz.i] < 0) SK.tag(c, 'Mouse', mx, my + 34, 18, '#ffd0d0');
     if (s.drag) { const pc = s.drag.pc, ci = Math.round((pc.x - fx) / C), cj = Math.round((pc.y - fy) / C); c.save(); c.globalAlpha = 0.3; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (const [i, j] of pc.p.cells) { c.beginPath(); c.roundRect(fx + (ci + i) * C + 3, fy + (cj + j) * C + 3, C - 6, C - 6, 8); c.stroke(); } c.restore(); piece(c, pc.p, pc.x, pc.y - 6, 1, t, { lift: true }); }
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'octopus', 318, 606, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });

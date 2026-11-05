@@ -6,15 +6,15 @@
 const SPK = [[60, 200], [300, 214], [180, 540]], STAGE = { x0: 24, x1: 336, y0: 140, y1: 596 };
 const CFG = [{ c: 6400, grow: 2.1, live: [1.2, 2.6, 4.0] }, { c: 7200, grow: 1.8, live: [1.0, 2.2, 3.4] }, { c: 8100, grow: 1.7, live: [0.8, 1.7, 2.6] }];
 const START = [[116, 256], [246, 266], [184, 468]], SINGERS = ['bird', 'duck', 'frog'], SAFE = [[110, 330], [250, 344], [128, 432]];
-function loopGain(c, x, y) { let G = 0; for (const [a, b] of SPK) G += c / Math.max(400, (x - a) ** 2 + (y - b) ** 2); return G; } // sound fades with distance squared
-function paintStage(o) {
+function loopGain(c, x, y, spk) { let G = 0; for (const [a, b] of spk) G += c / Math.max(400, (x - a) ** 2 + (y - b) ** 2); return G; } // sound fades with distance squared
+function paintStage(o, spk) {
   const fl = o.createLinearGradient(0, 0, 0, 640); fl.addColorStop(0, '#3a2440'); fl.addColorStop(1, '#2a1830'); o.fillStyle = fl; o.fillRect(0, 0, 360, 640);
   o.fillStyle = '#7a4a2a'; o.beginPath(); o.roundRect(STAGE.x0, STAGE.y0, STAGE.x1 - STAGE.x0, STAGE.y1 - STAGE.y0, 18); o.fill();
   o.strokeStyle = 'rgba(40,20,10,0.35)'; o.lineWidth = 2; for (let x = STAGE.x0 + 26; x < STAGE.x1; x += 26) { o.beginPath(); o.moveTo(x, STAGE.y0); o.lineTo(x, STAGE.y1); o.stroke(); }
   for (const [x, y, col] of [[120, 300, 'rgba(255,120,200,0.14)'], [240, 380, 'rgba(120,200,255,0.14)'], [170, 460, 'rgba(255,230,120,0.12)']]) { const gr = o.createRadialGradient(x, y, 10, x, y, 120); gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)'); o.fillStyle = gr; o.fillRect(0, 0, 360, 640); }
   o.strokeStyle = '#c8a04a'; o.lineWidth = 4; o.beginPath(); o.roundRect(STAGE.x0, STAGE.y0, STAGE.x1 - STAGE.x0, STAGE.y1 - STAGE.y0, 18); o.stroke();
   // loudspeakers seen from above: black cabinets with two cones each
-  for (const [x, y] of SPK) {
+  for (const [x, y] of spk) {
     SK.shadow(o, x + 4, y + 30, 32, 8, 0.4);
     o.fillStyle = '#16141a'; o.beginPath(); o.roundRect(x - 28, y - 30, 56, 60, 8); o.fill(); o.strokeStyle = '#4a4650'; o.lineWidth = 3; o.stroke();
     for (const [dy, r] of [[-12, 11], [12, 14]]) { const gr = o.createRadialGradient(x - 3, y + dy - 3, 1, x, y + dy, r); gr.addColorStop(0, '#6a6670'); gr.addColorStop(1, '#2a2830'); o.fillStyle = gr; o.beginPath(); o.arc(x, y + dy, r, 0, 7); o.fill(); o.fillStyle = '#111'; o.beginPath(); o.arc(x, y + dy, r * 0.3, 0, 7); o.fill(); }
@@ -27,7 +27,9 @@ MG.add({
     note: 'A feedback loop runs away when each trip round makes the signal bigger, and dies down when it makes it smaller.' },
   init(g) {
     const s = g.s, C = CFG[Math.min(2, g.level)]; s.C = C;
-    s.mics = START.map(([x, y], i) => ({ x, y, hx: x, hy: y, kind: SINGERS[i], live: C.live[i], a: 0, G: 0, calm: false, peak: 0 }));
+    s.var = SK.variant(g, 4); const mx = s.var & 1, rev = s.var & 2, X = ([x, y]) => [mx ? 360 - x : x, y]; // mirrored stage, and/or the singers start in the reverse order
+    s.spk = SPK.map(X); s.safe = SAFE.map(X); const kinds = rev ? ['frog', 'bird', 'duck'] : SINGERS, live = rev ? C.live.slice().reverse() : C.live;
+    s.mics = START.map((p, i) => { const [x, y] = X(p); return { x, y, hx: x, hy: y, kind: kinds[i], live: live[i], a: 0, G: 0, calm: false, peak: 0 }; });
     s.lap = 0; s.squeal = 0; s.screech = 0;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const m = SK.pick(s.mics, x, y, 52); if (m) { SK.dragStart(g, m, x, y); g.sfx('tap'); } },
@@ -38,7 +40,7 @@ MG.add({
     if (g.done) { if (g.result === 'fail') s.screech += dt; return; }
     let loud = 0;
     for (const m of s.mics) {
-      m.G = loopGain(C.c, m.x, m.y);
+      m.G = loopGain(C.c, m.x, m.y, s.spk);
       if (g.t < m.live) continue;
       if (!m.a && !m.calm) m.a = 0.08; // the first note reaches the speaker
       if (m.G > 1) { m.a = Math.max(m.a, 0.04) * Math.exp(C.grow * (m.G - 1) * dt); m.calm = false; }
@@ -51,11 +53,11 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail';
-    c.drawImage(g.bake('howl_stage', paintStage), 0, 0, 360, 640);
+    c.drawImage(g.bake('howl_stage' + (s.var & 1), o => paintStage(o, s.spk)), 0, 0, 360, 640);
     // the loop for each live mic: rings travel from the nearest speaker to the mic, each lap bigger if the loop gain is over 1
     for (const m of s.mics) {
       if (t < m.live || (m.calm && !lost)) continue;
-      let best = SPK[0], bd = 1e9; for (const p of SPK) { const d = SK.dist(p[0], p[1], m.x, m.y); if (d < bd) { bd = d; best = p; } }
+      let best = s.spk[0], bd = 1e9; for (const p of s.spk) { const d = SK.dist(p[0], p[1], m.x, m.y); if (d < bd) { bd = d; best = p; } }
       const a = Math.min(1, m.a), run = m.G > 1;
       if (run) { const mx = (best[0] + m.x) / 2, my = (best[1] + m.y) / 2, R = 40 + 90 * a; const gr = c.createRadialGradient(mx, my, 4, mx, my, R); gr.addColorStop(0, `rgba(255,70,50,${0.15 + 0.5 * a})`); gr.addColorStop(1, 'rgba(255,70,50,0)'); c.fillStyle = gr; c.beginPath(); c.arc(mx, my, R, 0, 7); c.fill(); }
       // the loop: sound rings fly from the speaker to the mic, the mic's signal (dots) runs back along the cable to the
@@ -80,14 +82,14 @@ MG.add({
       const ears = lost || a > 0.55; SK.animal(c, m.kind, m.x - 10 + shake, m.y, m.kind === 'bird' ? 1.45 : 1.15, { t, pose: won ? 'cheer' : ears ? 'sad' : singing ? 'wave' : 'idle', expr: won ? 'laugh' : ears ? 'wow' : singing ? 'happy' : 'think', facing: 1 });
       if (m.calm && !lost) { c.fillStyle = '#7aff9a'; c.font = '900 22px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('♪', m.x + 26 + Math.sin(t * 3) * 3, m.y - 74); }
     }
-    SK.tag(c, 'Speaker', SPK[2][0], SPK[2][1] + 46, 18); { const m = s.mics[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 4, m.y + 22, 18); }
+    SK.tag(c, 'Speaker', s.spk[2][0], s.spk[2][1] + 46, 18); { const m = s.mics.slice().sort((p, q) => p.live - q.live)[0]; if (!g.done) SK.tag(c, 'Mic', m.x + 4, m.y + 22, 18); }
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
     // guidance: drag the first squealing singer away from its speaker (the ghost hand shows one quiet spot; any will do)
     const m0 = s.mics.find(m => t >= m.live && !m.calm);
-    if (m0 && !g.done && !SK.dragging(g)) { let bs = SPK[0], bd = 1e9; for (const p of SPK) { const d = SK.dist(p[0], p[1], m0.x, m0.y); if (d < bd) { bd = d; bs = p; } } const ux = (m0.x - bs[0]) / bd, uy = (m0.y - bs[1]) / bd; SK.grab(c, g, m0.x, m0.y - 30, 36); SK.arrow(c, g, m0.x, m0.y - 30, m0.x + ux * 120, m0.y - 30 + uy * 120, { from: 40, to: 0 }); }
-    if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [SAFE[i][0], SAFE[i][1] - 30], { delay: m0.live }); }
+    if (m0 && !g.done && !SK.dragging(g)) { let bs = s.spk[0], bd = 1e9; for (const p of s.spk) { const d = SK.dist(p[0], p[1], m0.x, m0.y); if (d < bd) { bd = d; bs = p; } } const ux = (m0.x - bs[0]) / bd, uy = (m0.y - bs[1]) / bd; SK.grab(c, g, m0.x, m0.y - 30, 36); SK.arrow(c, g, m0.x, m0.y - 30, m0.x + ux * 120, m0.y - 30 + uy * 120, { from: 40, to: 0 }); }
+    if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [s.safe[i][0], s.safe[i][1] - 30], { delay: m0.live }); }
   },
   auto(g, dt, synth) {
-    const s = g.s; s.mics.forEach((m, i) => { SK.bot.drag(g, synth, 'm' + i, m.live + 0.2, [m.hx, m.hy - 20], [SAFE[i][0], SAFE[i][1] - 20], 0.35); });
+    const s = g.s; s.mics.forEach((m, i) => { SK.bot.drag(g, synth, 'm' + i, m.live + 0.2, [m.hx, m.hy - 20], [s.safe[i][0], s.safe[i][1] - 20], 0.35); });
   },
 });

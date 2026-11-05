@@ -18,13 +18,14 @@ function paintFactory(o) {
   o.fillStyle = '#5aa8e8'; o.beginPath(); o.roundRect(286, 420, 70, 74, 6); o.fill(); o.fillStyle = '#3a78b8'; o.fillRect(286, 486, 70, 12);
   for (const wx of [300, 342]) { o.fillStyle = '#2a2430'; o.beginPath(); o.arc(wx, 502, 10, 0, 7); o.fill(); }
 }
-function cup(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = '#fff6ea'; c.strokeStyle = '#8a5a6a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-8, -16); c.lineTo(8, -16); c.lineTo(6, 0); c.lineTo(-6, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#e8566a'; c.fillRect(-7, -11, 14, 4); c.restore(); }
+const STRIPES = ['#e8566a', '#5aa8e8', '#7ac870', '#b88ae0']; let STRIPE = STRIPES[0]; // the cup's colour: a different order each play
+function cup(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = '#fff6ea'; c.strokeStyle = '#8a5a6a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-8, -16); c.lineTo(8, -16); c.lineTo(6, 0); c.lineTo(-6, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = STRIPE; c.fillRect(-7, -11, 14, 4); c.restore(); }
 MG.add({
   id: 'makelots', stage: 'markets', cmd: 'MAKE CUPS TILL EACH IS CHEAP!', time: 6, mood: 'desert', winText: 'Cheap cups!', failText: 'Too costly!', hold: 1.7,
   card: { title: 'Bigger batches, cheaper cups', kind: 'Economics', ref: 'Economies of scale',
     text: 'The big machine costs the same whether it makes one cup or a hundred. That is a fixed cost. Make more cups and that cost is shared out over all of them, so each cup costs less. That is called an economy of scale.\n\nBut a factory has a limit. Push far past it and workers crowd each other, machines break down, and each extra cup costs more again. The cheapest cups come from making a lot, but not more than the factory can handle.',
     note: 'Making more spreads the fixed costs, so each unit costs less, up to a point.' },
-  init(g) { const s = g.s, L = LVM[Math.min(2, g.level)]; s.L = L; s.q = 0; s.start = 0; s.end = 0; s.cups = []; s.lastTap = -9; s.badge = 60; },
+  init(g) { const s = g.s, v = SK.variant(g, 4), L0 = LVM[Math.min(2, g.level)], L = { ...L0, cap: L0.cap + [0, 2, -1, 1][v] }; s.v = v; s.L = L; s.q = 0; s.start = 0; s.end = 0; s.cups = []; s.lastTap = -9; s.badge = 60; },
   down(g) {
     const s = g.s; SK.touched(g); if (g.done || s.end) return;
     if (!s.start) s.start = g.t; s.q++; s.lastTap = g.t; s.cups.push({ t: g.t, i: s.q }); g.sfx(s.q > s.L.cap ? 'thud' : 'pop');
@@ -38,6 +39,7 @@ MG.add({
     s.cups = s.cups.filter(cp => g.t - cp.t < 1.4);
   },
   draw(g, c) {
+    STRIPE = STRIPES[g.s.v];
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', L = s.L, over = Math.max(0, s.q - L.cap), cost = ac(s.q, L.cap);
     c.drawImage(g.bake('b8make_f', paintFactory), 0, 0, 360, 640);
     // the shift clock: a sun that crosses the window
@@ -52,7 +54,9 @@ MG.add({
     for (const [gx, gy, gr2, dir] of [[-64, -20, 22, 1], [64, -50, 16, -1]]) { c.save(); c.translate(gx, gy); c.rotate(dir * s.q * 0.5 + dir * t * 0.3); c.fillStyle = '#f5a040'; c.strokeStyle = '#8a4a10'; c.lineWidth = 2; c.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? gr2 : gr2 * 0.78; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#8a4a10'; c.beginPath(); c.arc(0, 0, 4, 0, 7); c.fill(); c.restore(); }
     c.fillStyle = '#e8566a'; c.beginPath(); c.moveTo(-26, -150); c.lineTo(26, -150); c.lineTo(10, -120); c.lineTo(-10, -120); c.closePath(); c.fill();
     c.fillStyle = '#8a9aaa'; c.fillRect(-50, -104, 100, 40); c.fillStyle = '#f5c23a'; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(-30 + i * 30, -84, 8, 0, 7); c.fill(); }
-    c.fillStyle = '#4a5a6a'; c.fillRect(-14, -60 + pump * 18, 28, 40); c.fillStyle = '#2a3a4a'; c.fillRect(-30, 20, 60, 12);
+    // the machine's cost as a big coin, cut into one sliver for every cup made: more cups, thinner slivers
+    c.save(); c.translate(0, 0); B8.coin(c, 0, -10, 26); c.strokeStyle = '#8a4a10'; c.lineWidth = 1.5; const nq = Math.min(40, s.q); for (let i = 0; i < nq; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / Math.max(1, nq); c.beginPath(); c.moveTo(0, -10); c.lineTo(Math.cos(a) * 26, -10 + Math.sin(a) * 26); c.stroke(); } c.restore();
+    c.fillStyle = '#4a5a6a'; c.fillRect(-14, -60 + pump * 18 - 40, 28, 14); c.fillStyle = '#2a3a4a'; c.fillRect(-30, 20, 60, 12);
     c.restore();
     if (over > 0) for (let i = 0; i < Math.min(6, over); i++) { const q = (t * 0.8 + i / 6) % 1; c.fillStyle = `rgba(80,70,80,${0.5 * (1 - q)})`; c.beginPath(); c.arc(MACH.x - 30 + i * 12 + Math.sin(q * 5 + i) * 8, MACH.y - 130 - q * 80, 10 + q * 16, 0, 7); c.fill(); }
     // cups popping out and riding to the truck
@@ -65,6 +69,8 @@ MG.add({
     // the price ring and the cost badge on the door
     c.save(); c.strokeStyle = cost <= L.price ? '#5ad07a' : '#3a1640'; c.lineWidth = 4; c.setLineDash([7, 5]); c.lineDashOffset = -t * 15; c.beginPath(); c.arc(BADGE.x, BADGE.y, 16 * L.price + 3, 0, 7); c.stroke(); c.restore();
     c.save(); c.globalAlpha = 0.92; B8.coin(c, BADGE.x, BADGE.y, s.badge, 0, cost <= L.price ? {} : { col: '#f0a040' }); c.restore();
+    SK.tag(c, 'Machine cost', MACH.x, MACH.y + 46, 18);
+    if (cost <= L.price) { c.save(); c.strokeStyle = '#2a9a4a'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(BADGE.x + 28, BADGE.y - 4); c.lineTo(BADGE.x + 36, BADGE.y + 6); c.lineTo(BADGE.x + 52, BADGE.y - 16); c.stroke(); c.restore(); }
     if (!s.start) SK.glow(c, g, MACH.x, MACH.y - 40, 70);
     SK.tag(c, 'Cost per cup', BADGE.x, 300, 18); SK.tag(c, 'Price', BADGE.x, 136, 18); SK.tag(c, 'Shift', 275, 238, 18); if (over > 0) SK.tag(c, 'Too crowded', MACH.x, MACH.y + 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     if (!s.end && cost > L.price && over === 0) SK.demo(g, c, 'tap', [MACH.x, MACH.y - 40], null, { delay: 0.7, period: 0.5 }); // keep mashing while the badge is outside the ring

@@ -5,8 +5,14 @@
 // early and it is still hungry. Level 2: the price changes halfway through the meal.
 const ROW = i => 126 + i * 44, HEARTY = 396, SLICEY = 440, N = 6, SC = { x: 196, y: 236, L: 82 }, FULL = { x: 58, y: 452 };
 function heart(c, x, y, r, col = '#ff5a8a') { c.save(); c.translate(x, y); const s = r / 10; c.scale(s, s); c.fillStyle = col; c.strokeStyle = '#a81a4a'; c.lineWidth = 2 / s; c.beginPath(); c.moveTo(0, 9); c.bezierCurveTo(-16, -2, -10, -15, 0, -6); c.bezierCurveTo(10, -15, 16, -2, 0, 9); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.ellipse(-5, -6, 3, 2, -0.6, 0, 7); c.fill(); c.restore(); }
-function slice(c, x, y, s = 1, rot = 0) {
+const FOODS = ['pizza', 'cake', 'pie', 'melon']; // a different treat each play
+function slice(c, x, y, s = 1, rot = 0, food = 'pizza') {
   c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s);
+  if (food !== 'pizza') { const [crust, fill, top] = { cake: ['#f8e8d0', '#f8a8c8', '#e8403a'], pie: ['#d8954a', '#9a3a8a', '#f8e0a0'], melon: ['#5ab050', '#f06a6a', '#2a1a1a'] }[food];
+    c.fillStyle = crust; c.beginPath(); c.moveTo(-17, -22); c.quadraticCurveTo(0, -30, 17, -22); c.lineTo(0, 18); c.closePath(); c.fill();
+    c.fillStyle = fill; c.beginPath(); c.moveTo(-13, -17); c.quadraticCurveTo(0, -23, 13, -17); c.lineTo(0, 12); c.closePath(); c.fill();
+    c.fillStyle = top; if (food === 'melon') for (const [px, py] of [[-5, -10], [4, -8], [0, 0]]) { c.beginPath(); c.ellipse(px, py, 1.6, 2.6, 0, 0, 7); c.fill(); } else { c.beginPath(); c.arc(0, -24, 4, 0, 7); c.fill(); }
+    c.restore(); return; }
   c.fillStyle = '#d8954a'; c.beginPath(); c.moveTo(-17, -22); c.quadraticCurveTo(0, -30, 17, -22); c.lineTo(0, 18); c.closePath(); c.fill();
   c.fillStyle = '#f8d060'; c.beginPath(); c.moveTo(-14, -18); c.quadraticCurveTo(0, -24, 14, -18); c.lineTo(0, 14); c.closePath(); c.fill();
   c.fillStyle = '#d8402a'; for (const [px, py] of [[-5, -12], [5, -10], [0, -2]]) { c.beginPath(); c.arc(px, py, 3.6, 0, 7); c.fill(); }
@@ -26,10 +32,11 @@ function paintDiner(o) {
 MG.add({
   id: 'stopeating', stage: 'markets', cmd: 'EAT WHILE IT\'S WORTH THE COIN!', time: 6, mood: 'desert', winText: 'Stopped at the right slice!', failText: 'Too full!', hold: 1.7,
   card: { title: 'Stop when the next one isn\'t worth it', kind: 'Economics', ref: 'Marginal benefit',
-    text: 'The first slice of pizza is wonderful. The second is still great. By the fifth, you hardly enjoy it. The extra enjoyment from one more slice is called its marginal benefit, and it usually shrinks as you have more.\n\nEach slice costs the same coin. So keep buying while the next slice is worth more to you than its price, and stop when it is worth less. When the price changes, the best place to stop changes too.',
+    text: 'The first slice of a treat is wonderful. The second is still great. By the fifth, you hardly enjoy it. The extra enjoyment from one more slice is called its marginal benefit, and it usually shrinks as you have more.\n\nEach slice costs the same coin. So keep buying while the next slice is worth more to you than its price, and stop when it is worth less. When the price changes, the best place to stop changes too.',
     note: 'Keep going while the next one is worth more than it costs; stop when it isn\'t.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
+    s.food = FOODS[SK.variant(g, FOODS.length)];
     // hearts shrink slice by slice; where they cross the coin varies (never too close to call)
     const start = 1.45 + g.rand() * 0.15, step = 0.17 + g.rand() * 0.07;
     s.h = Array.from({ length: N }, (_, i) => Math.max(0.25, start - i * step));
@@ -63,14 +70,14 @@ MG.add({
     if (s.eaten < N) { heart(c, lx, ly + 30, 19 * hN); B8.coin(c, rx, ry + 30, 22 * pN * pop); }
     SK.tag(c, 'Enjoyment', lx, ly + 82, 18); SK.tag(c, 'Price', rx, ry + 82, 18);
     // the slices left on the plate, each with a small heart showing how much it would be enjoyed
-    for (let i = s.eaten; i < N; i++) { const x = ROW(i); heart(c, x, HEARTY, 7.5 * s.h[i]); slice(c, x, SLICEY, 0.95); }
+    for (let i = s.eaten; i < N; i++) { const x = ROW(i); heart(c, x, HEARTY, 7.5 * s.h[i]); slice(c, x, SLICEY, 0.95, 0, s.food); }
     if (s.eaten < N && !g.done) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.roundRect(ROW(s.eaten) - 22, HEARTY - 22, 44, SLICEY - HEARTY + 44, 12); c.stroke(); c.restore(); }
     // the "I'm full" sign by the rabbit
     c.fillStyle = s.stopped ? '#f5c23a' : '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 3; c.beginPath(); c.arc(FULL.x, FULL.y, 30, 0, 7); c.fill(); c.stroke();
     c.fillStyle = '#3a1640'; c.beginPath(); c.roundRect(FULL.x - 12, FULL.y - 16, 24, 26, 6); c.fill(); c.fillRect(FULL.x - 16, FULL.y - 8, 6, 14); // a hand: stop
     SK.tag(c, "I'm full", FULL.x, FULL.y + 46, 18);
     // the slice being eaten flies to the rabbit
-    if (s.fly && t - s.fly.t < 0.35) { const q = (t - s.fly.t) / 0.35; slice(c, SK.lerp(ROW(s.fly.i), 64, q), SK.lerp(SLICEY, 470, q) - Math.sin(q * Math.PI) * 50, 0.95 - q * 0.4, q * 3); }
+    if (s.fly && t - s.fly.t < 0.35) { const q = (t - s.fly.t) / 0.35; slice(c, SK.lerp(ROW(s.fly.i), 64, q), SK.lerp(SLICEY, 470, q) - Math.sin(q * Math.PI) * 50, 0.95 - q * 0.4, q * 3, s.food); }
     // the rabbit: its tummy swells with each slice; past the best point it groans
     const k = SK.clamp(s.eaten / 5, 0, 1.4), groan = full && t - s.end > 0.1;
     SK.animal(c, 'rabbit', 60, 600, 1.25, { t, pose: won ? 'cheer' : hungry ? 'sad' : 'idle', expr: won ? 'laugh' : groan ? 'wow' : hungry ? 'sad' : s.fly && t - s.fly.t < 0.4 ? 'laugh' : 'happy' });

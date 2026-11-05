@@ -7,7 +7,7 @@
 const LANES = [190, 316, 442], X0 = 50, LINE = 284, WALL = 326, KY = 566, KX = [70, 180, 290];
 const BOTS = [{ tau: 0.12, col: '#ff7a5a', w: 40, rider: 'rabbit' }, { tau: 0.2, col: '#5ab8ff', w: 48, rider: 'ant' }, { tau: 0.3, col: '#8ad06a', w: 58, rider: 'beaver' }];
 const VMAX = 170, gainOf = k => 0.04 * Math.pow(150, k), kOf = K => Math.log(K / 0.04) / Math.log(150);
-function paintLanes(o) {
+function paintLanes(o, bots) {
   o.fillStyle = '#d8d0c0'; o.fillRect(0, 0, 360, 640);
   const rnd = P.rng(9); for (let i = 0; i < 400; i++) { o.fillStyle = `rgba(120,100,80,${0.05 + rnd() * 0.08})`; o.fillRect(rnd() * 360, rnd() * 640, 2, 2); }
   for (let i = 0; i < 3; i++) {
@@ -20,11 +20,11 @@ function paintLanes(o) {
     for (let r = 0; r < 6; r++) for (let cI = 0; cI < 2; cI++) { o.fillStyle = (r + cI) % 2 ? '#b04a3a' : '#c85a44'; o.fillRect(WALL + cI * 9 + (r % 2 ? 4 : 0), y - 48 + r * 16, 9, 15); }
     o.fillStyle = 'rgba(0,0,0,0.25)'; o.fillRect(WALL - 3, y - 48, 3, 96);
     // a cable from this lane down to its knob
-    o.fillStyle = BOTS[i].col; o.beginPath(); o.roundRect(18, y - 48, 8, 96, [12, 0, 0, 12]); o.fill(); // the lane's colour, matching its knob
+    o.fillStyle = bots[i].col; o.beginPath(); o.roundRect(18, y - 48, 8, 96, [12, 0, 0, 12]); o.fill(); // the lane's colour, matching its knob
   }
   // the control panel
   o.fillStyle = '#3a3a48'; o.beginPath(); o.roundRect(12, KY - 46, 336, 92, 16); o.fill(); o.strokeStyle = '#5a5a6a'; o.lineWidth = 3; o.stroke();
-  for (let i = 0; i < 3; i++) { o.fillStyle = BOTS[i].col; o.beginPath(); o.roundRect(KX[i] - 40, KY - 42, 80, 6, 3); o.fill(); }
+  for (let i = 0; i < 3; i++) { o.fillStyle = bots[i].col; o.beginPath(); o.roundRect(KX[i] - 40, KY - 42, 80, 6, 3); o.fill(); }
 }
 function robot(c, b, B, y, t) {
   const x = b.x - B.w; c.save(); c.translate(x, y);
@@ -41,7 +41,8 @@ MG.add({
     note: 'A feedback controller corrects in proportion to the error; the gain must be big enough to get there and small enough not to overshoot.' },
   init(g) {
     const s = g.s, slip = g.level >= 2 ? 1.5 : g.level >= 1 ? 1.2 : 1;
-    s.b = BOTS.map((B, i) => ({ i, x: X0 + B.w, v: 0, tau: B.tau * slip, kn: B6.knob(KX[i], KY, 24, 0.06), settle: 0, done: false, bonk: 0 }));
+    s.var = SK.variant(g, 6); s.bt = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]][s.var].map(j => BOTS[j]); // which robot drives in which lane
+    s.b = s.bt.map((B, i) => ({ i, x: X0 + B.w, v: 0, tau: B.tau * slip, kn: B6.knob(KX[i], KY, 24, 0.06), settle: 0, done: false, bonk: 0 }));
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; for (const b of s.b) if (!b.done && B6.knobDown(g, b.kn, x, y, 1.9)) return; },
   move(g, x, y) { for (const b of g.s.b) if (b.kn.grab) B6.knobMove(g, b.kn, x, y); },
@@ -59,9 +60,9 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, won = g.result === 'win';
-    c.drawImage(g.bake('approach_lanes', paintLanes), 0, 0, 360, 640);
+    c.drawImage(g.bake('approach_lanes' + s.var, o => paintLanes(o, s.bt)), 0, 0, 360, 640);
     for (const b of s.b) {
-      const B = BOTS[b.i], y = LANES[b.i];
+      const B = s.bt[b.i], y = LANES[b.i];
       // the sensor's beam to the wall: the error it measures
       if (!b.done) { c.save(); c.strokeStyle = 'rgba(255,60,80,0.5)'; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(b.x + 2, y); c.lineTo(WALL, y); c.stroke(); c.restore(); }
       robot(c, b, B, y, t);
