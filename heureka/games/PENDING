@@ -1,0 +1,2 @@
+# Heurēka! microgames left out of every build until they pass review (one file name or glob per line)
+apps_wire.js  # owner: "feels like a multiple choice test where you have to guess the right answer"
