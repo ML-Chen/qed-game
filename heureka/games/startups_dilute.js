@@ -3,7 +3,7 @@
 // slices squeeze thinner to make room, the cash goes in, and the whole pie grows bigger in the oven. Say no (wait) and the pie stays small while the old oven
 // sputters, smokes and breaks down. Level 0: two rounds; level 1: three; level 2: three plus the staff option pool.
 const PIE = { x: 180, y: 330, r: 62 }, OVEN = { x: 300, y: 236 };
-const COL = { rabbit: '#f49ab8', beaver: '#c98a52', fox: '#5aa8e8', owl: '#7ac870', duck: '#f5c23a', turtle: '#a88ae0' };
+const COL = { rabbit: '#f49ab8', beaver: '#c98a52', fox: '#5aa8e8', owl: '#7ac870', duck: '#f5c23a', turtle: '#a88ae0', bird: '#5ac8c8' };
 function paintKitchen(o) {
   const wall = o.createLinearGradient(0, 0, 0, 440); wall.addColorStop(0, '#ffd8c0'); wall.addColorStop(1, '#ffeedd'); o.fillStyle = wall; o.fillRect(0, 0, 360, 640);
   o.strokeStyle = 'rgba(200,120,110,0.18)'; o.lineWidth = 2; for (let y = 130; y < 430; y += 30) { o.beginPath(); o.moveTo(0, y); o.lineTo(360, y); o.stroke(); } for (let x = 0; x < 360; x += 30) { o.beginPath(); o.moveTo(x, 130); o.lineTo(x, 430); o.stroke(); }
@@ -35,12 +35,12 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
     // funding rounds, one investor at a time, each from a different spot (level 2 ends with the staff option pool)
-    const R = [
-      { who: 'fox', f: 0.25, hx: 296, hy: 470, ax: 302, ay: 606, face: -1 },
-      { who: 'owl', f: 0.2, hx: 62, hy: 470, ax: 54, ay: 606, face: 1 },
-      { who: 'duck', f: 0.15, hx: 316, hy: 296, ax: 320, ay: 400, face: -1 },
-      { who: 'turtle', f: 0.1, hx: 46, hy: 296, ax: 42, ay: 400, face: 1 },
-    ].slice(0, [2, 3, 4][L]);
+    // four line-ups: which investors come, in what order, from which spots (a new one each play)
+    const SPOTS = [{ hx: 296, hy: 470, ax: 302, ay: 606, face: -1 }, { hx: 62, hy: 470, ax: 54, ay: 606, face: 1 }, { hx: 316, hy: 296, ax: 320, ay: 400, face: -1 }, { hx: 46, hy: 296, ax: 42, ay: 400, face: 1 }];
+    const v = SK.variant(g, 4), who = [['fox', 'owl', 'duck'], ['duck', 'fox', 'bird'], ['owl', 'bird', 'fox'], ['bird', 'duck', 'owl']][v], order = [[0, 1, 2], [1, 0, 2], [2, 1, 0], [1, 2, 0]][v], fs = [0.25, 0.2, 0.15];
+    const R = who.map((w, i) => ({ who: w, f: L >= 2 ? [0.2, 0.2, 0.15][i] : fs[i], ...SPOTS[order[i]] }));
+    if (L >= 2) R.push({ who: 'turtle', f: 0.1, ...SPOTS[3] });
+    R.length = [2, 3, 4][L];
     s.items = R.map((it, i) => ({ ...it, x: it.hx, y: it.hy, in: 0, show: i ? 0 : 0.01 }));
     s.r = PIE.r; s.dealT = 0;
   },

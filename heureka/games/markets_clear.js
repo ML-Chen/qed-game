@@ -26,8 +26,9 @@ function paintMarket(o) {
   o.fillStyle = 'rgba(255,255,255,0.25)'; o.fillRect(TRACK.x - 3, TRACK.y0 - 12, 3, TRACK.y1 - TRACK.y0 + 40);
   o.fillStyle = '#5a3a1a'; o.beginPath(); o.ellipse(TRACK.x, TRACK.y1 + 36, 26, 8, 0, 0, 7); o.fill();
 }
-function apple(c, x, y, r, rot = 0) {
-  if (rot > 0) { c.fillStyle = P.mix('#e8403a', '#7a5a2a', Math.min(1, rot)); } else c.fillStyle = '#e8403a';
+const FRUITS = [['Apples', '#e8403a'], ['Oranges', '#f59a30'], ['Pears', '#a8c840'], ['Plums', '#8a4aa8']]; // a different crop each play
+function apple(c, x, y, r, rot = 0, col = '#e8403a') {
+  c.fillStyle = rot > 0 ? P.mix(col, '#7a5a2a', Math.min(1, rot)) : col;
   c.beginPath(); c.arc(x - r * 0.35, y, r * 0.75, 0, 7); c.arc(x + r * 0.35, y, r * 0.75, 0, 7); c.fill();
   c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.ellipse(x - r * 0.4, y - r * 0.3, r * 0.22, r * 0.14, -0.5, 0, 7); c.fill();
   c.strokeStyle = '#5a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(x, y - r * 0.6); c.lineTo(x + 2, y - r * 1.05); c.stroke();
@@ -49,6 +50,7 @@ MG.add({
     note: 'A market clears at the price where buyers want as much as sellers bring.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
+    s.fruit = SK.variant(g, FRUITS.length);
     s.days = LV[L]; s.day = 0; s.V = s.days[0]; s.p = g.rand() < 0.5 ? 0.08 : 0.92; if (L === 0) s.p = 0.08; s.moved = 0; s.held = false; s.doneP = null; s.res = null;
     s.vis = { a: [0, 0, 0, 0, 0, 0], b: [1, 1, 1, 1, 1, 1] }; // smooth in/out of apples and buyers
   },
@@ -82,7 +84,7 @@ MG.add({
       const has = R && rk > 0.5 && matched(i), sadW = !k.a[i] && k.b[i], showSad = sadW && (!R || rk > 0.5); // a buyer with no apple above them is left waiting
       c.save(); c.globalAlpha = al;
       SK.animal(c, KINDS[i], x, QUEUE + (i % 2) * 22, 0.74, { t, phase: i, pose: has && won ? 'cheer' : showSad ? 'sad' : v < 0.95 ? 'walk' : 'idle', expr: has ? 'laugh' : showSad ? 'sad' : 'happy', facing: v < 0.95 ? 1 : 1,
-        hold: has ? (h => apple(h, 0, -2, 9)) : null });
+        hold: has ? (h => apple(h, 0, -2, 9, 0, FRUITS[s.fruit][1])) : null });
       c.restore();
       if (showSad) { c.save(); c.globalAlpha = R ? Math.min(1, (rk - 0.5) * 3) : 0.9; c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.ellipse(x + 14, QUEUE + (i % 2) * 22 - 78, 13, 13, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#3a1640'; c.font = '900 18px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x + 14, QUEUE + (i % 2) * 22 - 77); c.restore(); }
     }
@@ -92,7 +94,7 @@ MG.add({
       const rot = k.a[i] && !k.b[i] ? (R ? SK.clamp(0.45 + (t - R.t) * 1.5, 0, 1) : 0.45) : 0; // an apple nobody buys starts to rot
       if (flying && rk > 0.5) continue; // now held by its buyer
       const ax = flying ? SK.lerp(CX(i), CX(i) + 4, rk * 2) : CX(i), ay = flying ? SK.lerp(COUNTER - 6, QUEUE - 40, rk * 2) : COUNTER - 6 - (1 - v) * 30;
-      c.save(); c.globalAlpha = v; apple(c, ax, ay, 17, rot); c.restore();
+      c.save(); c.globalAlpha = v; apple(c, ax, ay, 17, rot, FRUITS[s.fruit][1]); c.restore();
       if (rot > 0.3) for (let f = 0; f < 2; f++) { const a = t * 9 + f * 3 + i; c.fillStyle = '#2a2430'; c.beginPath(); c.arc(ax + Math.cos(a) * 14, ay - 14 + Math.sin(a * 1.3) * 8, 2.2, 0, 7); c.fill(); }
     }
     // the price tag on its pole
@@ -102,8 +104,8 @@ MG.add({
     priceTag(c, TRACK.x + 4, ty, s.p, s.held);
     // the state of the market, live as you slide, and the labels
     const nb = k.b.filter(Boolean).length, na = k.a.filter(Boolean).length;
-    SK.tag(c, na === nb ? 'Every apple sold' : na < nb ? 'Shortage: buyers wait' : 'Surplus: apples rot', 150, 584, 20, '#fff6ea', na === nb ? 'rgba(40,140,70,0.88)' : 'rgba(190,40,40,0.88)');
-    SK.tag(c, 'Price', TRACK.x, TRACK.y0 - 34, 18); SK.tag(c, 'Buyers', 40, 418, 18); SK.tag(c, 'Apples', 228, 270, 18);
+    SK.tag(c, na === nb ? 'All sold, nobody waits' : na < nb ? 'Shortage: buyers wait' : 'Surplus: ' + FRUITS[s.fruit][0].toLowerCase() + ' rot', 150, 584, 20, '#fff6ea', na === nb ? 'rgba(40,140,70,0.88)' : 'rgba(190,40,40,0.88)');
+    SK.tag(c, 'Price', TRACK.x, TRACK.y0 - 34, 18); SK.tag(c, 'Buyers', 40, 418, 18); SK.tag(c, FRUITS[s.fruit][0], 228, 270, 18);
     // guidance: slide the tag up from the bottom
     if (!R) SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(this.band(g))], { delay: 0.8, period: 2 }); // toward today's clearing price
   },

@@ -1,13 +1,13 @@
 // TRADE! (business EL-16) — a picnic. You (the bird) have a box of apples and dream of a pear, a banana and grapes.
 // Three friends each have one of those and dream of an apple. Drag an apple to each friend: their fruit slides back,
 // and every lunch box ends up with more variety than it started with. Give one friend a second apple and it is left
-// juggling apples it didn't want. Level 2: the frog wants a banana, not an apple, so first trade an apple for the owl's
+// juggling apples it didn't want. Levels 1 and 2: the frog wants a banana, not an apple, so first trade an apple for the owl's
 // banana, then the banana for the frog's pear (a chain of trades).
 const ME = { x: 150, y: 566 }, POS = { frog: { x: 62, y: 418 }, owl: { x: 180, y: 336 }, duck: { x: 298, y: 418 } };
 const BOXCOL = { me: '#5aa8e8', frog: '#7ac870', owl: '#b88ae0', duck: '#f5c23a' };
 const SETUP = [
   { me: ['apple', 'apple', 'apple'], dream: ['pear', 'banana', 'grapes'], f: { frog: ['pear', 'apple'], owl: ['banana', 'apple'], duck: ['grapes', 'apple'] } },
-  { me: ['apple', 'apple', 'apple'], dream: ['pear', 'banana', 'grapes'], f: { frog: ['pear', 'apple'], owl: ['banana', 'apple'], duck: ['grapes', 'apple'] } },
+  { me: ['apple', 'apple'], dream: ['pear', 'grapes'], f: { frog: ['pear', 'banana'], owl: ['banana', 'apple'], duck: ['grapes', 'apple'] } },
   { me: ['apple', 'apple'], dream: ['pear', 'grapes'], f: { frog: ['pear', 'banana'], owl: ['banana', 'apple'], duck: ['grapes', 'apple'] } },
 ]; // f: [what the friend has, what it wants]
 function fruit(c, kind, x, y, s = 1, rot = 0) {
@@ -44,9 +44,12 @@ MG.add({
     note: 'When both sides choose to trade, both can end up better off.' },
   init(g) {
     const S = SETUP[Math.min(2, g.level)], s = g.s;
-    s.box = { me: S.me.slice() }; s.has = {}; s.want = {}; s.got = {};
-    for (const w in S.f) { s.box[w] = [S.f[w][0], S.f[w][0]]; s.has[w] = S.f[w][0]; s.want[w] = S.f[w][1]; s.got[w] = 0; }
-    s.dream = S.dream; s.fly = []; s.drag = null; s.juggle = 0; s.jugWho = null;
+    // four ways to deal out the fruit: who has what changes each play (apples stay yours)
+    const perm = [['pear', 'banana', 'grapes'], ['banana', 'grapes', 'pear'], ['grapes', 'pear', 'banana'], ['pear', 'grapes', 'banana']][SK.variant(g, 4)];
+    const m = k => k === 'apple' ? k : perm[['pear', 'banana', 'grapes'].indexOf(k)];
+    s.box = { me: S.me.map(m) }; s.has = {}; s.want = {}; s.got = {};
+    for (const w in S.f) { const h = m(S.f[w][0]); s.box[w] = [h, h]; s.has[w] = h; s.want[w] = m(S.f[w][1]); s.got[w] = 0; }
+    s.dream = S.dream.map(m); s.fly = []; s.drag = null; s.juggle = 0; s.jugWho = null;
   },
   slots(g, who) { const p = who === 'me' ? ME : POS[who], n = g.s.box[who].length, sp = who === 'me' ? 34 : 28; return g.s.box[who].map((k, i) => ({ k, x: p.x + (i - (n - 1) / 2) * sp, y: p.y })); },
   owned(g) { return g.s.dream.map(k => g.s.box.me.includes(k)); },

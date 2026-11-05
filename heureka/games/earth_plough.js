@@ -25,8 +25,8 @@ MG.add({
     text: 'Cold air is denser than warm air, so it is heavier for its size. When a mass of cold air moves into warm air, it does not climb over. It slides along the ground underneath and pushes the warm air up, like a snowplough. This moving edge is called a cold front.\n\nAs the warm, damp air rises, it cools. Its water vapour turns into tiny droplets, which build a tall cloud. If the air is lifted fast, the cloud grows into a thunderstorm with heavy rain.',
     note: 'Heavy cold air pushes under warm air and lifts it, and rising damp air makes storm clouds.' },
   init(g) {
-    const s = g.s, L = PO_L[Math.min(2, g.level)]; s.L = L; s.f = L.f0; s.lift = 0; s.push = L.f0; s.drop = 0; s.dropV = 0; s.stormT = 0; s.grab = null;
-    s.dirs = g.level >= 2 ? [1, -1, 1] : [1, -1]; s.k = 0; s.resetT = 0; // each front comes from a new side
+    const s = g.s, v = SK.variant(g, 4), L0 = PO_L[Math.min(2, g.level)], L = { f0: L0.f0, xt: L0.xt + (v >> 1) * 14 }; s.L = L; s.v = v; s.f = L.f0; s.lift = 0; s.push = L.f0; s.drop = 0; s.dropV = 0; s.stormT = 0; s.grab = null;
+    const d0 = v % 2 ? -1 : 1; s.dirs = g.level >= 2 ? [d0, -d0, d0] : [d0, -d0]; s.k = 0; s.resetT = 0; // variants: which side the first front comes from, how far the town is; each front comes from a new side
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.drop || s.stormT) return; x = s.dirs[s.k] < 0 ? 360 - x : x; if (x < s.f + 40 && y > PO_G - 190 - s.lift && y < PO_G + 40) { s.grab = { dx: s.f - x, y0: y }; g.sfx('wind'); } },
   move(g, x, y) {
@@ -75,9 +75,8 @@ MG.add({
     // the penguin rides the cold air
     const won = g.result === 'win', lost = g.result === 'fail', px = Math.max(30, f - 120);
     SK.animal(c, 'penguin', px, PO_G - lift - 112 + 18 * SK.clamp((px - (f - 160)) / 160, -1, 1) * 0 , 0.62, { t, noShadow: true, pose: won ? 'cheer' : lost ? 'sad' : s.grab ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    if (!s.grab && !g.done && !s.stormT) SK.glow(c, g, f - 30, PO_G - 50, 40, '#ffe27a', { level: 2 });
-    // where to push: a dashed arrow along the ground to the town
-    if (!s.stormT && !g.done && s.push < L.xt) { c.save(); c.strokeStyle = 'rgba(235,248,255,0.85)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(s.push + 14, PO_G - 12); c.lineTo(L.xt + 10, PO_G - 12); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(L.xt + 2, PO_G - 22); c.lineTo(L.xt + 14, PO_G - 12); c.lineTo(L.xt + 2, PO_G - 2); c.stroke(); c.restore(); }
+    // what moves (the cold air's nose), where it goes (the town under the warm air), and the way there
+    if (!s.stormT && !s.drop) B5.hint(c, g, [f - 30, PO_G - 50], [L.xt + 10, PO_G - 40], { ra: 30, rb: 30 });
     SK.demo(g, c, 'drag', [s.f - 30, PO_G - 40], [L.xt - 10, PO_G - 40], { never: !!s.stormT });
     c.restore();
     // labels, drawn unmirrored

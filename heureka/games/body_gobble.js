@@ -9,7 +9,7 @@ const CUTS = [180, 110, 252, 146];
 function paintTissue(o, cx = 180) { o.save(); o.translate(cx - 180, 0); const dx0 = cx - 180;
   // skin at the top with a cut and a thorn, then the soft pink tissue fluid
   const bg = o.createLinearGradient(0, 140, 0, 640); bg.addColorStop(0, '#ffd8d0'); bg.addColorStop(1, '#f4b0a8');
-  o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
+  o.fillStyle = bg; o.fillRect(-220, 0, 800, 640);
   const sk = o.createLinearGradient(0, 0, 0, 150); sk.addColorStop(0, '#f6c8a0'); sk.addColorStop(0.6, '#e8a888'); sk.addColorStop(1, '#d88878');
   o.fillStyle = sk; o.beginPath(); o.moveTo(-200, 0); o.lineTo(560, 0); o.lineTo(560, 140); for (let x = 560; x >= -200; x -= 20) o.lineTo(x, 140 + Math.sin(x * 0.07) * 5); o.closePath(); o.fill();
   // skin cells as rows of rounded bricks

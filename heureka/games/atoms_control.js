@@ -6,7 +6,7 @@
 // the power stays steady and the town's houses light up one by one. Level 2: some neutrons come out late, so the
 // reaction answers the rods only after a delay.
 (() => {
-  const CORE = { l: 34, r: 286, t: 300, b: 548 }, LEV = { x: 322, t: 300, b: 548 }, RODS = [92, 160, 228], RW = 14;
+  const CORE = { l: 34, r: 286, t: 300, b: 548 }, LEV = { x: 322, t: 300, b: 548 }, RODSETS = [[77, 161, 245], [119, 203], [77, 140, 203, 266], [98, 182, 245]], RW = 14;
   const ATOMS = []; for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) ATOMS.push([56 + i * 42 - (i >= 3 ? 0 : 0), 322 + j * 42]);
   const SPEED = 230, LIFE = 1.5, HIT = 9, COOL = 0.35, BAND = [6, 22], MAXN = 70, HOUSES = 6;
   const town = [[150, 226], [186, 218], [222, 228], [258, 216], [294, 224], [330, 212]];
@@ -38,13 +38,13 @@
     for (let i = 0; i < k; i++) { const ang = g.rand() * Math.PI * 2, n = { x, y, vx: Math.cos(ang) * SPEED, vy: Math.sin(ang) * SPEED, age: 0, from: a }; if (s.late && i === 0) s.wait.push({ n, at: g.t + 0.9 }); else s.ns.push(n); }
   }
   MG.add({
-    id: 'atoms_control', stage: 'atoms', cmd: 'MOVE THE RODS TO KEEP THE LIGHTS ON!', time: 8, mood: 'night', winText: 'Steady power!', failText: 'Lights out!',
+    id: 'atoms_control', stage: 'atoms', cmd: 'MOVE THE RODS TO KEEP THE LIGHTS ON!', time: 9, mood: 'night', winText: 'Steady power!', failText: 'Lights out!',
     card: { title: 'A chain reaction under control', kind: 'Physics', ref: 'Nuclear reactor control',
       text: 'When a neutron hits a uranium atom, the atom splits, gives off heat, and throws out two or three new neutrons. Those can split more atoms: a chain reaction. If each split leads to more than one new split, the reaction grows faster and faster. If it leads to fewer than one, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Operators move them so each split causes about one more, and the heat stays steady. That heat boils water to drive generators. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
       note: 'A reactor gives steady power when each split causes about one more split.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
-      s.d = 0.92; s.late = lv >= 2; s.need = lv ? 3.0 : 2.6; s.atoms = ATOMS.map(([x, y]) => ({ x, y, cool: 0 }));
+      s.v = SK.variant(g, 4); s.rods = RODSETS[s.v]; s.d = 0.92; s.late = lv >= 2; s.need = lv ? 2.8 : 2.6; s.atoms = ATOMS.map(([x, y]) => ({ x, y, cool: 0 }));
       s.ns = []; s.wait = []; s.splits = []; s.absorb = []; s.count = 0; s.P = 0; s.steady = 0; s.src = 0; s.hot = 0; s.lev = { x: LEV.x, y: 0 }; s.lev.y = LEV.t + s.d * (LEV.b - LEV.t);
       g.def.failText = 'Lights out!';
     },
@@ -62,7 +62,7 @@
       for (const n of s.ns) {
         n.x += n.vx * dt; n.y += n.vy * dt; n.age += dt;
         if (n.age > LIFE || n.x < CORE.l || n.x > CORE.r || n.y < CORE.t || n.y > CORE.b) continue; // escaped or slowed away
-        if (n.y < tip && RODS.some(rx => Math.abs(n.x - rx) < RW / 2 + 1)) { s.absorb.push({ x: n.x, y: n.y, t: g.t }); continue; } // soaked up by a rod
+        if (n.y < tip && s.rods.some(rx => Math.abs(n.x - rx) < RW / 2 + 1)) { s.absorb.push({ x: n.x, y: n.y, t: g.t }); continue; } // soaked up by a rod
         const a = s.atoms.find(q => !q.cool && q !== n.from && Math.abs(q.x - n.x) < HIT && Math.abs(q.y - n.y) < HIT);
         if (a) { splitAt(g, s, a, a.x, a.y); continue; }
         keep.push(n);
@@ -93,7 +93,7 @@
       for (const p of s.splits) { const q = (t - p.t) / 0.45; if (q >= 1 || q < 0) continue; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#fff2a0'; c.beginPath(); c.arc(p.x, p.y, 6 + q * 16, 0, 7); c.fill(); c.restore(); }
       for (const n of s.ns) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(n.x, n.y, 3.4, 0, 7); c.fill(); c.strokeStyle = 'rgba(154,216,255,0.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(n.x - n.vx * 0.04, n.y - n.vy * 0.04); c.stroke(); }
       // the control rods, hanging from the top down to their tips
-      for (const rx of RODS) { const rg = c.createLinearGradient(rx - RW / 2, 0, rx + RW / 2, 0); rg.addColorStop(0, '#22222c'); rg.addColorStop(0.5, '#5a5a6a'); rg.addColorStop(1, '#22222c'); c.fillStyle = rg; c.fillRect(rx - RW / 2, CORE.t, RW, tip - CORE.t); }
+      for (const rx of s.rods) { const rg = c.createLinearGradient(rx - RW / 2, 0, rx + RW / 2, 0); rg.addColorStop(0, '#22222c'); rg.addColorStop(0.5, '#5a5a6a'); rg.addColorStop(1, '#22222c'); c.fillStyle = rg; c.fillRect(rx - RW / 2, CORE.t, RW, tip - CORE.t); }
       for (const p of s.absorb) { const q = (t - p.t) / 0.3; if (q >= 1 || q < 0) continue; c.fillStyle = `rgba(255,255,255,${0.8 * (1 - q)})`; c.beginPath(); c.arc(p.x, p.y, 3 + q * 5, 0, 7); c.fill(); }
       c.restore();
       if (heat > 0) { const on = Math.sin(t * 16) > 0; c.fillStyle = on ? 'rgba(255,50,30,0.22)' : 'rgba(255,50,30,0.06)'; c.fillRect(0, 262, 360, 378); for (const x of [16, 344]) { c.fillStyle = on ? '#ff4a3a' : '#6a1a1a'; c.beginPath(); c.arc(x, 280, 10, Math.PI, 0); c.fill(); } }

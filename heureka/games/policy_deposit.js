@@ -22,10 +22,15 @@ function paintPark(o) {
   o.strokeStyle = '#fff6ea'; o.lineWidth = 3; o.beginPath(); o.arc(BIN[0], BIN[1] + 34, 11, 0.3, TAU - 0.3); o.stroke(); o.beginPath(); o.moveTo(BIN[0] + 9, BIN[1] + 25); o.lineTo(BIN[0] + 12, BIN[1] + 32); o.lineTo(BIN[0] + 5, BIN[1] + 31); o.stroke();
   P.grain(o, 360, 640, 0.04);
 }
-function bottle(c, x, y, rot, col, coin, sc = 1) { // coin: 0 none, 1 small, 2 full deposit
-  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
-  c.fillStyle = col; c.beginPath(); c.moveTo(-9, 0); c.lineTo(-9, -28); c.quadraticCurveTo(-9, -36, -4, -40); c.lineTo(-4, -48); c.lineTo(4, -48); c.lineTo(4, -40); c.quadraticCurveTo(9, -36, 9, -28); c.lineTo(9, 0); c.closePath(); c.fill();
-  c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-6, -30, 3, 24); c.fillStyle = '#e84a4a'; c.fillRect(-5, -52, 10, 5); c.fillStyle = '#fff6ea'; c.fillRect(-9, -22, 18, 10);
+// a drink container: a bottle, a can, a jar or a carton (each play starts with a different one and the belt mixes them)
+const SHAPES = ['bottle', 'can', 'jar', 'carton'];
+function bottle(c, x, y, rot, col, coin, sc = 1, kind = 'bottle') { // coin: 0 none, 1 small, 2 full deposit
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc); c.fillStyle = col;
+  if (kind === 'can') { c.beginPath(); c.roundRect(-10, -34, 20, 34, 4); c.fill(); c.fillStyle = '#c8c8d0'; c.fillRect(-9, -37, 18, 4); c.fillRect(-9, -2, 18, 3); c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-7, -30, 3, 24); }
+  else if (kind === 'jar') { c.beginPath(); c.roundRect(-11, -32, 22, 32, 7); c.fill(); c.fillStyle = '#e8a040'; c.fillRect(-9, -38, 18, 7); c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-8, -28, 3, 22); }
+  else if (kind === 'carton') { c.beginPath(); c.moveTo(-10, 0); c.lineTo(-10, -30); c.lineTo(0, -40); c.lineTo(10, -30); c.lineTo(10, 0); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(-10, -26, 20, 4); c.fillStyle = '#4a8ae8'; c.fillRect(-3, -44, 6, 6); }
+  else { c.beginPath(); c.moveTo(-9, 0); c.lineTo(-9, -28); c.quadraticCurveTo(-9, -36, -4, -40); c.lineTo(-4, -48); c.lineTo(4, -48); c.lineTo(4, -40); c.quadraticCurveTo(9, -36, 9, -28); c.lineTo(9, 0); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(-6, -30, 3, 24); c.fillStyle = '#e84a4a'; c.fillRect(-5, -52, 10, 5); }
+  c.fillStyle = '#fff6ea'; c.fillRect(-9, -22, 18, 10);
   if (coin) B9.coin(c, 0, -17, coin > 1 ? 9 : 5);
   c.restore();
 }
@@ -36,7 +41,8 @@ MG.add({
     note: 'Putting a price on a behaviour, such as a deposit or a tax, makes people do less of it without banning it.' },
   init(g) {
     const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.v = L.v * (1 + ((g.speed || 1) - 1) * 0.35); s.b = []; let x = 10;
-    for (let i = 0; i < L.n; i++) { s.b.push({ x, st: 'belt', coin: 0, col: ['#8ad0a0', '#a8c8f0', '#f0b8c8', '#f6d880', '#c8a8f0'][i % 5] }); x -= 105 + g.rand() * 60; }
+    const v = SK.variant(g, 4), cols = SK.shuffled(g, ['#8ad0a0', '#a8c8f0', '#f0b8c8', '#f6d880', '#c8a8f0']);
+    for (let i = 0; i < L.n; i++) { s.b.push({ x, st: 'belt', coin: 0, col: cols[i % 5], kind: SHAPES[(v + i) % 4] }); x -= 105 + g.rand() * 60; }
     s.press = -1; s.litter = [];
   },
   down(g, x, y) {
@@ -48,7 +54,7 @@ MG.add({
     const s = g.s, L = s.L;
     for (const b of s.b) {
       if (b.st === 'belt') { b.x += s.v * dt; if (b.x > BELT.x1 + 6) { b.st = 'drink'; b.at = g.t; b.px = 70 + ((s.b.indexOf(b) * 71) % 220); b.py = 240 + ((s.b.indexOf(b) * 37) % 120); } }
-      else if (b.st === 'drink' && g.t - b.at > 0.7) { if (b.coin >= L.stamps) { b.st = 'return'; b.at = g.t; } else { b.st = 'litter'; s.litter.push({ x: b.px, y: b.py, r: 1.3, col: b.col, coin: b.coin }); g.sfx('thud'); g.sfx('wrong'); } }
+      else if (b.st === 'drink' && g.t - b.at > 0.7) { if (b.coin >= L.stamps) { b.st = 'return'; b.at = g.t; } else { b.st = 'litter'; s.litter.push({ x: b.px, y: b.py, r: 1.3, col: b.col, coin: b.coin, kind: b.kind }); g.sfx('thud'); g.sfx('wrong'); } }
       else if (b.st === 'return' && g.t - b.at > 0.75) { b.st = 'back'; g.sfx('coin'); g.sfx('ding'); g.burst(BIN[0], BIN[1], ['#f6c445', '#fff6ea'], 10, 120); }
     }
     if (!g.done && s.b.every(b => b.st === 'back' || b.st === 'litter')) { const ok = s.b.filter(b => b.st === 'back').length; if (ok >= L.need) { g.win(); g.sfx('cheer'); } else { g.sfx('laugh'); g.fail(); } }
@@ -56,13 +62,13 @@ MG.add({
   draw(g, c) {
     const s = g.s, t = g.t;
     c.drawImage(g.bake('adddeposit', paintPark), 0, 0, 360, 640);
-    for (const l of s.litter) bottle(c, l.x, l.y, l.r, l.col || '#a8b8a0', l.coin || 0);
+    for (const l of s.litter) bottle(c, l.x, l.y, l.r, l.col || '#a8b8a0', l.coin || 0, 1, l.kind);
     // the belt's moving stripes
     c.strokeStyle = 'rgba(255,255,255,0.16)'; c.lineWidth = 3; for (let x = (t * s.v) % 24 - 24; x < BELT.x1; x += 24) { c.beginPath(); c.moveTo(x, BELT.y - 2); c.lineTo(x + 8, BELT.y + 14); c.stroke(); }
     for (const b of s.b) {
-      if (b.st === 'belt') bottle(c, b.x, BELT.y - 6, 0, b.col, b.coin ? (b.coin >= s.L.stamps ? 2 : 1) : 0, 1.4);
-      else if (b.st === 'drink') { const k = SK.clamp((t - b.at) / 0.6, 0, 1); bottle(c, SK.lerp(BELT.x1, b.px, k), SK.lerp(BELT.y - 6, b.py, k) - Math.sin(k * Math.PI) * 90, k * 6, b.col, b.coin ? (b.coin >= s.L.stamps ? 2 : 1) : 0, SK.lerp(1.4, 1, k)); }
-      else if (b.st === 'return') { const k = SK.clamp((t - b.at) / 0.75, 0, 1), x = SK.lerp(b.px, BIN[0] + 10, k), y = SK.lerp(b.py, BIN[1] - 6, k); SK.animal(c, 'rabbit', x, y + 6, 0.5, { t, pose: 'carry', phase: b.px, hold: c2 => bottle(c2, 0, 8, 0, b.col, 2) }); }
+      if (b.st === 'belt') bottle(c, b.x, BELT.y - 6, 0, b.col, b.coin ? (b.coin >= s.L.stamps ? 2 : 1) : 0, 1.4, b.kind);
+      else if (b.st === 'drink') { const k = SK.clamp((t - b.at) / 0.6, 0, 1); bottle(c, SK.lerp(BELT.x1, b.px, k), SK.lerp(BELT.y - 6, b.py, k) - Math.sin(k * Math.PI) * 90, k * 6, b.col, b.coin ? (b.coin >= s.L.stamps ? 2 : 1) : 0, SK.lerp(1.4, 1, k), b.kind); }
+      else if (b.st === 'return') { const k = SK.clamp((t - b.at) / 0.75, 0, 1), x = SK.lerp(b.px, BIN[0] + 10, k), y = SK.lerp(b.py, BIN[1] - 6, k); SK.animal(c, 'rabbit', x, y + 6, 0.5, { t, pose: 'carry', phase: b.px, hold: c2 => bottle(c2, 0, 8, 0, b.col, 2, 1, b.kind) }); }
     }
     // the deposit stamp press above the belt
     const pk = SK.clamp(1 - (t - s.press) / 0.16, 0, 1), py = BELT.y - 120 + pk * 40;

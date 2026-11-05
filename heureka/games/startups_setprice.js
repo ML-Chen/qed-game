@@ -4,7 +4,7 @@
 // many coins but most walk past. The middle fills the jar most. Fill the jar to the line in two days (three at level 2).
 // Level 2: lemons cost money too, so each cup's lemons are paid out of the jar first and the best price moves up.
 const DIAL = { x: 180, y: 262, r: 96 }, JAR = { x: 300, y0: 318, y1: 480, w: 84 }, NK = 7;
-const BUY = [10, 9, 7, 6, 4, 2, 1]; // buyers at price 1..7 coins a cup
+const CROWDS = [[10, 9, 7, 6, 4, 2, 1], [10, 10, 9, 8, 5, 2, 1], [10, 9, 8, 6, 5, 4, 2], [10, 8, 5, 3, 2, 1, 0]]; // buyers at price 1..7 coins a cup: four different crowds, so the best price moves
 const KINDS = ['frog', 'rabbit', 'penguin', 'bird', 'turtle', 'fox', 'beaver', 'hedgehog', 'owl', 'ant'];
 const LVP = [{ days: 2, need: 42, per: 2.4, cost: 0 }, { days: 2, need: 44, per: 1.9, cost: 0 }, { days: 3, need: 30, per: 1.7, cost: 2 }];
 const CROWD = i => [24 + (i % 5) * 70 + (i >= 5 ? 35 : 0) * 0, 548 + (i >= 5 ? 50 : 0)];
@@ -32,17 +32,19 @@ MG.add({
     note: 'The best price balances how many people buy against how much each one pays.' },
   init(g) {
     const s = g.s, L = LVP[Math.min(2, g.level)];
+    s.buy = CROWDS[SK.variant(g, CROWDS.length)]; // a different crowd each play
+    let best = 0; for (let k = 0; k < NK; k++) best = Math.max(best, s.buy[k] * (k + 1 - L.cost)); s.need = Math.round(L.days * best * [0.875, 0.917, 0.83][Math.min(2, g.level)]);
     s.L = L; s.day = 0; s.jar = 0; s.ph = g.rand() * 6.28; s.stop = null; s.hist = []; s.dayT = 0;
   },
   angle(g) { const s = g.s; return (0.5 - 0.5 * Math.cos((g.t - s.dayT) / s.L.per * Math.PI * 2 + s.ph)); }, // 0 = cheap .. 1 = pricey
   down(g) {
     const s = g.s; SK.touched(g); if (g.done || s.stop || g.t < 0.6) return;
-    const a = this.angle(g), k = Math.min(NK - 1, Math.floor(a * NK)); s.stop = { t: g.t, a, k, buy: BUY[k], earn: BUY[k] * (k + 1 - s.L.cost) }; g.sfx('click'); g.sfx('ding');
+    const a = this.angle(g), k = Math.min(NK - 1, Math.floor(a * NK)); s.stop = { t: g.t, a, k, buy: s.buy[k], earn: s.buy[k] * (k + 1 - s.L.cost) }; g.sfx('click'); g.sfx('ding');
   },
   update(g, dt) {
     const s = g.s, L = s.L, st = s.stop; if (!st || g.done) return;
     if (!st.paid && g.t > st.t + 0.9) { st.paid = true; s.jar = Math.max(0, s.jar + st.earn); s.hist.push(st.k); g.sfx(st.earn > 6 ? 'coin' : 'wrong');
-      if (s.jar >= L.need) { g.win(); g.sfx('cheer'); g.burst(JAR.x, JAR.y0, ['#ffe27a', '#fff6ea', '#7ad070'], 22, 200); } else if (s.day + 1 >= L.days) { g.fail(); g.sfx('fail'); } }
+      if (s.jar >= s.need) { g.win(); g.sfx('cheer'); g.burst(JAR.x, JAR.y0, ['#ffe27a', '#fff6ea', '#7ad070'], 22, 200); } else if (s.day + 1 >= L.days) { g.fail(); g.sfx('fail'); } }
     if (st.paid && !g.done && g.t > st.t + 1.6) { s.day++; s.stop = null; s.dayT = g.t; s.ph = g.rand() * 6.28; }
   },
   draw(g, c) {
@@ -60,18 +62,18 @@ MG.add({
     for (let i = 0; i <= k; i++) B8.flatCoin(c, 198, 448 - i * 8, 13, 0);
     for (let i = 0; i < 3; i++) cup(c, 118 + i * 18, 420, 0.9);
     // the jar and its line; level 2 shows the lemons' cost paid out of each day's takings
-    const ly = JAR.y1 - 10 - L.need * 2.6, fill = JAR.y1 - 8 - s.jar * 2.6;
-    const kNow = st ? st.k : k, earnNow = BUY[kNow] * (kNow + 1 - L.cost); // what today would bring at this price, shown live
+    const ly = JAR.y1 - 10 - s.need * 2.6, fill = JAR.y1 - 8 - s.jar * 2.6;
+    const kNow = st ? st.k : k, earnNow = s.buy[kNow] * (kNow + 1 - L.cost); // what today would bring at this price, shown live
     B8.jarBack(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     for (let i = 0; i < Math.round(s.jar); i++) B8.flatCoin(c, JAR.x - 24 + (i % 4) * 16, JAR.y1 - 10 - Math.floor(i / 4) * 10.4, 10, ((i * 7) % 5 - 2) * 0.05);
     if (!st && !g.done) { const gy = Math.max(JAR.y0 + 10, JAR.y1 - 8 - (s.jar + Math.max(0, earnNow)) * 2.6); c.save(); c.fillStyle = 'rgba(245,194,58,0.35)'; c.fillRect(JAR.x - JAR.w / 2 + 4, gy, JAR.w - 8, fill - gy); c.strokeStyle = '#c08a14'; c.lineWidth = 2; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 + 4, gy); c.lineTo(JAR.x + JAR.w / 2 - 4, gy); c.stroke(); c.restore(); } // a ghost of today's takings at this price
     B8.jarFront(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
-    c.save(); c.strokeStyle = s.jar >= L.need ? '#5ad07a' : '#e8403a'; c.lineWidth = 4; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 6, ly); c.lineTo(JAR.x + JAR.w / 2 + 6, ly); c.stroke(); c.restore();
+    c.save(); c.strokeStyle = s.jar >= s.need ? '#5ad07a' : '#e8403a'; c.lineWidth = 4; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 6, ly); c.lineTo(JAR.x + JAR.w / 2 + 6, ly); c.stroke(); c.restore();
     // the day markers (one sun per day)
     for (let d = 0; d < L.days; d++) { const x = JAR.x - (L.days - 1) * 14 + d * 28, y = JAR.y0 - 22; c.fillStyle = d < s.day || (d === s.day && st && st.paid) ? '#f5c23a' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); c.strokeStyle = '#a8801a'; c.lineWidth = 2; c.stroke(); }
     // the crowd: buyers walk up for a cup and pay; the rest frown and turn away
     for (let i = 0; i < 10; i++) {
-      const [x0, y0] = [26 + (i % 5) * 72 + (i >= 5 ? 36 : 0), 556 + (i >= 5 ? 48 : 0)], buys = st && i < st.buy, would = !st && i < BUY[kNow], q = st ? SK.clamp((t - st.t) / 0.7, 0, 1) : 0;
+      const [x0, y0] = [26 + (i % 5) * 72 + (i >= 5 ? 36 : 0), 556 + (i >= 5 ? 48 : 0)], buys = st && i < st.buy, would = !st && i < s.buy[kNow], q = st ? SK.clamp((t - st.t) / 0.7, 0, 1) : 0;
       const x = buys ? SK.lerp(x0, 150 + (i % 4) * 12, q * 0.35) : x0, y = buys ? y0 - q * 30 : y0;
       SK.animal(c, KINDS[i], x, y, 0.62, { t, phase: i, pose: buys && q > 0.5 ? 'cheer' : st && !buys ? 'sad' : would ? 'wave' : 'idle', expr: buys || would ? 'happy' : st ? 'sad' : 'sad', facing: st && !buys ? 1 : -1, hold: buys && q > 0.7 ? (h => cup(h, 0, 4, 0.9)) : null });
       if (buys && q > 0.4 && q < 1) for (let j = 0; j <= Math.min(2, k); j++) { const qq = SK.clamp((q - 0.4) / 0.6 - j * 0.15, 0, 1); if (qq > 0 && qq < 1) B8.coin(c, SK.lerp(x, JAR.x, qq), SK.lerp(y - 40, JAR.y0, qq) - Math.sin(qq * Math.PI) * 60, 7, qq * 8); }
@@ -83,7 +85,7 @@ MG.add({
     if (!st) SK.demo(g, c, 'tap', [DIAL.x + 20, DIAL.y - 30], null, { delay: 0.8 });
   },
   auto(g, dt, synth) { // tap when the needle is in the best sector (the middle, or one to the right when lemons cost money)
-    const s = g.s; if (s.stop || g.done || g.t < 0.8) return; const best = s.L.cost ? 4 : 3, a = this.angle(g);
+    const s = g.s; if (s.stop || g.done || g.t < 0.8) return; let best = 0; for (let k = 1; k < NK; k++) if (s.buy[k] * (k + 1 - s.L.cost) > s.buy[best] * (best + 1 - s.L.cost)) best = k; const a = this.angle(g);
     if (Math.abs(a - (best + 0.5) / NK) < 0.03) { synth('down', 180, 300); synth('up', 180, 300); }
   },
 });

@@ -24,7 +24,8 @@ MG.add({
     note: 'Investors with a preference are paid back first; founders get only what is left.' },
   init(g) {
     const s = g.s, L = LVO[Math.min(2, g.level)];
-    s.L = L; s.bag = L.sale; s.tops = L.tops.map(t => ({ ...t, fill: 0 })); s.found = 0; s.pour = false; s.px = 70; s.ph = g.rand() * 6.28; s.scoops = []; s.lastScoop = -9;
+    const v = SK.variant(g, 4), cast = [['fox', 'duck'], ['owl', 'bird'], ['duck', 'hedgehog'], ['bird', 'fox']][v], cols = [['#5aa8e8', '#7ac870'], ['#b88ae0', '#f5a040'], ['#7ac870', '#5aa8e8'], ['#f5a040', '#b88ae0']][v]; // a different line-up each play
+    s.L = L; s.bag = L.sale * [1, 1.1, 0.92, 1.05][v]; s.tops = L.tops.map((t, i) => ({ ...t, who: cast[(i + (L.tops.length - 1)) % 2], col: cols[i % 2], fill: 0 })); s.found = 0; s.pour = false; s.px = [70, 292, 60, 300][v]; s.ph = g.rand() * 6.28; s.scoops = []; s.lastScoop = -9;
   },
   topX(g, i) { const s = g.s; return 180 + Math.sin(g.t * s.L.sp + s.ph + i * 1.7) * s.L.sway; }, // each top bucket sways
   topY(i, n) { return n === 1 ? 300 : 266 + i * 104; },

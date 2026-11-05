@@ -10,7 +10,7 @@ const TR_L = [
   { rise: 100, set: 262, peak: 350, cap: 318, winter: true },
 ];
 const TR_N = 24; // dots along the path
-function trArc(L, k) { return [SK.lerp(L.rise, L.set, k), TR_H - 30 + 10 * k - Math.sin(k * Math.PI) * (L.winter ? 110 : 230)]; }
+function trArc(L, k) { return [SK.lerp(L.rise, L.set, k), TR_H - 30 + 10 * k - Math.sin(k * Math.PI) * L.h]; }
 function trSky(alt) { // night -> dawn -> day colours by the Sun's height
   const N = ['#262660', '#56407e', '#b8647a'], D = ['#5a4a8a', '#e8869a', '#ffcf8a'], Y = ['#4a9ee0', '#8cccf0', '#e2f4f8'];
   const k = SK.clamp(alt, 0, 1); return k < 0.22 ? N.map((c, i) => P.mix(c, D[i], k / 0.22)) : D.map((c, i) => P.mix(c, Y[i], SK.clamp((k - 0.22) / 0.5, 0, 1)));
@@ -59,7 +59,9 @@ MG.add({
     text: 'Every morning the Sun rises on one side of the sky, the east. It climbs highest around noon and sets on the other side, the west. It never goes straight up and falls back. At night the Moon and the stars cross the sky the same way.\n\nThe Sun is not really moving across the sky. The Earth spins once a day, and as we turn, the Sun, the Moon and the stars seem to sweep across from east to west.\n\nIn winter the path is lower and shorter, so days are short and noon shadows are long.',
     note: 'The Sun rises in the east, is highest at noon and sets in the west, because the Earth spins. So does the Moon.' },
   init(g) {
-    const s = g.s, L = TR_L[Math.min(2, g.level)]; s.L = L;
+    // variants: where the Sun rises and sets on the hills, and how high its path climbs
+    const s = g.s, B = TR_L[Math.min(2, g.level)], v = SK.variant(g, 4), V = (B.winter ? [[100, 262, 110], [90, 270, 100], [110, 252, 120], [96, 266, 104]] : [[46, 314, 230], [60, 300, 210], [40, 320, 250], [54, 306, 220]])[v];
+    const L = { rise: V[0], set: V[1], h: V[2], winter: B.winter, peak: TR_H - 30 - V[2] + 40, cap: B.winter ? TR_H - 30 - V[2] + 4 : 0 }; s.L = L; s.v = v;
     s.rounds = g.level >= 2 ? ['sun', 'moon', 'sun'] : ['sun', 'moon']; s.ri = 0; s.nextT = 0;
     s.sun = { x: L.rise, y: TR_H - 30 }; s.trail = []; s.peak = 999; s.rose = false; s.crow = 0; s.lunch = 0; s.setT = 0; s.backT = 0; s.lit = new Array(TR_N).fill(0);
   },
@@ -95,7 +97,7 @@ MG.add({
     for (let i = 0; i < 3; i++) P.cloud(c, ((i * 140 + t * 8) % 520) - 80, 200 + i * 52, 0.55 - i * 0.08, '#fff6ea', P.mix('#e7c9d6', sk[1], 0.4), 0.5 + SK.clamp(alt, 0, 0.5));
     // the path to follow: a faint dotted arc from the eastern hill over the top to the western hill, and a glowing
     // spot on the western hill where the Sun (or Moon) should set
-    const arcH = L.winter ? 110 : 230, arcP = k => trArc(L, k);
+    const arcH = L.h, arcP = k => trArc(L, k);
     if (!g.done && !s.setT) { c.save(); for (let i = 1; i < TR_N; i++) { const [x, y] = arcP(i / TR_N); c.globalAlpha = s.lit[i] ? 1 : 0.6; c.fillStyle = s.lit[i] ? (moon ? '#ffffff' : '#ffd45a') : (moon ? 'rgba(220,230,255,0.7)' : 'rgba(255,240,190,0.8)'); c.beginPath(); c.arc(x, y, s.lit[i] ? 5 : 3, 0, 7); c.fill(); } c.restore();
       const [ex, ey] = arcP(1), p = 0.5 + 0.5 * Math.sin(t * 4); c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.85)' : 'rgba(255,200,120,0.9)'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.arc(ex, ey, TR_R + 6 + p * 4, 0, 7); c.stroke(); c.restore(); }
     // the trace: a warm dotted line where the finger took the Sun
@@ -109,7 +111,7 @@ MG.add({
     c.save(); c.translate(u.x, u.y); c.rotate(t * 0.4); c.strokeStyle = '#ffd25a'; c.lineWidth = 4; c.lineCap = 'round'; for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5, r0 = TR_R + 6, r1 = TR_R + 14 + 3 * Math.sin(t * 4 + i); c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); c.stroke(); } c.restore();
     SK.ball(c, u.x, u.y, TR_R, alt < 0.2 ? '#ffaa4a' : '#ffcc3a', { edge: '#c8641a' });
     }
-    if (!g.done && !s.setT && !SK.dragging(g)) SK.glow(c, g, u.x, u.y, 34, '#ffe27a', { level: 2 });
+    if (!s.setT) { SK.target(c, g, ...arcP(1), TR_R + 8); SK.grab(c, g, u.x, u.y, 34); } // what moves (the Sun or Moon) and where it goes (the western hill); the dots are the way
     // the farm in front
     c.drawImage(g.bake('trace_fg' + (L.winter ? 'w' : 's'), o => trGround(o, L)), 0, 0, 360, 640);
     const dim = SK.clamp(0.45 - alt * 1.6, 0, 0.6); if (dim > 0) { const dg = c.createLinearGradient(0, 440, 0, 520); dg.addColorStop(0, 'rgba(20,16,50,0)'); dg.addColorStop(1, `rgba(20,16,50,${dim})`); c.fillStyle = dg; c.fillRect(0, 440, 360, 200); }

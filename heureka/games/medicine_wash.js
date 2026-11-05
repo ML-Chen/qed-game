@@ -76,10 +76,10 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
     s.need = NEED[L]; s.scrubs = 0; s.rub = 0; s.soap = -1; s.rinse = -1; s.hop = -1; s.lather = []; s.lastX = null;
-    s.germs = [];
+    s.germs = []; s.v = SK.variant(g, 4); s.gc = [['#7ef06a', '#c6f04a'], ['#5ae0e0', '#7ab8ff'], ['#ff8ac8', '#ffb05a'], ['#c08aff', '#7ef0a8']][s.v];
     const n = 14;
-    for (let i = 0; i < n; i++) { const pw = i % 2, P0 = PAWS[pw], a = g.rand() * 6.28, d = 8 + g.rand() * 26; s.germs.push({ pw, dx: Math.cos(a) * d, dy: Math.sin(a) * d * 1.1 - 4, r: 6 + g.rand() * 3.5, th: 0.12 + g.rand() * 0.8, ph: g.rand() * 6, col: g.rand() < 0.5 ? '#7ef06a' : '#c6f04a', loose: 0, nail: false }); }
-    if (L >= 2) for (let i = 0; i < 4; i++) { const pw = i % 2; s.germs.push({ pw, dx: -21 + (i < 2 ? 14 : 28) * 1 + (i % 2 ? 0 : 0), dy: -52, r: 6, th: 2, ph: g.rand() * 6, col: '#d07aff', loose: 0, nail: true, hits: 0 }); }
+    for (let i = 0; i < n; i++) { const pw = i % 2, P0 = PAWS[pw], a = g.rand() * 6.28, d = 8 + g.rand() * 26; s.germs.push({ pw, dx: Math.cos(a) * d, dy: Math.sin(a) * d * 1.1 - 4, r: 6 + g.rand() * 3.5, th: 0.12 + g.rand() * 0.8, ph: g.rand() * 6, col: g.rand() < 0.5 ? s.gc[0] : s.gc[1], loose: 0, nail: false }); }
+    if (L >= 2) for (let i = 0; i < 4; i++) { const pw = i % 2; s.germs.push({ pw, dx: -21 + ((i + s.v) % 4) * 14, dy: -52 + Math.abs(((i + s.v) % 4) - 1.5) * 6, r: 6, th: 2, ph: g.rand() * 6, col: '#d07aff', loose: 0, nail: true, hits: 0 }); }
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.rinse >= 0) return; if (inPaws(x, y)) { s.lastX = x; s.lastY = y; scrub(g, x, y); } },
   move(g, x, y) { const s = g.s; if (s.lastX == null || g.done || s.rinse >= 0) return; if (SK.dist(x, y, s.lastX, s.lastY) > 46 && inPaws(x, y)) { s.lastX = x; s.lastY = y; scrub(g, x, y); } },

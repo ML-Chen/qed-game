@@ -50,14 +50,12 @@
     init(g) {
       const s = g.s, L2 = g.level >= 2;
       // four starting set-ups (how many fuel molecules, and what is already on each pan); every one needs at least two molecules added
-      const v = s.v = SK.variant(g, 4), START = L2 ? [[1, 1, 1, 1], [1, 2, 1, 1], [1, 1, 2, 1], [1, 1, 1, 2]][v] : [[1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 2], [1, 1, 1, 1]][v];
+      const v = s.v = SK.variant(g, 4), START = L2 ? [[1, 1, 1, 1], [1, 2, 1, 1], [1, 1, 2, 1], [1, 1, 1, 2]][v] : [[1, 1, 1, 1], [2, 1, 1, 1], [2, 2, 1, 2], [2, 3, 1, 1]][v];
       const B = k => ({ kind: k, base: true }), rep = (k, n) => Array.from({ length: n }, () => B(k));
       s.L = [...rep(L2 ? 'C3H8' : 'CH4', START[0]), ...rep('O2', START[1])];
       s.R = [...rep('CO2', START[2]), ...rep('H2O', START[3])];
-      if (v === 3 && !L2) s.flip = true; // the same reaction with the trays the other way round
       s.trays = [{ kind: 'O2', side: 'L', x: 62, y: 546 }];
-      if (g.level >= 1) s.trays.push({ kind: 'CO2', side: 'R', x: 236, y: 546 });
-      s.trays.push({ kind: 'H2O', side: 'R', x: g.level >= 1 ? 310 : 296, y: 546 });
+      s.trays.push({ kind: 'CO2', side: 'R', x: 236, y: 546 }); s.trays.push({ kind: 'H2O', side: 'R', x: 310, y: 546 });
       s.loose = { x: 130, y: 556, hx: 130, hy: 556 }; s.held = null; s.tilt = 0; s.done = 0; s.bounce = 0;
       const nl = count(s.L), nr = count(s.R); s.tilt = SK.clamp((mass(nr) - mass(nl)) * 0.006, -0.28, 0.28);
     },

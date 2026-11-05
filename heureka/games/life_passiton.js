@@ -11,9 +11,9 @@
   ];
   const MUSH = [{ k: 'mushroom', x: 186, y: 556 }, { k: 'mushroom', x: 210, y: 560 }];
   const NAME = { owl: 'Owl', frog: 'Frog', sun: 'Sun', grass: 'Grass', rabbit: 'Rabbit', fox: 'Fox', leaf: 'Leaf', caterpillar: 'Caterpillar', bird: 'Bird', mushroom: 'Mushroom' };
-  // four variants: which predator ends each chain, and whether the scene is mirrored
+  // four variants: which predator ends each chain, and which chain comes first
   const PRED = [['fox', 'bird'], ['owl', 'frog'], ['fox', 'frog'], ['owl', 'bird']];
-  function chain(g, i) { const v = g.s.v || 0, c = CHAINS[i].map(n => ({ ...n })); c[3].k = PRED[v][i]; if (g.level >= 2) c.push({ ...MUSH[i] }); if (v % 2) for (const n of c) if (n.k !== 'sun') n.x = 360 - n.x; return c; }
+  function chain(g, i) { const v = g.s.v || 0, ci = (i + v) % 2, c = CHAINS[ci].map(n => ({ ...n })); c[3].k = PRED[v][ci]; if (g.level >= 2) c.push({ ...MUSH[ci] }); return c; }
   function paintBg(o) {
     P.sky(o, 360, 640, ['#7ec8ea', '#c0e6f2', '#fff4dc'], null);
     P.hills(o, 360, 300, 26, '#a8d870', '#80b850', { seed: 6 });

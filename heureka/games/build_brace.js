@@ -57,8 +57,10 @@ MG.add({
     text: 'A square frame with pins at its corners can lean over like a pushed bookshelf. Its sides stay the same length, but the corners can change their angles, so the square folds into a flat diamond.\n\nA triangle cannot do that. Once its three sides are fixed, its corners are fixed too. A diagonal splits a square into two triangles, so the frame stays square.\n\nThat is why bridges, cranes, roofs and bike frames are full of triangles. A frame built from triangles is called a truss.',
     note: 'A triangle cannot change shape without changing a side, so diagonal braces stop frames from folding.' },
   init(g) {
-    const s = g.s, n = BR_N[Math.min(2, g.level)], S = (BR_X1 - BR_X0) / n; s.n = n; s.S = S;
-    s.sq = []; for (let k = 0; k < n; k++) s.sq.push({ x: BR_X0 + k * S, brace: 0, dir: 1, fold: 0, at: 0 });
+    // variants: how many squares the bridge has, and which one (if any) is already braced
+    const s = g.s, v = SK.variant(g, 4), lv = Math.min(2, g.level), VS = lv >= 2 ? [[4, -1], [5, 2], [5, 0], [5, 4]] : [[3, -1], [4, 1], [4, 3], [4, 0]], [n, pre] = VS[v];
+    const S = (BR_X1 - BR_X0) / n; s.n = n; s.S = S; s.v = v;
+    s.sq = []; for (let k = 0; k < n; k++) s.sq.push({ x: BR_X0 + k * S, brace: k === pre ? -1 : 0, dir: k % 2 ? -1 : 1, fold: 0, at: 0 });
     s.truck = { x: 26, v: 0 }; s.goT = 0; s.line = null; s.stopT = 0;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; s.line = { a: [x, y], b: [x, y] }; },
@@ -95,7 +97,7 @@ MG.add({
     for (const p of [...B, ...T]) { c.fillStyle = '#3a2a2a'; c.beginPath(); c.arc(p[0], p[1], 4.5, 0, 7); c.fill(); c.fillStyle = '#c8c0c8'; c.beginPath(); c.arc(p[0] - 1, p[1] - 1, 2, 0, 7); c.fill(); }
     // glowing open squares at levels 0 and 1
     // each open square shows the diagonal to draw: a dashed line from pin to pin, with a glowing start pin
-    if (!s.goT && !g.done) s.sq.forEach((q, k) => { if (q.brace) return; c.save(); c.strokeStyle = 'rgba(255,240,190,0.9)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 24; c.beginPath(); c.moveTo(...T[k]); c.lineTo(...B[k + 1]); c.stroke(); c.restore(); SK.glow(c, g, T[k][0], T[k][1], 14, '#ffe27a', { level: 2 }); });
+    if (!s.goT && !g.done) s.sq.forEach((q, k) => { if (q.brace) return; c.save(); c.strokeStyle = 'rgba(255,240,190,0.9)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 24; c.beginPath(); c.moveTo(...T[k]); c.lineTo(...B[k + 1]); c.stroke(); c.restore(); });
     // the line being drawn
     if (s.line) { c.save(); c.strokeStyle = 'rgba(255,240,200,0.9)'; c.lineWidth = 6; c.lineCap = 'round'; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(...s.line.a); c.lineTo(...s.line.b); c.stroke(); c.restore(); }
     // the truck rides along the road (the top chord), following any dip
@@ -105,7 +107,8 @@ MG.add({
     // the beaver on the far cliff waves the truck over
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 348, BR_YT - 8, 0.5, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0) SK.demo(g, c, 'drag', T[k0], B[k0 + 1], { never: !!s.goT });
+    const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0 && !s.goT) B5.hint(c, g, T[k0], B[k0 + 1], { ra: 16, rb: 16 });
+    if (k0 >= 0) SK.demo(g, c, 'drag', T[k0], B[k0 + 1], { never: !!s.goT });
   },
   auto(g, dt, synth) { const s = g.s; s.sq.forEach((q, k) => SK.bot.drag(g, synth, 'b' + k, 0.9 + k * 0.3, [q.x + 8, BR_YT + 8], [q.x + s.S - 8, BR_YT + s.S - 8], 0.18)); },
 });

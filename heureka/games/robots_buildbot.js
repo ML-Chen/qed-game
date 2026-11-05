@@ -53,7 +53,8 @@ MG.add({
     note: 'A robot senses, decides and acts, over and over. Without a sense, it cannot react to the world.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), kinds = L >= 2 ? PARTS : PARTS.slice(0, 3), n = kinds.length, sp = n === 4 ? 66 : 84, x0 = 153 - sp * (n - 1) / 2;
-    const order = kinds.slice(); for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    s.v = SK.variant(g, 6); const P3 = [[0, 1, 2], [1, 2, 0], [2, 0, 1], [0, 2, 1], [1, 0, 2], [2, 1, 0]], P4 = [[3, 0, 1, 2], [1, 3, 2, 0], [2, 0, 3, 1], [0, 2, 1, 3], [3, 1, 0, 2], [2, 3, 1, 0]];
+    const order = (n === 4 ? P4 : P3)[s.v].map(i => kinds[i]); // the parts lie on the tray in a different order each play
     s.parts = order.map((k, i) => ({ kind: k, x: x0 + i * sp, y: 545, hx: x0 + i * sp, hy: 545, on: false }));
     s.bot = { x: START.x, y: START.y, h: -Math.PI / 2, mode: 'idle', bonk: 0, back: 0 }; s.eaten = 0; s.loopT = 0; s.bonks = 0;
     s.cat = L >= 2 ? { x: 180, y: 322 } : null;

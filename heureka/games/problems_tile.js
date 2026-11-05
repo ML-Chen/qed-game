@@ -74,7 +74,10 @@ MG.add({
     note: 'When you split a problem into parts, make the parts cover everything without overlapping.' },
   init(g) {
     const s = g.s, { L } = lay(g); // (lay also sets the cell size C)
-    s.pcs = L.pcs.map((p, i) => ({ i, p, x: p.tray[0], y: p.tray[1], sc: TS, placed: false, wob: 0 }));
+    // four variants: the same floor plan as drawn, mirrored left-right, upside down, or both (so the tile shapes change)
+    const v = SK.variant(g, 4), fx = v & 1, fy = v & 2, cols = SK.shuffled(g, ['#e8604a', '#4aa8d8', '#f0b030', '#8ac850', '#b070d0']);
+    const pcs = L.pcs.map((p, k) => { const abs = p.cells.map(([i, j]) => [p.home[0] + i, p.home[1] + j]).map(([i, j]) => [fx ? L.cols - 1 - i : i, fy ? L.rows - 1 - j : j]); const hi = Math.min(...abs.map(q => q[0])), hj = Math.min(...abs.map(q => q[1])); return { cells: abs.map(([i, j]) => [i - hi, j - hj]), home: [hi, hj], col: cols[k], tray: p.tray }; });
+    s.pcs = pcs.map((p, i) => ({ i, p, x: p.tray[0], y: p.tray[1], sc: TS, placed: false, wob: 0 }));
     s.grid = Array.from({ length: L.rows }, () => Array(L.cols).fill(-1)); s.drag = null; s.mz = { i: 0, j: L.rows - 1, t: 0 };
   },
   down(g, x, y) {

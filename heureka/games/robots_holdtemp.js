@@ -31,7 +31,7 @@ MG.add({
   card: { title: 'On, off, on, off', kind: 'Control', ref: 'On-off (bang-bang) control, the thermostat',
     text: 'A thermostat keeps a room near a set temperature with a very simple rule. Too cold: switch the heater on. Warm enough: switch it off. The temperature wiggles up and down in a narrow band instead of sitting still.\n\nA heater takes time to warm up and to cool down, so the room keeps warming for a moment after you switch off. Switching a little early stops it overshooting. Real thermostats add a small gap, called a dead band, between the "on" and "off" temperatures, so the heater does not flick on and off every second.',
     note: 'An on-off controller switches the heater on below the target and off above it, so the temperature stays in a band.' },
-  init(g) { const s = g.s, C = CFG[Math.min(2, g.level)]; s.C = C; s.T = 0.47; s.h = 0; s.on = false; s.comfy = 0; s.taps = 0; s.windowOpen = 0; s.flick = 0; },
+  init(g) { const s = g.s, C0 = CFG[Math.min(2, g.level)]; s.var = SK.variant(g, 4); const off = [0, 0.07, -0.05, 0.12][s.var], C = { lo: C0.lo + off, hi: C0.hi + off, need: C0.need }; s.C = C; s.T = C.lo + 0.03; s.h = 0; s.on = false; s.comfy = 0; s.taps = 0; s.windowOpen = 0; s.flick = 0; },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done) return;
     if (SK.dist(x, y, HEAT.x, HEAT.y - 30) < 70) { s.on = !s.on; s.taps++; s.flick = 0.25; g.sfx('click'); if (s.on) g.sfx('fire', { vol: 0.4 }); }

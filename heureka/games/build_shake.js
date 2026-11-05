@@ -41,8 +41,10 @@ MG.add({
     text: 'When the ground shakes sideways, it jerks the bottom of a tower one way while the top lags behind. A tall, thin tower then leans so far that its weight moves past the edge of its base, and it tips over.\n\nA tower with a wide base can lean much further before that happens, so it wobbles and stands. Diagonal braces help too, because they stop the frame from bending.\n\nEngineers in earthquake zones give buildings wide, strong bases, cross braces and light tops.',
     note: 'A wide base keeps a tower\'s weight over its feet when the ground shakes, so it does not tip.' },
   init(g) {
-    const s = g.s, L = SH_LV[Math.min(2, g.level)]; s.L = L; s.placed = []; s.pile = [];
-    for (let i = 0; i < L.n; i++) s.pile.push({ x: 170 - (L.n - 1) * 23 + i * 46, y: 588, col: SH_COLS_C[i % 6], k: i });
+    const s = g.s, L = SH_LV[Math.min(2, g.level)], v = SK.variant(g, 4); s.L = L; s.v = v; s.placed = []; s.pile = [];
+    // variants: an old block already on the table (left end, right end, or none) and the colours of the new blocks
+    const pre = g.level >= 2 ? [-1, 3, -1, 3][v] : [-1, 0, 3, -1][v]; if (pre >= 0) s.placed.push({ c: pre, r: 0, col: '#a8988a' });
+    for (let i = 0; i < L.n; i++) s.pile.push({ x: 170 - (L.n - 1) * 23 + i * 46, y: 588, col: SH_COLS_C[(i + v * 2) % 6], k: i });
     s.held = null; s.shakeT = 0; s.reachT = 0; s.top = 0; s.fall = 0;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.shakeT) return; const b = SK.pick(s.pile, x, y, 40); if (b) { s.held = b; SK.dragStart(g, b, x, y); g.sfx('tap'); } },
@@ -97,11 +99,11 @@ MG.add({
     if (s.held) { const col = Math.floor((s.held.x - SH_X0) / SH_U); if (col >= 0 && col < SH_COLS && s.held.y < SH_TOP + 20) { const h = s.placed.filter(q => q.c === col).length; c.save(); c.globalAlpha = 0.35; shBlock(c, SH_X0 + col * SH_U, SH_TOP - (h + 1) * SH_U, s.held.col); c.restore(); } }
     for (const b of s.pile) { if (b !== s.held) shBlock(c, b.x - 20, b.y - 20, b.col, 40); }
     if (s.held) shBlock(c, s.held.x - 25, s.held.y - 25, s.held.col);
-    if (!s.held && s.pile.length && !s.shakeT) SK.glow(c, g, s.pile[0].x, s.pile[0].y, 26, '#ffe27a', { level: 2 });
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 334, 612, 0.62, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.shakeT ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.shakeT ? 'wow' : 'happy' });
     // guidance: the next block goes on the lowest of the middle columns, so the base grows wide before the tower grows tall
     const mid = g.level >= 2 ? [0, 1, 2] : [1, 2], hs = mid.map(cc => s.placed.filter(q => q.c === cc).length), cn = mid[hs.indexOf(Math.min(...hs))], hn = Math.min(...hs);
+    if (s.pile.length && !s.shakeT && !s.held) B5.hint(c, g, [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { ra: 24, rb: 22, tw: SH_U - 4, th: SH_U - 4 });
     if (s.pile.length) SK.demo(g, c, 'drag', [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { never: !!s.shakeT });
   },
   // the bot builds a wide base first, then the top: (cols 1,2 then 1) or, at level 2, (cols 0,1,2 then 1,1)

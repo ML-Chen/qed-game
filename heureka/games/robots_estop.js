@@ -70,7 +70,9 @@ MG.add({
     note: "An emergency stop cuts the motors' power directly, so it works even when the robot's software is stuck." },
   init(g) {
     const s = g.s, W = WAVES[Math.min(2, g.level)];
-    s.v = W.v; s.bots = W.bots.map(([t0, x, y]) => ({ t0, x, y, sx: x, sy: y, ph: g.rand() * 6.28, wob: 0.6 + g.rand() * 0.4, stop: 0, in: false }));
+    s.v = W.v; s.var = SK.variant(g, 4); // variants: robots roll in from mirrored sides and/or in the reverse order
+    let at = W.bots.map(([, x, y]) => [x, y]); if (s.var & 2) at = at.reverse(); if (s.var & 1) at = at.map(([x, y]) => [360 - x, y]);
+    s.bots = W.bots.map(([t0], i) => { const [x, y] = at[i]; return { t0, x, y, sx: x, sy: y, ph: g.rand() * 6.28, wob: 0.6 + g.rand() * 0.4, stop: 0, in: false }; });
     s.splat = 0; s.whoosh = 0;
   },
   down(g, x, y) {

@@ -82,7 +82,7 @@ function hog(c, x, y, k, t, rot = 0, sad = false) {
 }
 
 MG.add({
-  id: 'body_curl', stage: 'body', cmd: 'CURL UP WHEN THE FOX POUNCES!', time: 7, mood: 'bright', winText: 'Spines saved it!', failText: 'Bonk!',
+  id: 'body_curl', stage: 'body', cmd: 'CURL UP WHEN THE FOX POUNCES!', time: 8, mood: 'bright', winText: 'Spines saved it!', failText: 'Bonk!',
   card: { title: 'Spines that protect', kind: 'Biology', ref: 'Adaptations: the hedgehog',
     text: "A hedgehog's back is covered in about 5,000 to 7,000 stiff spines. Each spine is a hollow hair made of keratin, the same material as your fingernails.\n\nWhen danger comes close, a ring of muscle under the skin pulls tight like the string of a drawstring bag, and the hedgehog rolls into a ball. Its soft face, belly and legs end up tucked inside, and the spines stand up all around. A fox that sniffs the ball gets a sore nose and usually leaves it alone.",
     note: 'Body parts that help an animal survive, like a hedgehog\'s spines, are called adaptations.' },

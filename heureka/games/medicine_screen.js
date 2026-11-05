@@ -28,7 +28,8 @@ MG.add({
     note: 'When an illness is rare, most positive results from a screening test are false alarms.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), n = COLS * ROWS;
-    s.an = []; for (let i = 0; i < n; i++) s.an.push({ kind: KINDS[Math.floor(g.rand() * KINDS.length)], ph: g.rand() * 6, sick: false, pos: false, scanned: -1 });
+    s.v = SK.variant(g, 4); const ks = [['rabbit', 'duck', 'frog', 'penguin', 'fox'], ['hedgehog', 'beaver', 'owl', 'turtle', 'bird'], ['penguin', 'fox', 'owl', 'frog', 'beaver'], ['duck', 'rabbit', 'turtle', 'hedgehog', 'bird']][s.v];
+    s.an = []; for (let i = 0; i < n; i++) s.an.push({ kind: ks[Math.floor(g.rand() * ks.length)], ph: g.rand() * 6, sick: false, pos: false, scanned: -1 });
     const pickFree = (f) => { for (;;) { const i = Math.floor(g.rand() * n); if (f(s.an[i])) return i; } };
     const nSick = L >= 2 ? 14 : 1, nFalse = 4;
     for (let k = 0; k < nSick; k++) { const i = pickFree(a => !a.sick); s.an[i].sick = true; s.an[i].pos = k < nSick - (L >= 2 ? 1 : 0); }

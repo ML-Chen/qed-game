@@ -60,7 +60,7 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level), f = 1 + (g.speed - 1) * 0.35;
     s.L = L; s.f = f; s.rounds = [2, 3, 3][L]; s.walk = [3.3, 2.5, 1.9][L] / f;
-    const order = [0, 1, 2, 3]; for (let i = 3; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    s.v = SK.variant(g, 4); const order = [[0, 1, 2, 3], [1, 3, 0, 2], [2, 0, 3, 1], [3, 2, 1, 0]][s.v];
     s.order = order; s.learned = []; s.fails = 0; s.mutated = false;
     startRound(g, 0, 0.5);
   },

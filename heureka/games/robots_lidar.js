@@ -41,8 +41,11 @@ MG.add({
     text: 'A lidar sends out a quick flash of laser light and times how long the light takes to bounce back. Light is so fast that the time is tiny, but it tells the robot exactly how far away the thing it hit is.\n\nSpin the laser all the way round and you get a ring of distances, one in every direction. Drawn as dots, they show the walls, the doorways and the furniture, even in the dark. Robot vacuums, warehouse robots and many self-driving cars build their maps this way. Glass and mirrors fool it, because the light passes through or bounces away.',
     note: 'Lidar measures the distance in every direction with a spinning laser, so a robot can map a room even in the dark.' },
   init(g) {
-    const s = g.s, L = LAYOUTS[g.level >= 2 ? 1 : 0];
-    s.L = L; s.S = segsOf(L); s.tb = tailBalls(L); s.bot = { x: L.stops[0][0], y: L.stops[0][1] }; s.stop = 0; s.ang = -Math.PI / 2; s.swept = 0;
+    const s = g.s, L0 = LAYOUTS[g.level >= 2 ? 1 : 0]; s.var = SK.variant(g, 4);
+    const mx = s.var & 1, fy = s.var & 2, X = x => mx ? 360 - x : x, Y = y => fy ? 732 - y : y, Pt = ([x, y]) => [X(x), Y(y)]; // mirrored and/or flipped flats
+    const L = { walls: L0.walls.map(([a, b, c2, d]) => [X(a), Y(b), X(c2), Y(d)]), boxes: L0.boxes.map(([x, y, w, h]) => [mx ? 360 - x - w : x, fy ? 732 - y - h : y, w, h]),
+      stops: L0.stops.map(Pt), via: L0.via.map(v => v.map(Pt)), tail: Pt(L0.tail) };
+    s.L = L; s.S = segsOf(L); s.tb = tailBalls(L0).map(([x, y, r]) => [X(x), Y(y), r]); s.eyeDx = mx ? -16 : 16; s.bot = { x: L.stops[0][0], y: L.stops[0][1] }; s.stop = 0; s.ang = -Math.PI / 2; s.swept = 0;
     s.dots = []; s.path = null; s.found = 0; s.w = g.level >= 2 ? TURN / 1.05 : g.level >= 1 ? TURN / 0.9 : TURN / 0.8; s.arrived = 0; s.huh = 0;
   },
   down(g) { if (g.done) return; SK.holdStart(g); g.sfx('click'); },
@@ -97,7 +100,7 @@ MG.add({
     if (s.huh) SK.tag(c, '?', b.x, b.y - 42, 22);
     // a circular arrow round the robot shows the spin; the cat's eyes glint in the far dark room
     if (!s.path && !g.done && s._hold == null) { c.save(); c.strokeStyle = 'rgba(255,120,130,0.8)'; c.lineWidth = 3; const a0 = t * 2; c.beginPath(); c.arc(b.x, b.y, 38, a0, a0 + 4.6); c.stroke(); const ax = b.x + Math.cos(a0 + 4.6) * 38, ay = b.y + Math.sin(a0 + 4.6) * 38, d = a0 + 4.6 + Math.PI / 2; c.fillStyle = 'rgba(255,120,130,0.9)'; c.beginPath(); c.moveTo(ax + Math.cos(d) * 8, ay + Math.sin(d) * 8); c.lineTo(ax + Math.cos(d + 2.3) * 7, ay + Math.sin(d + 2.3) * 7); c.lineTo(ax + Math.cos(d - 2.3) * 7, ay + Math.sin(d - 2.3) * 7); c.fill(); c.restore(); SK.tag(c, 'Lidar', b.x, b.y + 54, 18); }
-    if (!s.found && !g.done) { const bl = Math.sin(t * 1.3) > 0.85 ? 0.2 : 1; c.fillStyle = `rgba(190,255,120,${0.75 * bl})`; for (const dx of [-5, 5]) { c.beginPath(); c.ellipse(L.tail[0] + 16 + dx, L.tail[1] + 8, 2.6, 3.6 * bl, 0, 0, 7); c.fill(); } }
+    if (!s.found && !g.done) { const bl = Math.sin(t * 1.3) > 0.85 ? 0.2 : 1; c.fillStyle = `rgba(190,255,120,${0.75 * bl})`; for (const dx of [-5, 5]) { c.beginPath(); c.ellipse(L.tail[0] + s.eyeDx + dx, L.tail[1] + 8, 2.6, 3.6 * bl, 0, 0, 7); c.fill(); } }
     if (!s.path && !g.done && s._hold == null) SK.glow(c, g, b.x, b.y, 32);
     // the owl watches from the corner, wide-eyed in the dark
     SK.animal(c, 'owl', 306, 130, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'think', facing: -1 });

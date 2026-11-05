@@ -32,6 +32,15 @@ function good(c, kind, x, y, s = 1) {
   if (kind === 'gift') { c.fillStyle = '#9a5ad0'; c.strokeStyle = '#4a1a70'; c.lineWidth = 2; c.beginPath(); c.roundRect(-22, -40, 44, 40, 4); c.fill(); c.stroke(); c.fillStyle = '#f5c23a'; c.fillRect(-4, -40, 8, 40); c.fillRect(-22, -24, 44, 8); c.beginPath(); c.ellipse(-8, -44, 9, 5, -0.4, 0, 7); c.ellipse(8, -44, 9, 5, 0.4, 0, 7); c.fill(); }
   c.restore();
 }
+const BILLS = ['Phone bill', 'Power bill', 'Water bill', 'Internet bill'];
+function billIcon(c, k, x, y) {
+  c.save(); c.translate(x, y); c.fillStyle = '#3a1640';
+  if (k === 0) { c.beginPath(); c.roundRect(-5, -9, 10, 18, 3); c.fill(); c.fillStyle = '#8ad0ff'; c.fillRect(-3, -6, 6, 10); }
+  if (k === 1) { c.fillStyle = '#f5c23a'; c.beginPath(); c.moveTo(2, -10); c.lineTo(-6, 2); c.lineTo(0, 2); c.lineTo(-2, 10); c.lineTo(6, -2); c.lineTo(0, -2); c.closePath(); c.fill(); c.strokeStyle = '#7a4a10'; c.lineWidth = 1; c.stroke(); }
+  if (k === 2) { c.fillStyle = '#4ab0e0'; c.beginPath(); c.moveTo(0, -10); c.quadraticCurveTo(8, 2, 0, 8); c.quadraticCurveTo(-8, 2, 0, -10); c.fill(); }
+  if (k === 3) { c.strokeStyle = '#3a1640'; c.lineWidth = 2; for (let r = 3; r <= 9; r += 3) { c.beginPath(); c.arc(0, 6, r, -2.4, -0.74); c.stroke(); } c.beginPath(); c.arc(0, 6, 1.6, 0, 7); c.fill(); }
+  c.restore();
+}
 function coinStack(c, x, y, n) { c.fillStyle = 'rgba(255,246,234,0.85)'; c.beginPath(); c.roundRect(x - 19, y - n * 7 - 8, 38, n * 7 + 18, 9); c.fill(); for (let i = 0; i < n; i++) B8.flatCoin(c, x, y - i * 8, 15, 0); }
 function cart(c, x, y, items, t) {
   c.save(); c.translate(x, y);
@@ -50,6 +59,7 @@ MG.add({
     note: 'Count the bills still waiting before you spend, so your account never goes below zero.' },
   init(g) {
     const s = g.s, L = LVS[Math.min(2, g.level)];
+    s.bill = SK.variant(g, BILLS.length); // which bill is still being paid (a new one each play)
     s.L = L; s.lev = FLOORY - L.budget * COINH; // the waterline (y; smaller = more money)
     s.bills = L.bills.map((b, i) => ({ left: b, rate: b / 5, show: i ? 2.2 : 0 })); // coins still to drain; level 2's second bill appears later
     s.belt = []; s.nextK = 0; s.spawn = 0.2; s.cart = []; s.flying = []; s.feeT = 0; s.okT = 0;
@@ -103,7 +113,7 @@ MG.add({
     c.fillStyle = '#7a8a9a'; c.fillRect(TANK.x - 10, TANK.y1 - 2, 20, 14);
     s.bills.forEach((b, i) => { if (t < b.show) return; const k = SK.clamp((t - b.show) * 3, 0, 1), bx = TANK.x - 66 + i * 40, by = TANK.y1 + 34;
       c.save(); c.globalAlpha = k; c.translate(bx, by); c.scale(1.4, 1.4); c.translate(-bx, -by); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.roundRect(bx - 16, by - 12, 32, 24, 4); c.fill(); c.stroke();
-      c.fillStyle = '#3a1640'; c.beginPath(); c.roundRect(bx - 5, by - 9, 10, 18, 3); c.fill(); c.fillStyle = '#8ad0ff'; c.fillRect(bx - 3, by - 6, 6, 10);
+      billIcon(c, s.bill, bx, by);
       if (b.left > 0.02 && !g.done) { const q = (t * 2.5 + i * 0.4) % 1; c.fillStyle = '#4ab0e0'; c.beginPath(); c.arc(TANK.x, TANK.y1 + 14 + q * 10, 3, 0, 7); c.fill(); } c.restore(); });
     // the cart, and goods hopping into it
     cart(c, CART.x, CART.y, s.cart, t);
@@ -111,7 +121,7 @@ MG.add({
     // you: the rabbit pushing the cart
     SK.animal(c, 'rabbit', 40, 604, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     SK.tag(c, 'Bank balance', TANK.x, TANK.y0 + 34, 18); if (!g.done && this.pending(g) > 0.05) SK.tag(c, 'After bills', TANK.x - 14, Math.min(TANK.y1 - 20, after) - 16, 18, '#fff6ea', after > FLOORY ? 'rgba(190,40,40,0.88)' : 'rgba(30,14,36,0.72)'); SK.tag(c, 'Zero', TANK.x + 26, FLOORY - 16, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
-    SK.tag(c, 'Bill', TANK.x - 112, TANK.y1 + 34, 18); if (s.feeT) SK.tag(c, 'Overdraft fee', TANK.x - 10, TANK.y1 - 96, 20, '#fff6ea', 'rgba(190,40,40,0.9)');
+    SK.tag(c, BILLS[s.bill], TANK.x - 122, TANK.y1 + 34, 18); if (s.feeT) SK.tag(c, 'Overdraft fee', TANK.x - 10, TANK.y1 - 96, 20, '#fff6ea', 'rgba(190,40,40,0.9)');
     // guidance: tap a cheap item as it rolls past
     const cheap = s.belt.find(b => !b.gone && GOODS[b.k] === 1 && b.x > 40 && b.x < 300);
     if (cheap && s.cart.length + s.flying.length < L.need && !g.done) { SK.glow(c, g, cheap.x, cheap.y - 22, 34); SK.demo(g, c, 'tap', [cheap.x, cheap.y - 20], null, { delay: 0.6 }); }

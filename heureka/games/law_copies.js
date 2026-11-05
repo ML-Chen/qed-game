@@ -68,7 +68,7 @@ MG.add({
     const s = g.s, cp = s.seq[s.i]; if (!cp) return; const e = g.t - s.at;
     if (cp.st === 'wait' && e >= 0) { cp.st = 'in'; cp.at = g.t; g.sfx('pop'); }
     else if (cp.st === 'in' && g.t - cp.at > 0.4) { cp.st = 'here'; cp.at = g.t; }
-    else if (cp.st === 'here' && g.t - cp.at > s.dwell) {
+    else if (cp.st === 'here' && g.t - cp.at > s.dwell * (cp.kind === 'own' ? 0.6 : 1)) {
       if (cp.kind === 'own') { cp.st = 'stay'; s.kept.push(cp); g.sfx('ding'); s.i++; s.at = g.t + 0.2; }
       else { cp.st = 'escape'; cp.at = g.t; g.sfx('laugh'); }
     }

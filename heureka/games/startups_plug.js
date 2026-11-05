@@ -32,7 +32,9 @@ MG.add({
     note: 'Growth only adds up if customers stay: plug the leaks before pouring faster.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
-    s.holes = HOLES[L].map(h => ({ ...h, plug: 0, x: holePos(h)[0], y: holePos(h)[1], pops: 0, popAt: 0 }));
+    // four hole patterns (which side each hole is on, and how high), a new one each play
+    const v = SK.variant(g, 4), side = [[-1, 1, -1, 1, -1], [1, 1, -1, -1, 1], [-1, -1, 1, 1, -1], [1, -1, 1, -1, 1]][v];
+    s.holes = HOLES[L].map((h0, i) => { const h = { f: h0.f + (g.rand() - 0.5) * 0.06, s: side[i] }; return { ...h, plug: 0, x: holePos(h)[0], y: holePos(h)[1], pops: 0, popAt: 0 }; });
     s.h = 0.16; s.reopen = L >= 2; s.lost = 0;
   },
   down(g, x, y) {

@@ -4,11 +4,13 @@
 // stamp lands on each human-made piece and outlines only those. Leave the picture as the robot made it and the stamp
 // gives up and bonks the robot.
 const TAU = Math.PI * 2, CV = { x: 46, y: 150, w: 268, h: 250 };
-const PARTS = [
-  { kind: 'boat', slot: [214, 330], tray: [104, 540] },
-  { kind: 'bird', slot: [120, 196], tray: [176, 540] },
-  { kind: 'flower', slot: [96, 370], tray: [248, 540] },
-  { kind: 'kite', slot: [262, 196], tray: [318, 540] },
+const KINDS = ['boat', 'bird', 'flower', 'kite'], TRAY = [104, 176, 248, 318];
+// four layouts of where the pieces go on the canvas (one per variant)
+const LAYOUTS = [
+  { boat: [214, 330], bird: [120, 196], flower: [96, 370], kite: [262, 196] },
+  { boat: [130, 334], bird: [250, 196], flower: [270, 372], kite: [100, 200] },
+  { boat: [170, 336], bird: [200, 186], flower: [120, 378], kite: [292, 236] },
+  { boat: [262, 338], bird: [84, 206], flower: [180, 380], kite: [176, 196] },
 ];
 function paintStudio(o) {
   const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#e8e0f4'); bg.addColorStop(1, '#c8b8e0'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -65,7 +67,7 @@ MG.add({
     text: 'US copyright protects works made by people. The US Copyright Office says that a picture made by an AI on its own, even from a person\'s prompt, can\'t be copyrighted. A federal appeals court agreed in 2025, in a case called Thaler v. Perlmutter.\n\nThe parts a person creatively adds, changes, selects or arranges can be protected, so the stamp landed only on the penguin\'s pieces. The robot\'s mountains stay free for anyone to use. The rules are still being worked out, and other countries differ.\n\nGeneral information about US law, not legal advice.',
     note: 'In the US, work made by AI alone can\'t be copyrighted; the parts a person creatively made or arranged can be.' },
   init(g) {
-    const s = g.s; s.parts = PARTS.slice(0, g.level >= 2 ? 4 : 3).map(p => ({ ...p, x: p.tray[0], y: p.tray[1], st: 'tray' })); s.tries = []; s.nextTry = 0.8;
+    const s = g.s; const v = SK.variant(g, 4), L = LAYOUTS[v], kinds = g.level >= 2 ? SK.shuffled(g, KINDS) : SK.shuffled(g, KINDS.filter((_, i) => i !== (v + 1) % 4)); s.parts = kinds.map((kind, i) => ({ kind, slot: L[kind], tray: [TRAY[i], 540], x: TRAY[i], y: 540, st: 'tray' })); s.tries = []; s.nextTry = 0.8;
     s.tol = g.level >= 2 ? 26 : 38;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const p = SK.pick(s.parts.filter(q => q.st === 'tray'), x, y, 40); if (p) { p.st = 'drag'; SK.dragStart(g, p, x, y); g.sfx('pop'); } },

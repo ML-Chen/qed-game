@@ -3,7 +3,7 @@
 // each beat: the beaver's paws push down, the heart squeezes and a pulse of red blood runs up the artery to the brain,
 // which turns from grey to pink as the oxygen meter fills. Off-beat or too-slow presses make the flow sputter and the
 // meter sinks. Level 2: the ring and drum stop after a few beats, so you keep the rhythm yourself.
-const PER = 60 / 110, HEART = [180, 350], BRAIN = [180, 178], HANDS = [180, 404];
+const BPM = [100, 108, 114, 120], HEART = [180, 350], BRAIN = [180, 178], HANDS = [180, 404];
 const ART = [[188, 326], [206, 286], [216, 240], [218, 200], [208, 176]];
 const artAt = k => { const n = ART.length - 1, i = Math.min(n - 1, Math.floor(k * n)), f = k * n - i; return [SK.lerp(ART[i][0], ART[i + 1][0], f), SK.lerp(ART[i][1], ART[i + 1][1], f)]; };
 
@@ -35,19 +35,20 @@ MG.add({
     note: 'Pressing hard and fast on the chest, 100 to 120 times a minute, pumps blood to the brain when the heart has stopped.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
+    s.v = SK.variant(g, 4); s.per = 60 / BPM[s.v];
     s.need = [8, 10, 11][L]; s.cueBeats = L >= 2 ? 5 : 999; s.t0 = 0.8; s.meter = 0; s.press = -9; s.pulses = []; s.lastBeat = -1; s.used = {}; s.spurt = -9; s.good = 0;
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done) return;
     s.press = g.t; g.sfx('thud');
-    const k = Math.round((g.t - s.t0) / PER), off = Math.abs(g.t - (s.t0 + k * PER));
+    const k = Math.round((g.t - s.t0) / s.per), off = Math.abs(g.t - (s.t0 + k * s.per));
     if (k >= 0 && off < 0.13 && !s.used[k]) { s.used[k] = 1; s.good++; s.meter = Math.min(1, s.meter + 1 / s.need); s.pulses.push({ t: g.t }); g.sfx('drip'); }
     else { s.meter = Math.max(0, s.meter - 0.5 / s.need); s.spurt = g.t; g.sfx('wrong'); }
   },
   update(g, dt) {
     const s = g.s;
     // the beat: a drum on each beat while the cue lasts; a missed beat lets the meter sink
-    const k = Math.floor((g.t - s.t0) / PER);
+    const k = Math.floor((g.t - s.t0) / s.per);
     if (k > s.lastBeat && g.t >= s.t0) { s.lastBeat = k; if (k < s.cueBeats && !g.done) g.sfx('drum'); if (k - 1 >= 0 && !s.used[k - 1] && s.meter > 0 && !g.done) { s.meter = Math.max(0, s.meter - 0.35 / s.need); s.spurt = g.t; } }
     if (!g.done && s.meter >= 1) { g.win(); g.sfx('cheer'); g.burst(BRAIN[0], BRAIN[1], ['#ff9ab8', '#fff6ea', '#ffd25a'], 20, 180); }
   },
@@ -69,7 +70,7 @@ MG.add({
     c.fillStyle = '#e8485a'; c.strokeStyle = '#8a1a2a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, 26); c.bezierCurveTo(-40, 2, -30, -30, -8, -24); c.quadraticCurveTo(0, -20, 0, -14); c.quadraticCurveTo(0, -20, 8, -24); c.bezierCurveTo(30, -30, 40, 2, 0, 26); c.fill(); c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.4)'; c.beginPath(); c.ellipse(-12, -10, 7, 4, -0.5, 0, 7); c.fill(); c.restore();
     // the beat cue ring on the chest (fades away after a few beats at level 2)
-    const beat = (t - s.t0) / PER, kb = Math.floor(beat), ph = beat - kb, cueA = t < s.t0 ? 0 : kb < s.cueBeats ? 1 : Math.max(0, 1 - (beat - s.cueBeats) * 1.5);
+    const beat = (t - s.t0) / s.per, kb = Math.floor(beat), ph = beat - kb, cueA = t < s.t0 ? 0 : kb < s.cueBeats ? 1 : Math.max(0, 1 - (beat - s.cueBeats) * 1.5);
     if (cueA > 0 && !g.done) { c.save(); c.globalAlpha = cueA; c.strokeStyle = '#ffe27a'; c.lineWidth = 4; c.beginPath(); c.arc(HANDS[0], HANDS[1], 60 - ph * 34, 0, 7); c.stroke(); if (ph < 0.15 || ph > 0.9) { c.fillStyle = 'rgba(255,226,122,0.35)'; c.beginPath(); c.arc(HANDS[0], HANDS[1], 30, 0, 7); c.fill(); } c.restore(); }
     // the beaver kneeling at the side, arms straight down onto the chest
     const push = sq * 10;
@@ -83,11 +84,11 @@ MG.add({
     if (!g.done) SK.glow(c, g, HANDS[0], HANDS[1], 34);
     // demo: tap on the next beat
     SK.tag(c, 'Heart', 76, HEART[1], 18); SK.tag(c, 'Brain', 76, BRAIN[1] - 10, 18);
-    SK.demo(g, c, 'tap', [HANDS[0] + 4, HANDS[1] + 4], null, { period: PER, delay: s.t0 - 0.45 * PER });
+    SK.demo(g, c, 'tap', [HANDS[0] + 4, HANDS[1] + 4], null, { period: s.per, delay: s.t0 - 0.45 * s.per });
   },
   // the bot: press on every beat
   auto(g, dt, synth) {
-    const s = g.s; if (g.done || g.t < s.t0 - 0.05) return; const k = Math.round((g.t - s.t0) / PER);
-    if (!s.used[k] && Math.abs(g.t - (s.t0 + k * PER)) < 0.02) { synth('down', HANDS[0], HANDS[1]); synth('up', HANDS[0], HANDS[1]); }
+    const s = g.s; if (g.done || g.t < s.t0 - 0.05) return; const k = Math.round((g.t - s.t0) / s.per);
+    if (!s.used[k] && Math.abs(g.t - (s.t0 + k * s.per)) < 0.02) { synth('down', HANDS[0], HANDS[1]); synth('up', HANDS[0], HANDS[1]); }
   },
 });

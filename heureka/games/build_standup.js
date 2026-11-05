@@ -49,7 +49,7 @@ MG.add({
     note: 'A beam is much stiffer when it is deep in the direction of the load, so planks and joists go on their edge.' },
   init(g) {
     const s = g.s, L = SU_LV[Math.min(2, g.level)], n = L.n, span = (SU_X1 - SU_X0) / n; s.L = L; s.span = span;
-    const starts = [0, 0.22, 0.08, 0.3]; s.pl = []; for (let k = 0; k < n; k++) s.pl.push({ x0: SU_X0 + k * span, x1: SU_X0 + (k + 1) * span, r: starts[k], up: 0 });
+    s.v = SK.variant(g, 4); const starts = [[0, 0.22, 0.08, 0.3], [0.06, 0, 0.28, 0.12], [0, 0.3, 0.14, 0], [0.1, 0.16, 0, 0.26]][s.v]; s.pl = []; for (let k = 0; k < n; k++) s.pl.push({ x0: SU_X0 + k * span, x1: SU_X0 + (k + 1) * span, r: starts[k], up: 0 }); // variants: how far each plank is already tipped
     s.bx = 24; s.walkT = 0; s.testT = 0; s.wet = 0; s.grab = null;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const q = s.pl.find(q => x > q.x0 - 14 && x < q.x1 + 6 && y > SU_TOP - 100 && y < SU_TOP + 80); if (q) { s.grab = { q, y0: y, r0: q.r }; g.sfx('rustle'); } },
@@ -88,7 +88,8 @@ MG.add({
     SK.animal(c, 'beaver', s.bx, by, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : s.walkT ? 'carry' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : !s.walkT && s.bx > 30 && s.pl[0].r < 0.8 ? 'wow' : 'happy',
       hold: won ? null : o => { o.fillStyle = '#a06a3a'; o.strokeStyle = '#4a2a18'; o.lineWidth = 2; o.beginPath(); o.roundRect(-34, -9, 68, 18, 8); o.fill(); o.stroke(); o.fillStyle = '#e8c08a'; o.beginPath(); o.ellipse(34, 0, 5, 9, 0, 0, 7); o.fill(); o.stroke(); } });
     if (s.wet) { c.fillStyle = 'rgba(122,208,224,0.85)'; c.fillRect(s.bx - 30, SU_WATER - 2, 60, 6); }
-    const q0 = s.pl.find(q => q.r < 1.3); if (q0) SK.demo(g, c, 'drag', [q0.x0 + 24, SU_TOP + 12], [q0.x0 + 24, SU_TOP - 80]);
+    const q0 = s.pl.find(q => q.r < 1.3); if (q0 && !s.walkT) B5.hint(c, g, [q0.x0 + 24, SU_TOP + 10], [q0.x0 + 24, SU_TOP - 78], { ra: 22, rb: 20 });
+    if (q0) SK.demo(g, c, 'drag', [q0.x0 + 24, SU_TOP + 12], [q0.x0 + 24, SU_TOP - 80]);
   },
   auto(g, dt, synth) { const s = g.s; s.pl.forEach((q, k) => SK.bot.drag(g, synth, 'p' + k, 0.9 + k * 0.32, [q.x0 + 24, SU_TOP + 10], [q.x0 + 24, SU_TOP + 10 - 140], 0.2)); },
 });
