@@ -3,18 +3,19 @@
 This repo holds two free learning games that run in a web browser and on Android phones. Both are built like the WarioWare video games: a round is a fast series of tiny games, called microgames, each lasting a few seconds.
 
 - **Q.E.D.!** covers math, from grade 3 arithmetic to college topics such as calculus, linear algebra and abstract algebra. Play it at https://ml-chen.github.io/qed-game/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk.
-- **Heurēka!** covers the rest of science and engineering, plus the practical subjects people use at work: physics, chemistry, biology and medicine, earth and space, engineering, robotics and hardware, computer science and AI, personal finance, startups and economics, law, government and consulting. Play it at https://ml-chen.github.io/qed-game/heureka/. It is new, and microgames are being added every day.
+- **Heurēka!** covers the rest of science and engineering, plus the practical subjects people use at work: physics, chemistry, biology and medicine, earth and space, engineering, robotics and hardware, computer science and AI, personal finance, startups and economics, law, government and consulting. It has 109 microgames in 26 topics so far. Play it at https://ml-chen.github.io/qed-game/heureka/ or install the Android app from https://github.com/ML-Chen/qed-game/releases/download/heureka-android-v1.2/heureka.apk.
 
 ## Heurēka!
 
-In Heurēka!, each microgame is one shouted command and one action, and the idea behind it happens on screen as a result of what you do. There are no questions to answer and nothing to calculate. Some examples from the first games being built:
+In Heurēka!, each microgame is one short command, such as SLIDE 3 PUCKS IN!, and a few seconds of tapping, dragging or holding. The idea behind the game happens on screen as a result of what you do. There are no questions to answer and nothing to calculate. Some examples:
 
-- **SLIDE!** You flick a puck across an ice rink. On the ice it glides at the same speed in a straight line all the way into the net. If you flick it across a patch of sand, it scrapes to a stop at once and a crab pops out. That is Newton's first law: a moving thing keeps moving until something pushes or rubs on it.
-- **SWING!** A frog whirls a ball on a string, and you let go to hit a target. The ball flies off along the edge of the circle, not straight outward, which shows the pull that kept it going round.
-- **DILUTE!** You drag an investor's slice into a pie that stands for a company. Every old slice gets thinner, but the pie grows, so a smaller share can be worth more.
-- **LOOP!** A short Python loop sits beside a maze, and you act as the computer: the current line glows and you move the robot exactly as that line says.
+- **SLIDE 3 PUCKS IN!** You flick three pucks across an ice rink. On the ice a puck glides at the same speed in a straight line into the net. A puck flicked across a patch of sand scrapes to a stop. That is Newton's first law: a moving thing keeps moving until something pushes or rubs on it.
+- **BLOW OUT THE CANDLES!** You pull a bunny's diaphragm down to breathe in, then let it go to blow out a row of candles. Air moves into the lungs only while the diaphragm moves down, and out only while it moves back up.
+- **PRESS THE CHEST ON EVERY BEAT!** Two hands press on a chest in time with the beat. Each press squeezes the heart between the breastbone and the spine, and blood flows up to the brain, which turns from grey to pink.
+- **BUILD WHAT THEY WANT!** You run a smoothie booth. Each customer tries a cup, walks off and shows in a thought bubble what they wanted, such as ice or berries, and you drag that onto the product. Once it has everything they asked for, customers come back by themselves and bring friends. Advertise too early and a crowd tries it once and leaves. Startups call this product-market fit.
+- **RUN THE LOOP, THEN BEEP!** A short Python loop sits on screen, and you act as the computer: you tap the lap counter once per lap and run the `beep()` line when the loop ends.
 
-At the easiest level a ghost hand shows the action until you first touch the screen. After a microgame, a "How it works" button opens a card that explains the idea in plain words. Every card is also collected under Cards on the title screen.
+Every game shows what to do without any reading. The thing to tap glows, a drag shows what to grab and where it goes, and a hold is a labelled button such as "Hold to heat". A ghost hand shows the next step at the start of every level and again whenever you stop for a moment. Counters such as "2 / 3" show what is left. After a microgame, a "How it works" button opens a card that explains the idea in plain words. Every card is also collected under Cards on the title screen.
 
 The plan for every subject is in [docs/science/](docs/science/): one curriculum file per subject, about 1,500 microgame ideas in all, mapped to standard courses (NGSS, AP, OpenStax, MIT and others) and ordered by how useful each topic is for real jobs and projects. The order in which they are being built is in [docs/science/BUILD_PLAN.md](docs/science/BUILD_PLAN.md).
 
@@ -68,7 +69,12 @@ Topics are grouped by school level. They include adding and subtracting, multipl
 
 ## Android app
 
-The Android app is the same game, packaged so it works offline. Download the newest version from https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk and open the file on your phone to install it (Android asks once to allow installs from your browser). Saved progress stays on the phone. When a new version of the game is published, the app downloads it by itself. How the app is built and signed: [docs/ANDROID.md](docs/ANDROID.md).
+Each game also comes as an Android app, packaged so it works offline:
+
+- **Q.E.D.!:** https://github.com/ML-Chen/qed-game/releases/latest/download/qed.apk
+- **Heurēka!:** https://github.com/ML-Chen/qed-game/releases/download/heureka-android-v1.2/heureka.apk (newer versions, if any, are on the [releases page](https://github.com/ML-Chen/qed-game/releases) under tags that start with `heureka-android-v`)
+
+Open the file on your phone to install it (Android asks once to allow installs from your browser). The two apps install side by side. Saved progress stays on the phone. When a new version of a game is published, its app downloads it by itself, so you don't need to reinstall. How the apps are built and signed: [docs/ANDROID.md](docs/ANDROID.md).
 
 ## For developers
 
