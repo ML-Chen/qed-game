@@ -94,11 +94,11 @@ MG.add({
         if (S.is === 'sq') out.push({ tap: 'isq', busy: 0.1, askAt: 1.95 * T, after: 2.35 * T, ask: { v: -1, wrong: [1, 2, M.row(M.num(2), M.vr('i'))] },
           then(g) { M.show(g, 1.95 * T); S.point = true; hop(g, 'think'); M.circle(g, 'isq', { dur: 0.45 * T, col: '#c8a8ff' }); M.light(g, N.i0, { col: HOT });
             S.turns = [{ t0: g.t + 0.2 * T, d: 0.65 * T }]; M.at(g, [[0.2 * T, g => g.sfx('whoosh')], [0.85 * T, g => { g.sfx('tap'); hop(g); S.atI = g.t; }]]);
-            M.note(g, { node: M.row(M.num(1), M.op('·'), M.vr('i'), M.op('='), M.vr('i')), at: [OX + 86, OY - U - 24], s: 30, col: GOLD, pill: true, delay: 0.9 * T, write: 0.3 * T, hold: 0.8, fade: 0.25 * T }); },
+            M.note(g, { node: M.row(M.num(1), M.op('·'), M.vr('i'), M.op('='), M.vr('i')), at: [OX + 86, OY - U - 24], s: 30, col: GOLD, pill: true, delay: 0.9 * T, write: 0.3 * T, hold: 0.8 * T, fade: 0.25 * T }); },
           resolve(g) { M.show(g, 2.35 * T); S.turns.push({ t0: g.t, d: 0.65 * T }); g.sfx('whoosh'); M.unlight(g, N.i0); M.light(g, N.two, { col: HOT });
             M.at(g, [
               [0.65 * T, g => { g.sfx('ding'); hop(g, 'wow'); S.minusAt = g.t;
-                M.note(g, { node: M.row(M.vr('i'), M.op('·'), M.vr('i'), M.op('='), M.num(-1)), at: [OX - U + 4, OY + 60], s: 30, col: GOLD, pill: true, delay: 0.05 * T, write: 0.3 * T, hold: 0.8 + 0.1 * T, fade: 0.25 * T }); }],
+                M.note(g, { node: M.row(M.vr('i'), M.op('·'), M.vr('i'), M.op('='), M.num(-1)), at: [OX - U + 4, OY + 60], s: 30, col: GOLD, pill: true, delay: 0.05 * T, write: 0.3 * T, hold: 0.9 * T, fade: 0.25 * T }); }],
               [1.85 * T, g => { // the −1 lifts off the plane and replaces i²
                 fadeAll(g, N.isq, 0.3 * T); M.unlight(g, N.two);
                 M.fly(g, { node: M.num(-1, null, { col: GOLD }), from: [OX - U - 12, OY + 24], to: 'isq', dur: 0.45 * T, arc: -50, s0: 26, s1: SZ,

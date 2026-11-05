@@ -1,8 +1,4 @@
 # Microgames still being written or reviewed: the build leaves these out. Remove a line once that file has passed review and the tests.
-trig_spin.js
-complex_rotate.js
-counting_geom.js
 integrals_parts.js
-integrals_between.js
 series_taylor.js
 limits_squeeze.js

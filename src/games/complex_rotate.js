@@ -31,7 +31,7 @@ const NOTE = '#ffe9a0';
 // over i² and −1 takes its place, giving (−1)(3 + 2i), then both signs flip: −3 − 2i. Each note stays up about 0.8 s.
 // In medium mode the tray opens once the i has been multiplied in, and the rest plays after the right tile.
 const NS = 30; // working notes: 30 px on a dark pill
-const pill = (g, node, at, o = {}) => M.note(g, { node, at, off: [0, -58], s: NS, col: NOTE, pill: true, write: 0.3 * M.pace(g), hold: 0.8, fade: 0.25 * M.pace(g), ...o });
+const pill = (g, node, at, o = {}) => M.note(g, { node, at, off: [0, -58], s: NS, col: NOTE, pill: true, write: 0.3 * M.pace(g), hold: 0.8 * M.pace(g), fade: 0.25 * M.pace(g), ...o });
 function work(g, n, ask) {
   const S = g.s, K = S.mk, T = M.pace(g), d = S.nd, { a, b } = d, outer = S.left > 0 && n === 1 ? S.fi : null; S.hideLab = true; S.point = true;
   const face = e => { S.face = e; S.faceT = g.t; K.lastMove = g.t; };
@@ -50,7 +50,7 @@ function work(g, n, ask) {
     const neg = M.num(-1, 'neg', { alpha: 0, _born: -1 }), pn = M.paren(neg, 'pn', { _born: -1 }), nd = { sR: a > 0 ? M.op('-') : null, nR: d.nR, sI: d.sI, nI: d.nI, iI: d.iI, a: -a, b: -b };
     M.show(g, 2.25 * T); M.circle(g, 'fac', { dur: 0.45 * T, col: NOTE }); M.light(g, S.fac, { col: NOTE }); face('think');
     pill(g, isq(), 'fac', { delay: 0.1 * T });
-    M.at(g, [[0.1 * T + 0.3 * T + 0.8, g => dropNeg(g, 'fac', g => { show(g, [pn, M.paren(zRow(d))]); neg.alpha = 1; neg.pop = g.t; M.sparkle(g, 'neg', { n: 8, cols: ['#fff', NOTE] }); g.sfx('pop'); face('wow'); })]]);
+    M.at(g, [[1.2 * T, g => dropNeg(g, 'fac', g => { show(g, [pn, M.paren(zRow(d))]); neg.alpha = 1; neg.pop = g.t; M.sparkle(g, 'neg', { n: 8, cols: ['#fff', NOTE] }); g.sfx('pop'); face('wow'); })]]);
     S.restFn = g => { M.show(g, 1.2 * T); M.indicate(g, neg, { dur: 0.4 * T, col: NOTE });
       // the (−1) fades out, and at the same moment both signs of the number flip (no line shows the −1 and the flipped signs together)
       M.at(g, [[0.4 * T, g => { for (const q of [neg, pn]) M.tween(g, q, { alpha: 0 }, 0.15 * T); }],
@@ -69,7 +69,7 @@ function work(g, n, ask) {
     M.fly(g, { node: M.vr('i', null, { col: NOTE }), from: [from.x, from.y], to: 'two', dur: 0.55 * T, arc: -56, s0: 44, s1: 27,
       then(g) { i1.alpha = 1; two.alpha = 1; two.pop = g.t; i1.pop = g.t; g.sfx('pop'); face('wow'); } }); }]]);
   const nd = { sR: b > 0 ? d.sI : null, nR: d.nI, sI: a < 0 ? d.sR : b < 0 ? d.sI : M.op('+'), nI: d.nR, iI: i1, a: -b, b: a };
-  const t1 = 0.3 * T + 0.8, t2 = t1 + 0.4 * T + 0.15 * T, t3 = t2 + 0.3 * T + 0.8;
+  const t1 = 1.1 * T, t2 = t1 + 0.55 * T, t3 = t2 + 1.1 * T;
   S.restFn = g => { M.show(g, t3 + 1.05 * T);
     // i² = −1: the note writes itself above i², then its −1 flies into the place of i²
     M.indicate(g, sq, { dur: 0.4 * T, sc: 1.2, col: NOTE }); pill(g, isq(), 'sq');

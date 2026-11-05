@@ -20,7 +20,7 @@
 // moves(g) returns one placeholder tap until every target is found, then an empty list, so MK.update wins through finish().
 const M = MK;
 const clamp = M.clamp, lerp = M.lerp, ease = M.ease, easeIO = M.easeIO;
-const CX = 180, CY = 366, R = 118;
+const CX = 180, CY = 378, R = 118;
 const INKL = '#f4f0ff', COSC = '#5ad2ff', SINC = '#ff7ac8', GOLD = '#ffd65a';
 const TAU = Math.PI * 2, rad = d => d * Math.PI / 180;
 const TOL = [20, 13, 10];                    // degrees either side of the target that still count
@@ -71,7 +71,7 @@ function lay(n, s) {
   n._m = m; return m;
 }
 function draw(c, n, x, y, s, col) {
-  const m = n._m || lay(n, s); c.fillStyle = col; c.strokeStyle = col;
+  const m = n._m || lay(n, s); if (n.col) col = n.col; c.fillStyle = col; c.strokeStyle = col;
   switch (n.k) {
     case 't': c.font = fontOf(n, s); c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillText(n.s, x, y); break;
     case 'neg': c.lineWidth = s * 0.085; c.lineCap = 'round'; c.beginPath(); c.moveTo(x + s * 0.08, y - s * 0.3); c.lineTo(x + s * 0.4, y - s * 0.3); c.stroke(); break;
@@ -149,12 +149,28 @@ function tryStop(g) {
 function snap(g, p) {
   const S = g.s; p.done = true; p.at = g.t; S.spinning = false; S.snapFrom = S.phi; S.snapAt = g.t; S.phi = rad(p.deg); S.owl.cheerAt = g.t;
   g.sfx('snap'); g.sfx('sparkle'); const q = ptAt(rad(p.deg)); g.burst(q.x, q.y, ['#fff6c0', GOLD, COSC, SINC], 14, 140);
-  if (g.mode === 'medium') {
-    const which = S.cur % 2 === 0 ? 0 : 1, [cv, sv] = p.ex, right = which ? sv : cv, other = which ? cv : sv, comp = COMPANION[absV(right)] || '1/2';
-    p.ask = which;
-    M.later(g, 0.2, g => openAsk(g, { ask: { v: right, wrong: [other, neg(right), right[0] === '-' ? neg(comp) : comp, neg(other), '1/2', 'r3/2'] }, after: 0.05,
-      resolve(g) { p.ask = null; p.answered = true; p.ansAt = g.t; g.sfx('coin'); next(g, 0.3); } }));
-  } else { p.answered = true; next(g, 0.45); }
+  work(g, p);
+}
+// Show the working (the owner's rule): once the arrow has snapped onto θ, the point's shadow drops onto the x-axis and
+// the cyan cos θ segment grows; "cos θ = −√2/2" writes itself beside it on a pill. Then the shadow drops onto the y-axis,
+// the pink sin θ segment grows, and "sin θ = √2/2" writes itself. Each note stays up to be read (about 0.8 s), then both
+// values fly to the point and become its coordinates (cos θ, sin θ), coloured like their segments. In medium mode one
+// note reads "= ?" and the tray asks for that value.
+function work(g, p) {
+  const S = g.s, TP = M.pace(g), asked = g.mode === 'medium' ? S.cur % 2 : -1; p.ask = asked >= 0 ? asked : null; p.notes = [];
+  const coord = (i, hold, after) => { // i = 0: cos θ (across), 1: sin θ (up)
+    const drop = 0.5 * TP; p[i ? 'sinAt' : 'cosAt'] = g.t; M.show(g, drop + 0.4 * TP + hold); g.sfx('whoosh');
+    M.at(g, [[drop, g => { const nt = { i, t0: g.t, wr: 0.38 * TP, val: asked === i ? null : p.ex[i] }; p.notes.push(nt); g.sfx('tap'); S.owl.cheerAt = g.t - 0.5;
+      if (asked !== i) { M.at(g, [[0.4 * TP + hold, after]]); return; }
+      const right = p.ex[i], other = p.ex[1 - i], comp = COMPANION[absV(right)] || '1/2';
+      M.at(g, [[0.4 * TP, g => openAsk(g, { ask: { v: right, wrong: [other, neg(right), right[0] === '-' ? neg(comp) : comp, neg(other), '1/2', 'r3/2'] }, after: 1.2 * TP,
+        resolve(g) { nt.val = right; nt.valAt = g.t; M.show(g, 1.1 * TP); M.at(g, [[1.1 * TP, after]]); } })]]); }]]);
+  };
+  const land = g => { // both values fly from their notes into the coordinate pair beside the point
+    M.show(g, 0.6 * TP); p.flyAt = g.t; p.flyDur = 0.5 * TP; g.sfx('swoosh');
+    M.at(g, [[0.5 * TP, g => { p.coordAt = g.t; p.answered = true; S.owl.cheerAt = g.t; const L = labelGeom(p); g.burst(L.lx, L.ly, ['#fff6c0', GOLD, COSC, SINC], 12, 120); g.sfx('coin'); next(g, 0.35); }]]);
+  };
+  M.at(g, [[0.3 * TP, g => coord(0, 0.35 * TP, g => coord(1, 0.8 * TP, land))]]); M.show(g, 0.3 * TP + 0.1);
 }
 function next(g, wait) {
   const S = g.s; if (S.cur + 1 >= S.pts.length) { S.cur++; return; }
@@ -209,6 +225,7 @@ MG.add({
     c.drawImage(g.bake('trig_observatory', observatory), 0, 0, W, H);
     twinkle(c, t);
     drawCircle(g, c, S);
+    drawNotes(g, c, S);
     drawTarget(g, c, S);
     drawOwl(g, c, S);
     drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
@@ -260,9 +277,9 @@ function drawCircle(g, c, S) {
   c.save(); c.strokeStyle = 'rgba(220,220,255,0.55)'; c.lineWidth = 2; c.lineCap = 'round';
   c.beginPath(); c.moveTo(CX - R - 24, CY); c.lineTo(CX + R + 24, CY); c.moveTo(CX, CY + R + 24); c.lineTo(CX, CY - R - 24); c.stroke();
   c.fillStyle = 'rgba(220,220,255,0.7)'; c.beginPath(); c.moveTo(CX + R + 30, CY); c.lineTo(CX + R + 20, CY - 5); c.lineTo(CX + R + 20, CY + 5); c.fill(); c.beginPath(); c.moveTo(CX, CY - R - 30); c.lineTo(CX - 5, CY - R - 20); c.lineTo(CX + 5, CY - R - 20); c.fill();
-  c.font = M.VARF(15); c.fillStyle = 'rgba(230,230,255,0.85)'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillText('x', CX + R + 14, CY + 18); c.fillText('y', CX + 9, CY - R - 16);
-  c.font = '800 12px Nunito, system-ui, sans-serif'; c.fillStyle = 'rgba(230,230,255,0.75)'; c.textAlign = 'center';
-  c.fillText('1', CX + R - 7, CY + 15); c.fillText('−1', CX - R + 10, CY + 15); c.textAlign = 'right'; c.fillText('1', CX - 6, CY - R + 14); c.fillText('−1', CX - 6, CY + R - 6);
+  c.font = M.VARF(19); c.fillStyle = 'rgba(235,235,255,0.95)'; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.shadowColor = 'rgba(5,5,30,0.95)'; c.shadowBlur = 5; c.fillText('x', CX + R + 14, CY + 20); c.fillText('y', CX - 24, CY - R - 12);
+  c.font = '800 18px Nunito, system-ui, sans-serif'; c.fillStyle = 'rgba(235,235,255,0.9)'; c.textAlign = 'center';
+  c.fillText('1', CX + R - 9, CY + 20); c.fillText('−1', CX - R + 14, CY + 20); c.textAlign = 'right'; c.fillText('1', CX - 7, CY - R + 20); c.fillText('−1', CX - 7, CY + R - 8);
   c.restore();
   // the ring: an orbit of light
   c.save(); c.shadowColor = '#9ab0ff'; c.shadowBlur = 14; c.strokeStyle = 'rgba(170,190,255,0.75)'; c.lineWidth = 3; c.beginPath(); c.arc(CX, CY, R, 0, TAU); c.stroke(); c.restore();
@@ -275,7 +292,7 @@ function drawCircle(g, c, S) {
   const RADL = { 90: [1, 2], 180: [1, 1], 270: [3, 2] };
   for (const d of labs) { const a = rad(d), off = d % 90 ? 24 : 22, x = CX + Math.cos(a) * (R + off), y = CY - Math.sin(a) * (R + off);
     const n = L === 2 ? angleNode({ rad: RADL[d] }) : T(d + '°'), lx = d === 90 ? x + 22 : d === 270 ? x + 24 : d === 180 ? x - 6 : x, ly = d === 180 ? y - 12 : y;
-    drawC(c, n, lx, ly, L === 2 ? 15 : 13, 'rgba(225,228,255,0.85)'); }
+    c.save(); c.shadowColor = 'rgba(5,5,30,0.95)'; c.shadowBlur = 5; drawC(c, n, lx, ly, 18, 'rgba(235,236,255,0.95)'); c.restore(); }
   // red ticks where the arrow was stopped too early or too late
   for (const ms of S.misses) { const k = (t - ms.at) / 1.4; if (k > 1) continue; const a = ms.th; c.strokeStyle = `rgba(255,90,110,${1 - k})`; c.lineWidth = 4; c.lineCap = 'round';
     c.beginPath(); c.moveTo(CX + Math.cos(a) * (R - 12), CY - Math.sin(a) * (R - 12)); c.lineTo(CX + Math.cos(a) * (R + 12), CY - Math.sin(a) * (R + 12)); c.stroke(); }
@@ -299,43 +316,69 @@ function drawCircle(g, c, S) {
   if (flash > 0) { c.strokeStyle = `rgba(255,240,170,${flash})`; c.lineWidth = 3; c.beginPath(); c.arc(tip.x, tip.y, 10 + (1 - flash) * 36, 0, 7); c.stroke(); }
 }
 function drawPoint(g, c, S, p, i) {
-  const t = g.t, old = S.pts.some((q, j) => j > i && (q.done || S.shown === q)), at = p.at ?? (S.snapAt ?? t), k = ease((t - at - 0.08) / 0.25), a = old ? 0.35 : 1;
+  const t = g.t, old = S.pts.some((q, j) => j > i && (q.done || S.shown === q)), shown = S.shown === p, a = old ? 0.35 : 1, TP = M.pace(g);
+  const grow = at0 => at0 == null ? (shown ? ease((t - S.snapAt - 0.1) / 0.3) : 0) : ease((t - at0) / (0.45 * TP));
+  const kc = grow(p.cosAt), ks = grow(p.sinAt), cAt = p.coordAt ?? (shown ? S.snapAt + 0.3 : null), k = cAt == null ? 0 : ease((t - cAt) / 0.25);
   const th = rad(p.deg), q = ptAt(th), cosx = CX + Math.cos(th) * R, siny = CY - Math.sin(th) * R;
   c.save(); c.globalAlpha = a;
   // the shadows drop from the point onto the axes: cos across, sin up
   c.lineCap = 'round'; c.setLineDash([5, 5]); c.lineWidth = 2;
-  c.strokeStyle = SINC; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x, lerp(q.y, CY, k)); c.stroke();
-  c.strokeStyle = COSC; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(lerp(q.x, CX, k), q.y); c.stroke(); c.setLineDash([]);
+  // first the shadow drops straight down (or up) onto the x-axis and the cos segment grows along it; then the sin segment rises
+  if (kc > 0) { c.strokeStyle = COSC; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x, lerp(q.y, CY, kc)); c.stroke(); }
+  if (ks > 0) { c.strokeStyle = SINC; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(lerp(q.x, CX, ks), q.y); c.stroke(); } c.setLineDash([]);
   c.lineWidth = 6; c.shadowBlur = 10;
-  if (Math.abs(cosx - CX) > 1) { c.strokeStyle = COSC; c.shadowColor = COSC; c.beginPath(); c.moveTo(CX, CY); c.lineTo(lerp(CX, cosx, k), CY); c.stroke(); }
-  if (Math.abs(siny - CY) > 1) { c.strokeStyle = SINC; c.shadowColor = SINC; c.beginPath(); c.moveTo(q.x, CY); c.lineTo(q.x, lerp(CY, siny, k)); c.stroke(); }
+  const kc2 = clamp(kc * 1.6 - 0.6, 0, 1), ks2 = clamp(ks * 1.6 - 0.6, 0, 1);
+  if (Math.abs(cosx - CX) > 1 && kc2 > 0) { c.strokeStyle = COSC; c.shadowColor = COSC; c.beginPath(); c.moveTo(CX, CY); c.lineTo(lerp(CX, cosx, kc2), CY); c.stroke(); }
+  if (Math.abs(siny - CY) > 1 && ks2 > 0) { c.strokeStyle = SINC; c.shadowColor = SINC; c.beginPath(); c.moveTo(q.x, CY); c.lineTo(q.x, lerp(CY, siny, ks2)); c.stroke(); }
   c.shadowBlur = 0;
-  // little labels on the shadows
-  if (!old && k > 0.6) { c.globalAlpha = a * clamp((k - 0.6) / 0.4, 0, 1);
-    const cl = M.row(M.txt('cos'), M.gap(3), M.vr('θ')), sl = M.row(M.txt('sin'), M.gap(3), M.vr('θ'));
-    const up = Math.sin(th) >= 0, right = Math.cos(th) >= 0;
-    if (Math.abs(cosx - CX) > 30) { const m = M.lay(cl, 13); M.draw(c, cl, (CX + cosx) / 2 - m.w / 2, CY + (up ? 17 : -8), 13, { col: COSC }); }
-    if (Math.abs(siny - CY) > 30) { const m = M.lay(sl, 13); M.draw(c, sl, q.x + (right ? 7 : -7 - m.w), (CY + siny) / 2 + 4, 13, { col: SINC }); }
-  }
   c.globalAlpha = a;
   // the point
   c.fillStyle = '#fff'; c.shadowColor = GOLD; c.shadowBlur = 14; c.beginPath(); c.arc(q.x, q.y, 7, 0, 7); c.fill(); c.shadowBlur = 0; c.strokeStyle = GOLD; c.lineWidth = 2.5; c.stroke();
-  // the coordinates, outside the circle beside the point
-  if (!old) {
-    const asking = p.ask != null && !p.answered, cv = asking && p.ask === 0 ? T('?') : valNode(p.ex[0]), sv = asking && p.ask === 1 ? T('?') : valNode(p.ex[1]);
-    const n = coordNode(cv, sv), s = 22, m = lay(n, s), pop = 1 + Math.sin(clamp((t - at) / 0.3, 0, 1) * Math.PI) * 0.2;
-    let lx = CX + Math.cos(th) * (R + 30 + m.w * 0.32), ly = CY - Math.sin(th) * (R + 26) - 4;
-    if (Math.sin(th) > 0.8) { lx = q.x + (Math.cos(th) >= -0.01 ? 26 + m.w / 2 : -26 - m.w / 2); ly = q.y - 18; }
-    if (Math.sin(th) < -0.8) { lx = q.x + (Math.cos(th) >= -0.01 ? 26 + m.w / 2 : -26 - m.w / 2); ly = q.y + 16; }
-    lx = clamp(lx, m.w / 2 + 14, 346 - m.w / 2); ly = clamp(ly, 250, 520);
-    c.save(); c.translate(lx, ly); c.scale(pop * k, pop * k);
-    const bw = m.w + 18, bh = m.a + m.d + 14; c.fillStyle = 'rgba(16,12,52,0.85)'; rr(c, -bw / 2, -bh / 2, bw, bh, 12); c.fill(); c.strokeStyle = 'rgba(255,214,90,0.8)'; c.lineWidth = 2; c.stroke();
-    drawC(c, n, 0, 0, s, '#fff4d8');
-    if (asking) { // tint the asked slot in its axis colour
-      c.strokeStyle = p.ask === 0 ? COSC : SINC; c.lineWidth = 2.5; const sx = p.ask === 0 ? -m.w / 2 + s * 0.35 + lay(cv, s).w / 2 : m.w / 2 - s * 0.35 - lay(sv, s).w / 2; rr(c, sx - 13, -15, 26, 30, 8); c.stroke(); }
-    c.restore();
-  }
+  // the coordinates (cos θ, sin θ), once both values have flown in from the notes
+  if (!old && k > 0) { const L = labelGeom(p), pop = 1 + Math.sin(clamp((t - cAt) / 0.3, 0, 1) * Math.PI) * 0.2;
+    c.save(); c.translate(L.lx, L.ly); c.scale(pop * k, pop * k);
+    const bw = L.m.w + 18, bh = L.m.a + L.m.d + 14; c.fillStyle = 'rgba(16,12,52,0.85)'; rr(c, -bw / 2, -bh / 2, bw, bh, 12); c.fill(); c.strokeStyle = 'rgba(255,214,90,0.8)'; c.lineWidth = 2; c.stroke();
+    drawC(c, L.n, 0, 0, L.s, '#fff4d8'); c.restore(); }
   c.restore();
+}
+// where the coordinate pair sits: outside the circle, beside the point (and where its two values are inside it)
+function labelGeom(p) {
+  const th = rad(p.deg), q = ptAt(th), cv = valNode(p.ex[0]), sv = valNode(p.ex[1]); cv.col = COSC; sv.col = SINC;
+  const n = coordNode(cv, sv), s = 24, m = lay(n, s);
+  let lx = CX + Math.cos(th) * (R + 30 + m.w * 0.32), ly = CY - Math.sin(th) * (R + 26) - 4;
+  if (Math.sin(th) > 0.8) { lx = q.x + (Math.cos(th) >= -0.01 ? 26 + m.w / 2 : -26 - m.w / 2); ly = q.y - 18; }
+  if (Math.sin(th) < -0.8) { lx = q.x + (Math.cos(th) >= -0.01 ? 26 + m.w / 2 : -26 - m.w / 2); ly = q.y + 16; }
+  lx = clamp(lx, m.w / 2 + 19, 341 - m.w / 2); ly = clamp(ly, 250, 520);
+  const x0 = lx - m.w / 2 + s * 0.35, items = n.inner.items, cvx = x0 + items[0]._m.w / 2, svx = x0 + items[0]._m.w + items[1]._m.w + items[2]._m.w + items[3]._m.w / 2;
+  return { lx, ly, n, m, s, cvx, svx };
+}
+// a working note: "cos θ = −√2/2" beside the cos segment, "sin θ = √2/2" beside the sin segment, on a dark pill
+const NS = 26;
+function noteNode(nt) { return row(T(nt.i ? 'sin' : 'cos'), { k: 'gap', w: 0.18 }, THETA(), T(' = ', { tight: true }), nt.val == null ? T('?') : valNode(nt.val)); }
+function noteGeom(p, nt) {
+  const th = rad(p.deg), q = ptAt(th), cosx = CX + Math.cos(th) * R, siny = CY - Math.sin(th) * R, n = noteNode(nt), m = lay(n, NS), up = Math.sin(th) >= -0.01, right = Math.cos(th) >= -0.01;
+  let x, y;
+  if (nt.i === 0) { x = (CX + cosx) / 2; y = CY + (up ? 34 : -34); }
+  else { // level with the middle of the sin segment; outside the circle if it fits, otherwise across the y-axis, clear of the arm
+    y = (CY + siny) / 2; if (Math.abs(siny - CY) < 30) y = CY + (up ? -34 : 34);
+    x = q.x + (right ? 22 + m.w / 2 : -22 - m.w / 2); if (x + m.w / 2 > 341 || x - m.w / 2 < 19) x = CX + (right ? -16 - m.w / 2 : 16 + m.w / 2); }
+  x = clamp(x, m.w / 2 + 19, 341 - m.w / 2);
+  return { x, y, n, m };
+}
+function drawNotes(g, c, S) {
+  const t = g.t;
+  for (const p of S.pts) { if (!p.notes || p.coordAt != null && t - p.coordAt > 0.1) continue;
+    const fk = p.flyAt != null ? clamp((t - p.flyAt) / (p.flyDur * 0.6), 0, 1) : 0;
+    for (const nt of p.notes) { const G = noteGeom(p, nt), col = nt.i ? SINC : COSC, wk = easeIO((t - nt.t0) / nt.wr), bw = G.m.w + 20, bh = G.m.a + G.m.d + 16;
+      c.save(); c.globalAlpha = 1 - fk; c.fillStyle = 'rgba(14,10,48,0.88)'; rr(c, G.x - bw / 2, G.y - bh / 2, bw, bh, bh / 2); c.fill(); c.strokeStyle = col; c.lineWidth = 2; c.stroke();
+      if (wk < 1) { c.beginPath(); c.rect(G.x - bw / 2, G.y - bh, bw * wk, bh * 2); c.clip(); }
+      const vp = nt.valAt != null ? 1 + Math.sin(clamp((t - nt.valAt) / 0.3, 0, 1) * Math.PI) * 0.25 : 1;
+      c.translate(G.x, G.y); c.scale(vp, vp); drawC(c, G.n, 0, 0, NS, col); c.restore(); }
+    // the values fly from the notes to the coordinate pair
+    if (p.flyAt != null && t >= p.flyAt && (p.coordAt == null || t < p.coordAt)) { const k = easeIO((t - p.flyAt) / p.flyDur), L = labelGeom(p);
+      for (const nt of p.notes) { const G = noteGeom(p, nt), v = valNode(nt.val), vw = lay(v, NS).w, fx = G.x + G.m.w / 2 - vw / 2, tx = nt.i ? L.svx : L.cvx;
+        c.save(); c.shadowColor = nt.i ? SINC : COSC; c.shadowBlur = 12; drawC(c, v, lerp(fx, tx, k), lerp(G.y, L.ly, k) - Math.sin(k * Math.PI) * 30, lerp(NS, L.s, k), nt.i ? SINC : COSC); c.restore(); } }
+  }
 }
 function drawGuide(g, c, S) {
   const t = g.t, p = S.pts[S.cur]; if (!p || g.done || !S.spinning) return;
@@ -355,13 +398,13 @@ function drawGuide(g, c, S) {
 }
 // the target angle over the circle: it always glows (the thing to aim for)
 function drawTarget(g, c, S) {
-  const t = g.t, p = S.pts[Math.min(S.cur, S.pts.length - 1)], y = 212;
+  const t = g.t, p = S.pts[Math.min(S.cur, S.pts.length - 1)], y = 204;
   const n = row(THETA(), T(' = ', { tight: true }), angleNode(p)), s = 34, m = lay(n, s);
   const done = p.done, pop = p.at != null ? 1 + Math.sin(clamp((t - p.at) / 0.3, 0, 1) * Math.PI) * 0.15 : 1;
   if (!done && !g.done) M.glowBox(c, { x: 180, y: y - 2, w: m.w + 14, h: m.a + m.d + 6 }, t, 0.7);
   c.save(); c.translate(180, y); c.scale(pop, pop); c.shadowColor = done ? '#8af0a0' : '#ffd65a'; c.shadowBlur = 16; drawC(c, n, 0, 0, s, done ? '#d8ffe0' : '#fff6dc'); c.restore();
   // how many targets (dots), when there are two
-  if (S.pts.length > 1) S.pts.forEach((q, i) => { c.fillStyle = q.done ? '#8af0a0' : i === S.cur ? '#ffd65a' : 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(180 + (i - 0.5) * 16, y + 30, 4, 0, 7); c.fill(); });
+  if (S.pts.length > 1) S.pts.forEach((q, i) => { c.fillStyle = q.done ? '#8af0a0' : i === S.cur ? '#ffd65a' : 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(180 + m.w / 2 + 22, y - 9 + i * 14, 4.5, 0, 7); c.fill(); }); // beside the target, clear of the circle's labels
 }
 function drawOwl(g, c, S) {
   const t = g.t, o = S.owl, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';

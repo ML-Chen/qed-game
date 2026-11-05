@@ -112,13 +112,16 @@ MG.add({
         [0.9 * T, g => { M.tween(g, ex, { ...grow(M.box(g, ex.id)) }, 0.25 * T); }],
         [0.95 * T, g => { M.note(g, { node: M.row(M.op('-'), M.num(1)), at: ex, off: [44, 4], s: 30, col: NOTE, write: 0.3 * T, hold: 0.2 * T, fly: 0.25 * T, to: ex, toOff: [44, 0], s1: 28, arc: 10,
           then(g) { Object.assign(ex, { sc: 1, dx: 0, dy: 0 }); const mi = M.op('-', 'em' + Q.i, { col: NOTE, _born: -1 }), one = M.num(1, 'eo' + Q.i, { col: NOTE, _born: -1, pop: g.t });
-            Q.pw.exp = M.row(ex, mi, one); Q.pw.exp.id = 'er' + Q.i; relay(); Object.assign(Q.pw.exp, grow(M.box(g, 'er' + Q.i))); relay(); M.sparkle(g, one, { n: 6 }); g.sfx('tap'); } }); }],
-        [2.0 * T, g => { const row = Q.pw.exp, bo = M.box(g, ex.id); for (const q of row.items.slice(1)) { const b = M.box(g, q.id); if (b && bo) M.tween(g, q, { dx: bo.x - b.x, alpha: 0, sc: 0.5 }, 0.3 * T); }
-          M.roll(g, ex, p - 1, { delay: 0.12 * T, dur: 0.35 * T }); M.sparkle(g, ex, { n: 8, delay: 0.4 * T }); M.at(g, [[0.4 * T, g => g.sfx('ding')]]); }],
-        [2.6 * T, g => { M.tween(g, Q.pw.exp, { sc: 1, dx: 0, dy: 0 }, 0.25 * T); M.unlight(g, ex, { dur: 0.3 * T }); }],
-        [2.9 * T, g => { Q.pw.exp = ex; Q.room = null; Q.sync(); relay(); }],
+            Q.pw.exp = M.row(ex, mi, one); Q.pw.exp.id = 'er' + Q.i; relay(); Object.assign(Q.pw.exp, grow(M.box(g, 'er' + Q.i))); relay(); M.sparkle(g, one, { n: 6 }); g.sfx('tap');
+            // timed from the landing: the − 1 slides into the power, which rolls down by one; then it shrinks back
+            M.at(g, [
+              [0.3 * T, g => { const row = Q.pw.exp, bo = M.box(g, ex.id); for (const q of (row.items || []).slice(1)) { const b = M.box(g, q.id); if (b && bo) M.tween(g, q, { dx: bo.x - b.x, alpha: 0, sc: 0.5 }, 0.3 * T); }
+                M.roll(g, ex, p - 1, { delay: 0.12 * T, dur: 0.35 * T }); M.sparkle(g, ex, { n: 8, delay: 0.4 * T }); M.at(g, [[0.4 * T, g => g.sfx('ding')]]); }],
+              [0.9 * T, g => { M.tween(g, Q.pw.exp, { sc: 1, dx: 0, dy: 0 }, 0.25 * T); M.unlight(g, ex, { dur: 0.3 * T }); }],
+              [1.2 * T, g => { Q.pw.exp = ex; Q.room = null; Q.sync(); relay(); }],
+              ...(p - 1 === 1 ? [[1.3 * T, g => { M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.25 * T); }], [1.6 * T, g => { hideAll(ex); Q.pw = M.vr('x', 'wp' + Q.i); Q.sync(); relay(); }]] : []),
+            ]); } }); }],
       ]);
-      if (p - 1 === 1) { M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.25 * T, { delay: 3.0 * T }); M.at(g, [[3.3 * T, g => { hideAll(ex); Q.pw = M.vr('x', 'wp' + Q.i); Q.sync(); relay(); }]]); }
       return 3.1;
     }
     S.syncW = () => { S.wR.items = S.WQ.map(q => q.row); };

@@ -115,7 +115,7 @@ MG.add({
     if (S.qShown) {
       for (let k = 0; k < 3; k++) {
         const t0 = k < 2 ? S.qAt + k * (S.hopT || 0.45) : S.extra; if (t0 == null) continue;
-        const a = M.box(g, ids[k]), b = M.box(g, ids[k + 1]); if (!a || !b) continue; const kk = M.ease((t - t0) / 0.4); if (kk <= 0) continue;
+        const a = M.box(g, ids[k]), b = M.box(g, ids[k + 1]); if (!a || !b) continue; const kk = M.ease((t - t0) / (0.4 * M.pace(g))); if (kk <= 0) continue;
         const y = a.y + a.h / 2 + 22, x1 = M.lerp(a.x, b.x, kk);
         c.save(); c.strokeStyle = 'rgba(190,232,255,0.85)'; c.lineWidth = 2.5; c.setLineDash([2, 6]); c.lineCap = 'round';
         c.beginPath(); c.moveTo(a.x, y); c.lineTo(x1, y); c.stroke(); c.setLineDash([]); c.globalAlpha = kk;
