@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Build the math game into one self-contained HTML page.
+Usage: python3 src/build.py dist/qed.html"""
+import base64, glob, os, sys
+here = os.path.dirname(os.path.abspath(__file__))
+rd = lambda f: open(os.path.join(here, f), encoding='utf-8').read() if os.path.exists(os.path.join(here, f)) else ''
+b64 = lambda f: base64.b64encode(open(os.path.join(here, f), 'rb').read()).decode()
+def game_src(f):  # each microgame file gets its own scope; files starting with '_' are shared helpers and stay global
+    src = open(f, encoding='utf-8').read(); name = os.path.basename(f)
+    return f'<script>\n// ---- {name} ----\n' + (src if name.startswith('_') else '(() => {\n' + src + '\n})();') + '\n</script>'
+# HM_ONLY=prefix1,prefix2 builds only the microgame files whose names start with one of the prefixes (shared '_' files are always kept)
+only = [p for p in os.environ.get('HM_ONLY', '').split(',') if p]
+# games/PENDING lists microgames still being written or reviewed (file names or glob patterns, one per line); they are
+# left out of every build until their line is removed, so unfinished work never ships to players.
+import fnmatch
+pend_path = os.path.join(here, 'games', 'PENDING')
+pending = [l.split('#')[0].strip() for l in open(pend_path)] if os.path.exists(pend_path) else []
+pending = [p for p in pending if p]
+files = [f for f in sorted(glob.glob(os.path.join(here, 'games', '*.js')))
+         # a file named by HM_ONLY is built even when it is still in PENDING, so its author can test it
+         if (not any(fnmatch.fnmatch(os.path.basename(f), p) for p in pending) or (only and any(os.path.basename(f).startswith(p) for p in only)))
+         and (not only or os.path.basename(f).startswith('_') or any(os.path.basename(f).startswith(p) for p in only))]
+games = '\n'.join(game_src(f) for f in files)
+t = rd('game.html')
+for k, v in {'/*@@FREDOKA@@*/': b64('fredoka.woff'), '/*@@NUNITO@@*/': b64('nunito.woff'), '//@@PAINT@@': rd('paint.js'), '//@@ANIMALS@@': rd('animals.js'), '//@@TITLE@@': rd('title.js'), '//@@MATHKIT@@': rd('mathkit.js'),
+             '//@@MUSIC@@': rd('music_tracks.js'), '//@@AUDIO@@': rd('audio.js'), '//@@ENGINE@@': rd('engine.js'), '<!--@@GAMES@@-->': games}.items():
+    t = t.replace(k, v)
+if os.environ.get('HM_ARTIFACT'):  # the Artifact host adds its own doctype/html/head/body skeleton
+    import re
+    t = re.sub(r'(?is)<!doctype html>\s*<html[^>]*>\s*<head>', '', t, count=1)
+    t = re.sub(r'(?is)<meta charset="utf-8">\s*<meta name="viewport"[^>]*>', '', t, count=1)
+    t = t.replace('</head><body>', '', 1).replace('</body></html>', '')
+    t = t.replace('canvas{display:block;touch-action:none}', 'canvas{display:block;touch-action:none;position:fixed;inset:0}:root{color-scheme:dark}')
+out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, '..', 'dist', 'qed.html')
+open(out, 'w', encoding='utf-8').write(t)
+print('wrote', out, len(t) // 1024, 'KB')
