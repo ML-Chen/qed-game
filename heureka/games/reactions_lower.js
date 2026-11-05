@@ -145,8 +145,9 @@
       const nx = s.lanes.find(L => !L.done);
       if (nx && !g.done) SK.tag(c, 'Energy hill', nx.cx + 108, nx.base - nx.H * 0.62, 18);
       for (const k of s.cats) if (k.st !== 'in') catalyst(c, k.x, k.y, k.sh, t, k.st === 'home' ? 1 : 0.5);
-      const hk = s.cats.find(k => k.st === 'home' || k.st === 'beside');
-      if (hk && !g.done) SK.tag(c, s.cats.length > 1 ? 'Enzymes' : 'Catalyst', s.cats.length > 1 ? PAD.x : PAD.x + 96, PAD.y - 2, 18, '#fff6ea', 'rgba(80,30,120,0.85)');
+      // every catalyst piece carries its name, wherever it is (on the pad, in the finger, under a hill)
+      if (!g.done) for (const k of s.cats) { const nm = s.cats.length > 1 ? 'Enzyme' : 'Catalyst', under = k.st === 'in';
+        SK.tag(c, nm, SK.clamp(k.x, 56, 304), under ? k.y + 34 : k.st === 'home' ? k.y - 40 : k.y + 34, 18, '#fff6ea', 'rgba(80,30,120,0.88)'); }
       if (!won) SK.tag(c, s.made + " / " + s.need, 40, 150, 18);
       // the ant foreman cheers or slumps
       SK.animal(c, 'ant', 38, 628, 0.9, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy' });
