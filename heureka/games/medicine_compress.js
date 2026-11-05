@@ -37,18 +37,34 @@ const CPR = (() => {
   // your hands, stacked, fingers laced, heel of the lower hand on the breastbone; arms straight down from above
   function arms(c, hy, sleeve) {
     const ax = CX + 2;
-    c.fillStyle = P.shade(sleeve, -0.25); c.strokeStyle = P.shade(sleeve, -0.5); c.lineWidth = 2.5; c.beginPath(); c.roundRect(ax - 2, 120, 36, hy - 226, 14); c.fill(); c.stroke();
-    c.fillStyle = '#d8a888'; c.strokeStyle = '#8a5a4a'; c.beginPath(); c.roundRect(ax + 2, hy - 116, 26, 92, 12); c.fill(); c.stroke();
-    c.fillStyle = '#e8b898'; c.strokeStyle = '#8a5a4a'; c.lineWidth = 2.5;
-    c.beginPath(); c.roundRect(ax - 15, hy - 120, 30, 100, 12); c.fill(); c.stroke(); // forearms (one in front of the other)
-    c.fillStyle = sleeve; c.strokeStyle = P.shade(sleeve, -0.45); c.beginPath(); c.roundRect(ax - 20, 120, 40, hy - 222, 14); c.fill(); c.stroke();
-    c.fillStyle = P.shade(sleeve, 0.2); c.beginPath(); c.roundRect(ax - 22, hy - 116, 44, 18, 8); c.fill(); c.stroke(); // cuff
+    // two straight arms from the rescuer's shoulders down to the hands (the back one a shade darker)
+    const d = hy - TOP0, W = [ax + 6, hy - 30];
+    const limb = (sh, dark) => { const ex = SK.lerp(sh[0], W[0], 0.62), ey = SK.lerp(sh[1], W[1], 0.62), sc = dark ? P.shade(sleeve, -0.25) : sleeve;
+      c.lineCap = 'round'; c.strokeStyle = '#8a5a4a'; c.lineWidth = 21; c.beginPath(); c.moveTo(ex, ey); c.lineTo(W[0], W[1]); c.stroke(); c.strokeStyle = dark ? '#dcae90' : '#f0c4a4'; c.lineWidth = 16; c.stroke(); // forearm
+      c.strokeStyle = P.shade(sc, -0.5); c.lineWidth = 29; c.beginPath(); c.moveTo(sh[0], sh[1]); c.lineTo(ex, ey); c.stroke(); c.strokeStyle = sc; c.lineWidth = 24; c.stroke(); // sleeve
+      c.fillStyle = P.shade(sc, 0.2); c.save(); c.translate(ex, ey); c.rotate(Math.atan2(W[1] - sh[1], W[0] - sh[0])); c.beginPath(); c.roundRect(-6, -14, 12, 28, 5); c.fill(); c.restore(); }; // cuff
+    limb([ax + 44, 296 + d], true); limb([ax + 28, 304 + d], false);
     // lower hand: flat, heel down
     c.fillStyle = '#f0c4a4'; c.strokeStyle = '#8a5a4a'; c.lineWidth = 2.5;
     c.beginPath(); c.moveTo(ax + 14, hy - 22); c.lineTo(ax + 18, hy - 2); c.quadraticCurveTo(ax + 10, hy + 2, ax - 6, hy); c.lineTo(ax - 40, hy - 4); c.quadraticCurveTo(ax - 50, hy - 10, ax - 40, hy - 16); c.lineTo(ax - 10, hy - 22); c.closePath(); c.fill(); c.stroke();
     // upper hand on top, its fingers wrapped down over the lower hand
     c.fillStyle = '#f6d0b4'; c.beginPath(); c.moveTo(ax + 16, hy - 38); c.lineTo(ax + 18, hy - 20); c.lineTo(ax - 12, hy - 18); c.quadraticCurveTo(ax - 34, hy - 20, ax - 38, hy - 28); c.quadraticCurveTo(ax - 30, hy - 40, ax - 8, hy - 40); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = 'rgba(138,90,74,0.8)'; c.lineWidth = 2; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(ax - 30 + i * 8, hy - 30); c.quadraticCurveTo(ax - 32 + i * 8, hy - 16, ax - 28 + i * 8, hy - 8); c.stroke(); }
+  }
+  // the rescuer, kneeling on the far side of the patient: head and upper body, leaning over with the push (the patient's
+  // body, drawn after, hides the lower half)
+  function rescuer(c, d, S, t, won) {
+    const x = CX + 2, sh = 300 + d, hair = ['#5a3a2a', '#2a2430', '#c87a3a', '#3a2a4a'][SET.indexOf(S)] || '#5a3a2a';
+    c.fillStyle = S.sleeve; c.strokeStyle = P.shade(S.sleeve, -0.5); c.lineWidth = 3;
+    c.beginPath(); c.moveTo(x + 18, sh - 8); c.quadraticCurveTo(x + 40, sh - 22, x + 70, sh - 10); c.quadraticCurveTo(x + 96, sh + 60, x + 104, 500); c.lineTo(x + 30, 500); c.quadraticCurveTo(x + 22, sh + 70, x + 18, sh - 8); c.closePath(); c.fill(); c.stroke(); // torso in a hoodie
+    c.fillStyle = P.shade(S.sleeve, 0.15); c.beginPath(); c.ellipse(x + 46, sh - 14, 24, 8, -0.15, 0, 7); c.fill(); // hood collar
+    const hx = x + 40, hy = sh - 46; c.fillStyle = '#e8b898'; c.beginPath(); c.roundRect(hx - 6, hy + 14, 20, 26, 6); c.fill(); // neck
+    c.fillStyle = '#f0c4a4'; c.strokeStyle = '#8a5a4a'; c.lineWidth = 3; c.beginPath(); c.arc(hx, hy, 27, 0, 7); c.fill(); c.stroke(); // head, looking down at the chest
+    c.fillStyle = hair; c.beginPath(); c.arc(hx + 4, hy - 4, 27, Math.PI * 1.05, Math.PI * 2.1); c.quadraticCurveTo(hx + 10, hy - 6, hx - 22, hy - 10); c.closePath(); c.fill();
+    c.fillStyle = '#e8b0a0'; c.beginPath(); c.arc(hx + 18, hy + 4, 6, 0, 7); c.fill(); // ear
+    c.fillStyle = '#2a1424'; c.beginPath(); c.arc(hx - 14, hy + 4, 3, 0, 7); c.fill(); // eye, on the patient
+    c.strokeStyle = '#8a2a44'; c.lineWidth = 2.5; c.beginPath(); if (won) c.arc(hx - 12, hy + 14, 6, 0.2, Math.PI - 0.2); else { c.moveTo(hx - 17, hy + 16); c.lineTo(hx - 8, hy + 15); } c.stroke();
+    c.fillStyle = 'rgba(255,120,120,0.35)'; c.beginPath(); c.arc(hx - 6, hy + 10, 5, 0, 7); c.fill();
   }
   function body(c, d, S, heartSq, meter) {
     // torso: a shirt from the neck to the hips
@@ -91,7 +107,7 @@ const CPR = (() => {
     const lab = (t, lx, ly, on, col) => { c.save(); c.font = '900 18px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = on ? col : 'rgba(255,246,234,0.55)'; c.fillText(t, lx, ly); c.restore(); };
     lab('Good', x, y - R - 4, zone === 'good', '#8af090'); lab('Too slow', x - R + 12, y + 22, zone === 'slow', '#ff9a80'); lab('Too fast', x + R - 12, y + 22, zone === 'fast', '#ffc860');
   }
-  return { BACK, CX, TOP0, HEAD, BRAIN, BPM, GOOD, SET, top, artAt, paint, arms, body, gauge };
+  return { BACK, CX, TOP0, HEAD, BRAIN, BPM, GOOD, SET, top, artAt, paint, arms, rescuer, body, gauge };
 })();
 
 MG.add({
@@ -132,6 +148,7 @@ MG.add({
     c.drawImage(g.bake('medicine_compress_' + s.v, o => CPR.paint(o, s.v)), 0, 0, 360, 640);
     // the push: down fast, then the chest springs all the way back up
     const e = t - s.press, d = e < 0.08 ? (e / 0.08) * 20 : Math.max(0, 20 * (1 - (e - 0.08) / 0.2));
+    CPR.rescuer(c, d, S, t, won);
     CPR.body(c, d, S, d / 20, s.shown);
     // pulses of blood running up the artery (a too-fast push only moves a trickle)
     for (const p of s.pulses) { const k = (t - p.t) / 0.5; if (k > 1 || k < 0) continue; const [x, y] = CPR.artAt(k), r = p.amt < 1 ? 3.5 : 8; c.fillStyle = p.amt < 1 ? '#8a2a3a' : '#ff2a3a'; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); if (p.amt >= 1) { c.fillStyle = 'rgba(255,255,255,0.6)'; c.beginPath(); c.arc(x - 2, y - 2, 2.5, 0, 7); c.fill(); } }
@@ -145,7 +162,7 @@ MG.add({
     CPR.arms(c, hy, S.sleeve);
     if (!g.done && cueA <= 0) SK.glow(c, g, CPR.CX - 10, CPR.TOP0 - 16, 38, '#ffe27a', { level: 2 });
     CPR.gauge(c, s.last > 0 ? s.rate : 50, t - s.zoneAt < 9 ? s.zone : '');
-    SK.tag(c, 'Brain', CPR.HEAD[0] + 2, 392, 18); SK.tag(c, 'Chest', 318, 404, 18);
+    SK.tag(c, 'Brain', CPR.HEAD[0] + 2, 392, 18); SK.tag(c, 'Chest', 318, 474, 18);
     c.strokeStyle = 'rgba(30,20,40,0.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(286, 548); c.lineTo(CPR.CX - 4, 478); c.stroke(); SK.tag(c, 'Heart', 300, 556, 18);
     SK.animal(c, S.coach, 84, 600, 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'think' });
     SK.demo(g, c, 'tap', [CPR.CX - 6, CPR.TOP0 - 24], null, { period: s.per, delay: s.t0 - 0.45 * s.per });

@@ -59,7 +59,7 @@
       if (L) hs = hs.map(x => x + Math.round((g.rand() - 0.5) * 12));
       s.holes = hs; s.hi = 0; s.cap = [300, 255, 215][L]; s.L = { pond: L === 2 }; s.wind = 0; s.hitT = 0; s.next = 0; s.bits = []; newBall(s);
     },
-    down(g) { const s = g.s; if (g.done || s.phase !== 'ready' || g.t < s.next) { SK.touched(g); return; } SK.holdStart(g); s.phase = 'wind'; g.sfx('stretch', { vol: 0.4 }); },
+    down(g) { const s = g.s; if (g.done || s.phase !== 'ready' || g.t < s.next) { SK.touched(g); return; } SK.holdStart(g); s.phase = 'wind'; s.windNow = 0; g.sfx('stretch', { vol: 0.4 }); },
     up(g) { const s = g.s; if (s.phase !== 'wind') return; const h = SK.holdEnd(g); s.wind = SK.clamp(h / WIND_T, 0, 1); s.phase = 'swing'; s.hitT = g.t; },
     update(g, dt) {
       const s = g.s, b = s.b, H = s.holes[s.hi];
@@ -110,7 +110,7 @@
       if (!g.done) {
         c.fillStyle = 'rgba(30,14,36,0.6)'; c.beginPath(); c.roundRect(PB.x - 8, PB.y - 14, PB.w + 16, 28, 14); c.fill();
         if (band) { c.fillStyle = '#5ad07a'; c.fillRect(PB.x + PB.w * f0, PB.y - 9, PB.w * (f1 - f0), 18); }
-        const fw = s.phase === 'wind' ? s.windNow : s.phase === 'ready' ? 0 : s.wind, inB = fw >= f0 && fw <= f1;
+        const fw = (s.phase === 'wind' ? s.windNow : s.phase === 'ready' ? 0 : s.wind) || 0, inB = fw >= f0 && fw <= f1;
         c.fillStyle = band && inB ? '#c8ffc8' : '#ffd45a'; c.beginPath(); c.roundRect(PB.x, PB.y - 5, Math.max(10, PB.w * fw), 10, 5); c.fill();
         c.fillStyle = '#fff6ea'; c.beginPath(); c.moveTo(PB.x + PB.w * fw, PB.y - 16); c.lineTo(PB.x + PB.w * fw - 7, PB.y - 26); c.lineTo(PB.x + PB.w * fw + 7, PB.y - 26); c.closePath(); c.fill();
         c.save(); c.font = '900 18px Nunito, system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.lineWidth = 4; c.strokeStyle = 'rgba(30,14,36,0.7)'; c.strokeText('Power', PB.x - 14, PB.y); c.fillText('Power', PB.x - 14, PB.y); c.restore();
