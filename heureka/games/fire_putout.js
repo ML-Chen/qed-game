@@ -105,8 +105,9 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'beaver', 318, 606, 0.7, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.fires.some(f => f.spark && t - f.spark < 0.8) ? 'hop' : 'idle', expr: won ? 'laugh' : lost || s.flare ? 'wow' : 'happy' });
       if (lost) B3.smoke(c, 312, 548, t, 0.6, '80,80,90', 3, 40);
-      const w = s.ext.find(e => e.kind === 'water'), bin = s.fires[0]; if (!bin.out && !SK.dragging(g)) SK.glow(c, g, w.x, w.y, 34, '#ffe27a', { level: 0 });
-      SK.demo(g, c, 'drag', [w.hx, w.hy], [bin.x - 36, BENCH - 70]);
+      const nf = s.fires.find(f => !f.out), w = nf ? s.ext.find(e => e.kind === WORKS[nf.kind][0]) : s.ext[0];
+      if (nf && !SK.dragging(g) && !S) { SK.glow(c, g, w.x, w.y, 34, '#ffe27a', { level: 0 }); SK.glow(c, g, nf.x, BENCH - 40, 40, '#ffe27a', { level: 1 }); }
+      SK.demo(g, c, 'drag', [w.hx, w.hy], [nf ? nf.x - 36 : 180, BENCH - 70], { never: !nf || !!S });
     },
     // the bot uses the right extinguisher on each fire in turn
     auto(g, dt, synth) {

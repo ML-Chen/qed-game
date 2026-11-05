@@ -109,7 +109,7 @@ MG.add({
     c.fillStyle = '#fff'; c.fillRect(DROP[0] - 9, 548, 18, 5); c.fillRect(DROP[0] - 2.5, 541, 5, 19);
     SK.animal(c, 'duck', 46, 618, 0.7, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     if (ready && !g.done) SK.glow(c, g, DROP[0], 548, 40);
-    SK.demo(g, c, 'tap', [DROP[0], 552], null);
+    if (ready) SK.demo(g, c, 'tap', [DROP[0], 552], null);
   },
   // the bot: dose whenever the dropper is full and plain bacteria have regrown
   auto(g, dt, synth) {

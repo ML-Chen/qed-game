@@ -138,8 +138,8 @@
       const won = g.result === 'win', lost = g.result === 'fail', ow = t - s.tik < 1.2;
       SK.animal(c, 'hedgehog', 296, 614, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : ow ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : ow ? 'wow' : 'happy', facing: -1 });
       const bowl = s.balls[0];
-      if (bowl.st === 'home' && !s.down) SK.glow(c, g, P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23, 30);
-      SK.demo(g, c, 'drag', bowl.home, [P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23], { period: 2 });
+      if (bowl.st === 'home' && !s.down) SK.glow(c, g, P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23, 30, '#ffe27a', { level: 2 });
+      SK.demo(g, c, 'drag', bowl.home, [P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23], { period: 2, never: s.down || s.balls.some(b => b.st !== 'home') });
     },
     // the bot: carry the bowling ball to near the top of the ramp and let it go, once per tower (level 1: try the ping-pong ball first)
     auto(g, dt, synth) {

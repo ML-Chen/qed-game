@@ -80,7 +80,7 @@
       const rk = s.read / s.need, rx = 236, ry = 270; c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 7; c.beginPath(); c.arc(rx, ry, 16, 0, 7); c.stroke(); c.strokeStyle = '#ffe27a'; c.lineCap = 'round'; c.beginPath(); c.arc(rx, ry, 16, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
       if (s.kettle) SK.glow(c, g, SW[0], SW[1], 26);
       SK.glow(c, g, cx + 4, cy + 14, 34, '#ffe27a', { level: 0 });
-      SK.demo(g, c, 'tap', [cx + 4, cy + 30], null, { period: 0.35 });
+      SK.demo(g, c, 'tap', s.kettle ? SW : [cx + 4, cy + 30], null, { period: s.kettle ? 1.1 : 0.35 });
     },
     // the bot: mash steadily (fast enough for two bulbs at level 2), and switch the kettle off when it comes on
     auto(g, dt, synth) {

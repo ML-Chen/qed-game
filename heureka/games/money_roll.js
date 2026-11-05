@@ -90,7 +90,7 @@ MG.add({
     // the rabbit at the bottom, with a shovel for scraping
     const scr = s.spends.length && t - s.spends[s.spends.length - 1].t < 0.6;
     SK.animal(c, 'rabbit', 176, 612, 0.95, { t, pose: won ? 'cheer' : scr ? 'wave' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : scr ? 'wow' : 'happy', facing: 1 });
-    if (!s.rolling && !s.end && s.u < 0.1) SK.demo(g, c, 'hold', [bx + 4, by + 6], null, { delay: 0.8, period: 2.4 });
+    if (!s.rolling && !s.end) SK.demo(g, c, 'hold', [bx + 4, by + 6], null, { delay: 0.8, period: 2.4 });
     if (s.rolling && s.u > 0.8) SK.glow(c, g, gx, gy, L.goal * 0.6); // levels 0 and 1: the place to let go glows
   },
   auto(g, dt, synth) { // hold from the top, and let go when the ball is over the ring

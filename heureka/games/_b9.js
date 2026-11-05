@@ -26,8 +26,12 @@ const B9 = (() => {
   // a ring of n points around (cx, cy), starting at angle a0, going round `turns` times
   function ring(cx, cy, rx, ry, n = 24, a0 = 0, turns = 1) { const out = []; for (let i = 0; i <= n; i++) { const a = a0 + TAU * turns * i / n; out.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]); } return out; }
   // the ghost hand following a path (level 0, until the player touches): the action for traces and curved drags
+  // (same timing as SK.demo: at level 0 from the start until the first touch, and at every level after 2-2.8 s idle)
   function demoPath(g, c, pts, o = {}) {
-    if (g.level > (o.level ?? 0) || g.s.touched || g.done) return; const t0 = o.delay ?? 0.9; if (g.t < t0) return;
+    if (g.done || (g.ptr && g.ptr.down)) return;
+    const idle = g.t - (g.lastIn ?? 0), wait = [2.0, 2.4, 2.8][Math.min(2, g.level)]; let t0;
+    if (g.level === 0 && !g.s.touched) t0 = o.delay ?? 0.9; else if (idle >= wait) t0 = (g.lastIn ?? 0) + wait; else return;
+    if (g.t < t0) return;
     const per = o.period ?? 2.2, k = ((g.t - t0) % per) / per, fade = Math.min(1, (g.t - t0) * 4);
     const p = k < 0.1 ? k / 0.1 : k < 0.8 ? 1 : 1 - (k - 0.8) / 0.08, m = SK.easeInOut((k - 0.1) / 0.68);
     const [x, y] = along(pts, m);

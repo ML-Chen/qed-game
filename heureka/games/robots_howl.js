@@ -4,8 +4,8 @@
 // Drag each singer (and mic) back until the rings shrink and die away. Let one run away and the whole stage screeches
 // and the bird covers its ears. Level 2: louder speakers, so the mics must go farther, and the squeals build faster.
 const SPK = [[60, 200], [300, 214], [180, 540]], STAGE = { x0: 24, x1: 336, y0: 140, y1: 596 };
-const CFG = [{ c: 6400, grow: 0.6, live: [1.2, 2.6, 4.0] }, { c: 7200, grow: 0.85, live: [1.0, 2.2, 3.4] }, { c: 8100, grow: 1.2, live: [0.8, 1.7, 2.6] }];
-const START = [[100, 234], [262, 248], [196, 492]], SINGERS = ['bird', 'duck', 'frog'], SAFE = [[110, 330], [250, 344], [128, 432]];
+const CFG = [{ c: 6400, grow: 2.1, live: [1.2, 2.6, 4.0] }, { c: 7200, grow: 1.8, live: [1.0, 2.2, 3.4] }, { c: 8100, grow: 1.7, live: [0.8, 1.7, 2.6] }];
+const START = [[116, 256], [246, 266], [184, 468]], SINGERS = ['bird', 'duck', 'frog'], SAFE = [[110, 330], [250, 344], [128, 432]];
 function loopGain(c, x, y) { let G = 0; for (const [a, b] of SPK) G += c / Math.max(400, (x - a) ** 2 + (y - b) ** 2); return G; } // sound fades with distance squared
 function paintStage(o) {
   const fl = o.createLinearGradient(0, 0, 0, 640); fl.addColorStop(0, '#3a2440'); fl.addColorStop(1, '#2a1830'); o.fillStyle = fl; o.fillRect(0, 0, 360, 640);
@@ -77,8 +77,9 @@ MG.add({
       if (m.calm && !lost) { c.fillStyle = '#7aff9a'; c.font = '900 22px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.fillText('♪', m.x + 26 + Math.sin(t * 3) * 3, m.y - 74); }
     }
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
-    // guidance: drag the first squealing singer away from its speaker
-    const m0 = s.mics.find(m => t >= m.live && !m.calm); if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [SAFE[i][0], SAFE[i][1] - 30], { delay: m0.live }); }
+    // guidance: drag the first squealing singer away from its speaker, to a quiet spot (shown as a dashed ring)
+    const m0 = s.mics.find(m => t >= m.live && !m.calm); if (m0 && !g.done) { const i = s.mics.indexOf(m0); c.save(); c.strokeStyle = 'rgba(140,230,255,0.55)'; c.lineWidth = 3; c.setLineDash([7, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(SAFE[i][0], SAFE[i][1], 30, 12, 0, 0, 7); c.stroke(); c.restore(); }
+    if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [SAFE[i][0], SAFE[i][1] - 30], { delay: m0.live }); }
   },
   auto(g, dt, synth) {
     const s = g.s; s.mics.forEach((m, i) => { SK.bot.drag(g, synth, 'm' + i, m.live + 0.2, [m.hx, m.hy - 20], [SAFE[i][0], SAFE[i][1] - 20], 0.35); });

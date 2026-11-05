@@ -138,8 +138,9 @@ MG.add({
     SK.animal(c, 'duck', 40, 618, 0.62, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     // guidance
     if (!s.touched && !g.done) SK.glow(c, g, 180, 420, 70);
-    if (g.level === 0 && !s.touched && !g.done && t > 0.9) { const k = Math.sin(t * 9); SK.hand(c, 180 + k * 40, 430, Math.abs(k), 0.9); }
-    if (g.level === 1) for (const gm of s.germs) if (gm.nail && gm.hits < 3) { const q = gpos(gm, 0); SK.glow(c, g, q[0], q[1], 18); }
+    const nail = s.germs.find(gm => gm.nail && gm.hits < 3);
+    if (nail && g.level <= 1) for (const gm of s.germs) if (gm.nail && gm.hits < 3) { const q = gpos(gm, 0); SK.glow(c, g, q[0], q[1], 18); }
+    if (s.rinse < 0) { if (nail && s.scrubs > 4) { const q = gpos(nail, 0); SK.demo(g, c, 'tap', [q[0], q[1] + 6], null, { period: 0.5 }); } else SK.demo(g, c, 'drag', [130, 440], [230, 440], { period: 0.7 }); }
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || s.rinse >= 0 || g.t < 0.5) return;

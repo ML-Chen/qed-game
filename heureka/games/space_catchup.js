@@ -88,17 +88,19 @@ MG.add({
       for (let i = 0; i < n; i++) { for (let k = 0; k < 4; k++) cuStep(q, T / n / 4); c.lineTo(q.x, q.y); if (Math.hypot(q.x - CU_C[0], q.y - CU_C[1]) < CU_EARTH) break; } c.stroke(); c.restore(); }
     const sx = CU_C[0] + CU_R * Math.cos(s.st.th), sy = CU_C[1] + CU_R * Math.sin(s.st.th);
     cuStation(c, sx, sy, s.st.th, t);
-    if (!g.done) SK.glow(c, g, sx, sy, 34, '#9ad8ff');
+    if (!g.done) SK.glow(c, g, sx, sy, 34, '#9ad8ff', { level: 2 });
     if (!s.crash) cuCapsule(c, b.x, b.y, Math.atan2(b.vy, b.vx), t - s.flameT < 0.45 ? s.flame : s.dock && t - s.dock < 0.5 ? 1 : 0, t);
     // the rabbit at mission control
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'rabbit', 52, 600, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'point', expr: won ? 'laugh' : lost ? 'wow' : 'think' });
     c.save(); c.strokeStyle = 'rgba(200,230,255,0.8)'; c.lineWidth = 2.5; c.fillStyle = 'rgba(180,220,255,0.16)'; c.beginPath(); c.arc(56, 560, 30, 0, 7); c.fill(); c.stroke(); c.restore();
     // guidance: swipe backward, against the capsule's motion
-    const v = Math.hypot(b.vx, b.vy); SK.demo(g, c, 'swipe', [b.x, b.y], [b.x - b.vx / v * 70, b.y - b.vy / v * 70], { period: 1.4 });
+    const v = Math.hypot(b.vx, b.vy), nearTop = s.brakes === s.burns && s.boosts < s.burns && t - s.lastBurn > 0.7 && Math.hypot(b.x - CU_C[0], b.y - CU_C[1]) > CU_R - 26;
     // back up beside the station: the hand shows the boost forward (level 0), and the capsule glows (levels 0 and 1)
-    if (!g.done && s.brakes === s.burns && s.boosts < s.burns && t - s.lastBurn > 0.7 && Math.hypot(b.x - CU_C[0], b.y - CU_C[1]) > CU_R - 26) { SK.glow(c, g, b.x, b.y, 26, '#a8ffb8');
-      if (g.level === 0) { const k = (t * 2.5) % 1; SK.hand(c, b.x + b.vx / v * 60 * SK.easeOut(k), b.y + b.vy / v * 60 * SK.easeOut(k) + 18, k < 0.6 ? 1 : 0, 0.85); } }
+    if (!g.done && nearTop) { SK.glow(c, g, b.x, b.y, 26, '#a8ffb8', { level: 2 });
+    }
+    // guidance: brake (swipe back against the motion) until braked enough; then, back up by the station, boost forward
+    const dir = s.brakes < s.burns ? -1 : 1; SK.demo(g, c, 'swipe', [b.x, b.y], [b.x + dir * b.vx / v * 70, b.y + dir * b.vy / v * 70], { period: 1.2, never: dir > 0 && !nearTop });
   },
   // the bot brakes with quick swipes against the motion (twice at level 2), then boosts forward once back up by the station
   auto(g, dt, synth) {

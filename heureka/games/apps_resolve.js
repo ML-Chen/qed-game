@@ -103,7 +103,8 @@ MG.add({
     const ai = S.a.findIndex((v, i) => v !== S.base[i]);
     if (!s.go) for (let i = 0; i < n; i++) if (!s.slots[i]) { const k = S.a[i] !== S.base[i] ? 'a' : S.b[i] !== S.base[i] ? 'b' : null; if (k) SK.glow(c, g, carX(s, i), TY[k] - 2, 30, COLS[k], { level: 0 }); }
     if (s.drag) token(c, s.drag.v, s.drag.x, s.drag.y, cw, s.drag.v !== S.base[s.drag.i] ? COLS[s.drag.k] : '#e8e0d0', 1.1);
-    SK.demo(g, c, 'drag', [carX(s, ai), TY.a - 2], [carX(s, ai), TY.m - 2]);
+    // the hand loads the next empty car from the train that changed it, or taps the signal when the train is full
+    if (!s.go && !s.drag) { const i = s.slots.findIndex(v => !v); if (i < 0) SK.demo(g, c, 'tap', [334, TY.m - 66]); else { const k = S.a[i] !== S.base[i] ? 'a' : 'b'; SK.demo(g, c, 'drag', [carX(s, i), TY[k] - 2], [carX(s, i), TY.m - 2]); } }
   },
   // the bot loads each slot with the changed version (B7FAIL: takes everything from the fox's train)
   auto(g, dt, synth) {

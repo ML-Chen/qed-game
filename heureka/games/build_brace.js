@@ -92,7 +92,7 @@ MG.add({
     for (let j = 0; j < s.n; j++) { brBeam(c, T[j], T[j + 1], '#7a6a6a', 10); }
     for (const p of [...B, ...T]) { c.fillStyle = '#3a2a2a'; c.beginPath(); c.arc(p[0], p[1], 4.5, 0, 7); c.fill(); c.fillStyle = '#c8c0c8'; c.beginPath(); c.arc(p[0] - 1, p[1] - 1, 2, 0, 7); c.fill(); }
     // glowing open squares at levels 0 and 1
-    if (!s.goT) s.sq.forEach(q => { if (!q.brace) SK.glow(c, g, q.x + s.S / 2, BR_YT + s.S / 2, s.S * 0.36); });
+    if (!s.goT) s.sq.forEach(q => { if (!q.brace) SK.glow(c, g, q.x + s.S / 2, BR_YT + s.S / 2, s.S * 0.36, '#ffe27a', { level: 2 }); });
     // the line being drawn
     if (s.line) { c.save(); c.strokeStyle = 'rgba(255,240,200,0.9)'; c.lineWidth = 6; c.lineCap = 'round'; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(...s.line.a); c.lineTo(...s.line.b); c.stroke(); c.restore(); }
     // the truck rides along the road (the top chord), following any dip

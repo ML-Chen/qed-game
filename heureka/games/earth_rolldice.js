@@ -70,7 +70,7 @@ MG.add({
     // the big die: every tap rolls it
     const rk = SK.clamp((t - s.rollT) / 0.3, 0, 1), hop = Math.sin(rk * Math.PI) * 26;
     rdDie(c, 180, 574 - hop, 26, s.face, (1 - rk) * 2.4);
-    if (!g.done) SK.glow(c, g, 180, 574, 40);
+    if (!g.done) SK.glow(c, g, 180, 574, 40, '#ffe27a', { level: 2 });
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 318, 606, 0.7, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.faint >= 0 ? 'wow' : 'happy' });
     SK.demo(g, c, 'tap', [180, 574], null, { period: 0.5 });

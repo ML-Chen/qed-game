@@ -75,7 +75,7 @@ MG.add({
     // a tap ripple
     if (s.tapT && t - s.tapT < 0.3) { const q = (t - s.tapT) / 0.3; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(s.tapX, py - 20, 10 + q * 24, 0, 7); c.stroke(); c.restore(); }
     // guidance: a pulsing arrow on the downhill side (levels 0 and 1); the ghost hand taps it
-    const down = errAt(s, s.k - 1) < errAt(s, s.k + 1) ? -1 : 1;
+    const down = s.L === 2 ? (s.kmin > s.k ? 1 : -1) : errAt(s, s.k - 1) < errAt(s, s.k + 1) ? -1 : 1; // at level 2 the hand points the way to the deep valley
     if (!g.done && !s.anim && g.level <= 1) { const ax = xAt(s, s.k) + down * 48, ay = yAt(s, s.k) - 30, p = 0.5 + 0.5 * Math.sin(t * 6); c.save(); c.globalAlpha = 0.5 + 0.4 * p; c.fillStyle = '#ffd45a'; c.strokeStyle = '#6a4a10'; c.lineWidth = 2; c.translate(ax + down * p * 4, ay); c.scale(down, 1); c.beginPath(); c.moveTo(-10, -9); c.lineTo(6, -9); c.lineTo(6, -16); c.lineTo(18, 0); c.lineTo(6, 16); c.lineTo(6, 9); c.lineTo(-10, 9); c.closePath(); c.fill(); c.stroke(); c.restore(); }
     SK.demo(g, c, 'tap', [xAt(s, s.k) + down * 52, yAt(s, s.k) - 30]);
   },

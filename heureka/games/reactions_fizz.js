@@ -101,8 +101,8 @@
       const next = s.b.find(b => b.gas < 0.3); if (next && !s.grab) { const tp = toScr(next, tipOf(next)); SK.glow(c, g, tp.x, tp.y, 26); }
       const won = g.result === 'win', lost = g.result === 'fail', foamy = s.b.some(b => b.foam > 0.2);
       SK.animal(c, 'frog', 180, 294, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : foamy ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : foamy ? 'wow' : 'happy' });
-      const b0 = s.b[0], h = toScr(b0, tipOf(b0, b0.hang, 0)), up = toScr(b0, { x: MOUTH.x, y: MOUTH.y - 110 });
-      SK.demo(g, c, 'drag', [h.x, h.y], [up.x, up.y], { arc: 20 });
+      const b0 = next || s.b[0], h = toScr(b0, tipOf(b0, b0.hang, 0)), up = toScr(b0, { x: MOUTH.x, y: MOUTH.y - 110 });
+      SK.demo(g, c, 'drag', [h.x, h.y], [up.x, up.y], { arc: 20, never: !next });
     },
     // the bot lifts each balloon upright in turn and holds it there until its soda has all fallen in
     auto(g, dt, synth) {

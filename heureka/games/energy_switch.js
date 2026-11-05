@@ -99,7 +99,8 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 60, 228, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
       if (heat && heat.on) SK.glow(c, g, heat.x, heat.y, 36, '#ffe27a', { level: 0 });
-      SK.demo(g, c, 'tap', [KINDS.heater.x, KINDS.heater.y + 20]);
+      const fr = s.apps.find(a => a.k === 'fridge'), nx = s.keepFridge && fr && !fr.on ? fr : s.apps.find(a => a.on && (KINDS[a.k].w >= 1000 || (g.level >= 2 && a.k === 'tv')));
+      SK.demo(g, c, 'tap', nx ? [nx.x, nx.y] : [0, 0], null, { never: !nx });
     },
     // the bot: switch off the big heat-makers, one by one
     auto(g, dt, synth) {

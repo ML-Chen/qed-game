@@ -75,7 +75,7 @@ MG.add({
     for (const q of s.pl) {
       const on = s.walkT && s.bx >= q.x0 && s.bx < q.x1, a = on ? (s.bx - q.x0) / s.span : -1, mid = on ? suSag(q, a, L.load) : 0;
       const sagAt = x => { if (!on) return 0; const u = (x - q.x0) / s.span; return mid * Math.sin(Math.PI * u) * (u < a ? u / Math.max(a, 0.05) * 0.4 + 0.6 : (1 - u) / Math.max(1 - a, 0.05) * 0.4 + 0.6); };
-      suPlank(c, q.x0, q.x1, q.r, sagAt, !s.walkT && q.r < 1.3 && g.level < 2 && !g.done);
+      suPlank(c, q.x0, q.x1, q.r, sagAt, !s.walkT && q.r < 1.3 && !g.done);
       SY.set(q, on ? mid : 0);
     }
     // the beaver carrying its heavy log

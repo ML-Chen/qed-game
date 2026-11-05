@@ -77,7 +77,7 @@
       for (let i = 0; i < 12; i++) { const q = (t * 0.25 + B3.hash(i)) % 1, x = q * 400 - 20, y = sl - 4 + Math.sin(i * 2.1 + t) * 5; c.fillStyle = 'rgba(120,110,120,0.5)'; c.beginPath(); c.arc(x, y, 14 + B3.hash(i * 3) * 12, 0, 7); c.fill(); }
       if (g.level <= 1 && !g.done) { c.save(); c.strokeStyle = 'rgba(160,240,200,0.5)'; c.lineWidth = 3; c.setLineDash([8, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(30, FLOOR - 28); c.lineTo(GOAL, FLOOR - 28); c.stroke(); c.restore(); }
       const next = s.an.find(a => !a.out); if (next && !s.cur) SK.glow(c, g, next.x, FLOOR - 30, 30);
-      SK.demo(g, c, 'drag', [s.an[0].x, FLOOR - 18], [GOAL + 6, FLOOR - 14], { period: 2.4 });
+      SK.demo(g, c, 'drag', [next ? next.x : START, FLOOR - 18], [GOAL + 6, FLOOR - 14], { period: 2.4, never: !next });
     },
     // the bot crawls each animal out in turn, the one nearest the door first
     auto(g, dt, synth) {

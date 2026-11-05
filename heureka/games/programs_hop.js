@@ -183,8 +183,13 @@ MG.add({
     if (dragC) drawCard(c, dragC.kind, dragC.x, dragC.y, 1.12, 6);
     // guidance: glow the next card the program needs (level 0); the ghost hand drags the first one up
     if (!run && !dragC && nextSlot >= 0 && g.level === 0) { const want = s.S.answer[nextSlot], cd = s.cards.find(c2 => c2.slot < 0 && c2.kind === want); if (cd) SK.glow(c, g, cd.hx, cd.hy, 30, '#ffe27a', { level: 0 }); }
-    const first = s.cards.find(c2 => c2.kind === s.S.answer[0]);
-    SK.demo(g, c, 'drag', [first.hx, first.hy], [PX + 90, s.lay.lineY(0)]);
+    // the hand shows the next step: drag the card the next line needs, take back a wrong line, or tap run
+    if (!run) {
+      const bad = s.prog.findIndex((p, i) => p != null && s.cards[p].kind !== s.S.answer[i]);
+      if (bad >= 0) SK.demo(g, c, 'tap', [PX + 80, s.lay.lineY(bad)]);
+      else if (nextSlot >= 0) { const cd = s.cards.find(c2 => c2.slot < 0 && c2.kind === s.S.answer[nextSlot]); if (cd) SK.demo(g, c, 'drag', [cd.hx, cd.hy], [PX + 90, s.lay.lineY(nextSlot)]); }
+      else SK.demo(g, c, 'tap', [s.go.x, s.go.y]);
+    }
   },
   // the bot: drag the cards up in the solved order, then tap run
   auto(g, dt, synth) {

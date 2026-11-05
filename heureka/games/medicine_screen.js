@@ -1,7 +1,7 @@
 // SCREEN! (chem_bio MED-07) — a crowd of 100 animals at a meadow fair; one of them is sick. Rub the test scanner over the
 // whole crowd. The sick animal lights up, and so do a handful of healthy ones, by mistake. Once everyone is scanned,
-// the clinic treats every animal that lit up: the sick one perks up and the healthy ones grumble about medicine they
-// didn't need, so most of the lit-up animals were false alarms. Run out of time with animals unscanned and the sick
+// the owl doctor flies to each lit-up animal with a careful second test: the healthy ones get a green tick and hop for
+// joy, and only the truly sick one stays lit, so most of the first test's alarms were false. Run out of time with animals unscanned and the sick
 // one (still unscanned) sneezes on its neighbours. Level 2: a common illness, and most of the lit-up animals are sick.
 const COLS = 10, ROWS = 10, X0 = 30, DX = 33.3, Y0 = 176, DY = 38, SR = 50;
 const KINDS = ['rabbit', 'duck', 'frog', 'penguin', 'hedgehog', 'fox', 'beaver', 'owl', 'turtle', 'bird'];
@@ -24,7 +24,7 @@ const pos = i => [X0 + (i % COLS) * DX + (Math.floor(i / COLS) % 2 ? 6 : -6), Y0
 MG.add({
   id: 'medicine_screen', stage: 'medicine', cmd: 'SCREEN!', time: 6, mood: 'party', winText: 'False alarms!', failText: 'Missed some!',
   card: { title: 'Most alarms can be false', kind: 'Medicine', ref: 'Screening tests and false positives',
-    text: 'No test is perfect. A good test still lights up for a few healthy people by mistake. That is called a false positive.\n\nWhen an illness is rare, almost everyone tested is healthy, so even a few mistakes among them add up to more lit-up people than there are sick ones. Here, one animal in 100 was sick, but six lit up. When an illness is common, most of the lit-up people really are sick.\n\nThat is why doctors confirm a positive screening result with a second, different test before treating.',
+    text: 'No test is perfect. A good test still lights up for a few healthy people by mistake. That is called a false positive.\n\nWhen an illness is rare, almost everyone tested is healthy, so a few mistakes among them add up to more lit-up people than there are sick ones. Here, one animal in 100 was sick, but six lit up. A second, more careful test showed that five of them were fine. When an illness is common, most of the lit-up people really are sick.\n\nThat is why doctors confirm a positive screening result with a second test before treating.',
     note: 'When an illness is rare, most positive results from a screening test are false alarms.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), n = COLS * ROWS;
@@ -40,30 +40,30 @@ MG.add({
   up(g) { g.s.wand = null; },
   update(g, dt) {
     const s = g.s;
-    if (s.left === 0 && s.done < 0) { s.done = g.t; g.sfx('ding'); }
-    if (s.done >= 0 && !g.done && g.t - s.done > 0.9) { g.win(); g.sfx('cheer'); }
+    // everyone scanned: the owl doctor checks each lit-up animal again with a careful second test (the fuse waits)
+    if (s.left === 0 && s.done < 0) { s.done = g.t; g.sfx('ding'); s.lit = s.an.map((a, i) => i).filter(i => s.an[i].pos); s.per = Math.min(0.42, 2.6 / s.lit.length); }
+    if (s.done >= 0 && !g.done) {
+      g.held += dt;
+      const k = Math.floor((g.t - s.done - 0.3) / s.per);
+      for (let j = 0; j <= Math.min(k, s.lit.length - 1); j++) { const a = s.an[s.lit[j]]; if (a.check == null) { a.check = g.t; g.sfx(a.sick ? 'wrong' : 'chime'); } }
+      if (k >= s.lit.length + 1) { g.win(); g.sfx('cheer'); }
+    }
     if (g.result === 'fail' && s.sneeze == null) { s.sneeze = g.t; g.sfx('wrong'); }
   },
   draw(g, c) {
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail';
     c.drawImage(g.bake('medicine_screen_fair', paintFair), 0, 0, 360, 640);
-    const treat = s.done >= 0 ? t - s.done : -1; // seconds since the last animal was scanned: pills fly to every lit one
     for (const [i, a] of s.an.entries()) {
-      const [x, y] = pos(i), lit = a.scanned >= 0 && a.pos;
-      const got = treat > 0.2 + (i % 7) * 0.03;
+      const [x, y] = pos(i), lit = a.scanned >= 0 && a.pos, ok = lit && a.check != null && !a.sick, conf = lit && a.check != null && a.sick;
       let expr = 'happy', pose = 'idle';
-      if (a.sick && !(lit && got)) expr = 'sad';
-      if (lit && got) { if (a.sick) { expr = 'laugh'; pose = 'cheer'; } else { expr = 'sad'; pose = 'sad'; } }
-      if (lost && a.sick && a.scanned < 0) { expr = 'wow'; }
-      if (lit) { c.save(); c.globalCompositeOperation = 'lighter'; const gl = c.createRadialGradient(x, y - 10, 2, x, y - 10, 24); gl.addColorStop(0, 'rgba(255,90,60,0.85)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); c.fillStyle = gl; c.beginPath(); c.arc(x, y - 10, 24, 0, 7); c.fill(); c.restore(); }
-      SK.animal(c, a.kind, x, y, 0.34, { t, phase: a.ph, expr, pose, tint: a.sick && !(lit && got) ? undefined : undefined });
-      // sick spots (seen only at the end, or on a fail)
-      if (a.sick && (got || lost) && !(lit && got && treat > 0.8)) { c.fillStyle = '#7ac040'; for (const [dx, dy] of [[-4, -16], [3, -12], [-1, -20]]) { c.beginPath(); c.arc(x + dx, y + dy, 2, 0, 7); c.fill(); } }
+      if (ok) { expr = 'laugh'; pose = t - a.check < 0.8 ? 'cheer' : 'idle'; }
+      if (conf || (lost && a.sick)) expr = 'sad';
+      if (lit && !ok) { c.save(); c.globalCompositeOperation = 'lighter'; const gl = c.createRadialGradient(x, y - 10, 2, x, y - 10, 24); gl.addColorStop(0, 'rgba(255,90,60,0.85)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); c.fillStyle = gl; c.beginPath(); c.arc(x, y - 10, 24, 0, 7); c.fill(); c.restore(); }
+      SK.animal(c, a.kind, x, y - (ok && t - a.check < 0.4 ? Math.sin((t - a.check) / 0.4 * Math.PI) * 10 : 0), 0.34, { t, phase: a.ph, expr, pose });
+      if (conf || (lost && a.sick)) { c.fillStyle = '#6ab030'; for (const [dx, dy] of [[-4, -16], [3, -12], [-1, -20], [5, -19]]) { c.beginPath(); c.arc(x + dx, y + dy, 2.2, 0, 7); c.fill(); } }
       if (a.scanned >= 0 && !a.pos) { c.fillStyle = 'rgba(255,255,255,0.75)'; c.beginPath(); c.arc(x + 9, y - 22, 3, 0, 7); c.fill(); }
-      if (lit) { const fl = Math.sin(t * 10 + i) > 0; c.fillStyle = fl ? '#ff3a3a' : '#ff9a6a'; c.beginPath(); c.arc(x, y - 30, 4.5, 0, 7); c.fill(); }
-      // the pill arriving, and a little storm cloud over the grumbling healthy ones
-      if (lit && treat > 0) { const k = SK.clamp((treat - (i % 7) * 0.03) / 0.25, 0, 1); if (k < 1) { const px = SK.lerp(64, x, k), py = SK.lerp(570, y - 16, k) - Math.sin(k * Math.PI) * 60; c.fillStyle = '#fff'; c.strokeStyle = '#3aa860'; c.lineWidth = 2; c.beginPath(); c.roundRect(px - 6, py - 3, 12, 6, 3); c.fill(); c.stroke(); }
-        else if (!a.sick) { c.fillStyle = '#8a8aa0'; c.beginPath(); c.arc(x - 5, y - 40, 6, 0, 7); c.arc(x + 4, y - 42, 7, 0, 7); c.arc(x + 10, y - 38, 5, 0, 7); c.fill(); c.strokeStyle = '#ffe050'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 2, y - 36); c.lineTo(x - 1, y - 30); c.lineTo(x + 3, y - 30); c.lineTo(x, y - 24); c.stroke(); } }
+      if (lit && !ok) { const fl = Math.sin(t * 10 + i) > 0; c.fillStyle = fl ? '#ff3a3a' : '#ff9a6a'; c.beginPath(); c.arc(x, y - 30, 5, 0, 7); c.fill(); }
+      if (ok) { const k = Math.min(1, (t - a.check) / 0.2); c.save(); c.translate(x, y - 32); c.scale(k, k); c.fillStyle = '#3ac060'; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 8, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-1, 3.5); c.lineTo(4.5, -3.5); c.stroke(); c.restore(); }
       if (lost && a.sick && a.scanned < 0 && s.sneeze != null) { const k = ((t - s.sneeze) * 1.5) % 1; c.fillStyle = `rgba(150,220,90,${0.8 * (1 - k)})`; for (let j = 0; j < 6; j++) { const ang = j * 1.05; c.beginPath(); c.arc(x + Math.cos(ang) * (10 + k * 30), y - 14 + Math.sin(ang) * (10 + k * 20), 3, 0, 7); c.fill(); } }
     }
     // the test scanner: a glowing ring under the finger
@@ -71,10 +71,14 @@ MG.add({
       c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2; const sw = (t * 3) % 1; c.beginPath(); c.moveTo(w.x - SR, w.y - SR + sw * SR * 2); c.lineTo(w.x + SR, w.y - SR + sw * SR * 2); c.stroke(); }
     // how much of the crowd is still unscanned: a counter strip of dots by the clinic is too much text; instead a shrinking bar
     const done = 1 - s.left / s.an.length; c.fillStyle = 'rgba(30,40,30,0.45)'; c.beginPath(); c.roundRect(130, 586, 160, 16, 8); c.fill(); c.fillStyle = '#c0f0ff'; c.beginPath(); c.roundRect(130, 586, Math.max(16, 160 * done), 16, 8); c.fill();
-    SK.animal(c, 'owl', 322, 616, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'think' : lost ? 'wow' : 'happy', facing: -1 });
+    let ox = 322, oy = 616, fly = false;
+    if (s.done >= 0 && s.lit) { const f = (t - s.done - 0.3) / s.per, j = SK.clamp(Math.floor(f), 0, s.lit.length - 1), k = SK.clamp((f - j) * 3, 0, 1); const prev = j > 0 ? pos(s.lit[j - 1]) : [322, 616], cur = pos(s.lit[j]); if (f >= 0 && f < s.lit.length + 0.6) { ox = SK.lerp(prev[0], cur[0] + 16, SK.easeInOut(k)); oy = SK.lerp(prev[1], cur[1] + 2, SK.easeInOut(k)) - Math.sin(k * Math.PI) * 30; fly = true; } }
+    SK.animal(c, 'owl', ox, oy, fly ? 0.45 : 0.6, { t, pose: won ? 'cheer' : fly ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : fly ? 'think' : 'happy', facing: -1, noShadow: fly });
+    if (fly) { c.strokeStyle = '#5a4a30'; c.lineWidth = 3; c.fillStyle = 'rgba(220,240,255,0.6)'; c.beginPath(); c.arc(ox - 22, oy - 26, 8, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.moveTo(ox - 16, oy - 20); c.lineTo(ox - 10, oy - 14); c.stroke(); }
     // guidance: a ghost hand rubbing the scanner across the crowd
     if (!g.done && s.left === s.an.length) SK.glow(c, g, 180, 350, 60);
-    SK.demo(g, c, 'drag', [50, 200], [310, 200], { period: 1.6 });
+    const nx = s.an.findIndex(a => a.scanned < 0);
+    if (nx >= 0) { const [, ry] = pos(nx); SK.demo(g, c, 'drag', [30, ry - 10], [330, ry - 10], { period: 1.6 }); }
   },
   // the bot: sweep the scanner back and forth over every row
   auto(g, dt, synth) {

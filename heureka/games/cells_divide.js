@@ -111,9 +111,7 @@ MG.add({
     SK.animal(c, 'octopus', 316, 600, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: hold the cell, then swipe sideways once lined up
     if (s.copied < 0 && !g.done) { SK.glow(c, g, CX, CY, 60); SK.demo(g, c, 'hold', [CX, CY + 10], null); }
-    if (s.lined >= 0 && s.split < 0 && !g.done) {
-      if (g.level === 0) { const k = ((t - s.lined) % 1.2) / 1.2, m = -40 + SK.easeOut(k / 0.6) * 120; SK.hand(c, s.axis ? CX + 70 : CX + m, s.axis ? CY + m : CY + 60, k < 0.7 ? 1 : 0, k < 0.8 ? 0.9 : 0); }
-    }
+    if (s.lined >= 0 && s.split < 0 && !g.done) SK.demo(g, c, 'swipe', s.axis ? [CX + 60, CY - 50] : [CX - 50, CY + 60], s.axis ? [CX + 60, CY + 80] : [CX + 80, CY + 60], { delay: 0 });
   },
   // the bot: hold until copied, wait for the line-up, then swipe
   auto(g, dt, synth) {

@@ -122,7 +122,7 @@ MG.add({
     // your coins: they hop over to the fox with each deal
     if (s.ph === 'seal' && s.sealed && of) for (let i = 0; i < of.coins; i++) { const k = SK.clamp((e - 0.35 - i * 0.06) / 0.45, 0, 1); if (k < 1) B9.coin(c, SK.lerp(150 + i * 20, 230 + i * 16, k), SK.lerp(600, 350, k) - Math.sin(k * Math.PI) * 40, 11, Math.cos(t * 14)); }
     if (of && s.ph === 'wait' && !s.drop) SK.glow(c, g, s.card.x, CY, 50);
-    SK.demo(g, c, 'tap', [180, 560], null, { delay: 1.0 });
+    if (of && (s.ph === 'wait' || s.ph === 'slide')) SK.demo(g, c, 'tap', [s.card.x, CY + 20], null, { delay: 1.0 });
   },
   // the bot taps when the swinging stamp is about to pass over the card
   auto(g, dt, synth) {

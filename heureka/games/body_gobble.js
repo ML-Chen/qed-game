@@ -43,10 +43,10 @@ function rbc(c, r, t, badge) {
   c.restore();
   if (badge > 0) { c.save(); c.globalAlpha = Math.min(1, badge * 2); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3aa860'; c.lineWidth = 3; c.beginPath(); c.arc(r.x + 16, r.y - 20, 11, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#3aa860'; c.beginPath(); c.moveTo(r.x + 10, r.y - 20); c.lineTo(r.x + 15, r.y - 15); c.lineTo(r.x + 22, r.y - 25); c.stroke(); c.restore(); }
 }
-const nearWall = b => Math.min(b.x - AR.l, AR.r - b.x, b.y - AR.t, AR.b - b.y) < 26;
+const nearWall = b => Math.min(b.x - AR.l, AR.r - b.x, b.y - AR.t, AR.b - b.y) < 40;
 
 MG.add({
-  id: 'body_gobble', stage: 'body', cmd: 'GOBBLE!', time: 6, mood: 'bright', winText: 'Phagocytosis!', failText: 'Multiplied!',
+  id: 'body_gobble', stage: 'body', cmd: 'GOBBLE!', time: 7, mood: 'bright', winText: 'Phagocytosis!', failText: 'Multiplied!',
   card: { title: 'White cells eat germs', kind: 'Biology', ref: 'Phagocytes and phagocytosis',
     text: 'When bacteria get in through a cut, white blood cells crawl out of the blood vessels to meet them. Some white cells, called phagocytes, swallow germs whole: the cell flows around a bacterium, wraps it in a bubble and breaks it down with strong chemicals. This is called phagocytosis.\n\nThe body\'s own cells carry markers that say "self", so phagocytes leave them alone.\n\nSome bacteria grow a slippery coat called a capsule that is hard to grip. Phagocytes catch them more easily when they are pinned against a surface or coated with antibodies.',
     note: 'White blood cells find bacteria, swallow them and digest them, and leave the body\'s own cells alone.' },
@@ -79,7 +79,7 @@ MG.add({
       if (b.y < AR.t + 12) { b.y = AR.t + 12; b.vy = Math.abs(b.vy); } if (b.y > AR.b - 12) { b.y = AR.b - 12; b.vy = -Math.abs(b.vy); }
       b.a = Math.atan2(b.vy, b.vx);
       if (!g.done && SK.dist(b.x, b.y, w.x, w.y) < WR + 15) {
-        if (b.cap && !nearWall(b)) { const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * 230; b.vy = dy / d * 230; b.x = w.x + dx / d * (WR + 16); b.y = w.y + dy / d * (WR + 16); if (g.t - (b.slip || -9) > 0.3) { g.sfx('slurp'); b.slip = g.t; } }
+        if (b.cap && !nearWall(b)) { const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * 170; b.vy = dy / d * 170; b.x = w.x + dx / d * (WR + 16); b.y = w.y + dy / d * (WR + 16); if (g.t - (b.slip || -9) > 0.3) { g.sfx('slurp'); b.slip = g.t; } }
         else { b.eat = g.t; s.eaten++; g.sfx('munch'); g.sfx('pop'); g.burst(w.x, w.y, ['#fff6ea', '#a8f07a'], 8, 90); }
       }
     }

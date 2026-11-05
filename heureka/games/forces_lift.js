@@ -103,8 +103,8 @@
       // the frog
       const f = s.frog; SK.animal(c, 'frog', f.x, f.y, 0.9, { t, pose: won ? 'cheer' : s.phase === 'hop' || s.phase === 'fling' ? 'hop' : 'idle', expr: won ? 'laugh' : s.phase === 'fling' ? 'wow' : s.phase === 'low' ? 'think' : lost ? 'sad' : 'happy', noShadow: f.y < GND - 40 });
       // guidance: glow on the barrel; at level 0 the ghost hand slides it into the range that works
-      if (s.phase === 'aim' && !g.done) { SK.glow(c, g, px, py, 38); const w = win(s.ks[s.ri]); if (g.level === 0) { c.save(); c.fillStyle = 'rgba(255,240,150,0.3)'; c.beginPath(); c.roundRect(w.lo - BR, GND + 6, w.hi - w.lo + BR * 2, 10, 5); c.fill(); c.restore(); }
-        if (s.ri === 0) SK.demo(g, c, 'drag', [px, py], [(w.lo + w.hi) / 2, py]); }
+      if (s.phase === 'aim' && !g.done) { SK.glow(c, g, px, py, 38, undefined, { level: 2 }); const w = win(s.ks[s.ri]); if (g.level === 0) { c.save(); c.fillStyle = 'rgba(255,240,150,0.3)'; c.beginPath(); c.roundRect(w.lo - BR, GND + 6, w.hi - w.lo + BR * 2, 10, 5); c.fill(); c.restore(); }
+        SK.demo(g, c, 'drag', [px, py], [(w.lo + w.hi) / 2, py]); }
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.phase !== 'aim' || s.drop < 1) return; const w = win(s.ks[s.ri]), tx = (w.lo + w.hi) / 2;

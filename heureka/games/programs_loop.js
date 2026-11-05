@@ -112,7 +112,8 @@ MG.add({
       if (w === 'counter') SK.glow(c, g, CX + 10, s.cY, 46); else if (w === 'gem') SK.glow(c, g, rx, G.y - 100, 26); else if (w === 'robot') SK.glow(c, g, rx, G.y - 36, 34);
       else if (w === 'fwd' && g.level <= 1) { const p = (t * 1.5) % 1; c.save(); c.globalAlpha = 0.6 * (1 - p); c.fillStyle = '#fff6ea'; c.beginPath(); const ax = rx + 26 + p * 22; c.moveTo(ax, G.y - 44); c.lineTo(ax + 14, G.y - 34); c.lineTo(ax, G.y - 24); c.closePath(); c.fill(); c.restore(); }
     }
-    SK.demo(g, c, 'tap', [CX, s.cY]);
+    // the hand acts out the glowing line
+    if (!s.anim) { const w = this.want(s); if (w === 'counter') SK.demo(g, c, 'tap', [CX, s.cY]); else if (w === 'gem') SK.demo(g, c, 'tap', [rx, G.y - 100]); else if (w === 'robot') SK.demo(g, c, 'tap', [rx, G.y - 36]); else SK.demo(g, c, 'swipe', [rx - 10, G.y - 30], [rx + 60, G.y - 30]); }
   },
   // the bot does what the glowing line says, one action every 0.4 s (B7FAIL: drives one lap too many)
   auto(g, dt, synth) {

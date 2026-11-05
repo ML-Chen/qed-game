@@ -148,7 +148,10 @@ MG.add({
     if (R && R.blocked) { const q = Math.min(1, (e - R.block) * 4); c.save(); c.globalAlpha = q; c.strokeStyle = '#e83a5a'; c.lineWidth = 6; c.lineCap = 'round'; const [bx, by] = plug('server'); c.beginPath(); c.moveTo(bx - 40, by - 12); c.lineTo(bx - 20, by + 8); c.moveTo(bx - 20, by - 12); c.lineTo(bx - 40, by + 8); c.stroke(); c.restore(); }
     // guidance: glow the plugs still to wire; the ghost hand drags phone to server
     if (!R) for (const p of s.parts) if (!s.wires.some(w => w.a === p || w.b === p)) SK.glow(c, g, DEV[p].px, DEV[p].py, 18, '#ffe27a', { level: 0 });
-    SK.demo(g, c, 'drag', [DEV.phone.px, DEV.phone.py], [DEV.server.px, DEV.server.py]);
+    // the hand drags the next wire the app still needs: a screen to the server, or the server to a store
+    if (!R && !s.cable) { const linked = (a, b) => s.wires.some(w => (w.a === a && w.b === b) || (w.a === b && w.b === a));
+      const nx = [...s.fronts.map(f => [f, 'server']), ...s.stores.map(x => ['server', x])].find(([a, b]) => !linked(a, b));
+      if (nx) SK.demo(g, c, 'drag', plug(nx[0]), plug(nx[1])); }
   },
   // the bot wires each screen to the server and the server to each store (B7FAIL: phone straight to the cabinet)
   auto(g, dt, synth) {

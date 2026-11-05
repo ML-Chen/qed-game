@@ -143,7 +143,7 @@
         c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7 + fk; c.beginPath(); c.moveTo(cx + Math.cos(a) * (30 + fk * 60), cy + Math.sin(a) * (30 + fk * 60)); c.lineTo(cx + Math.cos(a) * (80 + fk * 240), cy + Math.sin(a) * (80 + fk * 240)); c.stroke(); }
         c.restore();
       }
-      SK.demo(g, c, 'swipe', s.start, [s.start[0] + (cx - s.start[0]) * 0.35, s.start[1] + (cy - s.start[1]) * 0.35]);
+      SK.demo(g, c, 'swipe', s.start, [s.start[0] + (cx - s.start[0]) * 0.35, s.start[1] + (cy - s.start[1]) * 0.35], { never: n.st !== 'ready' || !!s.hit });
     },
     // the bot: flick straight at the nucleus (fast enough at level 2 to beat the push between two nuclei)
     auto(g, dt, synth) {

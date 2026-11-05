@@ -52,6 +52,7 @@ MG.add({
     s.vis = { a: [0, 0, 0, 0, 0, 0], b: [1, 1, 1, 1, 1, 1] }; // smooth in/out of apples and buyers
   },
   counts(g, p) { const s = g.s; const b = s.V.w.map(w => w >= p), a = s.V.c.map(c => c <= p); return { a, b, na: a.filter(Boolean).length, nb: b.filter(Boolean).length }; },
+  band(g) { let lo = null, hi = null; for (let p = 0; p <= 1.0001; p += 0.01) { const k = this.counts(g, p); if (k.na === k.nb) { if (lo == null) lo = p; hi = p; } } return ((lo ?? 0.5) + (hi ?? 0.5)) / 2; }, // the middle of the clearing band
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.res) return; if (Math.abs(x - TRACK.x) < 60 && y > TRACK.y0 - 50 && y < TRACK.y1 + 50) { s.held = true; s.lastY = y; s.p = pOfY(y); g.sfx('click'); } },
   move(g, x, y) { const s = g.s; if (!s.held || s.res) return; s.moved += Math.abs(y - s.lastY); s.lastY = y; const np = pOfY(y); if (Math.round(np * 12) !== Math.round(s.p * 12)) g.sfx('tap'); s.p = np; },
   up(g) {
@@ -102,13 +103,12 @@ MG.add({
       c.strokeStyle = '#3a78d8'; c.beginPath(); c.moveTo(TRACK.x - 60, ty - 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty - 60, ty + 40, q)); c.stroke();
       c.strokeStyle = '#e8403a'; c.beginPath(); c.moveTo(TRACK.x - 60, ty + 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty + 60, ty - 40, q)); c.stroke(); c.restore(); }
     // guidance: slide the tag up from the bottom
-    SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(0.5)], { delay: 0.8, period: 2 });
+    if (!R) SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(this.band(g))], { delay: 0.8, period: 2 }); // toward today's clearing price
   },
   auto(g, dt, synth) {
     const s = g.s; if (s.res) return; const t0 = s.day ? s.dayT + 0.6 : 1.0;
     // the bot aims at the middle of the band where apples and buyers match (at the time it lets go)
-    let lo = null, hi = null; for (let p = 0; p <= 1.0001; p += 0.01) { const k = this.counts(g, p); if (k.na === k.nb) { if (lo == null) lo = p; hi = p; } }
-    if (s._b8d !== s.day) { s._b8d = s.day; s._b8a = yOfP(s.p); } const target = yOfP(((lo ?? 0.5) + (hi ?? 0.5)) / 2);
+    if (s._b8d !== s.day) { s._b8d = s.day; s._b8a = yOfP(s.p); } const target = yOfP(this.band(g));
     SK.bot.drag(g, synth, 'slide' + s.day, t0, [TRACK.x + 4, s._b8a], [TRACK.x + 4, target], 0.5);
   },
 });

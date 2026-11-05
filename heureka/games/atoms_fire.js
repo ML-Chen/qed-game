@@ -68,7 +68,7 @@
       if (s.ant) { const ax = antX(s, t); if (ax > -50 && ax < 410) { c.save(); c.fillStyle = '#5ab84a'; c.strokeStyle = '#2a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.ellipse(ax, WALL + 2, 18, 24, 0.15, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.moveTo(ax, WALL - 20); c.lineTo(ax, WALL + 24); c.stroke(); c.restore(); SK.animal(c, 'ant', ax - 22, WALL - 8, 0.72, { t, pose: 'carry', expr: 'laugh' }); } }
       SK.animal(c, 'ant', 300, 616, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
       SK.glow(c, g, GUN[0], GUN[1] + 10, 36, '#ffe27a', { level: 0 });
-      SK.demo(g, c, 'tap', [GUN[0], GUN[1] + 12], null, { period: 0.5 });
+      SK.demo(g, c, 'tap', [GUN[0], GUN[1] + 12], null, { period: 0.5, never: s.ant && SLITS.some(sx => Math.abs(antX(s, t + 0.22) - sx) < 26) });
     },
     // the bot: fire steadily, holding fire while the ant's leaf will cover a slit
     auto(g, dt, synth) {

@@ -98,7 +98,7 @@ MG.add({
     if (!s.path && !g.done && s._hold == null) SK.glow(c, g, b.x, b.y, 32);
     // the owl watches from the corner, wide-eyed in the dark
     SK.animal(c, 'owl', 306, 130, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'think', facing: -1 });
-    SK.demo(g, c, 'hold', [b.x, b.y], null, { period: 2.4 });
+    if (!s.path) SK.demo(g, c, 'hold', [b.x, b.y], null, { period: 2.4 });
   },
   auto(g, dt, synth) {
     const s = g.s, B = s._bot = s._bot || {};

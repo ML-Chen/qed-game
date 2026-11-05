@@ -113,8 +113,11 @@
       // the penguin
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 180, 616, 0.75, { t, pose: won ? 'cheer' : lost ? 'sad' : 'balance', expr: won ? 'laugh' : lost ? 'wow' : 'think' });
-      const o2 = s.trays[0]; if (nl.O < nr.O && !s.held) SK.glow(c, g, o2.x, o2.y, 34);
-      SK.demo(g, c, 'drag', [o2.x, o2.y], [lp.x, lp.y - 40]);
+      // the next useful molecule: carbon dioxide or water on the right, or oxygen on the left
+      let need = null; if (nr.C < nl.C) need = 'CO2'; else if (nr.H < nl.H) need = 'H2O'; else if (nl.O < nr.O) need = 'O2';
+      const tr = s.trays.find(t => t.kind === need) || s.trays[0], tp = tr.side === 'L' ? lp : rp;
+      if (need && !s.held) SK.glow(c, g, tr.x, tr.y, 34);
+      SK.demo(g, c, 'drag', [tr.x, tr.y], [tp.x, tp.y - 40], { never: !need });
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done) return; const B = s._bt = s._bt || { n: 0, next: 1.0 };

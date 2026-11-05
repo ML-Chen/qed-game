@@ -131,7 +131,7 @@
         c.quadraticCurveTo(hx + Math.cos(s.relAt) * 30, hy + Math.sin(s.relAt) * 30 + fl * 30, hx + Math.cos(s.relAt) * (s.snapT ? 34 : 54) * (1 - fl * 0.4), hy + Math.sin(s.relAt) * 40 + fl * 46); c.stroke();
       }
       if (s.snapT && t - s.snapT < 0.8) SK.tag(c, 'Snap!', hx, hy - 34, 20);
-      if (ready && T && g.level === 0) { const per = Math.PI * 2 / s.w, ph = ((((T.rel - (s.th - s.w * t)) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / s.w, r = ball(s, T.rel);
+      if (ready && T) { const per = Math.PI * 2 / s.w, ph = ((((T.rel - (s.th - s.w * t)) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / s.w, r = ball(s, T.rel);
         let d0 = ph - 0.45 * per; while (d0 < 0.7) d0 += per; SK.demo(g, c, 'tap', [r.x - 6, r.y + 16], null, { delay: d0, period: per }); }
     },
     auto(g, dt, synth) {

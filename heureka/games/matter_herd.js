@@ -67,8 +67,9 @@
       const won = g.result === 'win', lost = g.result === 'fail', frantic = !!s.broom;
       SK.animal(c, 'ant', 300, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : frantic ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : frantic ? 'wow' : 'happy', facing: -1 });
       if (!s.broom && s.spread) SK.glow(c, g, 300, 358, 36);
-      if (s.spread) SK.demo(g, c, 'drag', [300, 358], [150, 358], { period: 2, delay: s.spread + 0.2 });
-      else if (s.open) { c.save(); c.globalAlpha = 0.8; c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(262, 556, 50, 10, 4); c.fill(); c.stroke(); c.restore(); }
+      if (s.open && !s.spread) { c.save(); c.globalAlpha = 0.8; c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(262, 556, 50, 10, 4); c.fill(); c.stroke(); c.restore(); }
+      const far = s.ps.reduce((a, p) => (p.x > (a ? a.x : MID) ? p : a), null), fy = far ? SK.clamp(far.y, BOX.t + 40, BOX.b - 40) : 358;
+      SK.demo(g, c, 'drag', [Math.min(BOX.r - 10, (far ? far.x : 300) + 34), fy], [MID - 20, fy], { period: 2, delay: (s.spread || 0) + 0.2, never: !s.spread || !far });
     },
     // the bot: sweep the broom from the right wall toward the middle, keeping it in front of whichever particle is about to
     // slip past; if one gets away to the right, lift the broom and sweep again from the right wall

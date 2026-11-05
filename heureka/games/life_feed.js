@@ -159,8 +159,8 @@
       // the frog cheers you on
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'frog', 180, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-      const pup = s.items.find(i => i.kind === 'puppy');
-      SK.demo(g, c, 'drag', [BOWL.x, BOWL.y - 6], [pup.x, pup.y + 4]);
+      const nx = s.items.find(i => LIVING[i.kind] && !i.fed), snack = nx && LIVING[nx.kind] === 'snack';
+      SK.demo(g, c, 'drag', snack ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y], nx ? (snack ? [nx.x, nx.y + 4] : [nx.x - 30, nx.y - 8]) : [180, 300], { never: !nx || !!s.can.pour });
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done) return; const todo = s.items.filter(it => LIVING[it.kind]);

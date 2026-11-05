@@ -77,7 +77,7 @@ MG.add({
     // level 2: lemons cost money too, paid out of the jar for every cup sold
     if (L.cost && st && t > st.t + 0.5 && t < st.t + 1.4) for (let j = 0; j < Math.min(6, st.buy); j++) { const qq = SK.clamp((t - st.t - 0.5) / 0.8 - j * 0.06, 0, 1); if (qq > 0 && qq < 1) { c.fillStyle = '#f5d040'; c.beginPath(); c.ellipse(SK.lerp(JAR.x, 70, qq), SK.lerp(JAR.y0 + 40, 452, qq) - Math.sin(qq * Math.PI) * 50, 8, 6, 0, 0, 7); c.fill(); } }
     if (!st && !g.done) SK.glow(c, g, DIAL.x, DIAL.y - 40, 60);
-    SK.demo(g, c, 'tap', [DIAL.x + 20, DIAL.y - 30], null, { delay: 0.8 });
+    if (!st) SK.demo(g, c, 'tap', [DIAL.x + 20, DIAL.y - 30], null, { delay: 0.8 });
   },
   auto(g, dt, synth) { // tap when the needle is in the best sector (the middle, or one to the right when lemons cost money)
     const s = g.s; if (s.stop || g.done || g.t < 0.8) return; const best = s.L.cost ? 4 : 3, a = this.angle(g);

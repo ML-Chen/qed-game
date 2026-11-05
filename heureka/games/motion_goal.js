@@ -110,8 +110,8 @@
       if (s.snail > -30) snail(c, s.snail, GY + 26, t, s.snail < b.x + 60);
       // goals still to score: little flags along the bottom
       for (let i = 0; i < s.goals.length; i++) { const x = 180 + (i - (s.goals.length - 1) / 2) * 30, y = 596; c.fillStyle = i < s.gi ? '#ffd45a' : 'rgba(255,255,255,0.45)'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); c.stroke(); }
-      if (s.phase === 'ready' && !g.done) SK.glow(c, g, PIV.x + 10, GY - 54, 40);
-      if (s.gi === 0) SK.demo(g, c, 'hold', [PIV.x + 14, GY - 46], null, { hold: 0.5, period: 2.2 });
+      if (s.phase === 'ready' && !g.done) SK.glow(c, g, PIV.x + 10, GY - 54, 40, undefined, { level: 2 });
+      if (s.phase === 'ready') SK.demo(g, c, 'hold', [PIV.x + 14, GY - 46], null, { hold: 0.5, period: 2.2 });
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || (s.phase !== 'ready' && s.phase !== 'wind') || g.t < s.next) return;

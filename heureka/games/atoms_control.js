@@ -82,7 +82,7 @@
       c.fillStyle = '#4a5a7a'; c.fillRect(250, 572, 110, 68); c.fillStyle = '#6a7a9a'; c.fillRect(246, 566, 118, 8);
       for (let i = 0; i < 4; i++) { c.fillStyle = ['#ff6a5a', '#ffd45a', '#6ae07a', '#6ac8ff'][i]; c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 3 + i); c.beginPath(); c.arc(268 + i * 22, 592, 5, 0, 7); c.fill(); } c.globalAlpha = 1;
       if (!s.touched) SK.glow(c, g, 160, by - 12, 34);
-      SK.demo(g, c, 'drag', [160, by - 10], [160, by - 110], { period: 2 });
+      const up = s.ln < BAND[0]; SK.demo(g, c, 'drag', [160, by - 10], [160, by - 10 + (up ? -90 : 70)], { period: 2, never: s.inBand });
     },
     // the bot: a gentle controller that steers the count toward the middle of the band
     auto(g, dt, synth) {

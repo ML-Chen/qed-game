@@ -67,7 +67,7 @@ MG.add({
     c.fillStyle = '#e84a3a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.roundRect(-20 - d, -9, 10, 18, 3); c.fill(); c.stroke();
     const bg = c.createLinearGradient(0, -10, 0, 10); bg.addColorStop(0, '#8a8aa0'); bg.addColorStop(1, '#4a4a60'); c.fillStyle = bg; c.beginPath(); c.roundRect(-14, -10, 44, 20, 6); c.fill(); c.stroke();
     c.fillStyle = '#2a2a3a'; c.beginPath(); c.ellipse(30, 0, 4, 9, 0, 0, 7); c.fill(); c.restore();
-    if (!g.done && !s.grab) SK.glow(c, g, mx - 24, my, 30);
+    if (!g.done && !s.grab) { SK.glow(c, g, mx - 24, my, 30, '#ffe27a', { level: 2 }); c.save(); c.strokeStyle = 'rgba(255,230,160,0.55)'; c.lineWidth = 3; c.setLineDash([5, 7]); c.beginPath(); c.moveTo(mx - 50, my + 22); c.lineTo(mx - 24 - LA_PULL - 20, my + 22); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(mx - 24 - LA_PULL - 10, my + 14); c.lineTo(mx - 24 - LA_PULL - 22, my + 22); c.lineTo(mx - 24 - LA_PULL - 10, my + 30); c.stroke(); c.restore(); }
     // the rabbit on the mountain ducks as balls whizz round, cheers when they stay up
     const whizz = s.balls.some(b => b.st === 'orbit' && SK.dist(b.x, b.y, mx, my) < 60);
     const won = g.result === 'win', lost = g.result === 'fail';

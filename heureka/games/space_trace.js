@@ -78,6 +78,11 @@ MG.add({
     if (alt < 0) { c.fillStyle = `rgba(14,14,40,${Math.min(0.55, -alt * 2)})`; c.fillRect(0, 0, 360, 640); }
     // drifting clouds
     for (let i = 0; i < 3; i++) P.cloud(c, ((i * 140 + t * 8) % 520) - 80, 200 + i * 52, 0.55 - i * 0.08, '#fff6ea', P.mix('#e7c9d6', sk[1], 0.4), 0.5 + SK.clamp(alt, 0, 0.5));
+    // the path to follow: a faint dotted arc from the eastern hill over the top to the western hill, and a glowing
+    // spot on the western hill where the Sun (or Moon) should set
+    const arcH = L.winter ? 130 : 230, arcP = k => [SK.lerp(L.rise, L.set, k), TR_H - 30 + 10 * k - Math.sin(k * Math.PI) * arcH];
+    if (!g.done && !s.setT) { c.save(); c.fillStyle = moon ? 'rgba(220,230,255,0.55)' : 'rgba(255,240,190,0.6)'; for (let i = 1; i < 24; i++) { const [x, y] = arcP(i / 24); c.beginPath(); c.arc(x, y, 3, 0, 7); c.fill(); } c.restore();
+      const [ex, ey] = arcP(1), p = 0.5 + 0.5 * Math.sin(t * 4); c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.85)' : 'rgba(255,200,120,0.9)'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.arc(ex, ey, TR_R + 6 + p * 4, 0, 7); c.stroke(); c.restore(); }
     // the trace: a warm dotted line where the finger took the Sun
     if (s.trail.length > 1) { c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.75)' : 'rgba(255,226,140,0.75)'; c.lineWidth = 4; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); s.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore(); }
     if (moon) { // the full Moon, pale with craters
@@ -89,7 +94,7 @@ MG.add({
     c.save(); c.translate(u.x, u.y); c.rotate(t * 0.4); c.strokeStyle = '#ffd25a'; c.lineWidth = 4; c.lineCap = 'round'; for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5, r0 = TR_R + 6, r1 = TR_R + 14 + 3 * Math.sin(t * 4 + i); c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); c.stroke(); } c.restore();
     SK.ball(c, u.x, u.y, TR_R, alt < 0.2 ? '#ffaa4a' : '#ffcc3a', { edge: '#c8641a' });
     }
-    if (!g.done && !SK.dragging(g)) SK.glow(c, g, u.x, u.y, 34);
+    if (!g.done && !s.setT && !SK.dragging(g)) SK.glow(c, g, u.x, u.y, 34, '#ffe27a', { level: 2 });
     // the farm in front
     c.drawImage(g.bake('trace_fg' + (L.winter ? 'w' : 's'), o => trGround(o, L)), 0, 0, 360, 640);
     const dim = SK.clamp(0.45 - alt * 1.6, 0, 0.6); if (dim > 0) { const dg = c.createLinearGradient(0, 440, 0, 520); dg.addColorStop(0, 'rgba(20,16,50,0)'); dg.addColorStop(1, `rgba(20,16,50,${dim})`); c.fillStyle = dg; c.fillRect(0, 440, 360, 200); }
@@ -107,8 +112,8 @@ MG.add({
     SK.animal(c, 'owl', ox, oy, 0.6, { t, facing: -1, noShadow: true, pose: won || (moon && s.lunch && t - s.lunch < 1.5) ? 'cheer' : 'idle', expr: lost ? 'wow' : won || moon ? 'happy' : 'laugh' });
     if (!awake) { c.save(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; c.lineJoin = 'round'; for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1, x = ox - 26 - q * 16, y = oy - 46 - q * 34, z = 5 + q * 5; c.globalAlpha = 1 - q; c.beginPath(); c.moveTo(x - z, y - z); c.lineTo(x + z, y - z); c.lineTo(x - z, y + z); c.lineTo(x + z, y + z); c.stroke(); } c.restore(); }
     // guidance: a ghost hand sweeps the Sun over the top of the sky
-    SK.demo(g, c, 'drag', [L.rise, TR_H - 30], [L.set, TR_H - 20], { arc: L.winter ? 130 : 250, period: 2.4 });
-    if (s.ri && g.level === 0 && !g.done && !s.setT && !SK.dragging(g) && u.x === L.rise && t - s.nextT > 0.3) { const k = ((t - s.nextT - 0.3) % 1.6) / 1.6, m = SK.easeInOut(k); SK.hand(c, SK.lerp(L.rise, L.set, m), TR_H - 30 - Math.sin(m * Math.PI) * 200, 1, 0.6 * (1 - k)); }
+    // guidance (every level when idle): a hand drags the current body from where it is along the rest of the arc
+    if (!s.setT) { const k0 = SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 0.9); SK.demo(g, c, 'drag', [u.x, u.y], arcP(1), { arc: Math.max(0, arcH * Math.sin(((k0 + 1) / 2) * Math.PI) - 10) * (1 - k0), period: 2.4 }); }
   },
   // the bot drags the Sun along a real arc from its rising point, over the middle, down to its setting point
   auto(g, dt, synth) {

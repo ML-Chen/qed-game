@@ -90,7 +90,7 @@
       }
       // the crowd on the ice: three penguins and a duck, cheering whoever wins
       for (const [px, kind, ph] of [[96, 'penguin', 0], [150, 'duck', 1.3], [212, 'penguin', 2.1], [266, 'penguin', 3.3]]) SK.animal(c, kind, px, 598 + Math.sin(ph) * 6, 0.85, { t, phase: ph, pose: g.done ? 'cheer' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: px < 180 ? 1 : -1 });
-      if (!g.done) SK.glow(c, g, RX + 4, Y - 40, 42);
+      if (!g.done) SK.glow(c, g, RX + 4, Y - 40, 42, undefined, { level: 2 });
       SK.demo(g, c, 'tap', [RX + 12, Y - 30], null, { period: 0.32, delay: 0.7 });
     },
     auto(g, dt, synth) { const s = g.s; if (g.done || g.t < 0.8) return; if (g.t - (s._bt || 0) > 0.11) { s._bt = g.t; synth('down', RX, Y - 30); synth('up', RX, Y - 30); } },

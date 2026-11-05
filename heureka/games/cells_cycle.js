@@ -110,7 +110,7 @@ MG.add({
     // guidance: hold while the needle climbs to red, let go once the ladders unzip
     if (!g.done && !s.hold && s.sep < 1) SK.glow(c, g, BTN[0], BTN[1], 44);
     if (!g.done && s.hold && s.sep >= 1 && g.level <= 1) { const p = 0.5 + 0.5 * Math.sin(t * 10); c.strokeStyle = `rgba(80,150,255,${0.5 + 0.5 * p})`; c.lineWidth = 4; c.beginPath(); c.arc(TB.x, (tY(COOL) + tY(TMIN)) / 2, 22 + p * 4, 0, 7); c.stroke(); }
-    SK.demo(g, c, 'hold', BTN, null, { period: 2.0 });
+    if (s.sep < 1 && s.cp === 0) SK.demo(g, c, 'hold', BTN, null, { period: 2.0 });
   },
   // the bot: hold until the strands have unzipped, let go until the copies are made, repeat
   auto(g, dt, synth) {

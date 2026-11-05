@@ -72,7 +72,7 @@ MG.add({
     // your purse of coins, getting lighter
     for (let i = 0; i < N - s.eaten; i++) B8.flatCoin(c, 40 + (i % 3) * 20, 636 - 26 - Math.floor(i / 3) * 6, 10, 0);
     if (!s.eaten && !g.done) SK.glow(c, g, ROW(0), SLICEY - 10, 30);
-    SK.demo(g, c, 'tap', [ROW(Math.min(s.eaten, N - 1)), SLICEY - 6], null, { delay: 0.8 });
+    if (s.eaten < this.best(g)) SK.demo(g, c, 'tap', [ROW(s.eaten), SLICEY - 6], null, { delay: 0.8 }); // the next slice still worth its price
   },
   auto(g, dt, synth) { const s = g.s; const B = s._b8 = s._b8 || { next: 1.0 }; if (g.done || g.t < B.next) return; if (s.eaten < this.best(g)) { synth('down', ROW(s.eaten), SLICEY); synth('up', ROW(s.eaten), SLICEY); B.next = g.t + 0.35; } },
 });

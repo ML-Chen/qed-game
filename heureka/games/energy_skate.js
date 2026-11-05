@@ -97,8 +97,8 @@
       // the rounds still to go: little flags along the top
       for (let i = 0; i < s.rims.length; i++) { c.fillStyle = i < s.round || (i === s.round && k.st === 'won') ? '#ffd45a' : 'rgba(255,255,255,0.35)'; c.beginPath(); c.arc(180 + (i - (s.rims.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
       if (k.st === 'rest') { const q = at(s.T, k.s); SK.glow(c, g, q.x, q.y - 20, 30); }
-      const tx = LX[1] - 100 * Math.sqrt(Math.min(1, (BOT - (rim - 20)) / (BOT - TOPL))); const tp = at(s.T, sOfX(s.T, Math.max(LX[0] + 4, tx)));
-      if (k.st === 'rest') { const q = at(s.T, k.s); SK.demo(g, c, 'drag', [q.x, q.y - 18], [tp.x + 8, tp.y - 14], { period: 2.2 }); }
+      const want = rim - 18 - (s.rough ? ROUGH : 0), tx = LX[1] - (LX[1] - LX[0]) * Math.sqrt((BOT - want) / (BOT - TOPL)), q = at(s.T, k.s);
+      SK.demo(g, c, 'drag', [q.x, q.y - 18], [tx + 8, trackY(tx, rim) - 14], { period: 2.2, never: k.st === 'won' || k.st === 'fall' || k.st === 'drag' });
     },
     // the bot: carry her up to a little above the ledge's height (more at level 2, for the rough patch) and let go
     auto(g, dt, synth) {

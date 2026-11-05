@@ -63,7 +63,7 @@ MG.add({
     for (const p of s.spots) {
       if (!p.at) { c.fillStyle = '#5e3a22'; c.beginPath(); c.ellipse(p.x, p.y + 3, 19, 7, Math.atan2(plY(p.x + 4) - plY(p.x - 4), 8), 0, 7); c.fill();
         c.fillStyle = '#7a4c2c'; for (let i = -1; i <= 1; i++) { c.beginPath(); c.arc(p.x + i * 8, p.y + (i ? 1 : -1), 3, 0, 7); c.fill(); }
-        if (!s.rainT) SK.glow(c, g, p.x, p.y, 22); continue; }
+        if (!s.rainT) SK.glow(c, g, p.x, p.y, 22, '#ffe27a', { level: 2 }); continue; }
       const k = SK.easeOut((t - p.at) / 0.45);
       c.save(); c.strokeStyle = '#e8d2a0'; c.lineCap = 'round'; // roots
       for (let i = 0; i < 5; i++) { const a = -0.9 + i * 0.45, L = (26 + (i % 2) * 14) * k; c.lineWidth = 2.4 - (i % 2) * 0.8; c.beginPath(); c.moveTo(p.x, p.y + 4); c.quadraticCurveTo(p.x + Math.sin(a) * L * 0.3, p.y + 4 + L * 0.6, p.x + Math.sin(a) * L, p.y + 6 + Math.cos(a) * L); c.stroke();

@@ -160,7 +160,7 @@ MG.add({
     // guidance: the ring shows when the fox is close enough
     const near = (F.ph === 'crouch' || F.ph === 'lunge' || F.x + NOSE > HX - 30 - 55) && !s.used;
     if (near && !g.done) SK.glow(c, g, HX, GY - 34, 46);
-    if (!s.touched && g.level === 0 && near && !g.done) SK.hand(c, HX + 6, GY - 26 + 8 * (1 - Math.abs(Math.sin(t * 5))), Math.abs(Math.sin(t * 5)), 0.9);
+    if (near) SK.demo(g, c, 'tap', [HX + 6, GY - 30], null, { delay: 0 }); // only while the fox is close: that is when to tap
   },
   // the bot: tap the moment the fox crouches for its real pounce (not the fake one)
   auto(g, dt, synth) { const s = g.s; if (s.fox.ph === 'crouch' && s.fox.pt > 0.05) SK.bot.tap(g, synth, 'curl' + s.round, 0, HX, GY - 34); },

@@ -105,7 +105,7 @@
       SK.animal(c, 'fox', 312, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : W > 0.4 ? 'wow' : 'happy', facing: -1 });
       if (!s.doneT && !s.touched) SK.glow(c, g, G.cx, MID[1] + 20, 56);
       // the ghost hand stirs in circles (level 0, until the first touch)
-      if (g.level === 0 && !s.touched && !g.done && t > 0.9) { const a = (t - 0.9) * 6; SK.hand(c, G.cx + Math.cos(a) * 46, 420 + Math.sin(a) * 40, 1, Math.min(1, (t - 0.9) * 4) * 0.9); }
+      SK.demo(g, c, 'drag', [G.cx - 50, 420], [G.cx + 50, 420], { arc: 60, period: 1.4, never: !!s.doneT });
     },
     // the bot: stir in circles until the sugar is gone
     auto(g, dt, synth) {

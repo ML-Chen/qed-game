@@ -90,8 +90,8 @@
       const won = g.result === 'win', lost = g.result === 'fail', full = Math.min(1, s.eaten / s.target);
       SK.animal(c, 'bird', 300, 590, 1 + 0.25 * full, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.pecks.length && t - s.pecks[s.pecks.length - 1].t < 0.2 ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy' });
       const pale = s.moths.find(m => m.alive && m.dark === s.clean); if (s.phase === 'hunt' && pale) SK.glow(c, g, pale.x, pale.y, 22, '#ffe27a', { level: 0 });
-      const p0 = s.moths.find(m => m.alive && m.dark === s.clean) || s.moths[0];
-      SK.demo(g, c, 'tap', [p0.x, p0.y]);
+      const p0 = s.moths.find(m => m.alive && m.dark === s.clean) || s.moths.find(m => m.alive);
+      SK.demo(g, c, 'tap', p0 ? [p0.x, p0.y] : [180, 360], null, { never: !p0 || s.phase !== 'hunt' });
     },
     // the bot hunts like a real bird: it finds the moths that stand out first and misses some of the hidden ones
     auto(g, dt, synth) {

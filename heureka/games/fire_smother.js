@@ -125,7 +125,8 @@
       const nx = [SIDES[2], SIDES[1], SIDES[0]].find(sd => !s.used[sd.id]); if (!A && !s.out && !s.fan && nx) SK.glow(c, g, nx.x, nx.y, 32);
       if (false && !A) SK.glow(c, g, SIDES[0].x, SIDES[0].y, 32, '#ffe27a', { level: 2 });
       if (s.path && s.path.length > 1) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.6)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.path[0].x, s.path[0].y); for (const p of s.path) c.lineTo(p.x, p.y); c.stroke(); c.restore(); }
-      SK.demo(g, c, 'swipe', [148, 432], [212, 512]);
+      const SW = { fuel: [[148, 432], [212, 512]], air: [[218, 296], [282, 350]], heat: [[78, 300], [146, 350]] }, sw = nx ? SW[nx.id] : SW.fuel;
+      SK.demo(g, c, 'swipe', sw[0], sw[1], { never: !nx || !!A || !!s.out });
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.act || s.out || s.fan) return;

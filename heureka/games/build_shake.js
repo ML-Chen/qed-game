@@ -86,10 +86,12 @@ MG.add({
     if (s.held) { const col = Math.floor((s.held.x - SH_X0) / SH_U); if (col >= 0 && col < SH_COLS && s.held.y < SH_TOP + 20) { const h = s.placed.filter(q => q.c === col).length; c.save(); c.globalAlpha = 0.35; shBlock(c, SH_X0 + col * SH_U, SH_TOP - (h + 1) * SH_U, s.held.col); c.restore(); } }
     for (const b of s.pile) { if (b !== s.held) shBlock(c, b.x - 20, b.y - 20, b.col, 40); }
     if (s.held) shBlock(c, s.held.x - 25, s.held.y - 25, s.held.col);
-    if (!s.held && s.pile.length && !s.shakeT) SK.glow(c, g, s.pile[0].x, s.pile[0].y, 26);
+    if (!s.held && s.pile.length && !s.shakeT) SK.glow(c, g, s.pile[0].x, s.pile[0].y, 26, '#ffe27a', { level: 2 });
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 334, 612, 0.62, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.shakeT ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.shakeT ? 'wow' : 'happy' });
-    if (s.pile.length) SK.demo(g, c, 'drag', [s.pile[0].x, s.pile[0].y], [SH_X0 + 1.5 * SH_U, SH_TOP - SH_U / 2]);
+    // guidance: the next block goes on the lowest of the middle columns, so the base grows wide before the tower grows tall
+    const mid = g.level >= 2 ? [0, 1, 2] : [1, 2], hs = mid.map(cc => s.placed.filter(q => q.c === cc).length), cn = mid[hs.indexOf(Math.min(...hs))], hn = Math.min(...hs);
+    if (s.pile.length) SK.demo(g, c, 'drag', [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { never: !!s.shakeT });
   },
   // the bot builds a wide base first, then the top: (cols 1,2 then 1) or, at level 2, (cols 0,1,2 then 1,1)
   auto(g, dt, synth) {

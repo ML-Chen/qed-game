@@ -75,8 +75,10 @@ MG.add({
     // the penguin rides the cold air
     const won = g.result === 'win', lost = g.result === 'fail', px = Math.max(30, f - 120);
     SK.animal(c, 'penguin', px, PO_G - lift - 112 + 18 * SK.clamp((px - (f - 160)) / 160, -1, 1) * 0 , 0.62, { t, noShadow: true, pose: won ? 'cheer' : lost ? 'sad' : s.grab ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    if (!s.grab && !g.done) SK.glow(c, g, f - 30, PO_G - 50, 40);
-    SK.demo(g, c, 'drag', [L.f0 - 30, PO_G - 40], [L.xt - 20, PO_G - 40]);
+    if (!s.grab && !g.done && !s.stormT) SK.glow(c, g, f - 30, PO_G - 50, 40, '#ffe27a', { level: 2 });
+    // where to push: a dashed arrow along the ground to the town
+    if (!s.stormT && !g.done && s.push < L.xt) { c.save(); c.strokeStyle = 'rgba(235,248,255,0.85)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(s.push + 14, PO_G - 12); c.lineTo(L.xt + 10, PO_G - 12); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(L.xt + 2, PO_G - 22); c.lineTo(L.xt + 14, PO_G - 12); c.lineTo(L.xt + 2, PO_G - 2); c.stroke(); c.restore(); }
+    SK.demo(g, c, 'drag', [s.f - 30, PO_G - 40], [L.xt - 10, PO_G - 40], { never: !!s.stormT });
     c.restore();
     if (s.resetT && t - s.resetT < 0.35) { c.fillStyle = `rgba(20,20,40,${0.6 * (1 - (t - s.resetT) / 0.35)})`; c.fillRect(0, 0, 360, 640); }
   },

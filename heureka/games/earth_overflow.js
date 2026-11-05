@@ -81,7 +81,7 @@ MG.add({
     if (s.heat) { c.save(); c.globalCompositeOperation = 'lighter'; const hg = c.createRadialGradient(hx, hy, 4, hx, hy, 50); hg.addColorStop(0, 'rgba(255,170,80,0.55)'); hg.addColorStop(1, 'rgba(255,120,60,0)'); c.fillStyle = hg; c.beginPath(); c.arc(hx, hy, 50, 0, 7); c.fill(); c.restore(); }
     c.save(); c.translate(hx, hy - 50); c.scale(1.4, 1.4); c.fillStyle = '#e8563a'; c.strokeStyle = '#5a1a20'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-18, 8); c.lineTo(18, 8); c.lineTo(10, -12); c.lineTo(-10, -12); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = s.heat ? '#ffe27a' : '#f4e0b0'; c.beginPath(); c.ellipse(0, 9, 14, 5, 0, 0, 7); c.fill(); c.fillStyle = '#6a5a5a'; c.fillRect(-3, -26, 6, 14); c.restore();
-    if (!s.heat && !g.done) { const q = s.cubes.find(q => q.land && q.v > 0); if (q) SK.glow(c, g, q.x, q.y - OV_S / 2, 26); }
+    if (!s.heat && !g.done) { const q = s.cubes.find(q => q.land && q.v > 0); if (q) SK.glow(c, g, q.x, q.y - OV_S / 2, 26, '#ffe27a', { level: 2 }); }
     const q0 = s.cubes.find(q => q.land && q.v > 0); if (q0) SK.demo(g, c, 'hold', [q0.x, q0.y - OV_S / 2], null);
   },
   // the bot holds the lamp on each block of land ice in turn
