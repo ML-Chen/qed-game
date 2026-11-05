@@ -26,6 +26,15 @@ const MK = (() => {
   const mat = (rows, id, o) => ({ k: 'mat', rows: rows.map(r => r.map(wrap)), id, ...o });
   const slot = (id, o) => ({ k: 'slot', id, fill: null, ...o });
   const gap = w => ({ k: 'gap', w });
+  // nodes the fonts lack, drawn as strokes that match the bold numbers: ∫ (optional limits), √ (a radical over a node,
+  // optional index for ∛), π, and under (a small line centred beneath a node, such as lim's "x→0")
+  const int = (lo, hi, id, o) => ({ k: 'int', lo: wrap(lo), hi: wrap(hi), id, ...o });
+  const sqrt = (inner, id, o) => ({ k: 'sqrt', inner: wrap(inner), id, ...o });
+  const pi = (id, o) => ({ k: 'pi', id, ...o });
+  const under = (base, sub, id, o) => ({ k: 'under', base: wrap(base), sub: wrap(sub), id, ...o });
+  // a node's children (the new kinds add theirs after the old ones, so the order of old nodes never changes)
+  function kids(n) { const out = [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])];
+    if (n.k === 'under') out.push(n.sub); else if (n.k === 'int') out.push(n.lo, n.hi); else if (n.k === 'sqrt') out.push(n.idx); return out; }
   function wrap(x) { return x == null ? null : typeof x === 'object' ? x : typeof x === 'number' ? num(x) : /^[a-zA-Z]$/.test(x) ? vr(x) : txt(x); }
   // d/dx as a node
   const ddx = (x = 'x', id) => frac(txt('d'), row(txt('d'), vr(x)), id, { small: true });
@@ -51,6 +60,12 @@ const MK = (() => {
         const h = rh * n.rows.length, w = colW.reduce((p, q) => p + q, 0) + cg * (nc - 1) + bw * 2 + s * 0.2;
         m = { w, a: h / 2 + s * 0.3, d: h / 2 - s * 0.3, cs, colW, rh, cg, bw, h }; break;
       }
+      case 'int': { const w = s * 0.46, ls = s * 0.5, lo = n.lo ? lay(n.lo, ls) : null, hi = n.hi ? lay(n.hi, ls) : null;
+        m = { w: Math.max(w + s * 0.08, hi ? w * 0.92 + hi.w + s * 0.06 : 0, lo ? w * 0.5 + lo.w + s * 0.06 : 0), a: Math.max(s * 1.0, hi ? s * 0.8 + hi.a : 0), d: Math.max(s * 0.32, lo ? s * 0.4 + lo.d : 0), sw: w, ls, lo, hi }; break; }
+      case 'sqrt': { const i = lay(n.inner, s), x = n.idx ? lay(n.idx, s * 0.45) : null, hw = s * 0.56 + (x ? Math.max(0, x.w - s * 0.22) : 0);
+        m = { w: hw + i.w + s * 0.14, a: i.a + s * 0.2, d: Math.max(i.d, s * 0.06) + s * 0.04, i, x, hw }; break; }
+      case 'pi': m = { w: s * 0.66, a: s * 0.52, d: s * 0.02 }; break;
+      case 'under': { const b = lay(n.base, s), us = s * 0.55, u = lay(n.sub, us); m = { w: Math.max(b.w, u.w), a: b.a, d: b.d + s * 0.12 + u.a + u.d, b, u, us }; break; }
       case 'slot': { const f = n.fill ? lay(n.fill, s) : null, w = Math.max(n.w || s * 0.95, f ? f.w + s * 0.3 : 0); m = { w: w + s * 0.12, a: s * 0.86, d: s * 0.2, f, bw: w }; break; }
       default: m = { w: 0, a: 0, d: 0 };
     }
@@ -110,6 +125,22 @@ const MK = (() => {
           r.forEach((cell, j) => { const cm = m.cs[i][j]; draw(c, cell, xx + (m.colW[j] - cm.w) / 2, by, s, X); xx += m.colW[j] + m.cg; }); });
         break;
       }
+      case 'int': { // the sign is a long thin S, as tall as a fraction, with its limits at its top and bottom right
+        const top = y - s * 0.98, bot = y + s * 0.3, h = bot - top, w = m.sw, x0 = x + s * 0.04; c.lineWidth = Math.max(2, s * 0.078); c.lineCap = 'round';
+        c.beginPath(); c.moveTo(x0 + w * 0.92, top + h * 0.1); c.bezierCurveTo(x0 + w * 0.86, top - h * 0.03, x0 + w * 0.56, top - h * 0.02, x0 + w * 0.52, top + h * 0.17);
+        c.lineTo(x0 + w * 0.4, bot - h * 0.17); c.bezierCurveTo(x0 + w * 0.36, bot + h * 0.02, x0 + w * 0.06, bot + h * 0.03, x0, bot - h * 0.1); c.stroke();
+        for (const [px, py] of [[x0 + w * 0.92, top + h * 0.1], [x0, bot - h * 0.1]]) { c.beginPath(); c.arc(px, py, s * 0.05, 0, 7); c.fill(); }
+        if (n.hi) draw(c, n.hi, x0 + w * 0.92 + s * 0.04, y - s * 0.8, m.ls, X); if (n.lo) draw(c, n.lo, x0 + w * 0.5 + s * 0.04, y + s * 0.4, m.ls, X); break; }
+      case 'sqrt': { // a radical: a small tick, a long stroke down, up past the top, and a bar over the inside
+        const top = y - m.a + s * 0.04, bot = y + m.d - s * 0.02, hw = m.hw, x0 = x + hw - s * 0.56; c.lineWidth = Math.max(2, s * 0.072); c.lineCap = 'round'; c.lineJoin = 'round';
+        c.beginPath(); c.moveTo(x0 + s * 0.04, y - s * 0.3); c.lineTo(x0 + s * 0.16, y - s * 0.36); c.lineTo(x0 + s * 0.3, bot); c.lineTo(x0 + s * 0.5, top); c.lineTo(x + m.w - s * 0.02, top); c.stroke();
+        if (n.idx) draw(c, n.idx, x0 + s * 0.2 - m.x.w, y - s * 0.44, s * 0.45, X); draw(c, n.inner, x + hw + s * 0.06, y, s, X); break; }
+      case 'pi': { // π drawn to match the bold numbers: a bar with a curl and two legs
+        c.lineWidth = Math.max(2, s * 0.09); c.lineCap = 'round'; c.lineJoin = 'round'; const t = y - s * 0.47;
+        c.beginPath(); c.moveTo(x + s * 0.05, t + s * 0.1); c.quadraticCurveTo(x + s * 0.1, t, x + s * 0.24, t); c.lineTo(x + s * 0.62, t - s * 0.01);
+        c.moveTo(x + s * 0.24, t); c.quadraticCurveTo(x + s * 0.23, t + s * 0.3, x + s * 0.13, y - s * 0.02);
+        c.moveTo(x + s * 0.45, t); c.lineTo(x + s * 0.44, y - s * 0.1); c.quadraticCurveTo(x + s * 0.45, y + s * 0.01, x + s * 0.58, y - s * 0.07); c.stroke(); break; }
+      case 'under': draw(c, n.base, x + (m.w - m.b.w) / 2, y, s, X); draw(c, n.sub, x + (m.w - m.u.w) / 2, y + m.b.d + s * 0.12 + m.u.a, m.us, X); break;
       case 'slot': {
         const bx = x + s * 0.06, top = y - m.a, h = m.a + m.d;
         if (!n.fill) { c.save(); c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); roundRectK(c, bx, top, m.bw, h, s * 0.2); c.fill(); c.setLineDash([s * 0.14, s * 0.1]); c.lineWidth = s * 0.06; c.strokeStyle = n.col || MID; c.beginPath(); roundRectK(c, bx, top, m.bw, h, s * 0.2); c.stroke(); c.restore();
@@ -134,30 +165,34 @@ const MK = (() => {
     c.stroke(); c.restore();
   }
   function roundRectK(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-  function find(n, id) { if (!n) return null; if (n.id === id) return n; for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])]) { const f = find(ch, id); if (f) return f; } return null; }
+  function find(n, id) { if (!n) return null; if (n.id === id) return n; for (const ch of kids(n)) { const f = find(ch, id); if (f) return f; } return null; }
 
   // ---------------- per-microgame state ----------------
   // MK.setup(g) must be called first in init. Expressions are placed with MK.place(g, key, node, cx, baseline, size):
   // the node is laid out centred on cx with its baseline at `baseline`, and every token's box goes into g.s.mk.box.
   function setup(g) { g.s.mk = { ex: {}, box: {}, flies: [], busyT: 0, moveT: 0, missAt: -1, stars: 0, fx: [], press: null, opts: null, timers: [] }; return g.s.mk; }
-  function place(g, key, node, cx, y, s, o = {}) { const M = g.s.mk; const m = lay(node, s); M.ex[key] = { node, x: cx - (o.left ? 0 : m.w / 2), y, s, col: o.col, still: o.still }; relayout(g, key); return M.ex[key]; }
+  function place(g, key, node, cx, y, s, o = {}) { const M = g.s.mk; const m = lay(node, s); M.ex[key] = { node, x: cx - (o.left ? 0 : m.w / 2), y, s, col: o.col, still: o.still, glideWrap: o.glideWrap }; relayout(g, key); return M.ex[key]; }
   function relayout(g, key) { const M = g.s.mk, e = M.ex[key]; if (!e) return; lay(e.node, e.s); draw(nullCtx, e.node, e.x, e.y, e.s, { box: M.box }); }
   const nullCtx = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 1; return cv.getContext('2d'); })(); // a 1x1 canvas: drawing into it just records boxes
   // Manim-style motion (the owner asked for 3Blue1Brown-like equations): when an expression is rewritten, every symbol
   // that is still there glides from where it was to where it now is, and new symbols fade in. Positions are tracked
   // per node object, so this works whether or not a node has an id. It never blocks input.
   const lastPos = new WeakMap(), GLIDE = 0.32;
-  function collect(n, out) { if (!n) return; out.push(n); for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])]) collect(ch, out); }
+  function collect(n, out) { if (!n) return; out.push(n); for (const ch of kids(n)) collect(ch, out); }
   function drawEx(g, c, key) {
     const M = g.s.mk, e = M.ex[key]; if (!e) return; lay(e.node, e.s);
     const tmp = {}, all = []; collect(e.node, all);
     for (const n of all) n._pid = n._pid || ('_' + Math.random().toString(36).slice(2, 9)); // a private id so every node records a box
     const ids = new Map(all.map(n => [n, n.id])); for (const n of all) if (!n.id) n.id = n._pid;
     draw(nullCtx, e.node, e.x, e.y, e.s, { box: tmp });
-    const LEAF = /^(num|var|txt|op|slot)$/, isNew = n => !lastPos.has(n), allNew = n => { const q = []; collect(n, q); return q.filter(x => LEAF.test(x.k)).every(isNew); };
+    const LEAF = /^(num|var|txt|op|slot|pi)$/, isNew = n => !lastPos.has(n), allNew = n => { const q = []; collect(n, q); return q.filter(x => LEAF.test(x.k)).every(isNew); };
     for (const n of all) {
       const b = tmp[n.id]; if (!b) continue; const prev = lastPos.get(n), first = !M.seen || !M.seen[key];
-      if (!prev && !first && !n._born && !LEAF.test(n.k) && !allNew(n)) { lastPos.set(n, { x: b.x, y: b.y }); continue; } // a new wrapper around old symbols: the symbols glide, nothing fades
+      if (!prev && !first && !n._born && !LEAF.test(n.k) && !allNew(n)) { // a new wrapper around old symbols: the symbols glide, nothing fades
+        if ((e.glideWrap || n.glideWrap) && !e.still) { const q = []; collect(n, q); let sx = 0, sy = 0, k = 0; // with glideWrap the wrapper (bar, brackets) glides with them, from where they were on average
+          for (const L of q) { const pp = lastPos.get(L), bb = tmp[L.id]; if (L !== n && LEAF.test(L.k) && pp && bb) { sx += pp.x - bb.x + (L._ax || 0); sy += pp.y - bb.y + (L._ay || 0); k++; } }
+          if (k && Math.hypot(sx / k, sy / k) > 1.5) { n._glide = { dx: sx / k, dy: sy / k, t0: g.t }; n._ax = sx / k; n._ay = sy / k; } }
+        lastPos.set(n, { x: b.x, y: b.y }); continue; }
       if (e.still) { n._glide = null; lastPos.set(n, { x: b.x, y: b.y }); n._ax = n._ay = 0; continue; } // placed with { still: true }: the game moves it itself
       if (prev && (Math.abs(prev.x - b.x) > 1.5 || Math.abs(prev.y - b.y) > 1.5)) n._glide = { dx: prev.x - b.x + (n._ax || 0), dy: prev.y - b.y + (n._ay || 0), t0: g.t };
       else if (!prev && !first && !n._born) n._born = g.t;
@@ -168,11 +203,11 @@ const MK = (() => {
     }
     // drawing translates a child by its parents' offsets too, so each node draws with its own offset minus its parent's
     // (otherwise a symbol inside a gliding bracket or fraction slid twice as far)
-    const par = new Map(); (function walk(n, p) { if (!n) return; par.set(n, p); for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])]) walk(ch, n); })(e.node, null);
+    const par = new Map(); (function walk(n, p) { if (!n) return; par.set(n, p); for (const ch of kids(n)) walk(ch, n); })(e.node, null);
     for (const n of all) { const p = par.get(n); n._gx = (n._ax || 0) - (p ? p._ax || 0 : 0); n._gy = (n._ay || 0) - (p ? p._ay || 0 : 0); }
     // symbols that vanished since the last frame fly into the nearest newly born symbol and fade (4 and 3 merge into 12)
     const prevT = (M.prevT = M.prevT || {})[key], prev = prevT != null && g.t - prevT < 0.15 ? ((M.prevNodes = M.prevNodes || {})[key] || []) : [], cur = new Set(all), born = all.filter(n => n._born === g.t && tmp[n.id]);
-    for (const p of prev) { if (cur.has(p.n) || !p.vis || !/^(num|var|txt|op)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost
+    for (const p of prev) { if (cur.has(p.n) || !p.vis || p.n._noGhost || !/^(num|var|txt|op|pi)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost
       let best = null, bd = 160; for (const n of born) { const b = tmp[n.id], d = Math.hypot(b.x - p.b.x, b.y - p.b.y); if (d < bd) { bd = d; best = b; } }
       (M.ghosts = M.ghosts || []).push({ n: { ...p.n, alpha: 1, pop: null, mark: null, dx: 0, dy: 0, _gx: 0, _gy: 0, _born: null, id: undefined }, a: p.b, b: best || p.b, t0: g.t, s: p.s, merge: !!best }); }
     // vis: the symbol could be seen (no hidden or faded-out ancestor), so only symbols that were really on screen in the
@@ -246,10 +281,10 @@ const MK = (() => {
   function accept(g, mv, a, b) {
     const M = g.s.mk; const n = node(g, a); if (n) n.pop = g.t; g.sfx('pop');
     if (M.stepAdvance) M.stepAdvance(mv);
-    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t; (M.log = M.log || []).push(g.t); // M.log: when each move was made (the rewind scrubber's marks)
+    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t; M.stepFrom = g.t; (M.log = M.log || []).push(g.t); // M.log: when each move was made (the rewind scrubber's marks)
     try { if (mv.then) mv.then(g, a, b); } catch (e) { console.error('move', e); }
     if (mv.ask && mv.resolve) {
-      if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv)); else openAsk(g, mv); }
+      if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv), false, true); else openAsk(g, mv); }
       else if (mv.askAt) later(g, mv.askAt, mv.resolve, true); else mv.resolve(g);
     }
   }
@@ -258,7 +293,7 @@ const MK = (() => {
   // timer can end the microgame. M.wrong counts wrong moves (for stars).
   function miss(g, info) {
     const M = g.s.mk, id = info.to || info.tap || info.drag, n = node(g, id), src = info.drag ? node(g, info.drag) : null;
-    for (const q of [n, src]) if (q) { q.pop = g.t; if (q.mark !== 'good') { q.mark = 'bad'; later(g, 0.6, () => { if (q.mark === 'bad') q.mark = null; }); } }
+    for (const q of [n, src]) if (q) { q.pop = g.t; if (q.mark !== 'good') { q.mark = 'bad'; later(g, 0.6, () => { if (q.mark === 'bad') q.mark = null; }, false, true); } }
     M.missAt = g.t; M.missInfo = info; M.wrong = (M.wrong || 0) + 1; M.wobbleAt = g.t; g.sfx('boing');
     if (M.onMiss) M.onMiss(g, info);
     return false;
@@ -269,10 +304,11 @@ const MK = (() => {
     const M = g.s.mk; let hit = null, best = 1e9;
     for (const [id, b] of Object.entries(M.box)) {
       if (id === skip || (M.inert && M.inert.has(id))) continue; const n = node(g, id); if (n ? n.hide : !(M.zones && M.zones[id])) continue; // stale boxes of tokens that are gone are skipped
-      if (Math.abs(x - b.x) <= b.w / 2 + 10 && Math.abs(y - b.y) <= b.h / 2 + 12) { const d = Math.hypot(x - b.x, y - b.y) + (b.w * b.h) * 0.002; if (d < best) { best = d; hit = id; } }
+      if (Math.abs(x - b.x) <= b.w / 2 + 10 && Math.abs(y - b.y) <= b.h / 2 + 12) { const d = Math.hypot(x - b.x, y - b.y) + (b.w * b.h) * 0.002; if (d < best || (M.opts && M.opts.leafFirst && Math.abs(d - best) < 1e-6 && n && LEAF_K.test(n.k))) { best = d; hit = id; } } // leafFirst: on a tie (a one-item row and its child) the symbol wins
     }
     return hit;
   }
+  const LEAF_K = /^(num|var|txt|op|slot|pi)$/;
   const busy = M => M.busyT > 0;
   function down(g, x, y) {
     const M = g.s.mk; if (g.done) return;
@@ -325,7 +361,7 @@ const MK = (() => {
   function askHit(g, x, y) { const A = g.s.mk.ask; if (!A) return -1; return A.list.findIndex(ch => Math.abs(x - ch.x) <= ch.w / 2 + 4 && Math.abs(y - ch.y) <= ch.h / 2 + 6); }
   function pickAsk(g, i) {
     const M = g.s.mk, A = M.ask, ch = A.list[i]; ch.at = g.t; A.pickAt = g.t;
-    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
+    if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; M.stepFrom = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }, false, true); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
     else { if (ch.state === 'bad') return; ch.state = 'bad'; M.missAt = g.t; M.missInfo = { ask: ch.v }; M.wrong = (M.wrong || 0) + 1; g.sfx('boing'); if (M.onMiss) M.onMiss(g, M.missInfo); }
   }
   function drawAsk(g, c) {
@@ -383,13 +419,13 @@ const MK = (() => {
     for (const f of M.flies) { f.k = clamp((g.t - f.t0) / f.dur, 0, 1); if (f.k >= 1 && !f.landed) { f.landed = true; if (f.then) f.then(g); } }
     M.flies = M.flies.filter(f => !f.landed || f.keep);
     M.fx = M.fx.filter(p => g.t - p.t0 < p.life);
-    for (const tm of M.timers.filter(tm => g.t >= tm.at)) { M.timers.splice(M.timers.indexOf(tm), 1); try { tm.fn(g); } catch (e) { console.error('later', e); } }
-    runTweens(g); if (!g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold))) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown (and while its beats are still to come)
+    for (const tm of M.timers.filter(tm => g.t >= tm.at)) { M.timers.splice(M.timers.indexOf(tm), 1); if (tm.hold && !tm.nostep) M.beatAt = g.t; try { tm.fn(g); } catch (e) { console.error('later', e); } }
+    runTweens(g); if (g.steps) stepNotes(g); if (!g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold))) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown (and while its beats are still to come)
     if (M.busyT > 0) { M.busyT -= dt; if (M.busyT <= 0) { M.busyT = 0; M.moveT = g.t; } }
     if (!g.done && M.opts && !busy(M) && !showing(g) && !M.timers.some(tm => tm.hold) && !current(g).length) finish(g);
   }
   // MK.later(g, seconds, fn): run fn(g) after that many seconds of game time (for multi-beat animations)
-  function later(g, dt, fn, hold) { g.s.mk.timers.push({ at: g.t + dt, fn, hold }); } // hold: the microgame can't be won before it runs
+  function later(g, dt, fn, hold, nostep) { g.s.mk.timers.push(nostep ? { at: g.t + dt, fn, hold, nostep } : { at: g.t + dt, fn, hold }); } // hold: the microgame can't be won before it runs; nostep: never a step-mode stop (kit-internal)
   function finish(g) {
     const M = g.s.mk; if (g.done) return; const k = (g.t - (g.held || 0)) / (g.dur / (g.tf || 1)); // fraction of the base time (before the generous factor)
     M.stars = Math.max(1, (k < 0.6 ? 3 : k < 1.1 ? 2 : 1) - (M.wrong ? 1 : 0)); g.stars = M.stars; M.winAt = g.t;
@@ -457,19 +493,21 @@ const MK = (() => {
   // timing, because games line up its landing with later beats), and input waits (MK.show) until every note has gone.
   function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.to ? (o.hold ?? 0.3) : Math.max(o.hold ?? 0.3, NOTE_MIN_HOLD * pace(g)), fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
         const where = () => { const b = boxOf(g, o.at || [180, 300]) || { x: 180, y: 300 }; return { x: b.x + (o.off ? o.off[0] : 0), y: b.y + (o.off ? o.off[1] : 0) }; };
-    if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true); // the landing runs on the game clock, not in draw
+    if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true, true); // the landing runs on the game clock, not in draw (it ends the fly beat, so it is no step-mode stop)
     if (!g.done) show(g, (o.delay || 0) + dur);
-    return anim(g, { delay: o.delay, dur, draw(c, g, k, t) {
+    const A = { delay: o.delay, dur, ...(o.to ? { span: wr + hold + fl } : { leaveAt: wr + hold, fadeDur: fade }), draw(c, g, k, t) { // span / leaveAt: for step mode (a flight is one beat; a fading note waits for the next tap)
       const p = where(); let x = p.x, y = p.y, sz = s0, al = 1, wk = clamp(t / wr, 0, 1);
       if (t > wr + hold && o.to) { const kk = easeIO((t - wr - hold) / fl), b0 = boxOf(g, o.to) || p, b = o.toOff ? { ...b0, x: b0.x + o.toOff[0], y: b0.y + o.toOff[1] } : b0; x = lerp(p.x, b.x, kk); y = lerp(p.y, b.y, kk) - Math.sin(kk * Math.PI) * (o.arc ?? 36); sz = lerp(s0, o.s1 || (b.s || s0), kk); if (kk >= 1) return; }
-      else if (t > wr + hold) al = 1 - (t - wr - hold) / fade;
-      const m = lay(nd, sz); if (!(t > wr + hold && o.to)) x = clamp(x, m.w / 2 + 10, 350 - m.w / 2); // keep a note inside the 360-wide screen
+      else if (t > wr + hold) al = 1 - (g.t - (A.rel ?? A.t0 + wr + hold)) / fade; // A.rel: step mode held the note until a later tap
+      const m = lay(nd, sz), PO = o.pill && typeof o.pill === 'object' ? o.pill : null, pad = PO ? PO.pad ?? sz * 0.36 : 0, ph = PO ? m.a + m.d + pad * 1.3 : 0;
+      if (!(t > wr + hold && o.to)) { x = clamp(x, m.w / 2 + 10 + pad, 350 - m.w / 2 - pad); if (PO) y = clamp(y, ph / 2 + 10, 630 - ph / 2); } // keep a note (and its pill) inside the screen
       c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
       if (o.pill) { c.save(); c.shadowBlur = 0; c.fillStyle = typeof o.pill === 'string' ? o.pill : 'rgba(20,24,40,0.72)'; c.beginPath(); roundRectK(c, x - m.w / 2 - 9, y - sz * 0.72, m.w + 18, sz * 1.44, sz * 0.5); c.fill(); c.restore(); } // a dark pill behind the note, for busy scenes
-      if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4, y - sz * 1.5, (m.w + 8) * easeIO(wk), sz * 3); c.clip(); }
+      if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4 - pad, y - sz * 1.5, (m.w + 8 + pad * 2) * easeIO(wk), sz * 3); c.clip(); }
+      if (PO) { c.save(); c.shadowBlur = 0; c.fillStyle = PO.col || 'rgba(20,24,40,0.78)'; c.beginPath(); roundRectK(c, x - m.w / 2 - pad, y - ph / 2, m.w + pad * 2, ph, ph / 2); c.fill(); c.restore(); } // pill: {}: it reveals with the writing
       draw(c, nd, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col });
-      if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }
-    } }); }
+      if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 - pad + (m.w + 8 + pad * 2) * easeIO(wk), y, 3, 0, 7); c.fill(); }
+    } }; return anim(g, A); }
   // a curved arrow that draws itself from one place to another, with an optional label at its middle
   function arrow(g, from, to, o = {}) { const T = pace(g), dur = o.dur || 0.45 * T, col = o.col || HL, linger = o.linger ?? 0.4 * T; // defaults follow the pace
     return anim(g, { delay: o.delay, dur, linger, draw(c, g, k, t) { const a = boxOf(g, from), b = boxOf(g, to); if (!a || !b) return;
@@ -480,9 +518,77 @@ const MK = (() => {
       const p1 = q(e), p0 = q(Math.max(0, e - 0.05)), an = Math.atan2(p1.y - p0.y, p1.x - p0.x); c.beginPath(); c.moveTo(p1.x + Math.cos(an) * 8, p1.y + Math.sin(an) * 8); c.lineTo(p1.x + Math.cos(an + 2.4) * 9, p1.y + Math.sin(an + 2.4) * 9); c.lineTo(p1.x + Math.cos(an - 2.4) * 9, p1.y + Math.sin(an - 2.4) * 9); c.fill();
       if (o.label && e > 0.4) { const lb = wrap(o.label), ls = o.ls || 22, m = lay(lb, ls), p = q(0.5); c.globalAlpha *= clamp((e - 0.4) / 0.3, 0, 1); draw(c, lb, p.x - m.w / 2, p.y - 8, ls, { t: g.t, col }); } } }); }
   // a burst of sparkles at a part (for landings)
-  function sparkle(g, tgt, o = {}) { return later(g, o.delay || 0, g => { const b = boxOf(g, tgt); if (b) g.burst(b.x, b.y, o.cols || ['#ffe9a0', '#fff', '#ffb21f'], o.n || 10, o.v || 120); }); }
+  function sparkle(g, tgt, o = {}) { return later(g, o.delay || 0, g => { const b = boxOf(g, tgt); if (b) g.burst(b.x, b.y, o.cols || ['#ffe9a0', '#fff', '#ffb21f'], o.n || 10, o.v || 120); }, false, true); }
   // run fn(g) at each time: MK.at(g, [[0, fn], [0.4, fn], ...])
   function at(g, list) { for (const [t, fn] of list) { if (t <= 0) fn(g); else later(g, t, fn, true); } }
+
+
+  // ---------------- step mode (tap through the working) ----------------
+  // The owner: "maybe if I had to tap through every step, it would be clearer." When g.steps is on, the engine stops
+  // the microgame's clock just before each beat of working and waits for a tap (see tickMicro in engine.js). Because
+  // every animation runs on g.t, a stopped clock holds everything exactly as it is: notes don't fade, nothing moves,
+  // the fuse stands still. A beat is anything the kit can see that changes or adds to the picture at a later time:
+  // an MK.at step (or any MK.later), a note starting or leaving, an MK.fly, an MK.circle / MK.arrow / MK.anim. Tweens
+  // (indicate, light, MK.tween) only emphasise, so they play with the beat they belong to. Beats within 0.2 s × pace of
+  // the tap (or the move) that started the current beat play with it. Nothing changes when g.steps is off.
+  const STEP_MERGE = 0.45, STEP_TAIL = 0.5;
+  function working(g) { const M = g.s && g.s.mk; return !!M && !g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold)); }
+  // MK.stepBusy(g): working is still playing (or waiting), and no answer tray is open
+  function stepBusy(g) { const M = g.s && g.s.mk; return working(g) && !(M.ask && !M.ask.closing); }
+  // MK.stepStop(g): the game time of the next stop (Infinity: none). The beat that is playing began at the last tap (or
+  // move) and runs STEP_MERGE × pace, and on through the flight of anything flying in it (a fly or a note flying into
+  // the expression lands, and its landing's rewrite plays, in the same beat). The last STEP_TAIL × pace of the working
+  // (the settle, a sparkle, the host's cheer) is no stop.
+  function stepStop(g) {
+    const M = g.s && g.s.mk; if (!stepBusy(g)) return Infinity;
+    const T = pace(g), beats = [], spans = [];
+    for (const tm of M.timers) if (!tm.nostep) beats.push(tm.at);
+    for (const a of M.anims || []) { beats.push(a.t0); if (a.span) spans.push([a.t0, a.t0 + a.span]); }
+    for (const f of M.flies) if (!f.landed) { beats.push(f.t0); spans.push([f.t0, f.t0 + f.dur]); }
+    const t0 = M.stepFrom ?? -1; let end = t0 + STEP_MERGE * T;
+    for (let more = true; more;) { more = false; for (const [a, b] of spans) if (a <= end + 1e-6 && b > t0 && b + 0.05 > end) { end = b + 0.05; more = true; } }
+    const from = Math.max(g.t, end); let best = Infinity, fin = M.showUntil || 0;
+    for (const b of beats) { if (b > fin) fin = b; if (b > from + 1e-6 && b < best) best = b; }
+    return fin - best <= STEP_TAIL * T ? Infinity : best;
+  }
+  // step mode: a note that fades waits, fully written, until the next tap (when there is a later stop), then fades
+  // with the beat that tap starts
+  function stepNotes(g) { const M = g.s.mk; if (!g.steps || !M.anims) return;
+    for (const a of M.anims) { if (a.leaveAt == null || a.rel != null) continue; const L = a.t0 + a.leaveAt; if (g.t < L) continue;
+      if (a.wait == null) a.wait = stepStop(g) < Infinity;
+      if (!a.wait) a.rel = L; else if ((M.stepFrom ?? -1) >= L - 1e-6) a.rel = M.stepFrom; else if (!stepBusy(g)) a.rel = g.t;
+      a.dur = a.rel != null ? a.rel - a.t0 + a.fadeDur : g.t - a.t0 + a.fadeDur + 1; } }
+  // MK.stepGo(g, t): the player tapped at the stop at time t; the beats from t on play
+  function stepGo(g, t) { const M = g.s && g.s.mk; if (M) M.stepFrom = t; }
+
+
+  // ---------------- helpers for nodes and the host ----------------
+  // MK.cancelTweens(g, target, keys?): stop the tweens on a node (only for those keys, if given), so a value you set
+  // yourself stays (a yoyo or an ending tween would otherwise write its value back). MK.set(g, target, props) does that
+  // and assigns props.
+  function cancelTweens(g, tgt, keys) { const n = nodeOf(g, tgt), M = g.s.mk; if (!n || !M.tweens) return;
+    M.tweens = M.tweens.filter(tw => { if (tw.n !== n) return true; if (!keys) return false; for (const k of keys) delete tw.to[k]; return Object.keys(tw.to).length > 0; }); }
+  function set(g, tgt, props) { const n = nodeOf(g, tgt); if (!n) return null; cancelTweens(g, n, Object.keys(props)); Object.assign(n, props); return n; }
+  // MK.gone(g, target, { dur, delay, then }): the node and everything inside it fade out together and leave no ghost when
+  // the game then removes them (then(g) runs once it has faded). Returns the time it takes.
+  function gone(g, tgt, o = {}) { const n = nodeOf(g, tgt); if (!n) return 0; const dur = o.dur ?? 0.3 * pace(g), dl = o.delay || 0, q = []; collect(n, q); for (const x of q) x._noGhost = true;
+    tween(g, n, { alpha: 0 }, dur, { delay: dl }); if (o.then) later(g, dl + dur, o.then, true); return dl + dur; }
+  // MK.bornAll(node) or MK.bornAll(g, target): the node and everything inside it appear at once (no fade-in)
+  function bornAll(a, b) { const n = b === undefined ? a : nodeOf(a, b); if (!n) return n; const q = []; collect(n, q); for (const x of q) x._born = -1; return n; }
+  // MK.offset(g, target): how far the node is drawn from its box right now ({ x, y }: its glide plus every dx/dy above
+  // it), so art drawn behind a symbol can move with it
+  function offset(g, tgt) { const n = nodeOf(g, tgt); if (!n) return { x: 0, y: 0 };
+    for (const e of Object.values(g.s.mk.ex)) { const path = []; if (pathTo(e.node, n, path)) { let x = 0, y = 0; for (const q of path) { x += (q.dx || 0) + (q._gx || 0); y += (q.dy || 0) + (q._gy || 0); } return { x, y }; } }
+    return { x: n.dx || 0, y: n.dy || 0 }; }
+  function pathTo(r, n, out) { if (!r) return false; out.push(r); if (r === n) return true; for (const ch of kids(r)) if (pathTo(ch, n, out)) return true; out.pop(); return false; }
+  // MK.host(g, c, kind, x, y, s, { facing, point, hop, pose, expr }): the host animal. It hops when the player makes a
+  // move and on each MK.at beat, points at the work while it is shown (point: false turns that off), looks surprised
+  // after a wrong move, cheers on a win and droops on a loss. Returns { pose, expr, hop } (hop 0–1).
+  function host(g, c, kind, x, y, s = 1.3, o = {}) { const M = g.s.mk || {}, last = Math.max(M.lastMove ?? -9, M.beatAt ?? -9), hop = g.t - last < 0.35 ? Math.sin((g.t - last) / 0.35 * Math.PI) : 0;
+    const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', missed = M.missAt != null && M.missAt >= 0 && g.t - M.missAt < 0.7;
+    const pose = o.pose || (won ? 'cheer' : hop > 0 ? 'hop' : o.point !== false && showing(g) ? 'point' : 'idle'), expr = o.expr || (won ? 'laugh' : lost ? 'sad' : missed ? 'think' : hop > 0 ? 'wow' : 'happy');
+    try { if (typeof ANI !== 'undefined') ANI.draw(c, kind, x, y - hop * (o.hop ?? 24), s, { t: g.t, pose, expr, facing: o.facing }); } catch (e) { console.error('host', e); }
+    return { pose, expr, hop }; }
 
   // ---------------- flying numbers ----------------
   // MK.fly(g, { node, from: [x, y] | 'id', to: [x, y] | 'id', dur, arc, s0, s1, then, keep }) — a copy of node travels on an arc.
@@ -518,5 +624,6 @@ const MK = (() => {
 
   return { INK, MID, GOOD, BAD, GLOW, NUMF, VARF, num, vr, txt, op, sup, frac, row, paren, mat, slot, gap, ddx, wrap, lay, draw, find,
     setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp,
-    HL, mix, pace, show, showing, track, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss };
+    HL, mix, pace, show, showing, track, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss, working, stepBusy, stepStop, stepGo,
+    int, sqrt, pi, under, kids, cancelTweens, set, gone, bornAll, offset, host };
 })();
