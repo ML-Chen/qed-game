@@ -4,12 +4,12 @@
 // the glow goes back to the line on its note. Level 2: a function that calls another function needs two plates at once.
 const PX = 14, PY = 124, PW = 332;
 const PROGS = [
-  { lines: ['def hop_log():', '    jump()', '    return', 'forward()', 'hop_log()', 'forward()', 'hop_log()'], start: 3, path: '. a L b c L d' },
-  { lines: ['def hop_log():', '    jump()', '    return', 'forward()', 'hop_log()', 'hop_log()'], start: 3, path: '. a L b L c' },
-  { lines: ['def hop_log():', '    jump()', '    return', 'def hop_two():', '    hop_log()', '    hop_log()', '    return', 'hop_two()'], start: 7, path: '. L b L c' },
+  { lines: ['def hop_log():', '    jump()', '    return', 'forward()', 'hop_log()', 'forward()', 'hop_log()', 'beep()'], start: 3, path: '. a L b c L d' },
+  { lines: ['def hop_log():', '    jump()', '    return', 'forward()', 'hop_log()', 'hop_log()', 'beep()'], start: 3, path: '. a L b L c' },
+  { lines: ['def hop_log():', '    jump()', '    return', 'def hop_two():', '    hop_log()', '    hop_log()', '    return', 'hop_two()', 'beep()'], start: 7, path: '. L b L c' },
 ];
 const FN = { hop_log: 0, hop_two: 3 }; // where each function starts
-function kindOf(ln) { const t = ln.trim(); if (t === 'forward()') return 'fwd'; if (t === 'jump()') return 'jump'; if (t === 'return') return 'pop'; if (t.startsWith('def ')) return 'def'; return 'push'; }
+function kindOf(ln) { const t = ln.trim(); if (t === 'forward()') return 'fwd'; if (t === 'jump()') return 'jump'; if (t === 'return') return 'pop'; if (t === 'beep()') return 'beep'; if (t.startsWith('def ')) return 'def'; return 'push'; }
 function geoC(s) { const n = s.cells.length, w = Math.min(56, 300 / n); return { w, y: 590, at: k => 30 + w / 2 + k * w }; }
 function plate(c, x, y, note, s = 1, t = 0) {
   c.save(); c.translate(x, y); c.scale(s, s);
@@ -35,7 +35,7 @@ function paintCallYard(o, s) {
 }
 function logAt(c, x, y) { c.fillStyle = '#8a5a34'; c.strokeStyle = '#4a2a14'; c.lineWidth = 2; c.beginPath(); c.roundRect(x - 20, y - 26, 40, 22, 10); c.fill(); c.stroke(); c.fillStyle = '#c89a6a'; c.beginPath(); c.ellipse(x + 17, y - 15, 6, 10, 0, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#8a5a34'; c.beginPath(); c.ellipse(x + 17, y - 15, 2.5, 5, 0, 0, 7); c.stroke(); }
 MG.add({
-  id: 'cs_call', stage: 'programs', cmd: 'ACT OUT THE FUNCTION CALLS!', time: 7, mood: 'bright', winText: 'Call stack!', failText: 'Lost!',
+  id: 'cs_call', stage: 'programs', cmd: 'RETURN TO THE LINE ON THE PLATE!', time: 7, mood: 'bright', winText: 'Came back right!', failText: 'Went back wrong!',
   card: { title: 'Calling a function', kind: 'Computer science', ref: 'Function calls and the call stack',
     text: 'A function is a named set of steps, written once with def and used by calling its name. When the computer reaches a call, it notes the line to come back to, then jumps into the function.\n\nThe notes are kept in a pile called the call stack, like a pile of plates. Each call puts a plate on top. At return, the computer takes the top plate off and goes back to the line on its note.\n\nA function can call another function. Then two plates are on the pile, and the newest one comes off first.',
     note: 'A call jumps into the function and puts a note on the call stack; return takes the top note off and goes back.' },
@@ -45,44 +45,39 @@ MG.add({
     s.cup = { x: 64, y: s.panelB + 56 }; s.pile = { x: 280, y: s.panelB + 76 };
   },
   want(s) { return s.pc >= s.lines.length ? 'end' : kindOf(s.lines[s.pc]); },
-  step(g, a) { // the player acted out a; does it match the glowing line?
-    const s = g.s; if (g.done || s.anim) return; const w = this.want(s), G = geoC(s);
-    if (a !== w) { B7.flash(g, s.pc); g.sfx('wrong'); s.oops = g.t; if (++s.wrong >= 3) { s.anim = { kind: 'dunk', from: s.pos, t0: g.t }; } return; }
-    s.done.push(s.pc);
-    if (a === 'fwd') { s.anim = { kind: 'fwd', from: s.pos, to: s.pos + 1, t0: g.t }; s.pos++; g.sfx('whoosh'); s.pc++; }
-    else if (a === 'jump') { s.anim = { kind: 'jump', from: s.pos, to: s.pos + 2, t0: g.t }; s.pos += 2; g.sfx('boing'); s.pc++; }
-    else if (a === 'push') { const name = s.lines[s.pc].trim().replace('()', ''); s.stack.push({ back: s.pc + 1, t: g.t }); g.sfx('click'); s.jumpT = g.t; s.pc = FN[name] + 1; }
-    else if (a === 'pop') { const p = s.stack.pop(); s.popped = { back: p.back, t: g.t, n: s.stack.length }; g.sfx('pop'); s.pc = p.back; }
-    s.done = s.done.slice(-1);
-    if (s.pc >= s.lines.length) this.finish(g);
-  },
-  finish(g) { const s = g.s; s.endAt = g.t + 0.45; },
-  down(g, x, y) { const s = g.s; SK.touched(g); s.p0 = { x, y }; if (SK.dist(x, y, s.cup.x, s.cup.y) < 50 && !g.done) s.carry = { x, y }; },
-  move(g, x, y) { if (g.s.carry) { g.s.carry.x = x; g.s.carry.y = y; } },
-  up(g, x, y) {
-    const s = g.s, p0 = s.p0; if (!p0) return; s.p0 = null; const dx = x - p0.x, dy = y - p0.y, G = geoC(s);
-    if (s.carry) { s.carry = null; if (SK.dist(x, y, s.pile.x, s.pile.y - s.stack.length * 12) < 70) this.step(g, 'push'); return; }
-    if (-dy > 40 && Math.abs(dx) < -dy) { this.step(g, 'jump'); return; }
-    if (dx > 30 && Math.abs(dy) < dx) { this.step(g, 'fwd'); return; }
-    if (Math.hypot(dx, dy) < 24 && s.stack.length && SK.dist(x, y, s.pile.x, s.pile.y - (s.stack.length - 1) * 12) < 50) this.step(g, 'pop');
-  },
+  // the computer runs every line by itself, except return: there you tap the line written on the top plate
   update(g, dt) {
-    const s = g.s; if (g.done) return; const a = s.anim;
-    if (a && a.kind === 'dunk' && g.t - a.t0 > 0.7 && !s.res) { s.res = { t: g.t, win: false }; g.sfx('splash'); g.fail(); return; }
-    if (a && a.kind !== 'dunk' && g.t - a.t0 > (a.kind === 'jump' ? 0.5 : 0.32)) s.anim = null;
-    if (s.endAt && g.t >= s.endAt && !s.anim && !s.res) { s.res = { t: g.t, win: true }; g.win(); g.sfx('cheer'); const G = geoC(s); g.burst(G.at(s.pos), G.y - 60, ['#ffd45a', '#7ee8a0', '#fff'], 18, 150); }
+    const s = g.s; if (g.done) return; const a = s.anim, G = geoC(s);
+    if (a && a.kind === 'dunk') { if (g.t - a.t0 > 0.8 && !s.res) { s.res = { t: g.t, win: false }; g.sfx('splash'); g.fail(); } return; }
+    if (a && g.t - a.t0 > (a.kind === 'jump' ? 0.5 : 0.32)) s.anim = null;
+    if (s.anim || g.t < (s.bt || 0.6)) return;
+    const w = this.want(s); if (w === 'pop' || w === 'end') return;
+    s.done = [s.pc];
+    if (w === 'fwd') { s.anim = { kind: 'fwd', from: s.pos, to: s.pos + 1, t0: g.t }; s.pos++; g.sfx('whoosh'); s.pc++; }
+    else if (w === 'jump') { s.anim = { kind: 'jump', from: s.pos, to: s.pos + 2, t0: g.t }; s.pos += 2; g.sfx('boing'); s.pc++; }
+    else if (w === 'push') { const name = s.lines[s.pc].trim().replace('()', ''); s.stack.push({ back: s.pc + 1, t: g.t }); g.sfx('click'); s.jumpT = g.t; s.jumpFrom = s.pc; s.pc = FN[name] + 1; }
+    else if (w === 'beep') { s.res = { t: g.t, win: true }; g.win(); g.sfx('bell'); g.sfx('cheer'); g.burst(G.at(s.pos), G.y - 60, ['#ffd45a', '#7ee8a0', '#fff'], 18, 150); return; }
+    s.bt = g.t + 0.55;
+  },
+  down(g, x, y) {
+    const s = g.s; SK.touched(g); if (g.done || s.anim || this.want(s) !== 'pop') return;
+    if (x < PX || x > PX + PW) return; let li = -1; for (let i = 0; i < s.lines.length; i++) if (Math.abs(y - s.lay.lineY(i)) < s.lay.lineH / 2) li = i; if (li < 0) return;
+    const top = s.stack[s.stack.length - 1];
+    if (li === top.back) { s.stack.pop(); s.popped = { back: top.back, t: g.t, n: s.stack.length }; g.sfx('pop'); s.done = [s.pc]; s.pc = top.back; s.bt = g.t + 0.5; return; }
+    // went back to the wrong line: the robot does that line's steps again from the wrong place and walks into the pond
+    B7.flash(g, li); s.pc = li; g.sfx('wrong'); s.anim = { kind: 'dunk', from: s.pos, t0: g.t };
   },
   draw(g, c) {
     const s = g.s, t = g.t, G = geoC(s);
     c.drawImage(g.bake('cs_call' + Math.min(2, g.level), o => paintCallYard(o, s)), 0, 0, 360, 640);
-    B7.panel(c, g, { x: PX, y: PY, w: PW, lines: s.lines, cur: s.res || s.endAt ? -1 : s.pc, flash: s.b7flash, done: s.done, icons: s.lines.map(l => ({ fwd: 'right', jump: 'up', push: 'plate', pop: 'plate', def: null }[kindOf(l)])) });
+    B7.panel(c, g, { x: PX, y: PY, w: PW, lines: s.lines, cur: s.res && s.res.win ? -1 : s.pc, flash: s.b7flash, done: s.done, icons: s.lines.map(l => ({ fwd: 'right', jump: 'up', push: 'plate', pop: 'plate', def: null }[kindOf(l)])) });
     // the jump into the function: a golden arc from the call line to the function's first line
     if (s.jumpT && t - s.jumpT < 0.5) { const k = (t - s.jumpT) / 0.5, from = s.lay.lineY(s.stack[s.stack.length - 1] ? s.stack[s.stack.length - 1].back - 1 : 0), to = s.lay.lineY(s.pc); c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#ffd45a'; c.lineWidth = 3; c.beginPath(); c.moveTo(PX + 30, from); c.quadraticCurveTo(PX - 6, (from + to) / 2, PX + 30, to); c.stroke(); c.restore(); }
     // logs on the path
     s.cells.forEach((ch, k) => { if (ch === 'L') logAt(c, G.at(k), G.y); });
     // the cupboard of clean plates, and the pile (the call stack) with its notes
     for (let i = 0; i < 4; i++) plate(c, s.cup.x, s.cup.y + 10 - i * 7, null, 0.9);
-    s.stack.forEach((p, i) => { const k = Math.min(1, (t - p.t) / 0.25); plate(c, SK.lerp(s.cup.x, s.pile.x, k), SK.lerp(s.cup.y, s.pile.y - i * 12, k) - Math.sin(k * Math.PI) * 30, p.back >= s.lines.length ? 'end' : p.back + 1, 1, t); });
+    s.stack.forEach((p, i) => { const k = Math.min(1, (t - p.t) / 0.25); plate(c, SK.lerp(s.cup.x, s.pile.x, k), SK.lerp(s.cup.y, s.pile.y - i * 12, k) - Math.sin(k * Math.PI) * 30, p.back + 1, 1, t); });
     if (s.popped && t - s.popped.t < 0.5) { const k = (t - s.popped.t) / 0.5; c.save(); c.globalAlpha = 1 - k; plate(c, s.pile.x + k * 60, s.pile.y - s.popped.n * 12 - k * 40, s.popped.back + 1, 1, t); c.restore();
       const ly = s.lay.lineY(s.popped.back); c.save(); c.globalAlpha = 1 - k; c.fillStyle = '#ffe27a'; c.font = `800 18px ${B7.MONO}`; c.fillText(String(s.popped.back + 1), SK.lerp(s.pile.x, PX + 12, k), SK.lerp(s.pile.y - 40, ly, k)); c.restore(); }
     SK.tag(c, 'Call stack', s.pile.x, s.pile.y + 30, 18);
@@ -96,22 +91,13 @@ MG.add({
     c.save(); if (sink) { c.beginPath(); c.rect(0, 0, 360, ry); c.clip(); }
     B7.robot(c, rx, ry - lift + sink * 40, 0.78, { t, dir: 0, mood: won ? 'happy' : oops || s.res ? 'wow' : 'idle', wet: sink, tilt: oops ? Math.sin((t - s.oops) * 30) * 0.08 : 0 });
     c.restore();
-    // guidance: glow what the glowing line asks for, and the hand acts it out
-    if (!g.done && !s.anim && !s.endAt) {
-      const w = this.want(s);
-      if (w === 'push') { SK.glow(c, g, s.cup.x, s.cup.y, 40); SK.glow(c, g, s.pile.x, s.pile.y - s.stack.length * 12, 34); SK.demo(g, c, 'drag', [s.cup.x, s.cup.y], [s.pile.x, s.pile.y - s.stack.length * 12]); }
-      else if (w === 'pop') { const py = s.pile.y - (s.stack.length - 1) * 12; SK.glow(c, g, s.pile.x, py - 10, 36); SK.demo(g, c, 'tap', [s.pile.x, py - 10]); }
-      else if (w === 'jump') { SK.glow(c, g, rx, ry - 40, 34); SK.demo(g, c, 'swipe', [rx, ry - 30], [rx, ry - 110]); }
-      else if (w === 'fwd') { SK.glow(c, g, rx, ry - 40, 34); SK.demo(g, c, 'swipe', [rx - 10, ry - 30], [rx + 60, ry - 30]); }
-    }
+    // guidance: at return the top plate glows, and the hand taps the line written on it
+    if (!g.done && !s.anim && this.want(s) === 'pop') { const top = s.stack[s.stack.length - 1], py = s.pile.y - (s.stack.length - 1) * 12; SK.glow(c, g, s.pile.x, py - 16, 34); if (g.level === 0) SK.glow(c, g, PX + 120, s.lay.lineY(top.back), 26); SK.demo(g, c, 'tap', [PX + 90, s.lay.lineY(top.back)]); }
   },
-  // the bot acts out each glowing line, one every 0.45 s (B7FAIL: pops instead of pushing, three times)
+  // the bot taps the line on the top plate at each return (B7FAIL: taps the first line of the program instead)
   auto(g, dt, synth) {
-    const s = g.s; if (g.done || s.anim || s.endAt || g.t < (s.nb || 1.0)) return; s.nb = g.t + 0.45; const G = geoC(s), rx = G.at(s.pos);
-    let w = this.want(s); if (typeof window !== 'undefined' && window.B7FAIL) w = 'jump2';
-    if (w === 'push') { synth('down', s.cup.x, s.cup.y); synth('move', (s.cup.x + s.pile.x) / 2, s.cup.y); synth('move', s.pile.x, s.pile.y - s.stack.length * 12); synth('up', s.pile.x, s.pile.y - s.stack.length * 12); }
-    else if (w === 'pop') { const py = s.pile.y - (s.stack.length - 1) * 12; synth('down', s.pile.x, py); synth('up', s.pile.x, py); }
-    else if (w === 'jump' || w === 'jump2') { synth('down', rx, G.y - 30); synth('move', rx, G.y - 110); synth('up', rx, G.y - 110); }
-    else if (w === 'fwd') { synth('down', rx, G.y - 30); synth('move', rx + 60, G.y - 30); synth('up', rx + 60, G.y - 30); }
+    const s = g.s; if (g.done || s.anim || this.want(s) !== 'pop' || g.t < (s.nb || 0)) return; s.nb = g.t + 0.3;
+    const top = s.stack[s.stack.length - 1], li = typeof window !== 'undefined' && window.B7FAIL ? PROGS[Math.min(2, g.level)].start : top.back, y = s.lay.lineY(li);
+    synth('down', PX + 90, y); synth('up', PX + 90, y);
   },
 });
