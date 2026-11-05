@@ -99,5 +99,14 @@ The work happens where the player is already looking. Don't send the player's ga
 - `note`: shown under THE PATTERN: the shortcut rule in one or two sentences.
 - `ask`: one or two practice questions.
 
+## Writing on-screen text and cards (the owner's rule)
+Every word the player reads (the command, working notes, labels and card text) must be plain English that a newcomer can't misread:
+- Lead with the point, one idea per sentence, active voice with a concrete actor ("the frog hops 3 places", not "a displacement of 3 occurs").
+- Define a term the first time it appears, then use the same word every time.
+- Put a condition or exception in the sentence it limits ("if p is a prime and a is not a multiple of p, then …"). Don't write "always" or "most" unless it's true without exceptions.
+- Write out every shortcut ("8 = 5 + 3 → 3", not "8 → 3"), and name the thing instead of writing "this" when it isn't right next to it.
+- No slogans, hype or exclamation-mark prose in cards; no "It's not X, it's Y"; no vague abstract nouns.
+- Before finishing, read each card sentence alone and ask what a newcomer would believe after reading only that sentence, and whether it's true. Rewrite any sentence that fails.
+
 ## Testing
 `HM_ONLY=<your file prefix> HM_PAGE=<your own page path> python3 tools/mgtest.py OUTDIR` builds the page, runs the bot at level 0 and at level 2 double speed (both must WIN), and with no input (must FAIL), and writes a contact sheet `OUTDIR/<id>.jpg`. Open every sheet and fix anything that looks weak or unclear. `python3 tests/run.py --page <your page> --only microgames` also checks medium mode and that a wrong move at level 1 fails.
