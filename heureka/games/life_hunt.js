@@ -40,7 +40,7 @@
   function moth(c, m, t, s = 1) {
     const f = 0.85 + 0.15 * Math.sin(t * 7 + m.x), col = m.dark ? '#2c2828' : '#ebe4d2', sp = m.dark ? 'rgba(120,112,104,0.6)' : 'rgba(40,36,34,0.7)';
     c.save(); c.translate(m.x, m.y); c.rotate(m.ang); c.scale(s, s);
-    c.fillStyle = col; c.strokeStyle = m.dark ? 'rgba(80,72,68,0.9)' : 'rgba(120,110,96,0.9)'; c.lineWidth = 1.2;
+    c.fillStyle = col; c.strokeStyle = m.dark ? 'rgba(112,102,96,0.95)' : 'rgba(120,110,96,0.9)'; c.lineWidth = 1.5;
     for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(0, -6); c.quadraticCurveTo(sd * 18 * f, -8, sd * 17 * f, 6); c.quadraticCurveTo(sd * 8, 10, 0, 6); c.closePath(); c.fill(); c.stroke(); }
     c.fillStyle = sp; for (let i = 0; i < 8; i++) { const a = B3.hash(i * 2.7 + 1), b = B3.hash(i * 5.3 + 2), sd = i % 2 ? 1 : -1; c.fillRect(sd * (3 + a * 11) * f - 1, -4 + b * 9, 2, 1.6); }
     c.fillStyle = m.dark ? '#1a1616' : '#c8bca8'; c.beginPath(); c.ellipse(0, 1, 2.6, 8, 0, 0, 7); c.fill();

@@ -66,7 +66,7 @@ function bubble(c, x, y, r, t, k) { // an iridescent soap bubble; k 0..1 grows i
   c.restore();
 }
 MG.add({
-  id: 'wrapshop', stage: 'law', cmd: 'WRAP THE SHOP!', time: 6, mood: 'desert', winText: 'Limited liability!', failText: 'Not my house!',
+  id: 'wrapshop', stage: 'law', cmd: 'WRAP THE SHOP!', time: 6, mood: 'desert', winText: 'LLC shield!', failText: 'Not my house!',
   card: { title: 'A company is its own person', kind: 'Law', ref: 'Limited liability (LLC or corporation)',
     text: 'When you form an LLC or a corporation, the law treats the business as a separate person. The business owns its own money and owes its own debts. If it can\'t pay, the people it owes can usually take only what the business owns, and the owner\'s house stays safe.\n\nA sole proprietor runs a business without forming a company. Then the business debts are the owner\'s own debts. The shield has holes: an owner who signs a personal guarantee, or mixes company money with personal money, can be made to pay.\n\nGeneral information about US law, not legal advice.',
     note: 'An LLC or corporation is a separate legal person, so its debts usually can\'t reach the owner\'s own home.' },
