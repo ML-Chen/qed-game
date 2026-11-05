@@ -3,7 +3,7 @@
 // little coins pile up to the line and the bike rolls out to the rabbit. Let the cart grab one and the rabbit gets a
 // lollipop while the bike stays in the window. Level 2: one small treat is allowed, but the line is higher.
 const FLOOR = 566, JAR = { x: 284, y0: 478, y1: 600, w: 104 }, CR = 15;
-const NEED = [5, 6, 6], TOTAL_TREATS = [0, 0, 1], REACH = [2.9, 2.2, 1.7]; // coins to the line; lollipops allowed; seconds for the cart to reach a coin
+const NEED = [5, 6, 6], TOTAL_TREATS = [0, 0, 1], REACH = [3.8, 3.0, 1.9]; // coins to the line; lollipops allowed; seconds for the cart to reach a coin
 // where the k-th saved coin settles inside the jar: rows of three, slightly jumbled (fixed, so it never changes on rewind)
 function slot(k) { const row = Math.floor(k / 3), col = k % 3, jit = [[-2, 1], [3, -2], [-1, 2], [2, 1], [-3, -1], [1, 2], [2, -2], [-2, 0], [0, 1]][k % 9]; return { x: JAR.x + (col - 1) * 31 + jit[0] + (row % 2 ? 8 : 0) * (col === 2 ? -1 : 1) * 0.5, y: JAR.y1 - 12 - row * 15 + jit[1], tilt: (jit[0] - jit[1]) * 0.04 }; }
 function lineY(n) { return JAR.y1 - 12 - (Math.ceil(n / 3) - 1) * 15 - 14; }
@@ -63,7 +63,7 @@ function cart(c, x, y, t, moving) { // the candy cart: striped canopy, lollipop 
   c.restore();
 }
 MG.add({
-  id: 'save', stage: 'money', cmd: 'SAVE UP TO BUY IT!', time: 6, mood: 'bright', winText: 'Saved enough!', failText: 'Spent on candy!', hold: 1.7,
+  id: 'save', stage: 'money', cmd: 'SAVE UP TO BUY IT!', time: 7, mood: 'bright', winText: 'Saved enough!', failText: 'Spent on candy!', hold: 1.7,
   card: { title: 'Saving adds up', kind: 'Money', ref: 'Saving toward a goal',
     text: 'Each coin on its own is small. Put every one in the jar and the pile grows until it reaches the line, the price of the thing you want.\n\nSpend the coins as they come, on candy, and the jar never fills. Saving means keeping some money now so you can buy something bigger later.\n\nA goal helps. When you know the price of the thing you want, you can see how close you are, and a small treat now and then can still fit if you keep saving the rest.',
     note: 'Saving a little each time adds up to something big.' },
@@ -145,10 +145,14 @@ MG.add({
     // a lollipop flies from the cart to the rabbit
     if (lf && lk < 1) lollipop(c, SK.lerp(lf.x, 316, lk), SK.lerp(lf.y, 400, lk) - Math.sin(lk * Math.PI) * 60, 1.1);
     // labels: the real names of things
-    SK.tag(c, 'Savings', JAR.x, JAR.y0 - 16, 18); SK.tag(c, s.prize + ' price', JAR.x, ly - 24, 18, '#fff6ea', full ? 'rgba(40,140,70,0.85)' : 'rgba(190,40,40,0.85)');
+    SK.tag(c, 'Savings ' + Math.min(s.saved, s.need) + ' / ' + s.need, JAR.x - 8, JAR.y0 - 16, 18); SK.tag(c, s.prize + ' price', JAR.x, ly - 24, 18, '#fff6ea', full ? 'rgba(40,140,70,0.85)' : 'rgba(190,40,40,0.85)');
     if (s.cartX > 60) SK.tag(c, 'Candy cart', Math.max(64, s.cartX - 50), FLOOR - 112, 18);
     // guidance: drag the coin into the jar
-    if (k && !k.inJar && !k.gone && k.onFloor) SK.demo(g, c, 'drag', [k.x, k.y], [JAR.x, JAR.y0 - 20], { arc: 60, delay: 0.6 });
+    // each new coin is a new step, so the hand shows it at once (not only after the kit's idle wait), until you grab it
+    const wait = k && !k.inJar && !k.gone && k.onFloor && !k.held && !g.done;
+    SK.demo(g, c, 'drag', [k ? k.x : 0, k ? k.y : 0], [JAR.x, JAR.y0 - 20], { never: true });
+    if (wait && !(g.ptr && g.ptr.down)) { const t0 = k.t0 + 0.35, per = 1.5; if (t >= t0) { const q = ((t - t0) % per) / per, fade = SK.clamp((t - t0) * 4, 0, 1), p = q < 0.12 ? q / 0.12 : q < 0.78 ? 1 : 1 - (q - 0.78) / 0.1, m = SK.easeInOut((q - 0.12) / 0.62);
+      SK.hand(c, SK.lerp(k.x, JAR.x, m), SK.lerp(k.y, JAR.y0 - 20, m) - Math.sin(m * Math.PI) * 60, SK.clamp(p, 0, 1), 0.9 * fade * (q > 0.88 ? 0 : 1)); } }
   },
   auto(g, dt, synth) {
     const s = g.s, k = s.coin; if (!k || k.inJar || k.gone || !k.onFloor) return;

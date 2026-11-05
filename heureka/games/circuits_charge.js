@@ -88,9 +88,9 @@ MG.add({
     s.photos.forEach((p, i) => { const k = SK.easeOut((t - p.t) / 0.35), x = 34 + (i % 5) * 52, y = 372 - k * 26; if (!p.ok && t - p.t > 0.9) return; c.save(); c.translate(x, y); c.rotate((i % 2 ? 1 : -1) * 0.08); c.fillStyle = '#fff6ea'; c.fillRect(-20, -24, 40, 46); c.fillStyle = p.ok ? '#9ad8e8' : '#1a1a22'; c.fillRect(-16, -20, 32, 30); if (p.ok) SK.animal(c, p.kind, 0, 8, 0.36, { t: 0 }); c.restore(); });
     if (!g.done && s._hold == null) SK.glow(c, g, 150, PIPE_Y, 30, '#ffe27a', { level: 2 });
     // what to do now: hold the valve to charge; let go once the water passes the gold line
-    if (!g.done) { if (open && s.q >= sh.need) SK.tag(c, 'Let go!', JAR.x, JAR.y0 - 22 - Math.abs(Math.sin(t * 8)) * 4, 22, '#9affb0', 'rgba(20,90,50,0.9)'); else SK.tag(c, open ? 'Charging...' : 'Hold to charge', 150, PIPE_Y - 34, 18, open ? '#bfe6ff' : '#fff6ea');
+    if (!g.done) { if (open && s.q >= sh.need) SK.tag(c, 'Let go!', JAR.x, JAR.y0 - 22 - Math.abs(Math.sin(t * 8)) * 4, 22, '#9affb0', 'rgba(20,90,50,0.9)'); else SK.tag(c, open ? 'Charging...' : 'Hold to charge', 136, PIPE_Y - 34, 18, open ? '#bfe6ff' : '#fff6ea');
       SK.tag(c, 'Photo ' + Math.min(s.shots.length, s.shot + 1) + ' / ' + s.shots.length, 70, 140, 18); }
-    SK.tag(c, 'Battery', TANK.x, 520, 18); SK.tag(c, 'Capacitor', JAR.x, 600, 18); SK.tag(c, 'Flash', FL.x - 76, FL.y + 4, 18);
+    SK.tag(c, 'Battery', TANK.x, 466, 18); SK.tag(c, 'Capacitor', JAR.x, 600, 18); SK.tag(c, 'Flash', FL.x - 76, FL.y + 4, 18);
     // the beaver photographer
     SK.animal(c, 'beaver', 322, 612, 0.7, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : s.dud || lost ? 'sad' : open ? 'think' : 'happy' });
     SK.demo(g, c, 'hold', [150, PIPE_Y], null, { period: 2.0 });

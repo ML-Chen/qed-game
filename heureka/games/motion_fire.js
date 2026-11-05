@@ -86,7 +86,12 @@
       SK.animal(c, 'penguin', DROP.x - 34, TOP - 6, 1.05, { t, facing: 1, pose: won ? 'cheer' : s.ball ? 'wave' : 'point', expr: won ? 'laugh' : s.ball ? 'wow' : 'happy' });
       if (!s.ball && !g.done) SK.ball(c, DROP.x, DROP.y, 10, '#f4f6ff', { edge: '#8a86b8' });
       SK.tag(c, 'Cannon', MUZ.x - 20, MUZ.y - 40, 18);
-      if (!s.ball && !g.done && t >= s.cool) { SK.glow(c, g, MUZ.x - 10, MUZ.y, 28, undefined, { level: 2 }); SK.demo(g, c, 'tap', [MUZ.x - 8, MUZ.y + 6], null, { period: 1.1 }); }
+      if (!g.done) SK.tag(c, s.bi + ' / ' + s.speeds.length + ' boats hit', 268, 196, 18);
+      // levels 0 and 1: a flag on the water where the boat must be when you fire; the cannon turns green when it's time
+      const v = s.speeds[Math.min(s.bi, s.speeds.length - 1)], want = LAND + v * TFALL, now = !B.hit && Math.abs(B.x - want) < 30;
+      if (s.mark && !g.done && !s.ball && want < 350) { c.strokeStyle = '#5a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(want, SEA + 4); c.lineTo(want, SEA - 30); c.stroke(); c.fillStyle = now ? '#5ad07a' : '#f5c23a'; c.beginPath(); c.moveTo(want, SEA - 30); c.lineTo(want + 18, SEA - 24); c.lineTo(want, SEA - 18); c.closePath(); c.fill(); }
+      if (s.mark && !g.done && !s.ball && t >= s.cool) SK.tag(c, now ? 'Fire now!' : B.x > want ? 'Wait...' : 'Too late', MUZ.x + 44, MUZ.y - 76, now ? 22 : 18, '#fff6ea', now ? 'rgba(40,150,70,0.95)' : 'rgba(30,14,36,0.72)');
+      if (!s.ball && !g.done && t >= s.cool) { SK.glow(c, g, MUZ.x - 10, MUZ.y, 28, now && s.mark ? '#7aff9a' : undefined, { level: 2 }); SK.demo(g, c, 'tap', [MUZ.x - 8, MUZ.y + 6], null, { period: 1.1, never: s.mark && !(B.x < want + 30 + v * 0.35 && B.x > want - 10) }); } // the hand taps just as the boat reaches the flag
     },
     auto(g, dt, synth) {
       const s = g.s, B = s.boat, v = s.speeds[Math.min(s.bi, s.speeds.length - 1)]; if (g.done || s.ball || B.hit || g.t < Math.max(0.4, s.cool)) return;

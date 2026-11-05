@@ -124,7 +124,7 @@ MG.add({
     SK.tag(c, BILLS[s.bill], TANK.x - 122, TANK.y1 + 34, 18); if (s.feeT) SK.tag(c, 'Overdraft fee', TANK.x - 10, TANK.y1 - 96, 20, '#fff6ea', 'rgba(190,40,40,0.9)');
     // guidance: tap a cheap item as it rolls past
     const cheap = s.belt.find(b => !b.gone && GOODS[b.k] === 1 && b.x > 40 && b.x < 300);
-    if (cheap && s.cart.length + s.flying.length < L.need && !g.done) { SK.glow(c, g, cheap.x, cheap.y - 22, 34); SK.demo(g, c, 'tap', [cheap.x, cheap.y - 20], null, { delay: 0.6 }); }
+    if (cheap && s.cart.length + s.flying.length < L.need && !g.done) { SK.glow(c, g, cheap.x, cheap.y - 22, 34, '#ffe27a', { level: 2 }); SK.demo(g, c, 'tap', [cheap.x, cheap.y - 20], null, { delay: 0.6 }); }
   },
   auto(g, dt, synth) { // tap cheap goods (1 coin) when they are mid-belt
     const s = g.s; const B = s._b8 = s._b8 || { next: 0.8 }; if (g.t < B.next || g.done) return;

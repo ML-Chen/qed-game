@@ -104,7 +104,7 @@ MG.add({
     c.restore();
     SK.tag(c, 'Power rail', SC.x1 - 62, top + 20, 18, '#ffd0c0'); SK.tag(c, 'Power rail', SC.x1 - 62, bot - 20, 18, '#c8e8ff');
     // the gain knob
-    if (!s.kn.grab) SK.grab(c, g, s.kn.x, s.kn.y, 44); SK.tag(c, 'Gain', s.kn.x + 70, s.kn.y, 18); SK.tag(c, 'Amplifier', 180, AMP.y + 114, 18);
+    if (!s.kn.grab) SK.grab(c, g, s.kn.x, s.kn.y, 44); SK.tag(c, 'Gain', s.kn.x + 84, s.kn.y + 22, 18); SK.tag(c, 'Amplifier', 180, AMP.y + 114, 18);
     B6.drawKnob(c, s.kn, { col: '#2a2420', cap: '#e8d8b0', arc: s.fuzzy ? '#ff5ad0' : '#ffb43a' });
     // the speaker grille thumps with the sound
     const thump = s.strum * Math.min(1, gain * L.A * so.A / L.R);
@@ -124,8 +124,19 @@ MG.add({
     }
     // stage lights flash on a win
     if (won) { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.18 + 0.12 * Math.sin(t * 20); c.fillStyle = Math.sin(t * 7) > 0 ? '#ff5ad0' : '#5ae0ff'; c.fillRect(0, 0, 360, 640); c.restore(); }
-    // guidance: turn the knob up, over the top
-    SK.demo(g, c, 'drag', [s.kn.x - 44, s.kn.y + 18], [s.kn.x + 44, s.kn.y + 18], { arc: 66 });
+    // the knob's fuzz zone (a green arc from the turn this instrument needs to the end) and a curved arrow showing which way
+    // to turn while the wave is still under the rails (the owner: say whether you're getting closer)
+    const SW = Math.PI * 1.5, ca = k => -Math.PI / 2 + (k - 0.5) * SW, kNeed = SK.clamp((1.3 * L.R / (L.A * so.A) - 1) / (L.gmax - 1) + 0.03, 0, 0.97), kn = s.kn, Rz = kn.r + 24;
+    if (!g.done) {
+      c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(20,10,30,0.7)'; c.lineWidth = 10; c.beginPath(); c.arc(kn.x, kn.y, Rz, ca(kNeed), ca(1)); c.stroke();
+      c.strokeStyle = s.fuzzy ? '#7aff9a' : '#3ac46a'; c.lineWidth = 6; c.beginPath(); c.arc(kn.x, kn.y, Rz, ca(kNeed), ca(1)); c.stroke(); c.restore();
+      if (!s.fuzzy && kn.k < kNeed) { const a0 = ca(kn.k) + 0.15, a1 = Math.min(ca(kNeed) - 0.05, a0 + 1.1), p = (t * 1.5) % 1; c.save(); c.strokeStyle = '#ffe27a'; c.lineWidth = 4; c.setLineDash([6, 6]); c.lineDashOffset = -t * 30; c.beginPath(); c.arc(kn.x, kn.y, Rz + 14, a0, a1); c.stroke(); c.setLineDash([]);
+        const hx = kn.x + Math.cos(a1) * (Rz + 14), hy = kn.y + Math.sin(a1) * (Rz + 14); c.translate(hx, hy); c.rotate(a1 + Math.PI / 2); c.fillStyle = '#ffe27a'; c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(10 + p * 3, 0); c.lineTo(-6, -8); c.lineTo(-6, 8); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+      SK.tag(c, s.fuzzy ? 'Fuzz! Hold it' : 'More gain', 180, AMP.y + AMP.h + 16, 18, s.fuzzy ? '#ffb0f0' : '#ffe27a');
+      SK.tag(c, 'Song ' + (s.song + 1) + ' / ' + SONGS.length, 290, 492, 18);
+    }
+    // guidance: turn the knob up along its arc, into the green zone
+    { const R = kn.r * 1.3, a0 = ca(kn.k), a1 = ca(Math.min(1, kNeed + 0.1)); SK.demo(g, c, 'drag', [kn.x + Math.cos(a0) * R, kn.y + Math.sin(a0) * R], [kn.x + Math.cos(a1) * R, kn.y + Math.sin(a1) * R], { arc: 40 }); }
   },
   auto(g, dt, synth) { const s = g.s; B6.botTurn(g, synth, s.kn, 'turn' + s.song, s.song ? s.songT0 + 0.55 : 1.1, 0.97, 0.45); },
 });
