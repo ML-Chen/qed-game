@@ -84,9 +84,9 @@ MG.add({
     const s = g.s, rest = s.ayRest, lo = apexOf(LOW);
     if (!s.held && s.pushed < 0) s.ay += (rest - s.ay) * Math.min(1, dt * 5); // a relaxed diaphragm springs back up
     // the lungs follow the room in the chest, as air flows in or out through the nose
-    const target = SK.clamp(0.25 + 0.75 * (s.ay - rest) / (lo - rest), 0, 1), flow = (target - s.fill) * Math.min(1, dt * 4);
+    const target = SK.clamp(0.25 + 0.75 * (s.ay - rest) / (lo - rest), 0, 1), flow = (target - s.fill) * Math.min(1, dt * 14); // air moves only while the chest is changing size: hold the diaphragm still and the flow stops (the owner)
     s.fill = SK.clamp(s.fill + flow, 0, 1);
-    const n = Math.abs(flow) * 120; for (let i = 0; i < n; i++) { const inward = flow > 0; s.air.push({ k: 0, inward, dx: (g.rand() - 0.5) * 30, side: g.rand() < 0.5 ? -1 : 1, sp: 1.6 + g.rand() }); }
+    const n = Math.abs(flow) * 120; for (let i = 0; i < n; i++) { const inward = flow > 0; s.air.push({ k: 0, inward, dx: (g.rand() - 0.5) * 30, side: g.rand() < 0.5 ? -1 : 1, sp: 3.2 + g.rand() }); }
     for (const a of s.air) a.k += dt * a.sp; s.air = s.air.filter(a => a.k < 1);
     // breathing out: the stream of air blows candles out (level 2)
     s.blow = Math.max(0, -flow / dt);

@@ -34,7 +34,7 @@ with sync_playwright() as p:
         win = pg.evaluate('id=>HM.test(id,{auto:true,level:0,frames:[0.15,0.6,1.6,2.8]})', gid)
         after = pg.evaluate('([id,t])=>HM.test(id,{auto:true,level:0,frames:[t]})', [gid, max(0.05, win['doneAt'] + 0.35)])
         hard = pg.evaluate('id=>HM.test(id,{auto:true,level:2,speed:2,frames:[1.2]})', gid)
-        idle = pg.evaluate('id=>HM.test(id,{auto:false,level:0,frames:[]})', gid)
+        idle = pg.evaluate('id=>HM.test(id,{auto:false,level:0,frames:[],maxT:90})', gid)  # Heurēka!'s fuses are long (timeScale)
         want_idle = 'win' if g['winOnTimeout'] else 'fail'
         ok = win['result'] == 'win' and hard['result'] == 'win' and idle['result'] == want_idle
         line = f"{'OK  ' if ok else 'FAIL'} {gid:14s} {g['cmd']:12s} auto L0={win['result']}@{win['doneAt']}s/{win['dur']}s  auto L2x2={hard['result']}@{hard['doneAt']}s/{hard['dur']}s  idle={idle['result']} (want {want_idle})"
