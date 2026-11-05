@@ -10,7 +10,13 @@
 // Level 1: bigger numbers, x from 0 to 10; only the knob glows (the ghost hand shows the right direction after a pause).
 // Level 2: negative answers or negative constants (2x + 9 = 3, 3x − 4 = 8). Negative amounts are balloons: a balloon
 // pulls up instead of pushing down, so −1 is one balloon, and a crate worth −3 hangs from a balloon.
-// Medium mode: once it balances, the left total reads "3·4 + 2 = ?" and the player picks it from the tray.
+// Once it balances, the solve is acted out on the seesaw with the same operation under both sides (show your work):
+// "− 2" writes itself under both ends, the 2 weights on the crates and 2 weights from the right pile float away, the
+// "+ 2" painted on the beam is crossed out and 14 rolls over to 12; then "÷ 3" writes itself under both ends, two of
+// the three crates and two thirds of the right pile float away, the 3 is crossed out and 12 rolls over to 4, leaving
+// "x = 4" on the beam. The seesaw stays level all the way, because both sides always change by the same amount.
+// Medium mode: once it balances, the left total reads "3·4 + 2 = ?" and the player picks it from the tray; then the
+// solve plays.
 // Wrong part: tapping the crates (they cannot be moved, only x can be changed) makes them jiggle.
 //
 // The slider is a continuous gesture, so this file handles down/move/up itself (like calc_tangent.js). It still runs
@@ -84,15 +90,58 @@ function release(g) {
   S.offAt = g.t; S.om += (S.th > 0 ? 1 : -1) * 0.8; g.sfx('boing');
 }
 function snap(g) {
-  const S = g.s; S.done = true; S.snapAt = g.t; S.om += 0.6 * (S.th >= 0 ? -1 : 1);
+  const S = g.s; S.done = true; S.snapAt = g.t; S.om += 0.3 * (S.th >= 0 ? -1 : 1);
   g.sfx('snap'); g.sfx('cheer');
   const p = { x: PX, y: PY - 40 }; g.burst(p.x, p.y, ['#ffd45a', '#ff6a5a', '#7ad0ff', '#fff'], 18, 190);
   const kb = { x: knobX(S, S.x), y: TR_Y }; g.burst(kb.x, kb.y, ['#ffe27a', '#fff'], 10, 110);
+  const T = M.pace(g), len = solveLen(S, T);
   if (g.mode === 'medium') {
     const L = total(S, S.x), wrong = [S.a * S.x, S.a + S.x + S.b, S.a * (S.x + S.b), S.a * S.x - S.b, L + S.a].filter(w => w !== L);
-    S.asking = true; M.openAsk(g, { ask: { v: L, wrong }, after: 0, resolve(g) { S.asking = false; S.answered = true; S.ansAt = g.t; g.sfx('coin'); } });
+    S.asking = true; M.openAsk(g, { ask: { v: L, wrong }, after: len, resolve(g) { S.asking = false; S.ansAt = g.t; g.sfx('coin'); solve(g); } });
     S.mk.busyT = 1e9;
-  } else S.answered = true;
+  } else { M.show(g, 0.35 * T); M.at(g, [[0.35 * T, solve]]); S.answered = true; }
+}
+// ---------------- the solve, acted out with the same operation on both sides ----------------
+const solveLen = (S, T) => 2.15 * T;
+// a working note under one end of the beam (beam coordinates), written in and then faded
+function beamNote(g, S, node, x, T) { const n = M.wrap(node); n.write = { t0: g.t, dur: 0.22 * T }; S.notes.push({ n, x, t0: g.t, end: g.t + 0.95 * T }); }
+// move a pile from its old layout to a new one: kept items glide, extra old ones float away, extra new ones drop in
+function pileTo(g, S, key, list, T) { const old = S[key] || [], dur = 0.42 * T; S.trans[key] = { O: old, N: list, t0: g.t, dur }; S[key] = list; }
+function pileItems(g, S, key) {
+  const tr = S.trans[key], t = g.t; if (!tr || t > tr.t0 + tr.dur + 0.05) return (S[key] || []).map(q => ({ q, a: 1, dy: 0 }));
+  const k = easeIO((t - tr.t0) / tr.dur), out = [], P = q => Array.isArray(q) ? { x: q[0], y: q[1] } : q, mixp = (a, b) => Array.isArray(a) ? [lerp(a[0], b[0], k), lerp(a[1], b[1], k)] : { ...a, x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), ax: lerp(a.ax, b.ax, k), ay: lerp(a.ay, b.ay, k) };
+  const n = Math.min(tr.O.length, tr.N.length);
+  for (let i = 0; i < n; i++) out.push({ q: mixp(tr.O[i], tr.N[i]), a: 1, dy: 0 });
+  for (let i = n; i < tr.O.length; i++) out.push({ q: tr.O[i], a: 1 - k, dy: -46 * k, leave: true });
+  for (let i = n; i < tr.N.length; i++) out.push({ q: tr.N[i], a: k, dy: -40 * (1 - k) });
+  return out;
+}
+const rightPile = (S, n) => n > 0 ? { ballsR: pyramid(n, 8, SIDE, -BT / 2), balloonsR: [] } : { ballsR: [], balloonsR: [...Array(-n)].map((_, i) => ({ x: SIDE + (i - (-n - 1) / 2) * 17, y: -BT / 2 - 46 - (i % 2) * 14, ax: SIDE + (i - (-n - 1) / 2) * 8, ay: -BT / 2, col: i + 2 })) };
+function solve(g) {
+  const S = g.s, T = M.pace(g), { a, b, c, x } = S, len = solveLen(S, T), L = S.leftN.items, R = S.rightN.items[0], W = 26;
+  M.show(g, len); S.answered = true; S.solveAt = g.t; S.notes = S.notes || []; S.trans = S.trans || {};
+  const opB = M.row(M.op(b > 0 ? '-' : '+'), M.num(Math.abs(b))), opA = M.row(M.op('÷'), M.num(a));
+  // a part of the beam's equation leaves: the rest slides together (the left side stays centred under its weights)
+  const shrink = (g, keep) => { const w0 = M.lay(S.leftN, W).w; S.leftN.items = keep; const w1 = M.lay(S.leftN, W).w;
+    for (const q of keep) { q.dx = (w1 - w0) / 2; M.tween(g, q, { dx: 0 }, 0.25 * T); } };
+  M.at(g, [
+    // 1. undo the + b: the same amount leaves both sides
+    [0, g => { S.hlB = g.t; M.indicate(g, L[2], { dur: 0.3 * T, col: '#ffcf3a' }); M.indicate(g, L[3], { dur: 0.3 * T, col: '#ffcf3a' });
+      beamNote(g, S, opB, -SIDE, T); beamNote(g, S, M.row(M.op(b > 0 ? '-' : '+'), M.num(Math.abs(b))), SIDE, T); g.sfx('whoosh'); S.mk.lastMove = g.t; }],
+    [0.3 * T, g => { if (b > 0) pileTo(g, S, 'ballsL', [], T); else pileTo(g, S, 'balloonsL', [], T);
+      const r = rightPile(S, c - b); pileTo(g, S, 'ballsR', r.ballsR, T); pileTo(g, S, 'balloonsR', r.balloonsR, T); g.sfx('swoosh');
+      M.strike(g, L[2], { dur: 0.2 * T }); M.strike(g, L[3], { dur: 0.2 * T, delay: 0.06 * T }); }],
+    [0.62 * T, g => { M.roll(g, R, c - b, { dur: 0.3 * T }); M.tween(g, L[2], { alpha: 0 }, 0.2 * T); M.tween(g, L[3], { alpha: 0 }, 0.2 * T); g.sfx('tap'); }],
+    [0.88 * T, g => { shrink(g, [L[0], L[1]]); S.mk.lastMove = g.t; }],
+    // 2. undo the × a: both sides are split into a equal parts, and one part of each is kept
+    [1.0 * T, g => { M.indicate(g, L[0], { dur: 0.3 * T, col: '#ffcf3a' });
+      beamNote(g, S, opA, -SIDE, T); beamNote(g, S, M.row(M.op('÷'), M.num(a)), SIDE, T); g.sfx('whoosh'); }],
+    [1.3 * T, g => { S.crateGo = g.t; const r = rightPile(S, x); pileTo(g, S, 'ballsR', r.ballsR, T); pileTo(g, S, 'balloonsR', r.balloonsR, T); g.sfx('swoosh');
+      M.strike(g, L[0], { dur: 0.2 * T }); }],
+    [1.62 * T, g => { M.roll(g, R, x, { dur: 0.3 * T }); M.tween(g, L[0], { alpha: 0 }, 0.2 * T); g.sfx('tap'); }],
+    [1.88 * T, g => { shrink(g, [L[1]]); S.solvedAt = g.t; S.mk.lastMove = g.t; g.sfx('ding');
+      const p = toScreen(S, 0, 0); g.burst(p.x, p.y, ['#9affb0', '#fff', '#ffe27a'], 14, 140); }],
+  ]);
 }
 
 MG.add({
@@ -104,10 +153,10 @@ MG.add({
     ask: 'Which value of x balances 2x + 5 = 11? Check your answer by substituting it.',
   },
   init(g) {
-    const S = g.s; M.setup(g); Object.assign(S, pick(g)); layout(S);
+    const S = g.s; M.setup(g); Object.assign(S, pick(g)); layout(S); S.T = M.pace(g);
     S.v = 0; // x starts at 0 (never the answer)
     S.kx = knobX(S, S.v); S.th = tiltFor(total(S, S.v) - S.c); S.om = 0;
-    S.drag = null; S.poke = null; S.lastMoveT = 0;
+    S.drag = null; S.poke = null; S.lastMoveT = 0; S.notes = []; S.trans = {};
     S.leftN = leftNode(S); S.rightN = M.row(M.num(S.c)); S.eqN = M.row(M.op('='));
     M.zone(g, 'knob', { x: S.kx, y: TR_Y, w: 52, h: 52 });
     M.zone(g, 'crates', { x: PX - SIDE, y: PY - 40, w: 110, h: 56 });
@@ -257,10 +306,11 @@ function drawSeesaw(g, c, S) {
   const t = g.t, v = S.v, won = S.done;
   c.save(); c.translate(PX, PY); c.rotate(S.th);
   // balloon strings go behind everything
-  const balloons = [...S.balloonsL, ...S.balloonsR];
-  const crateNeg = v < 0, cb = S.crates.map((q, i) => ({ x: q.x - 8 + (i % 2) * 16, y: q.y - CS / 2 - 50 - (i % 2) * 10, ax: q.x, ay: q.y - CS / 2 + 2, col: i + 4 }));
-  const allB = [...balloons, ...(crateNeg ? cb : [])];
-  for (const b of allB) { const sw = Math.sin(t * 1.8 + b.col) * 3; c.strokeStyle = 'rgba(255,250,235,0.75)'; c.lineWidth = 1; c.beginPath(); c.moveTo(b.ax, b.ay); c.quadraticCurveTo((b.ax + b.x) / 2 + sw, (b.ay + b.y) / 2, b.x + sw, b.y + 10); c.stroke(); }
+  // after "÷ a", every crate but the first floats up and away
+  const cgo = S.crateGo != null ? easeIO((t - S.crateGo) / (0.42 * (S.T || 1))) : 0, ca = i => i === 0 ? 1 : 1 - cgo, cdy = i => i === 0 ? 0 : -46 * cgo;
+  const crateNeg = v < 0, cb = S.crates.map((q, i) => ({ q: { x: q.x - 8 + (i % 2) * 16, y: q.y - CS / 2 - 50 - (i % 2) * 10 + cdy(i), ax: q.x, ay: q.y - CS / 2 + 2 + cdy(i), col: i + 4 }, a: ca(i), dy: 0 }));
+  const allB = [...pileItems(g, S, 'balloonsL'), ...pileItems(g, S, 'balloonsR'), ...(crateNeg ? cb : [])].filter(it => it.a > 0.01);
+  for (const it of allB) { const b = it.q, sw = Math.sin(t * 1.8 + b.col) * 3; c.save(); c.globalAlpha = it.a; c.translate(0, it.dy); c.strokeStyle = 'rgba(255,250,235,0.75)'; c.lineWidth = 1; c.beginPath(); c.moveTo(b.ax, b.ay); c.quadraticCurveTo((b.ax + b.x) / 2 + sw, (b.ay + b.y) / 2, b.x + sw, b.y + 10); c.stroke(); c.restore(); }
   // the beam: a painted plank with gold studs
   c.fillStyle = 'rgba(40,8,20,0.3)'; rr(c, -HALF + 2, -BT / 2 + 5, HALF * 2, BT, 9); c.fill();
   const bg = c.createLinearGradient(0, -BT / 2, 0, BT / 2); bg.addColorStop(0, '#ffd890'); bg.addColorStop(0.5, '#e8a85a'); bg.addColorStop(1, '#b0682c');
@@ -268,17 +318,23 @@ function drawSeesaw(g, c, S) {
   c.fillStyle = '#c42a3c'; c.fillRect(-HALF + 6, -BT / 2 + 3, HALF * 2 - 12, 3); c.fillRect(-HALF + 6, BT / 2 - 6, HALF * 2 - 12, 3);
   c.fillStyle = '#ffe9a8'; for (const x of [-HALF + 9, HALF - 9]) { c.beginPath(); c.arc(x, 0, 3.4, 0, 7); c.fill(); }
   // the equation, painted along the beam
-  const balanced = Math.abs(total(S, v) - S.c) === 0, ink = '#5a1424';
+  const balanced = Math.abs(total(S, v) - S.c) === 0, ink = S.solvedAt != null ? '#1f7a44' : '#5a1424';
   for (const [n, cx] of [[S.leftN, -SIDE], [S.eqN, 0], [S.rightN, SIDE]]) { const m = M.lay(n, 26); M.draw(c, n, cx - m.w / 2, 9, 26, { t, col: n === S.eqN && balanced ? '#1f7a44' : ink }); }
   // the pivot pin
   c.fillStyle = '#ffe08a'; c.strokeStyle = '#7a4a14'; c.lineWidth = 2; c.beginPath(); c.arc(0, BT / 2 + 1, 5, 0, 7); c.fill(); c.stroke();
   // weights on the right, crates and their weights on the left
-  for (const [x, y] of S.ballsR) ball(c, x, y);
+  const drawBalls = key => { for (const it of pileItems(g, S, key)) { if (it.a <= 0.01) continue; c.save(); c.globalAlpha = it.a; ball(c, it.q[0], it.q[1] + it.dy); c.restore(); } };
+  drawBalls('ballsR');
   const wob = S.crateWobAt != null && t - S.crateWobAt < 0.45 ? (1 - (t - S.crateWobAt) / 0.45) : 0;
   const lift = crateNeg ? -4 - Math.sin(t * 2.2) * 1.5 : 0;
-  S.crates.forEach((q, i) => crate(c, q.x + Math.sin(t * 40 + i) * 3 * wob, q.y + lift, v, S.vAt != null && t - S.vAt < 0.2 ? 1 - (t - S.vAt) / 0.2 : 0, won ? (t - S.snapAt) : -1, wob > 0));
-  for (const [x, y] of S.ballsL) ball(c, x + Math.sin(t * 40) * 3 * wob, y + lift);
-  for (const b of allB) balloon(c, b.x + Math.sin(t * 1.8 + b.col) * 3, b.y + Math.sin(t * 2.3 + b.col) * 2, b.col);
+  S.crates.forEach((q, i) => { if (ca(i) <= 0.01) return; c.save(); c.globalAlpha = ca(i); crate(c, q.x + Math.sin(t * 40 + i) * 3 * wob, q.y + lift + cdy(i), v, S.vAt != null && t - S.vAt < 0.2 ? 1 - (t - S.vAt) / 0.2 : 0, won ? (t - S.snapAt) : -1, wob > 0); c.restore(); });
+  c.save(); c.translate(Math.sin(t * 40) * 3 * wob, lift); drawBalls('ballsL'); c.restore();
+  for (const it of allB) { const b = it.q; c.save(); c.globalAlpha = it.a; balloon(c, b.x + Math.sin(t * 1.8 + b.col) * 3, b.y + it.dy + Math.sin(t * 2.3 + b.col) * 2, b.col); c.restore(); }
+  // the working notes under each end of the beam ("− 2", "÷ 3"): written in, then faded
+  S.notes = (S.notes || []).filter(q => t < q.end + 0.3);
+  for (const q of S.notes) { const m = M.lay(q.n, 24), al = t < q.end ? 1 : 1 - (t - q.end) / 0.3; c.save(); c.globalAlpha = clamp(al, 0, 1);
+    c.fillStyle = 'rgba(40,8,24,0.78)'; rr(c, q.x - m.w / 2 - 9, BT / 2 + 8, m.w + 18, 30, 15); c.fill(); c.strokeStyle = '#ffcf3a'; c.lineWidth = 1.5; c.stroke();
+    M.draw(c, q.n, q.x - m.w / 2, BT / 2 + 31, 24, { t, col: '#ffe9a0' }); c.restore(); }
   // penguins ride the ends: arms out while it tips, flapping on the high end after an off-balance try
   const tip = S.th, off = S.offAt != null && t - S.offAt < 0.7;
   for (const sd of [-1, 1]) {

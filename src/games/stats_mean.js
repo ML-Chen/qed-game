@@ -3,12 +3,15 @@
 // the plank at their values (two penguins with the same value stand one on the other's head). The player slides the
 // fulcrum along under the plank; the plank tilts in real time toward the heavier side (its tilt follows the mean minus
 // the fulcrum's position, on a springy wobble) and is level only when the fulcrum sits at the mean.
-// Released close to the mean, the fulcrum snaps to it, the plank settles level, the penguins cheer and the computation
-// (2 + 3 + 3 + 8) ÷ 4 = 16 ÷ 4 = 4 is painted on the plank. Released anywhere else, the plank stays tilted and the
+// Released close to the mean, the fulcrum snaps to it, the plank settles level and the penguins cheer. Then the working
+// is acted out on the plank (show your work): each penguin's value tag sends a copy of its number down onto the plank,
+// one after another, building (2 + 3 + 3 + 8); the tags are counted off (1, 2, 3, 4) and "÷ 4" writes itself; the sum
+// collapses into 16, the "÷ 4" slides into it and 16 rolls over to 4, and the 4 drops to the fulcrum's tip, where
+// "mean = 4" appears. The fuse stands still while the working plays. Released anywhere else, the plank stays tilted and the
 // penguins windmill their flippers; the player tries again. Only the timer ends the microgame.
 // Level 0: three whole numbers on 0–10, a wide snap. Level 1: four numbers. Level 2: a mean ending in .5, or one value
 // far out (an outlier) on a 0–12 line that drags the mean toward it; a tight snap and no glow when close.
-// Medium mode: once the plank balances, the sum is a "?" on the plank and the player picks it from the tray.
+// Medium mode: once "(2 + 3 + 3 + 8) ÷ 4" is on the plank, the player picks the sum from the tray.
 //
 // The kit's moves are discrete taps and drags, so this file runs the continuous fulcrum drag itself (like
 // calc_tangent.js): moves(g) returns one placeholder drag move until the balance is found (and, in medium mode, the sum
@@ -51,13 +54,10 @@ MG.add({
     S.th = clamp((S.mean - S.f) * 0.08, -maxTh(S, S.f), maxTh(S, S.f)); S.thv = 0;
     // the penguins: duplicates stand on each other's heads
     const seen = {}; S.pg = S.vals.map((v, i) => { const k = seen[v] = (seen[v] ?? -1) + 1; return { v, k, i, ph: i * 1.7, flapAt: -9, squawkAt: -9 }; });
-    S.drag = null; S.lastMoveT = 0; S.solved = false; S.answered = false; S.missAt = -9; S.hitAt = -9;
+    S.tagPop = {}; S.T0 = M.pace(g); S.drag = null; S.lastMoveT = 0; S.solved = false; S.answered = false; S.missAt = -9; S.hitAt = -9;
     M.zone(g, 'fulcrum', fulBox(S));
     S.pg.forEach((p, i) => M.zone(g, 'pg' + i, penBox(S, p)));
     M.inert(g, []);
-    // the computation that gets painted on the plank
-    S.addNode = M.paren(M.row(...S.vals.flatMap((v, i) => [i ? M.op('+') : null, M.num(v)])));
-    S.sumSlot = g.mode === 'medium' ? M.slot('sum', { col: '#fff3d8' }) : null;
     M.play(g, {
       moves(g) { return S.answered ? [] : [{ drag: 'fulcrum', to: 'mean' }]; },
       area(g) { return 'fulcrum'; },
@@ -118,7 +118,7 @@ MG.add({
     drawFulcrum(g, c, S);
     drawPlank(g, c, S);
     drawGuide(g, c, S);
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });
 
@@ -133,16 +133,47 @@ const PS = 0.74, STACK = 45;
 function penBox(S, p) { const q = rot(S, X(S, p.v), PY - p.k * STACK - 24); return { x: q.x, y: q.y, w: 28, h: 44 }; }
 
 function balance(g) {
-  const S = g.s; S.solved = true; S.snap = { t0: g.t, from: S.f }; S.solveAt = g.t; S.thv += (S.th > 0 ? -1 : 1) * 0.6;
+  const S = g.s, T = S.T0 = M.pace(g), n = S.vals.length; S.solved = true; S.snap = { t0: g.t, from: S.f }; S.solveAt = g.t; S.thv += (S.th > 0 ? -1 : 1) * 0.6;
   g.sfx('snap'); g.sfx('sparkle'); S.pg.forEach(p => { p.cheerAt = g.t; });
   const tip = { x: X(S, S.mean), y: PIV }; g.burst(tip.x, tip.y, ['#fff6c0', '#8ae0ff', '#ffffff'], 16, 150);
+  // the working line on the plank: (2 + 3 + 3 + 8) ÷ 4, its numbers empty until they land from the tags
+  S.vn = S.vals.map((v, i) => M.num(v, 'v' + i, { alpha: 0 })); S.pn = S.vals.map((v, i) => i ? M.op('+', null, { alpha: 0 }) : null);
+  S.par = M.paren(M.row(...S.vals.flatMap((v, i) => [S.pn[i], S.vn[i]])), 'par', { alpha: 0 });
+  S.dv = M.op('÷', 'dv', { alpha: 0 }); S.dn = M.num(n, 'dn', { alpha: 0 }); S.ex = M.row(S.par, S.dv, S.dn); S.ex.id = 'plx';
+  let fs = 22; const w = M.lay(S.ex, fs).w; if (w > PL1 - PL0 - 24) fs *= (PL1 - PL0 - 24) / w; S.fs = fs;
+  S.relay = () => M.place(g, 'plank', S.ex, 180, PY + PT / 2 + fs * 0.3, fs, { col: '#fff6e4' }); S.relay();
+  M.show(g, 0.4 * T); M.tween(g, S.par, { alpha: 1 }, 0.2 * T, { delay: 0.25 * T });
+  // the order the tags send their numbers: left to right along the plank
+  const fly0 = 0.35 * T, gapT = 0.15 * T, flyT = 0.3 * T, landAll = fly0 + (n - 1) * gapT + flyT;
+  S.vals.forEach((v, i) => M.at(g, [[fly0 + i * gapT, g => {
+    const p = S.pg[i], tg = tagPos(S, v), q = rot(S, tg.x, tg.y); S.tagPop[v] = g.t; p.hopAt = g.t; p.countAt = g.t; p.countN = i + 1; g.sfx('pop');
+    M.fly(g, { node: M.num(v), col: '#fff6e4', from: [q.x, q.y], to: 'v' + i, dur: flyT, arc: -30, s0: 15, s1: fs,
+      then(g) { S.vn[i].alpha = 1; S.vn[i].pop = g.t; if (S.pn[i]) M.tween(g, S.pn[i], { alpha: 1 }, 0.12 * T); g.sfx('tap'); } }); }]]));
+  const divAt = landAll + 0.05 * T, askAt = divAt + 0.3 * T; // the count (1, 2, 3, ...) popped beside each penguin as it sent its number: ÷ n
+  M.at(g, [[divAt, g => { S.dv.alpha = 1; S.dn.alpha = 1; M.writeIn(g, S.dv, { dur: 0.12 * T }); M.writeIn(g, S.dn, { dur: 0.14 * T, delay: 0.1 * T }); M.indicate(g, S.dn, { delay: 0.22 * T, dur: 0.3 * T, col: '#ffe27a' }); }]]);
+  M.show(g, askAt);
+  const resolve = g => { const R = 1.35 * T; M.show(g, R); S.answered = true; S.ansAt = g.t;
+    M.at(g, [
+      [0, g => { M.circle(g, 'par', { dur: 0.35 * T, col: '#ffe27a' }); }],
+      [0.25 * T, g => { // the sum collapses into one number (the old numbers fly into it)
+        S.sm = M.num(S.sum, 'sm', { col: '#ffe9a0', pop: g.t }); S.ex.items[0] = S.sm; S.relay(); M.sparkle(g, 'sm', { n: 8 }); g.sfx('coin'); S.pg.forEach(p => p.hopAt = g.t); }],
+      [0.62 * T, g => { // ÷ n slides into the sum, which rolls over to the mean
+        const bs = M.box(g, 'sm'); for (const q of [S.dv, S.dn]) { const b = M.box(g, q.id); if (b && bs) M.tween(g, q, { dx: bs.x - b.x, alpha: 0, sc: 0.5 }, 0.24 * T); }
+        M.roll(g, S.sm, fmt(S.mean), { delay: 0.1 * T, dur: 0.3 * T }); }],
+      [0.95 * T, g => { S.ex.items = [S.sm]; S.relay(); S.sm.col = '#fff27a'; M.indicate(g, S.sm, { dur: 0.3 * T, col: '#fff27a' }); g.sfx('ding');
+        const b = M.box(g, 'sm'); M.fly(g, { node: M.num(fmt(S.mean)), col: '#fff27a', from: [b.x, b.y], to: [clamp(X(S, S.mean), 54, 306), GY + 22], dur: 0.32 * T, arc: 30, s0: S.fs, s1: 15,
+          then(g) { S.labelAt = g.t; g.sfx('chime'); g.burst(X(S, S.mean), GY + 22, ['#fff27a', '#ffffff', '#8ae0ff'], 12, 120); S.pg.forEach(p => p.cheerAt = g.t); } }); }],
+    ]); };
   if (g.mode === 'medium') {
-    const s = S.sum, n = S.vals.length;
-    const wrong = [s + 1, s - 1, s - S.vals[0], S.mean, s + S.vals[n - 1], s - 2];
-    S.mk.busyT = 1e9;
-    M.openAsk(g, { ask: { v: s, wrong }, after: 0.05, resolve(g) { S.sumSlot.fill = M.num(s); S.answered = true; S.ansAt = g.t; g.sfx('coin'); } });
-  } else { S.answered = true; S.ansAt = g.t; }
+    // the tray asks for the sum in the brackets (the mean itself is not offered, so the question is never ambiguous)
+    const s = S.sum, wrong = [s + 1, s - 1, s - S.vals[0], s + S.vals[n - 1], s - 2].filter(w => w !== S.mean);
+    S.mk.busyT = 1e9; M.at(g, [[askAt, g => { M.light(g, S.par, { col: '#ffe27a' }); M.openAsk(g, { ask: { v: s, wrong }, after: 1.35 * T, resolve(g) { M.unlight(g, S.par); resolve(g); } }); }]]);
+  } else M.at(g, [[askAt, resolve]]);
 }
+// where a value's tag sits above its column of penguins (level-plank coordinates)
+function tagPos(S, v) { let top = -1; for (const p of S.pg) if (p.v === v) top = Math.max(top, p.k); const vs = [...new Set(S.vals)].sort((a, b) => a - b); let prevX = -99, prevUp = 0, up = 0;
+  for (const u of vs) { up = X(S, u) - prevX < 28 && !prevUp ? 1 : 0; prevX = X(S, u); prevUp = up; if (u === v) break; }
+  return { x: X(S, v), y: PY - top * STACK - 62 - up * 22 }; }
 
 // ---------------- the world ----------------
 function polar(c, w, h) {
@@ -219,7 +250,7 @@ function drawFulcrum(g, c, S) {
 // ---------------- the plank and the penguins ----------------
 function drawPlank(g, c, S) {
   const t = g.t, fx = X(S, S.f), close = S.drag && g.level < 2 && Math.abs(S.f - S.mean) <= TOL[g.level];
-  const won = g.done && g.result === 'win', solvedK = S.solved ? clamp((t - S.solveAt) / 0.3, 0, 1) : 0;
+  const won = g.done && g.result === 'win', solvedK = S.solved ? clamp((t - S.solveAt - 0.2) / 0.3, 0, 1) : S.shown > 0.99 ? 1 : 0;
   c.save(); c.translate(fx, PIV); c.rotate(S.th); c.translate(-fx, -PIV);
   // the plank
   c.fillStyle = 'rgba(30,50,80,0.25)'; rr(c, PL0 + 3, PY + 5, PL1 - PL0, PT, 7); c.fill();
@@ -236,13 +267,17 @@ function drawPlank(g, c, S) {
   c.font = '800 13px Fredoka, Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
   for (let v = 0; v <= S.R; v++) c.fillText(String(v), X(S, v), PY + 20);
   c.restore();
-  // the computation, painted on the plank once it balances
-  if (S.solved || S.shown > 0.99) {
-    const n = S.vals.length, done = S.answered || !S.sumSlot || S.shown;
-    if (S.shown && S.sumSlot && !S.sumSlot.fill) S.sumSlot.fill = M.num(S.sum);
-    const node = M.row(S.addNode, M.op('÷'), M.num(n), M.op('='), S.sumSlot || M.num(S.sum), ...(done ? [M.op('÷'), M.num(n), M.op('='), M.num(S.mean, null, { col: '#fff27a' })] : []));
+  // the working, painted on the plank once it balances (built number by number from the tags); after a timeout the
+  // whole computation appears at once
+  if (S.ex) {
+    // a dark band behind the working, as wide as the working line (it narrows smoothly as the line shrinks)
+    const w = M.lay(S.ex, S.fs).w, k = ease((t - S.solveAt - 0.2 * S.T0) / 0.25); S.bw = S.bw == null ? w : S.bw + (w - S.bw) * 0.2;
+    c.save(); c.globalAlpha = clamp(k, 0, 1); c.fillStyle = 'rgba(60,25,10,0.55)'; rr(c, 180 - S.bw / 2 - 8, PY + 3, S.bw + 16, PT - 6, 6); c.fill(); c.restore();
+    M.drawEx(g, c, 'plank');
+  } else if (S.shown > 0.99) {
+    const n = S.vals.length, node = M.row(M.paren(M.row(...S.vals.flatMap((v, i) => [i ? M.op('+') : null, M.num(v)]))), M.op('÷'), M.num(n), M.op('='), M.num(S.sum), M.op('÷'), M.num(n), M.op('='), M.num(fmt(S.mean), null, { col: '#fff27a' }));
     let s = 21; const w = M.lay(node, s).w; if (w > PL1 - PL0 - 16) s *= (PL1 - PL0 - 16) / w;
-    const k = ease((t - (S.solveAt ?? g.doneAt)) / 0.25), m = M.lay(node, s);
+    const k = ease((t - g.doneAt) / 0.25), m = M.lay(node, s);
     c.save(); c.globalAlpha = Math.min(1, k * 1.2); c.translate(180, PY + PT / 2); c.scale(0.7 + 0.3 * k, 0.7 + 0.3 * k);
     c.fillStyle = 'rgba(60,25,10,0.55)'; rr(c, -m.w / 2 - 8, -PT / 2 + 2, m.w + 16, PT - 4, 6); c.fill();
     M.draw(c, node, -m.w / 2, (m.a - m.d) / 2, s, { t, col: '#fff6e4' }); c.restore();
@@ -252,12 +287,12 @@ function drawPlank(g, c, S) {
   const order = S.pg.slice().sort((a, b) => a.k - b.k);
   for (const p of order) {
     const x = X(S, p.v), y = PY - p.k * STACK;
-    const flap = t - p.flapAt < 0.8 && t >= p.flapAt, sq = t - p.squawkAt < 0.5, cheer = won || (S.solved && t - S.solveAt < 0.9);
-    const low = (S.th > 0 && x > fx) || (S.th < 0 && x < fx);
-    const pose = cheer ? 'cheer' : flap || sq ? 'balance' : tilted ? 'balance' : 'idle';
+    const flap = t - p.flapAt < 0.8 && t >= p.flapAt, sq = t - p.squawkAt < 0.5, cheer = won || (S.solved && t - S.solveAt < 0.35) || (p.cheerAt != null && S.labelAt != null && t - p.cheerAt < 0.8);
+    const low = (S.th > 0 && x > fx) || (S.th < 0 && x < fx), hk = p.hopAt != null && t - p.hopAt < 0.3 ? Math.sin((t - p.hopAt) / 0.3 * Math.PI) : 0;
+    const pose = cheer ? 'cheer' : hk > 0 ? 'hop' : flap || sq ? 'balance' : tilted ? 'balance' : 'idle';
     const expr = cheer ? 'laugh' : sq ? 'wow' : flap ? 'wow' : tilted && low ? 'wow' : tilted ? 'think' : 'happy';
     const jig = sq ? Math.sin((t - p.squawkAt) * 40) * 2 : 0;
-    try { ANI.draw(c, 'penguin', x + jig, y, PS, { t, phase: p.ph, pose, expr, facing: x > 180 ? -1 : 1, noShadow: p.k > 0 }); }
+    try { ANI.draw(c, 'penguin', x + jig, y - hk * 10, PS, { t, phase: p.ph, pose, expr, facing: x > 180 ? -1 : 1, noShadow: p.k > 0 }); }
     catch (e) { P.sheep(c, x, y, 0.5, { t }); }
   }
   // a tag above each column of penguins with its value
@@ -266,15 +301,22 @@ function drawPlank(g, c, S) {
   for (const v of Object.keys(tops).map(Number).sort((p, q) => p - q)) {
     const up = X(S, v) - prevX < 28 && !prevUp ? 1 : 0; prevX = X(S, v); prevUp = up;
     const x = X(S, v), y = PY - tops[v] * STACK - 62 - up * 22, txt = fmt(v);
+    const tp = S.tagPop[v] != null && t - S.tagPop[v] < 0.35 ? Math.sin((t - S.tagPop[v]) / 0.35 * Math.PI) : 0;
+    c.save(); c.translate(x, y); c.scale(1 + tp * 0.35, 1 + tp * 0.35); c.translate(-x, -y); if (tp > 0) { c.shadowColor = '#ffe27a'; c.shadowBlur = 14 * tp; }
     c.font = '700 15px Fredoka, Nunito, system-ui, sans-serif'; const w = Math.max(22, c.measureText(txt).width + 12);
     c.fillStyle = 'rgba(255,255,255,0.92)'; rr(c, x - w / 2, y - 10, w, 20, 10); c.fill(); c.strokeStyle = 'rgba(40,70,120,0.5)'; c.lineWidth = 1.5; c.stroke();
     c.beginPath(); c.moveTo(x - 4, y + 10); c.lineTo(x, y + 15); c.lineTo(x + 4, y + 10); c.closePath(); c.fillStyle = 'rgba(255,255,255,0.92)'; c.fill();
-    c.fillStyle = '#23305a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 1);
+    c.fillStyle = '#23305a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, x, y + 1); c.restore();
   }
+  // counting the values: a number pops beside each penguin as it is counted (two at one value are counted one by one)
+  for (const p of S.pg) { if (p.countAt == null) continue; const k = (t - p.countAt) / (0.9 * S.T0); if (k < 0 || k > 1) continue;
+    const x = X(S, p.v) + 15, y = PY - p.k * STACK - 30, a = k < 0.15 ? k / 0.15 : k > 0.75 ? (1 - k) / 0.25 : 1, sc = 0.6 + 0.4 * ease(k / 0.2);
+    c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(sc, sc); c.fillStyle = '#ffe27a'; c.strokeStyle = '#7a3d10'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = '#5a2a08'; c.font = '800 12px Fredoka, Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(p.countN), 0, 1); c.restore(); }
   c.restore();
   // the balance point mark under the plank's tip, with its value
-  if (S.solved || S.shown > 0.99) {
-    const k = ease((t - (S.solveAt ?? g.doneAt)) / 0.3), x = X(S, S.mean);
+  if (S.labelAt != null || S.shown > 0.99) {
+    const k = ease((t - (S.labelAt ?? g.doneAt)) / 0.3), x = X(S, S.mean);
     c.save(); c.globalAlpha = k; c.font = '800 15px Fredoka, Nunito, system-ui, sans-serif'; const txt = 'mean = ' + fmt(S.mean), w = c.measureText(txt).width + 16;
     const bx = clamp(x, w / 2 + 6, 354 - w / 2), by = GY + 22;
     c.fillStyle = S.shown ? 'rgba(110,70,10,0.88)' : 'rgba(20,80,60,0.88)'; rr(c, bx - w / 2, by - 11, w, 22, 11); c.fill();

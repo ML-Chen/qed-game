@@ -5,7 +5,13 @@
 // second firefly carries a copy of the d/dx to a copy of the inside:
 //   (3x + 1)⁴  →  4(3x + 1)^(4 − 1) · d/dx(3x + 1)
 // Then, in any valid order: tap "4 − 1" (→ 3); drag the new firefly onto the inside bubble, or tap it (→ 3); once the
-// inside is done, drag the 3 onto the 4 or tap the "·" (→ 12). Every result appears at once; nothing waits on an animation.
+// inside is done, drag the 3 onto the 4 or tap the "·" (→ 12). Every move acts out its working by itself (show your work):
+//   1. The outside lights up while the inside stays wrapped and glows amber; the power drops down in front, a chalk
+//      "− 1" writes itself beside it, and a copy of the d/dx and of the inside fly out to the end of the line.
+//   2. The − 1 slides into the power, which rolls down by one like an odometer (a far frog croaks it out).
+//   3. The frog's tongue pops the inside bubble: constants are crossed out, "2x²⁻¹ + 0 = 2x" writes itself under it,
+//      and the inside's derivative flies up into its place.
+//   4. "4 × 3 = 12" writes itself above the line and the product flies down in front (for sin and e it hops to the front).
 // Dragging the d/dx onto the inside first is the classic mistake (forgetting the outer function): a miss from level 1.
 // Level 0: (ax ± b)ⁿ. Level 1: (x² + b)ⁿ. Level 2: (cx³ − b)², sin(xᵐ) or e^(ax).
 // Medium mode: each computing move opens a tray (sin → cos, n − 1, the inside's derivative, the final product).
@@ -196,108 +202,142 @@ MG.add({
     ask: 'What is the derivative of (2x + 5)³? What is the derivative of (x² + 4)²?',
   },
   init(g) {
-    const S = g.s; M.setup(g); const Q = S.Q = pick(g), D = S.D = innerD(Q);
-    S.f = {}; // progress: out (outside done), sub (n − 1 done), inn (inside done), prod (multiplied)
+    const S = g.s; M.setup(g); const Q = S.Q = pick(g), D = S.D = innerD(Q), T = M.pace(g), pow = Q.fam === 'pow';
+    S.f = {}; // move flags: out (outside done), sub (n − 1 done), inn (inside done), prod (multiplied)
+    S.st = { out: false, tail: 'none', front: false }; // what the working line shows right now (it changes on the beats)
     S.fx = []; S.frog = { hopT: -9, sadAt: -9, tongue: null }; S.croakT = [-9, -9]; S.flash = -9; S.flare = -9;
-    if (Q.fam !== 'pow') S.f.sub = true;
-    const iRow = (p, o) => {
-      const items = p === 'i' && S.wrongInner ? [coefX(D.gc, D.v, null, { mark: 'bad' })] : innerTokens(Q, p);
-      const r = M.row(...items); r.id = p || undefined; return Object.assign(r, o);
-    };
-    S.jIds = walkIds(iRow('j'));
-    // the outer layer around the inside (ids on every part, so a wrong target can be hit)
-    const outer = (o = {}) => {
-      if (Q.fam === 'pow') {
-        if (!S.f.out) return M.sup(M.paren(iRow('i'), 'shell', { col: BRK }), M.num(Q.n, 'n'), 'outer');
-        const n1 = Q.n - 1, E = !S.f.sub ? (() => { const r = M.row(M.num(Q.n, null, { col: BLUE }), M.op('-'), M.num(1)); r.id = 's'; return r; })() : n1 === 1 ? null : M.num(n1, 'n2');
-        return E ? M.sup(M.paren(iRow('i'), 'shell', { col: BRK }), E, 'outer') : M.paren(iRow('i'), 'outer', { col: BRK });
-      }
-      if (Q.fam === 'sin') { const fn = !S.f.out ? M.txt('sin', 'fn') : S.fnPend ? M.slot('fn', { col: STAR }) : M.txt('cos', 'fn'); const r = M.row(fn, M.paren(iRow('i'), 'shell', { col: BRK })); r.id = 'outer'; return r; }
-      return M.sup(M.vr('e', 'eb'), iRow('i'), 'outer');
-    };
-    // the whole working line, rebuilt from the progress flags
-    S.build = () => {
-      const f = S.f, L = [M.op('=', 'eq')], sp = n => [M.gap(16), n, M.gap(14)]; // room for the outer bubble's glow
-      if (!f.out) return M.row(...L, sp(outer()));
-      const tail = f.prod ? [] : [M.op('·', 'dot'), ...(f.inn ? [coefX(D.gc, D.v, 'g')] : [M.gap(4), ddxD('d1'), M.gap(4), M.paren(iRow('j'), 'jp', { col: BRK })])];
-      if (Q.fam === 'pow') {
-        const K = !f.prod ? M.num(Q.n, 'k') : S.prodPend ? M.paren(M.row(M.num(Q.n), M.op('·'), coefX(D.gc, D.v, null, { col: BLUE })), 'k') : coefX(Q.n * D.gc, D.v, 'k');
-        return M.row(...L, K, sp(outer()), ...tail);
-      }
-      if (f.prod) return M.row(...L, coefX(D.gc, D.v, 'g'), Q.fam === 'sin' ? M.gap(5) : null, sp(outer()));
-      return M.row(...L, sp(outer()), ...tail);
-    };
-    // one size for every form of the line: the size that fits the widest form across the screen
-    const f0 = S.f; S.f = { ...f0, out: true }; const wide = M.lay(S.build(), 40).w / 40; S.f = f0;
-    S.ws = Math.min(46, 324 / wide); S.wy = 322; S.x0 = Math.max(16, 180 - wide * S.ws / 2);
-    const probN = M.row(M.ddx('x', 'ddx'), Q.fam === 'pow' ? M.sup(M.paren(M.row(...innerTokens(Q, null))), M.num(Q.n)) : Q.fam === 'sin' ? M.row(M.txt('sin'), M.paren(M.row(...innerTokens(Q, null)))) : M.sup(M.vr('e'), M.row(...innerTokens(Q, null))));
+    if (!pow) S.f.sub = S.subLanded = true;
+    // the working line's parts, made once and reused, so every symbol glides to its new place as the line is rewritten
+    S.eq = M.op('=', 'eq'); S.iIn = M.row(...innerTokens(Q, 'i')); S.iIn.id = 'i';
+    if (pow) { S.E = M.num(Q.n, 'n'); S.outer = M.sup(M.paren(S.iIn, 'shell', { col: BRK }), S.E, 'outer'); S.K = M.num(Q.n, 'k', { alpha: 0 }); }
+    else if (Q.fam === 'sin') { S.fn = M.txt('sin', 'fn'); S.outer = M.row(S.fn, M.paren(S.iIn, 'shell', { col: BRK })); S.outer.id = 'outer'; }
+    else { S.outer = M.sup(M.vr('e', 'eb'), S.iIn, 'outer'); }
+    S.dot = M.op('·', 'dot', { alpha: 0 }); S.d1 = ddxD('d1'); S.d1.alpha = 0;
+    S.jIn = M.row(...innerTokens(Q, 'j')); S.jIn.id = 'j'; S.jp = M.paren(S.jIn, 'jp', { col: BRK, alpha: 0 });
+    S.jIds = walkIds(S.jIn);
+    const sp = n => [M.gap(16), n, M.gap(14)]; // room for the outer bubble's glow
+    const lineNode = () => { const st = S.st, tail = st.tail === 'dd' ? [S.dot, M.gap(4), S.d1, M.gap(4), S.jp] : st.tail === 'g' ? [S.dot, S.G] : [];
+      if (pow) return M.row(S.eq, st.out ? S.K : null, sp(S.outer), tail);
+      return M.row(S.eq, st.front ? [S.G, Q.fam === 'sin' ? M.gap(5) : null] : null, sp(S.outer), tail); };
+    // one size for every form of the line: the size at which its widest form fits across the screen
+    const inn = () => M.paren(M.row(...innerTokens(Q, null))), wideN = M.row(M.op('='), pow ? M.num(Q.n) : null, M.gap(16),
+      pow ? M.sup(inn(), M.row(M.num(Q.n), M.op('-'), M.num(1))) : Q.fam === 'sin' ? M.row(M.txt('cos'), inn()) : M.sup(M.vr('e'), M.row(...innerTokens(Q, null))),
+      M.gap(14), M.op('·'), M.gap(4), M.ddx(), M.gap(4), inn());
+    const wide = M.lay(wideN, 40).w / 40; S.ws = Math.min(46, 324 / wide); S.wy = 322; S.x0 = Math.max(16, 180 - wide * S.ws / 2);
+    const probN = M.row(M.ddx('x', 'ddx'), pow ? M.sup(inn(), M.num(Q.n)) : Q.fam === 'sin' ? M.row(M.txt('sin'), inn()) : M.sup(M.vr('e'), M.row(...innerTokens(Q, null))));
     M.place(g, 'prob', probN, 180, 222, 30, { col: STAR });
     // the firefly with the d/dx hovers by the frog
     S.ff = { x: 246, y: 446 }; M.place(g, 'fd', M.row(ddxD('d0')), S.ff.x, S.ff.y + 12, 38);
     // the line is left-aligned while it grows and shrinks; the finished answer is centred
-    S.relay = () => { const n = S.build(), done = S.f.prod && S.f.sub; M.place(g, 'work', n, done ? 180 - M.lay(n, S.ws).w / 2 : S.x0, S.wy, S.ws, { left: true, col: INKL }); };
-    S.relay();
-    M.inert(g, ['eq', 'ddx']);
-    const nMoves = Q.fam === 'pow' ? 4 : 3; g.dur *= (2.6 + 1.05 * nMoves) / 8;
+    const isFinal = () => S.centre;
+    S.relay = () => { const n = lineNode(); M.place(g, 'work', n, isFinal() ? 180 - M.lay(n, S.ws).w / 2 : S.x0, S.wy, S.ws, { left: true, col: INKL }); };
+    S.relay(); S.mk.relay = S.relay;
+    M.inert(g, ['eq', 'ddx', 'ne', 'sm', 'so', 'n2']);
+    const nMoves = pow ? 4 : 3; g.dur *= (2.6 + 1.05 * nMoves) / 8;
 
-    const pop = (...ids) => ids.forEach(id => { const n = M.node(g, id); if (n) n.pop = g.t; });
     const boxOf = id => { const b = M.box(g, id); return b ? { ...b } : null; };
     const burst = (id, cols) => { const b = M.box(g, id); if (b) g.burst(b.x, b.y, cols || ['#ffd45a', '#d8ff7a', '#fff'], 12, 130); };
-    // a copy of a node flies from an old box to its new place (cosmetic, ≤ 0.25 s; the target is hidden until it lands)
-    const flyIn = (node, from, toId, dur = 0.22, col = INKL) => {
-      const n = M.node(g, toId); if (!from || !n) return; n.alpha = 0;
-      M.fly(g, { node, from: [from.x, from.y], to: toId, dur, arc: -40, s0: from.s, s1: S.ws, col, then(g) { const m = M.node(g, toId); if (m) { m.alpha = 1; m.pop = g.t; } } });
-    };
-    const ghost = (id, node, life = 0.5) => { const b = M.box(g, id); if (b) S.fx.push({ k: 'ghost', node, x: b.x, y: b.y, s: b.s, t0: g.t, life }); };
     const popFx = id => { const b = M.box(g, id); if (b) S.fx.push({ k: 'pop', x: b.x, y: b.y, w: b.w + 12, h: b.h + 10, t0: g.t, life: 0.35 }); };
     const tongue = id => { const b = M.box(g, id); if (b) S.frog.tongue = { x: b.x, y: b.y + b.h * 0.3, t0: g.t }; };
-    const outT = Q.fam === 'pow' ? ['n', 'outer', 'shell'] : Q.fam === 'sin' ? ['fn', 'outer', 'shell'] : ['eb', 'outer'];
+    const hop = () => { S.frog.hopT = g.t; };
+    const gone = n => { if (!n) return; n.alpha = 0; kids(n).forEach(gone); }; // faded parts leave no ghost
+    // once the last move has landed, the finished answer slides to the middle
+    const centreLater = () => M.at(g, [[0.2 * T, g => { if (S.st.tail === 'gone' && S.subLanded && !S.centre) { S.centre = true; S.relay(); } }]]);
+    const born = n => { if (!n) return n; n._born = -1; kids(n).forEach(born); return n; };
+    const AMB = '#ffc85a', NOTE = '#ffe2a0';
+    // a working note on the water beside the line; it is part of the drawn expressions so its parts can be written in
+    const note = (node, cx, y) => { const w = M.lay(node, 24).w; M.place(g, 'note', node, M.clamp(cx, w / 2 + 12, 348 - w / 2), y, 24, { col: NOTE }); };
+    const outT = pow ? ['n', 'outer', 'shell'] : Q.fam === 'sin' ? ['fn', 'outer', 'shell'] : ['eb', 'outer'];
 
-    // 1. the firefly's d/dx onto the outer bubble: the outside is differentiated, the inside is left alone
+    // 1. the firefly's d/dx onto the outer bubble: the outside is differentiated while the inside stays wrapped and lit;
+    //    then a second firefly carries a copy of the d/dx out to a copy of the inside, waiting to multiply
+    const tailIn = at => M.at(g, [[at, g => { const ob = boxOf('outer'), ib = boxOf('i'); M.tween(g, S.dot, { alpha: 1 }, 0.15 * T); g.sfx('swoosh');
+        if (ob) M.fly(g, { node: ddxD(), from: [ob.x, ob.y], to: 'd1', dur: 0.42 * T, arc: -50, s0: S.ws * 0.9, s1: S.ws, col: '#eaff8a', then(g) { S.d1.alpha = 1; S.d1.pop = g.t; burst('d1', ['#eaff8a', '#fff']); g.sfx('pop'); } });
+        if (ib) M.fly(g, { node: tint(M.row(...innerTokens(Q, null)), AMB), from: [ib.x, ib.y], to: 'j', delay: 0.1 * T, dur: 0.45 * T, arc: -36, s0: ib.s, s1: S.ws, then(g) { S.jp.alpha = 1; S.jIn.pop = g.t; g.sfx('bubble'); hop(); } }); }],
+      [at + 0.6 * T, g => { M.unlight(g, S.iIn, { dur: 0.3 * T }); S.point = false; }]]);
     const outerMove = {
-      drag: 'd0', to: outT, busy: 0.1, askAt: 0, after: 0.1,
+      drag: 'd0', to: outT, busy: 0.1,
       then(g) {
-        const nb = boxOf('n'), ib = boxOf('i'), ob = boxOf('outer');
-        S.f.out = true; S.flash = g.t; S.frog.hopT = g.t; S.ffGone = g.t; M.node(g, 'd0').hide = true; g.sfx('splash'); g.sfx('ribbit');
-        if (Q.fam === 'sin' && g.mode === 'medium') S.fnPend = true;
-        S.relay(); pop('outer', 'dot', 'fn');
-        if (Q.fam === 'pow') flyIn(M.num(Q.n), nb, 'k');
-        flyIn(M.row(...innerTokens(Q, null)), ib, 'j', 0.24);
-        flyIn(ddxD(), ob, 'd1', 0.2, INKD);
-        if (Q.fam !== 'pow') burst('outer', ['#8ad8ff', '#fff', '#d8ff7a']);
+        S.f.out = true; S.flash = g.t; hop(); S.ffGone = g.t; M.node(g, 'd0').hide = true; g.sfx('splash'); g.sfx('ribbit'); S.point = true;
+        M.light(g, S.iIn, { col: AMB }); // the inside is left alone: it glows and stays wrapped
+        S.st.out = true; S.st.tail = 'dd'; S.relay();
+        if (pow) { M.show(g, 1.5 * T); const from = boxOf('n'); S.E.id = 'ne'; M.circle(g, S.E, { col: BLUE, dur: 0.45 * T, pad: 5 }); M.light(g, S.E, { col: BLUE });
+          // the power comes down in front, then a "− 1" writes itself beside it
+          M.at(g, [[0.12 * T, g => { if (from) M.fly(g, { node: M.num(Q.n, null, { col: BLUE }), from: [from.x, from.y], to: 'k', dur: 0.42 * T, arc: -50, s0: from.s, s1: S.ws, col: BLUE,
+              then(g) { S.K.alpha = 1; S.K.pop = g.t; burst('k', ['#8ad8ff', '#fff']); g.sfx('pop'); hop(); } }); }],
+            [0.55 * T, g => { M.note(g, { node: M.row(M.op('-'), M.num(1)), at: S.E, off: [30, -30], s: 22, col: '#fff3a8', write: 0.26 * T, hold: 0.08 * T, fly: 0.24 * T, to: S.E, toOff: [S.ws * 0.5, 0], s1: S.ws * 0.6, arc: 8,
+              then(g) { S.mi = M.op('-', 'sm', { col: '#fff3a8', _born: -1 }); S.one = M.num(1, 'so', { col: '#fff3a8', _born: -1, pop: g.t }); S.sub = M.row(S.E, S.mi, S.one); S.sub.id = 's'; S.outer.exp = S.sub; S.relay(); M.sparkle(g, 's', { n: 7 }); g.sfx('tap'); } }); }],
+            [1.2 * T, g => M.unlight(g, S.E)]]);
+          tailIn(0.8 * T); return; }
+        if (Q.fam === 'sin') { M.show(g, 0.5 * T); M.circle(g, 'fn', { col: BLUE, dur: 0.45 * T }); M.light(g, S.fn, { col: BLUE }); tailIn(0.5 * T); return; }
+        // eᵘ is its own derivative: the outside glows, and stays just as it is
+        M.show(g, 1.2 * T); M.circle(g, 'eb', { col: BLUE, dur: 0.45 * T }); M.indicate(g, 'eb', { col: BLUE, delay: 0.15 * T, dur: 0.4 * T, sc: 1.3 }); M.sparkle(g, 'eb', { delay: 0.35 * T, cols: ['#8ad8ff', '#fff'] }); tailIn(0.45 * T);
       },
     };
-    if (Q.fam === 'sin') Object.assign(outerMove, { ask: { v: 'cos', wrong: ['−cos', 'sin', '−sin'] }, resolve(g) { S.fnPend = false; S.relay(); pop('fn'); burst('fn'); g.sfx('coin'); } });
-    // 2. n − 1 in the exponent; a frog on a far pad croaks it out
+    // sin turns into cos: "cos" writes itself above and drops into its place
+    if (Q.fam === 'sin') Object.assign(outerMove, { askAt: 0.5 * T, after: 0.75 * T, ask: { v: 'cos', wrong: ['−cos', 'sin', '−sin'] },
+      resolve(g) { M.show(g, 0.75 * T);
+        M.note(g, { node: M.txt('cos'), at: 'fn', off: [0, -38], s: 26, col: '#bfe8ff', write: 0.22 * T, hold: 0.08 * T, fly: 0.24 * T, to: 'fn', s1: S.ws,
+          then(g) { gone(S.fn); const c2 = M.txt('cos', 'fn', { _born: -1, pop: g.t }); S.outer.items[0] = c2; S.fn = c2; S.relay(); burst('fn', ['#8ad8ff', '#fff']); g.sfx('coin'); hop(); } });
+        M.tween(g, S.fn, { alpha: 0, sc: 0.6, hl: 0 }, 0.2 * T, { delay: 0.34 * T }); } });
+    // 2. n − 1 in the exponent: the − 1 slides into the power and it rolls down by one; a far frog croaks it out
     const subMove = {
-      tap: 's', busy: 0.1, askAt: 0, after: 0.1, ask: { v: Q.n - 1, wrong: [Q.n, Q.n + 1, Q.n - 2] },
-      then(g) { }, resolve(g) { const sb = boxOf('s'); S.f.sub = true; S.relay(); pop('n2', 'outer'); if (sb) g.burst(sb.x, sb.y, ['#8ad8ff', '#fff', '#ffd45a'], 12, 120); S.croakT[0] = g.t; g.sfx('ribbit'); },
+      tap: 's', busy: 0.1, askAt: 0.45 * T, after: 1.0 * T, ask: { v: Q.n - 1, wrong: [Q.n, Q.n + 1, Q.n - 2] },
+      then(g) { S.f.sub = true; M.show(g, 0.45 * T); S.point = true; M.circle(g, 's', { col: BLUE, dur: 0.42 * T, pad: 5 }); M.tween(g, S.sub, { sc: 1.35, dy: -6 }, 0.22 * T);
+        [S.E, S.mi, S.one].forEach((q, k) => M.indicate(g, q, { delay: 0.12 * T + k * 0.08 * T, dur: 0.26 * T, sc: 1.15 })); },
+      resolve(g) { const n1 = Q.n - 1; M.show(g, 1.0 * T); const bo = boxOf('ne');
+        for (const q of [S.mi, S.one]) { const b = boxOf(q.id); if (b && bo) M.tween(g, q, { dx: bo.x - b.x, alpha: 0, sc: 0.5 }, 0.26 * T); }
+        M.light(g, S.E, { col: BLUE }); M.roll(g, S.E, n1, { delay: 0.12 * T, dur: 0.32 * T });
+        M.at(g, [[0.42 * T, g => { burst('s', ['#8ad8ff', '#fff', '#ffd45a']); g.sfx('ribbit'); S.croakT[0] = g.t; hop(); M.tween(g, S.sub, { sc: 1, dy: 0 }, 0.18 * T); }],
+          [0.62 * T, g => { S.E.id = 'n2'; S.outer.exp = S.E; S.relay(); M.unlight(g, S.E, { dur: 0.3 * T }); if (n1 === 1) M.tween(g, S.E, { alpha: 0, sc: 0.4 }, 0.24 * T, { delay: 0.1 * T }); }], // x¹: the 1 shrinks away
+          [0.95 * T, g => { if (n1 === 1) S.outer.exp = null; S.subLanded = true; S.relay(); centreLater(); S.point = false; }]]); },
     };
-    // 3. the second firefly onto the inside copy (or a tap on it): the frog's tongue pops the bubble, and the
-    //    inside's derivative appears; the parts whose derivative is 0 drift away
+    // 3. the second firefly onto the inside copy (or a tap on it): the frog's tongue pops the bubble, constants are
+    //    crossed out (their derivative is 0), the working writes itself under it and the inside's derivative flies up
     const innW = Q.inner === 'lin' ? [M.row(M.num(Q.a), M.vr('x')), Q.a + (Q.neg ? -Q.b : Q.b), Q.b] : Q.inner === 'quad' ? [M.vr('x'), 2, M.row(M.num(2), xp(2))]
       : Q.inner === 'cub' ? [M.row(M.num(Q.c + 3), xp(2)), M.row(M.num(3 * Q.c), xp(3)), M.row(M.num(Q.c), xp(2))]
       : Q.inner === 'mono' ? [xp(Q.m - 1), M.row(M.num(Q.m), xp(Q.m)), Q.m] : [M.row(M.num(Q.a), M.vr('x')), 1, 0];
+    const dn = k => M.num(k, null, { col: BLUE }), pw = k => M.sup(M.vr('x'), M.row(dn(k), M.op('-'), M.num(1)));
+    const innBody = () => { const z = [M.op(Q.neg ? '-' : '+'), M.num(0)];
+      switch (Q.inner) { case 'lin': return M.row(M.num(Q.a), ...z); case 'quad': return M.row(dn(2), pw(2), ...z);
+        case 'cub': return M.row(dn(3), M.op('·'), M.num(Q.c), pw(3), ...z); case 'mono': return M.row(dn(Q.m), pw(Q.m)); default: return M.row(M.num(Q.a), M.op('·'), M.num(1)); } };
+    let IN = null;
     const innerProps = {
-      busy: 0.1, askAt: 0, after: 0.1, ask: { v: coefX(D.gc, D.v), wrong: innW },
-      then(g) { tongue('j'); S.frog.hopT = g.t; g.sfx('slurp'); },
-      resolve(g) {
-        popFx('j'); innerTokens(Q, 'j').forEach(n => { if (/[23]$/.test(n.id)) ghost(n.id, tint({ ...n, id: null }, '#9aa0c8'), 0.45); });
-        if (Q.inner === 'lin' || Q.inner === 'linx') ghost('j1', M.vr('x', null, { col: '#9aa0c8' }), 0.4);
-        S.f.inn = true; S.relay(); pop('g'); burst('g', ['#ffc85a', '#fff2c0', '#fff']); g.sfx('bubble');
-      },
+      busy: 0.1, askAt: 0.65 * T, after: 1.0 * T, ask: { v: coefX(D.gc, D.v), wrong: innW },
+      then(g) { S.f.inn = true; M.show(g, 0.65 * T); tongue('j'); hop(); g.sfx('slurp'); S.point = true;
+        M.circle(g, 'jp', { col: AMB, dur: 0.5 * T }); M.light(g, S.jIn, { col: AMB });
+        ['j2', 'j3'].forEach((id, k) => { if (M.node(g, id)) M.strike(g, id, { delay: 0.18 * T + k * 0.08 * T, dur: 0.2 * T }); });
+        IN = { q: M.row(M.op('='), tint(coefX(D.gc, D.v, 'nr'), AMB)) }; IN.q.alpha = 0; IN.node = M.row(innBody(), IN.q);
+        const jb = boxOf('jp') || { x: 240 }; note(IN.node, jb.x, S.wy + 46); M.writeIn(g, IN.node, { delay: 0.12 * T, dur: 0.42 * T }); },
+      resolve(g) { M.show(g, 1.0 * T); IN.q.alpha = 1; M.writeIn(g, IN.q, { dur: 0.2 * T }); M.indicate(g, IN.q.items[1], { delay: 0.18 * T, dur: 0.3 * T, col: AMB }); g.sfx('ding');
+        M.at(g, [[0.25 * T, g => { popFx('jp'); g.sfx('bubble'); M.tween(g, S.jp, { alpha: 0, sc: 0.6 }, 0.18 * T); M.tween(g, S.d1, { alpha: 0, sc: 0.6 }, 0.18 * T); }],
+          [0.48 * T, g => { S.G = born(tint(coefX(D.gc, D.v, 'g'), AMB)); S.G.alpha = 0; gone(S.jp); gone(S.d1); S.st.tail = 'g'; S.relay(); M.tween(g, IN.node, { alpha: 0 }, 0.3 * T);
+            const qb = boxOf('nr'); IN.q.items[1].alpha = 0;
+            M.fly(g, { node: tint(coefX(D.gc, D.v), AMB), from: [qb ? qb.x : 180, qb ? qb.y : S.wy + 40], to: 'g', dur: 0.36 * T, arc: 34, s0: 24, s1: S.ws, col: AMB,
+              then(g) { S.G.alpha = 1; S.G.pop = g.t; burst('g', ['#ffc85a', '#fff2c0', '#fff']); g.sfx('coin'); hop(); } }); }],
+          [0.95 * T, g => { delete g.s.mk.ex.note; S.point = false; }]]); },
     };
-    // 4. multiply the outside's derivative by the inside's derivative (for sin and e, the factor just moves to the front)
-    const prodResolve = g => {
-      const gb = S.prodFrom; S.prodPend = false; S.relay(); pop('k', 'g'); g.sfx('coin'); S.frog.hopT = g.t; S.flare = g.t;
-      const tgt = Q.fam === 'pow' ? 'k' : 'g'; if (gb) M.fly(g, { node: coefX(D.gc, D.v), from: [gb.x, gb.y], to: tgt, dur: 0.18, arc: -50, s0: gb.s, s1: S.ws, col: '#ffe08a' });
-      burst(tgt, ['#ffd45a', '#ff8a5a', '#fff', '#d8ff7a']);
-    };
-    const prodProps = Q.fam === 'pow'
-      ? { busy: 0.1, askAt: 0, after: 0.1, ask: { v: coefX(Q.n * D.gc, D.v), wrong: [coefX(Q.n + D.gc, D.v), D.v ? Q.n * D.gc : Q.n * D.gc + 1, D.v ? coefX(Q.n, D.v) : D.gc, Q.n] },
-          then(g) { S.prodFrom = boxOf('g'); S.f.prod = true; if (g.mode === 'medium') { S.prodPend = true; S.relay(); pop('k'); } }, resolve: prodResolve }
-      : { busy: 0.1, then(g) { S.prodFrom = boxOf('g'); S.f.prod = true; prodResolve(g); } };
-    const prodTo = Q.fam === 'pow' ? ['k'] : Q.fam === 'sin' ? ['fn', 'outer', 'shell'] : ['eb', 'outer'];
+    // 4. multiply: the outside's derivative times the inside's derivative ("4 × 3 = 12"); for sin and e the inside's
+    //    derivative just hops to the front
+    let PR = null;
+    const prodProps = pow
+      ? { busy: 0.1, askAt: 0.55 * T, after: 1.05 * T, ask: { v: coefX(Q.n * D.gc, D.v), wrong: [coefX(Q.n + D.gc, D.v), D.v ? Q.n * D.gc : Q.n * D.gc + 1, D.v ? coefX(Q.n, D.v) : D.gc, Q.n] },
+          then(g) { S.f.prod = true; M.show(g, 0.55 * T); S.point = true; hop(); M.circle(g, 'k', { dur: 0.5 * T, pad: 5 }); M.circle(g, 'g', { dur: 0.5 * T, pad: 5, delay: 0.1 * T }); M.light(g, S.K); M.light(g, S.G);
+            PR = { q: coefX(Q.n * D.gc, D.v, 'pq') }; PR.q.alpha = 0; PR.node = M.row(M.num(Q.n), M.op('×'), tint(coefX(D.gc, D.v), AMB), M.op('='), PR.q);
+            const kb = boxOf('k') || { x: 100 }; note(PR.node, kb.x + 30, S.wy - 48); M.writeIn(g, PR.node, { delay: 0.08 * T, dur: 0.42 * T }); },
+          resolve(g) { M.show(g, 1.05 * T); PR.q.alpha = 1; M.writeIn(g, PR.q, { dur: 0.2 * T }); M.indicate(g, PR.q, { delay: 0.16 * T, dur: 0.3 * T }); g.sfx('ding'); hop();
+            M.at(g, [[0.42 * T, g => { // the two factors slide together and fade while the product flies down into their place
+                for (const q of [S.dot, S.G]) M.tween(g, q, { alpha: 0, sc: 0.5, hl: 0 }, 0.28 * T);
+                M.tween(g, S.K, { alpha: 0, hl: 0 }, 0.25 * T); M.tween(g, PR.node, { alpha: 0 }, 0.3 * T, { delay: 0.1 * T });
+                const qb = boxOf('pq'); PR.q.alpha = 0; M.fly(g, { node: coefX(Q.n * D.gc, D.v), from: [qb ? qb.x : 180, qb ? qb.y : S.wy - 48], to: 'k', dur: 0.36 * T, arc: -30, s0: 24, s1: S.ws, col: '#ffe08a',
+                  then(g) { gone(S.K); gone(S.G); gone(S.dot); S.K = born(coefX(Q.n * D.gc, D.v, 'k', { pop: g.t })); S.st.tail = 'gone'; S.relay(); centreLater(); M.inert(g, ['k']); burst('k', ['#ffd45a', '#ff8a5a', '#fff', '#d8ff7a']); g.sfx('coin'); hop(); S.flare = g.t; } }); }],
+              [0.95 * T, g => { delete g.s.mk.ex.note; S.point = false; }]]); } }
+      : { busy: 0.1, then(g) { S.f.prod = true; M.show(g, 1.1 * T); S.point = true; M.circle(g, 'g', { col: AMB, dur: 0.4 * T }); M.tween(g, S.dot, { alpha: 0 }, 0.2 * T);
+          M.at(g, [[0.32 * T, g => { const from = boxOf('g'); gone(S.dot); S.st.tail = 'gone'; S.st.front = true; S.G.alpha = 0; S.relay(); g.sfx('swoosh');
+              M.fly(g, { node: tint(coefX(D.gc, D.v), AMB), from: [from.x, from.y], to: 'g', dur: 0.5 * T, arc: -70, s0: S.ws, s1: S.ws, col: AMB,
+                then(g) { S.G.alpha = 1; S.G.pop = g.t; burst('g', ['#ffd45a', '#ff8a5a', '#fff', '#d8ff7a']); g.sfx('coin'); hop(); S.flare = g.t; centreLater(); } }); }],
+            [1.0 * T, g => { S.point = false; }]]); } };
+    const prodTo = pow ? ['k'] : Q.fam === 'sin' ? ['fn', 'outer', 'shell'] : ['eb', 'outer'];
     M.play(g, {
       moves(g) {
         const f = S.f;
@@ -305,25 +345,20 @@ MG.add({
         const out = [];
         if (!f.sub) out.push(subMove);
         if (!f.inn) out.push({ drag: 'd1', to: S.jIds, ...innerProps }, { tap: 'd1', ...innerProps });
-        else if (!f.prod) out.push({ drag: 'g', to: prodTo, ...prodProps }, { tap: 'dot', ...prodProps }, ...(Q.fam === 'pow' ? [{ drag: 'k', to: ['g'], ...prodProps }] : []));
+        else if (!f.prod) out.push({ drag: 'g', to: prodTo, ...prodProps }, { tap: 'dot', ...prodProps }, ...(pow ? [{ drag: 'k', to: ['g'], ...prodProps }] : []));
         return out;
       },
-      area(g) { const f = S.f; if (!f.out) return 'outer'; if (!f.sub) return 's'; if (!f.inn) return ['d1', 'jp']; return Q.fam === 'pow' ? ['k', 'g'] : ['g', 'dot']; },
-      onMiss(g, info) {
-        S.frog.sadAt = g.t;
-        // the classic mistake, acted out: the d/dx on the inside first, while the outer power is forgotten
-        if (info.drag === 'd0' && /^i\d?$/.test(info.to || '')) { S.wrongInner = true; S.relay(); M.node(g, 'd0').hide = true; S.ffGone = g.t; popFx('i'); g.sfx('splash');
-          // then the firefly comes back, so the hint can show where its d/dx should have gone
-          M.later(g, 0.6, () => { M.node(g, 'd0').hide = false; S.ffGone = null; }); }
-        if (info.drag === 'd1' && /^i\d?$/.test(info.to || '')) S.badBubble = g.t;
-      },
+      area(g) { const f = S.f; if (!f.out) return 'outer'; if (!f.sub) return 's'; if (!f.inn) return ['d1', 'jp']; return pow ? ['k', 'g'] : ['g', 'dot']; },
     });
   },
   update(g, dt) {
-    const S = g.s; M.update(g, dt);
+    const S = g.s, K = S.mk; M.update(g, dt);
     // the firefly with the d/dx bobs (its token moves with it, unless it is being dragged)
-    const pr = S.mk.press; if (!(pr && pr.dragging && pr.id === 'd0') && !S.ffGone) M.place(g, 'fd', S.mk.ex.fd.node, S.ff.x + Math.sin(g.t * 1.3) * 4, S.ff.y + 12 + Math.sin(g.t * 2.2) * 5, 38);
+    const pr = K.press; if (!(pr && pr.dragging && pr.id === 'd0') && !S.ffGone) M.place(g, 'fd', K.ex.fd.node, S.ff.x + Math.sin(g.t * 1.3) * 4, S.ff.y + 12 + Math.sin(g.t * 2.2) * 5, 38);
     S.fx = S.fx.filter(p => g.t - p.t0 < p.life);
+    // a wrong move, acted out: the frog frowns; the d/dx dropped on the inside first (forgetting the outer layer) turns the inside red
+    if (K.missAt >= 0 && K.missAt !== S.seenMiss) { S.seenMiss = K.missAt; const info = K.missInfo || {}; S.frog.sadAt = g.t;
+      if (/^i\d?$/.test(info.to || '')) S.badBubble = g.t; }
   },
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
@@ -345,13 +380,16 @@ MG.add({
     M.drawEx(g, c, 'prob');
     // the layers behind the working line
     const live = id => { const n = M.node(g, id); return n && !n.hide ? n : null; };
-    if (live('outer') && mk.box.outer) outerBubble(c, mk.box.outer, t, (t - S.flash) / 0.45, S.wrongInner);
-    if (live('i') && mk.box.i) innerBubble(c, mk.box.i, t, { bad: S.wrongInner || (S.badBubble != null && t - S.badBubble < 2) });
-    const jn = live('j'); if (jn && mk.box.j) innerBubble(c, mk.box.j, t, { alpha: jn.alpha ?? 1, ph: 1.3 });
+    // a bubble follows its symbols while they glide to a new place (_ax/_ay: how far a node is drawn from its box right now)
+    const at = (b, n) => n && (n._ax || n._ay) ? { ...b, x: b.x + (n._ax || 0), y: b.y + (n._ay || 0) } : b;
+    if (live('outer') && mk.box.outer) outerBubble(c, at(mk.box.outer, S.outer), t, (t - S.flash) / 0.45, false);
+    if (live('i') && mk.box.i) innerBubble(c, at(mk.box.i, S.iIn), t, { bad: S.badBubble != null && t - S.badBubble < 1.2 });
+    const jn = live('jp'); if (jn && mk.box.j && S.st.tail === 'dd') innerBubble(c, at(mk.box.j, S.jIn), t, { alpha: jn.alpha ?? 1, ph: 1.3 });
     if (live('s') && mk.box.s && !g.done) pill(c, mk.box.s, t, '138,216,255');
-    if (S.f.inn && !S.f.prod && live('dot') && mk.box.dot && !g.done) pill(c, mk.box.dot, t, '255,224,138');
+    if (S.st.tail === 'g' && !S.f.prod && live('dot') && mk.box.dot && !g.done) pill(c, mk.box.dot, t, '255,224,138');
     const d1 = live('d1'); if (d1 && mk.box.d1) { const b = mk.box.d1; carrier(c, b.x, b.y + 2, Math.max(b.w, b.h) * 0.44, t, d1.alpha ?? 1); }
     M.drawEx(g, c, 'work');
+    if (mk.ex.note) { c.save(); c.shadowColor = 'rgba(4,6,24,0.9)'; c.shadowBlur = 8; M.drawEx(g, c, 'note'); c.restore(); }
     for (const p of S.fx) {
       const k = (t - p.t0) / p.life; if (k < 0) continue;
       if (p.k === 'pop') { c.save(); c.strokeStyle = `rgba(255,200,110,${1 - k})`; c.lineWidth = 3 * (1 - k); c.beginPath(); c.ellipse(p.x, p.y, p.w / 2 * (1 + k * 0.6), p.h / 2 * (1 + k * 0.8), 0, 0, 7); c.stroke();
@@ -366,7 +404,7 @@ MG.add({
     if (tg) { const k = Math.sin((t - tg.t0) / 0.22 * Math.PI), mx = 150, my = fy - 42, ex = mx + (tg.x - mx) * k, ey = my + (tg.y - my) * k;
       c.save(); c.strokeStyle = '#e8607a'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(mx, my); c.quadraticCurveTo((mx + ex) / 2 - 20, (my + ey) / 2, ex, ey); c.stroke(); c.fillStyle = '#ff8098'; c.beginPath(); c.arc(ex, ey, 6, 0, 7); c.fill(); c.restore(); }
     const sad = lost || t - f.sadAt < 1.2;
-    frog(c, 150, fy, 1.25, { t, pose: won ? 'cheer' : hop > 0 ? 'hop' : !S.ffGone ? 'point' : 'idle', expr: won ? 'laugh' : sad ? 'sad' : hop > 0 || tg ? 'wow' : 'happy', facing: 1 });
+    frog(c, 150, fy, 1.25, { t, pose: won ? 'cheer' : hop > 0 ? 'hop' : (!S.ffGone || S.point && M.showing(g)) ? 'point' : 'idle', expr: won ? 'laugh' : sad ? 'sad' : hop > 0 || tg ? 'wow' : 'happy', facing: 1 });
     // the firefly carrying the d/dx (it shrinks away when its d/dx is used)
     const fg = S.ffGone != null ? Math.min(1, (t - S.ffGone) / 0.2) : 0, fb = mk.box.d0, dragging = mk.press && mk.press.dragging && mk.press.id === 'd0';
     if (fb && fg < 1 && !dragging) { carrier(c, fb.x, fb.y + 2, 24 * (1 - fg), t, 1 - fg); if (!fg) M.drawEx(g, c, 'fd'); }

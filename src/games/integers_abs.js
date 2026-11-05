@@ -56,7 +56,7 @@ MG.add({
             M.at(g, [[0.7 * T, g => { S.items[i * 2] = p.n; place(); }]]); } }); } });
         if (!out.length && !S.done) out.push({ tap: 'op', busy: 0.1, askAt: 0.85 * T, after: 0.8 * T, ask: { v: S.v, wrong: [S.raw, -S.v, S.v + 1, S.v - 1] },
           then(g) { S.done = true; M.show(g, 0.85 * T); S.joinAt = g.t; S.point = true; hop(g, 'think'); g.sfx('swoosh');
-            M.indicate(g, 'op', { dur: 0.4 * T }); M.circle(g, [S.parts[0].n, S.parts[1].n], { delay: 0.1 * T, dur: 0.5 * T }); },
+            M.indicate(g, 'op', { dur: 0.4 * T }); M.circle(g, ['Av', 'Bv'], { delay: 0.1 * T, dur: 0.5 * T }); },
           resolve(g) { M.show(g, 0.8 * T); S.totAt = g.t; g.sfx('ding');
             M.at(g, [[0.35 * T, g => { const tp = S.totPos || { x: 180, y: LY - 60 }; S.totGone = g.t;
               M.fly(g, { node: M.num(S.v, null, { col: '#fff2b0' }), from: [tp.x, tp.y], to: 'ans', dur: 0.4 * T, arc: -20, s0: 20, s1: 44,

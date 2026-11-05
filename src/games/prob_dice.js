@@ -1,13 +1,16 @@
 // prob_dice.js — PROBABILITY! Two dice: P(event) = favourable outcomes / all 36 outcomes, then simplify.
 // A duck-pond stall at a night fair. The stall's painted sign reads P(sum = 7) = ?/?, and under it a shelf of 6 × 6
 // cubbies holds every outcome (first die across, second die down, the sum painted in each cubby).
-// Moves (nothing waits on an animation):
-//   1. tap the event (the 7): the matching cubbies light in one quick ripple along their diagonal, a rubber duck pops
-//      up in each, and a red balloon inflates with the count (6) on it;
-//   2. drag the balloon's 6 into the top slot, and 3. drag the 36 (the gold balloon on the "6 × 6 = 36" plank, or the
-//      whole shelf) into the bottom slot, in either order;
-//   4. tap the fraction: top and bottom get "÷ 6" (their common factor); 5./6. tap "6 ÷ 6" → 1 and "36 ÷ 6" → 6, in
-//      either order. When nothing divides both (5/36, 11/36), one tap stamps the fraction as already in simplest form.
+// Moves, each acted out by itself (show your work; the fuse stands still while the working plays):
+//   1. tap the event (the 7): it is circled, then the matching cubbies light one by one, each with a ring, a rubber duck
+//      and its roll ("1+6") floating up, while the count on the red balloon rolls up 1, 2, 3, ... (medium: the tray asks
+//      for the count once they are all lit, and the ducks then hop in turn as it is counted);
+//   2. drag the balloon's 6 into the top slot: one spark flies from each lit cubby into it; 3. drag the 36 (the gold
+//      balloon on the "6 × 6 = 36" plank, or the whole shelf) into the bottom slot: the plank's 6s light with the dice
+//      rows, and every cubby sends a spark down in a row-by-row wave. Either order;
+//   4. tap the fraction: "÷ 6" (their common factor) writes itself beside top and bottom; 5./6. tap "6 ÷ 6" or "36 ÷ 6":
+//      the ÷ 6 slides into the number, which rolls over to 1 (or 6). When nothing divides both (5/36, 11/36), one tap
+//      circles the fraction and stamps it as already in simplest form.
 // The classic mistake (the count on the bottom, or 36 on top) is a miss from level 1 up, acted out on the sign.
 // Level 0: sum 7, 6 or 8. Level 1: any sum from 3 to 11. Level 2: sum ≥ 10, sum ≤ 4, doubles, or at least one 6.
 // Medium mode: the tray asks for the number of lit cubbies, then each division (or the simplest form).
@@ -130,7 +133,7 @@ MG.add({
     const E = S.ev = pickEvent(g), n = S.n = E.cells.length, gg = gcd(n, 36), a = n / gg, b = 36 / gg;
     S.cells = []; for (let r = 1; r <= 6; r++) for (let q = 1; q <= 6; q++) S.cells.push({ a: q, b: r, x: GX + (q - 0.5) * CS, y: GY + (r - 0.5) * CS, litAt: -1, order: -1 });
     E.cells.forEach(([q, r], i) => { S.cells[(r - 1) * 6 + (q - 1)].order = i; });
-    S.floats = []; S.hdrA = {}; S.hdrB = {}; S.quackAt = -9; S.actAt = -9; S.missAt = -9; S.tapT = -9; S.splash = [];
+    S.floats = []; S.sparks = []; S.hdrA = {}; S.hdrB = {}; S.quackAt = -9; S.actAt = -9; S.missAt = -9; S.tapT = -9; S.splash = [];
     // the stall's sign: P(event) = ?/?, shrunk to fit when the fraction grows
     const ps0 = 36, slotW = ps0 * 0.82 * 1.3;
     S.fracNode = M.frac(M.slot('sn', { w: slotW, col: GOLD }), M.slot('sd', { w: slotW, col: GOLD }));
@@ -142,61 +145,97 @@ MG.add({
     M.zone(g, 'grid', { x: GX + 3 * CS, y: GY + 3 * CS, w: 6 * CS, h: 6 * CS, s: 30 });
     M.inert(g, ['par', 'eq', 'gw', 'gx', 'gh', 'geq']);
     const tapIds = ['ev', 'sw', 'eqs'].filter(id => M.node(g, id));
-    // nothing waits on an animation: the cubbies light in one quick ripple (under 0.3 s) and the count appears at once
-    const dt = Math.min(0.05, 0.27 / Math.max(1, n - 1));
+    const T = M.pace(g), outcome = (q, r) => E.kind === 'sum' || E.kind === 'ge' || E.kind === 'le' ? `${q}+${r}` : `${q}, ${r}`;
+    // the cubbies light one at a time, slowly enough to count along
+    const dt = T * Math.min(0.15, 1.0 / n), litEnd = 0.3 * T + n * dt;
     // time scales with the number of moves: tap the event, two drags, tap the fraction, and (when it simplifies) two divisions
     const nMoves = gg > 1 ? 6 : 4; g.dur *= (2.6 + 1.05 * nMoves) / 8;
     const burst = (id, cols) => { const bx = M.box(g, id); if (bx) g.burst(bx.x, bx.y, cols || [GOLD, '#ff8ac0', '#fff'], 12, 130); };
     const act = (g, kind) => { S.actAt = g.t; S.act = kind; S.quackAt = g.t; for (let i = 0; i < 3; i++) S.splash.push({ x: 40 + g.rand() * 280, t0: g.t + i * 0.06 }); };
-    // a drag into a slot: the number lands in the slot at once, with a pop
-    const fill = (slotId, v, fillId) => {
-      const sl = M.node(g, slotId); sl.fill = M.num(v, fillId, { pop: g.t }); g.sfx('coin');
-      if (S.numFilled && S.denFilled) S.fracNode.id = 'fr';
-      relay(); burst(slotId);
+    // a spark flies from a cubby (or anywhere) into a slot on the sign: one spark per outcome counted
+    const spark = (x, y, to, delay, dur, col) => S.sparks.push({ x, y, to, t0: g.t + delay, dur, col });
+    // a number lands in its slot, with a pop
+    const fill = (g, slotId, v, fillId) => {
+      const sl = M.node(g, slotId); sl.fill = M.num(v, fillId, { _born: -1, pop: g.t }); g.sfx('coin');
+      if (S.numFilled && S.denFilled && S.fracNode.n.fill && S.fracNode.d.fill) S.fracNode.id = 'fr';
+      relay(); burst(slotId); M.sparkle(g, slotId, { n: 8 });
     };
     const gold = (node, t) => { node.col = GOLD; node.pop = t; return node; };
+    const lit = () => S.cells.filter(cl => cl.order >= 0).sort((p, q) => p.order - q.order);
+    // tap "6 ÷ 6": the ÷ 6 slides into the 6, which rolls over to 1 (manim-style: the same number object rolls)
+    const divide = (g, part, v) => { M.show(g, 0.7 * T); const rw = S.fracNode[part], [num0, tail] = rw.items, bo = M.box(g, num0.id), bt = M.box(g, 'dv' + part);
+      if (bo && bt) M.tween(g, tail, { dx: bo.x - bt.x, alpha: 0, sc: 0.5 }, 0.28 * T);
+      M.at(g, [[0.12 * T, g => { M.roll(g, num0, v, { dur: 0.3 * T }); g.sfx('coin'); }],
+        [0.42 * T, g => { M.sparkle(g, num0, { n: 10 }); S.quackAt = g.t; S.actAt = g.t; M.unlight(g, num0); }],
+        [0.55 * T, g => { num0.col = GOLD; num0.pop = g.t; for (const q of tail.items) q.alpha = 0; S.fracNode[part] = num0; relay();
+          if (S.topDone && S.botDone && !S.simplified) { S.simplified = true; S.doneT = g.t; S.fracNode.col = GOLD; relay(); g.sfx('sparkle'); burst('fr'); } }]]); };
     M.play(g, {
       moves(g) {
         if (!S.tapped) return [{
-          tap: tapIds, busy: 0.1, askAt: 0, after: 0.1,
+          tap: tapIds, busy: 0.1, askAt: litEnd + 0.12 * T, after: 0.55 * T,
           ask: { v: n, wrong: wrongCounts(E, n) },
           then(g) {
-            S.tapped = true; S.tapT = g.t; g.sfx('magic'); act(g, 'quack');
-            E.cells.forEach(([q, r], i) => M.later(g, i * dt, g => {
-              const cl = S.cells[(r - 1) * 6 + (q - 1)]; cl.litAt = g.t; S.hdrA[q] = g.t; S.hdrB[r] = g.t; if (i % 2 === 0) g.sfx(i % 4 ? 'pop' : 'quack');
-              S.floats.push({ x: cl.x, y: cl.y - 6, t0: g.t, text: E.kind === 'sum' || E.kind === 'ge' || E.kind === 'le' ? `${q}+${r}` : `${q}, ${r}` });
-            }));
+            S.tapped = true; S.tapT = g.t; g.sfx('magic'); act(g, 'quack'); M.show(g, litEnd + 0.12 * T); S.point = true;
+            M.circle(g, tapIds, { dur: 0.45 * T, col: GOLD }); M.indicate(g, 'ev', { dur: 0.4 * T, col: GOLD });
+            lit().forEach((cl, i) => M.at(g, [[0.3 * T + i * dt, g => {
+              cl.litAt = g.t; S.hdrA[cl.a] = g.t; S.hdrB[cl.b] = g.t; g.sfx(i % 2 ? 'pop' : 'quack');
+              S.floats.push({ x: cl.x, y: cl.y - 6, t0: g.t, text: outcome(cl.a, cl.b) });
+              // easy mode counts out loud: the balloon's number rolls up with every lit cubby
+              if (g.mode !== 'medium') { if (!S.cntNode) S.cntNode = M.num(1, 'cnt', { pop: g.t }); else { M.roll(g, S.cntNode, i + 1, { dur: Math.min(0.18 * T, dt * 0.9) }); S.cntNode.pop = g.t; } }
+            }]]));
           },
-          resolve(g) { S.counted = true; S.countAt = g.t; S.cntNode = M.num(n, 'cnt', { pop: g.t }); const bl = balloonAt(S, g.t); M.place(g, 'cnt', S.cntNode, bl.x, bl.y + 11, 32 * Math.max(0.3, bl.inf), { col: INKC }); g.sfx('ding'); M.later(g, 0.22, g => burst('cnt', ['#ff6070', GOLD, '#fff'])); },
+          resolve(g) { M.show(g, 0.55 * T); S.counted = true; S.countAt = g.t;
+            if (!S.cntNode) S.cntNode = M.num(n, 'cnt', { pop: g.t }); else if (S.cntNode.v !== String(n)) S.cntNode.v = String(n);
+            S.cntNode.pop = g.t; g.sfx('ding'); M.indicate(g, S.cntNode, { dur: 0.4 * T, col: '#fff2a0', sc: 1.25 });
+            // the counted ducks bob up in turn, one wave along the lit cubbies
+            lit().forEach((cl, i) => { cl.hopAt = g.t + 0.05 * T + i * Math.min(0.05, 0.35 / n) * T; });
+            M.at(g, [[0.2 * T, g => burst('cnt', ['#ff6070', GOLD, '#fff'])]]); },
         }];
         const out = [];
         if (!S.counted) return out;
-        if (!S.numFilled) out.push({ drag: 'cnt', to: 'sn', busy: 0.1, then(g) { S.numFilled = true; S.popAt = g.t; g.sfx('snap'); M.node(g, 'cnt').hide = true; act(g, 'flap'); fill('sn', n, 'fn'); } });
-        if (!S.denFilled) out.push({ drag: ['tot', 'grid'], to: 'sd', busy: 0.1, then(g) { S.denFilled = true; S.totAt = g.t; const tn = M.node(g, 'tot'); tn.alpha = 0.35; M.inert(g, ['tot']); act(g, 'flap'); fill('sd', 36, 'fd'); } });
+        if (!S.numFilled) out.push({ drag: 'cnt', to: 'sn', busy: 0.1, then(g) {
+          S.numFilled = true; S.popAt = g.t; g.sfx('snap'); const from = { ...M.box(g, 'cnt') }; M.node(g, 'cnt').hide = true; act(g, 'flap'); M.show(g, 0.85 * T); S.point = true;
+          // one spark from every favourable cubby streams up into the top slot, then the count lands there
+          lit().forEach((cl, i) => spark(cl.x, cl.y, 'sn', 0.05 * T + i * Math.min(0.06, 0.4 / n) * T, 0.38 * T, GOLD));
+          M.fly(g, { node: M.num(n, null, { col: INKC }), from: [from.x, from.y], to: 'sn', dur: 0.55 * T, arc: -50, s0: 32, s1: 34, then(g) { fill(g, 'sn', n, 'fn'); S.quackAt = g.t; S.actAt = g.t; } }); } });
+        if (!S.denFilled) out.push({ drag: ['tot', 'grid'], to: 'sd', busy: 0.1, then(g) {
+          S.denFilled = true; S.totAt = g.t; const tn = M.node(g, 'tot'), from = { ...M.box(g, 'tot') }; tn.alpha = 0.35; M.inert(g, ['tot']); act(g, 'flap'); M.show(g, 1.05 * T); S.point = true;
+          // 6 × 6: the six red dice light along the top as the first 6 glows, then the six blue dice down the side with the second
+          M.indicate(g, 'gw', { dur: 0.35 * T, col: '#ff8a7a' }); for (let i = 1; i <= 6; i++) M.at(g, [[i * 0.04 * T, g => { S.hdrA[i] = g.t; }]]);
+          M.indicate(g, 'gh', { delay: 0.25 * T, dur: 0.35 * T, col: '#8ab8ff' }); for (let i = 1; i <= 6; i++) M.at(g, [[0.25 * T + i * 0.04 * T, g => { S.hdrB[i] = g.t; }]]);
+          // every one of the 36 outcomes sends a spark down, row by row
+          S.cells.forEach(cl => spark(cl.x, cl.y, 'sd', 0.3 * T + (cl.b - 1) * 0.06 * T + (cl.a - 1) * 0.012 * T, 0.32 * T, cl.order >= 0 ? GOLD : '#ffcf9a'));
+          M.at(g, [[0.25 * T, g => g.sfx('swoosh')]]);
+          M.fly(g, { node: M.num(36, null, { col: GOLD }), from: [from.x, from.y], to: 'sd', delay: 0.4 * T, dur: 0.5 * T, arc: 30, s0: 24, s1: 34, then(g) { fill(g, 'sd', 36, 'fd'); S.quackAt = g.t; S.actAt = g.t; } }); } });
         if (out.length || S.simplified) return out;
         if (gg === 1) return [{
-          // nothing divides both 5 and 36 (or 11 and 36): one tap stamps the fraction as already in simplest form
-          tap: ['fr', 'fn', 'fd', 'sn', 'sd'], busy: 0.1, askAt: 0, after: 0.1,
+          // nothing divides both 5 and 36 (or 11 and 36): one tap checks the fraction and stamps it as already in simplest form
+          tap: ['fr', 'fn', 'fd', 'sn', 'sd'], busy: 0.1, askAt: 0.6 * T, after: 0.5 * T,
           ask: { v: M.frac(M.num(n), M.num(36)), wrong: wrongFracs(n) },
-          then(g) { S.split = true; g.sfx('magic'); act(g, 'quack'); },
-          resolve(g) { S.simplified = true; S.doneT = g.t; gold(S.fracNode.n, g.t); gold(S.fracNode.d, g.t); S.fracNode.col = GOLD; relay(); g.sfx('sparkle'); burst('fr'); },
+          then(g) { S.split = true; g.sfx('magic'); act(g, 'quack'); M.show(g, 0.6 * T); S.point = true;
+            M.circle(g, 'fr', { dur: 0.5 * T, col: GOLD }); M.indicate(g, 'fn', { delay: 0.1 * T, dur: 0.35 * T }); M.indicate(g, 'fd', { delay: 0.3 * T, dur: 0.35 * T }); },
+          resolve(g) { M.show(g, 0.5 * T); S.simplified = true; S.doneT = g.t; gold(S.fracNode.n, g.t); gold(S.fracNode.d, g.t); S.fracNode.col = GOLD; relay(); g.sfx('sparkle'); burst('fr'); M.sparkle(g, 'fr', { n: 12 }); },
         }];
         if (!S.split) return [{
-          // tap the fraction: top and bottom are both divided by their common factor
+          // tap the fraction: "÷ 6" writes itself beside the top and the bottom (their common factor)
           tap: ['fr', 'fn', 'fd', 'sn', 'sd'], busy: 0.1,
           then(g) {
-            S.split = true; g.sfx('whoosh'); S.fracNode.id = null; act(g, 'quack');
-            const f = () => M.num(gg, null, { col: ORANGE, pop: g.t });
-            S.fracNode.n = M.row(M.num(n, 'fn'), M.op('÷', null, { col: ORANGE }), f()); S.fracNode.n.id = 'dn';
-            S.fracNode.d = M.row(M.num(36, 'fd'), M.op('÷', null, { col: ORANGE }), f()); S.fracNode.d.id = 'dd';
-            relay();
+            S.split = true; g.sfx('whoosh'); act(g, 'quack'); M.show(g, 0.85 * T); S.point = true;
+            M.circle(g, 'fr', { dur: 0.45 * T, col: ORANGE });
+            const nf = S.fracNode.n.fill, df = S.fracNode.d.fill; S.fracNode.id = null;
+            const tail = part => { const r = M.row(M.op('÷', null, { col: ORANGE, _born: -1 }), M.num(gg, null, { col: ORANGE, _born: -1 })); r.id = 'dv' + part; return r; };
+            const tn = tail('n'), td = tail('d'); tn.alpha = 0; td.alpha = 0;
+            S.fracNode.n = M.row(nf, tn); S.fracNode.n.id = 'dn'; S.fracNode.d = M.row(df, td); S.fracNode.d.id = 'dd'; relay();
+            M.at(g, [[0.3 * T, g => { tn.alpha = 1; M.writeIn(g, tn, { dur: 0.3 * T }); g.sfx('tap'); }], [0.45 * T, g => { td.alpha = 1; M.writeIn(g, td, { dur: 0.3 * T }); g.sfx('tap'); }],
+              [0.8 * T, g => { S.quackAt = g.t; S.actAt = g.t; }]]);
           },
         }];
-        const done = g => { act(g, 'quack'); if (S.topDone && S.botDone) { S.simplified = true; S.doneT = g.t; S.fracNode.col = GOLD; relay(); } };
-        if (!S.topDone) out.push({ tap: ['dn', 'fn'], busy: 0.1, askAt: 0, after: 0.1, ask: { v: a, wrong: [n, 0, a + 1, gg] },
-          then(g) { S.topDone = true; }, resolve(g) { S.fracNode.n = gold(M.num(a, 'fn'), g.t); g.sfx('coin'); done(g); relay(); burst('fn'); } });
-        if (!S.botDone) out.push({ tap: ['dd', 'fd'], busy: 0.1, askAt: 0, after: 0.1, ask: { v: b, wrong: [b + 1, b - 1, 36 - gg] },
-          then(g) { S.botDone = true; }, resolve(g) { S.fracNode.d = gold(M.num(b, 'fd'), g.t); g.sfx('coin'); done(g); relay(); burst('fd'); } });
+        if (!S.topDone) out.push({ tap: ['dn', 'fn', 'dvn'], busy: 0.1, askAt: 0.35 * T, after: 0.7 * T, ask: { v: a, wrong: [n, 0, a + 1, gg] },
+          then(g) { S.topDone = true; act(g, 'quack'); M.show(g, 0.35 * T); S.point = true; M.circle(g, 'dn', { dur: 0.35 * T, col: ORANGE }); M.light(g, S.fracNode.n.items[0]); },
+          resolve(g) { divide(g, 'n', a); } });
+        if (!S.botDone) out.push({ tap: ['dd', 'fd', 'dvd'], busy: 0.1, askAt: 0.35 * T, after: 0.7 * T, ask: { v: b, wrong: [b + 1, b - 1, 36 - gg] },
+          then(g) { S.botDone = true; act(g, 'quack'); M.show(g, 0.35 * T); S.point = true; M.circle(g, 'dd', { dur: 0.35 * T, col: ORANGE }); M.light(g, S.fracNode.d.items[0]); },
+          resolve(g) { divide(g, 'd', b); } });
         return out;
       },
       area(g) {
@@ -206,23 +245,28 @@ MG.add({
         if (!S.split) return ['fr'];
         return [!S.topDone ? 'dn' : 'dd'];
       },
-      onMiss(g, info) {
+    });
+    // the kit no longer calls onMiss: update() watches mk.missAt and acts the mistake out here
+    S.onMiss = (g, info) => {
         S.missAt = g.t; S.missInfo = info;
         if (info.drag && (info.to === 'sn' || info.to === 'sd')) {
           // act it out: the number lands in the wrong place, in red, and the sign swings on its hooks
-          const sl = M.node(g, info.to); if (sl) { sl.fill = M.num(info.drag === 'cnt' ? n : 36, null, { mark: 'bad', pop: g.t }); relay(); }
+          // (only for a moment: the wrong number leaves the slot again, so nothing changes for good)
+          const sl = M.node(g, info.to); if (sl && !sl.fill) { const bad = M.num(info.drag === 'cnt' ? n : 36, null, { mark: 'bad', pop: g.t }); sl.fill = bad; relay();
+            M.later(g, 0.7, g => { if (sl.fill === bad) { bad.alpha = 0; sl.fill = null; relay(); } }); }
           S.flipAt = g.t;
         }
         if (info.tap === 'grid' && S.lastUp) { const [x, y] = S.lastUp; const cl = S.cells.find(q => Math.abs(q.x - x) <= CS / 2 && Math.abs(q.y - y) <= CS / 2); if (cl) cl.badAt = g.t; }
-      },
-      onWin(g) { S.winAt = g.t; },
-    });
+    };
+    S.seenMiss = -1; S.mk.opts.onWin = g => { S.winAt = g.t; };
   },
   update(g, dt) {
     M.update(g, dt); const S = g.s, t = g.t;
-    S.floats = S.floats.filter(f => t - f.t0 < 0.9); S.splash = S.splash.filter(p => t - p.t0 < 0.8);
+    S.floats = S.floats.filter(f => t - f.t0 < 0.9); S.splash = S.splash.filter(p => t - p.t0 < 0.8); S.sparks = S.sparks.filter(p => t < p.t0 + p.dur);
+    const mk = S.mk; if (mk.missAt >= 0 && mk.missAt !== S.seenMiss) { S.seenMiss = mk.missAt; try { S.onMiss(g, mk.missInfo || {}); } catch (e) { console.error(e); } }
+    if (!M.showing(g)) S.point = false;
     // the count rides on its bobbing balloon
-    if (S.counted && !S.numFilled) { const bl = balloonAt(S, t); M.place(g, 'cnt', S.cntNode, bl.x, bl.y + 11, 32 * Math.max(0.3, bl.inf), { col: INKC }); }
+    if (S.cntNode && !S.numFilled) { const bl = balloonAt(S, t); M.place(g, 'cnt', S.cntNode, bl.x, bl.y + 11, 32 * Math.max(0.3, bl.inf), { col: INKC }); }
   },
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { g.s.lastUp = [x, y]; M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
@@ -297,17 +341,21 @@ MG.add({
       if (!lit) { c.font = MK.NUMF(13, 600); c.fillStyle = bad ? '#ffd0d0' : 'rgba(255,226,190,0.78)'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText(String(cl.a + cl.b), cl.x, cl.y + 5); }
       else {
         const k = M.clamp((t - cl.litAt) / 0.3, 0, 1), sc = k < 1 ? M.ease(k) * (1 + Math.sin(k * Math.PI) * 0.35) : 1;
-        const hop = won ? Math.abs(Math.sin((t - S.winAt) * 7 + cl.order)) * 4 : 0, bob = Math.sin(t * 3 + cl.order * 0.9) * 0.8;
+        const hk = cl.hopAt != null ? M.clamp((t - cl.hopAt) / 0.3, 0, 1) : 1, hop = won ? Math.abs(Math.sin((t - S.winAt) * 7 + cl.order)) * 4 : hk < 1 ? Math.sin(hk * Math.PI) * 7 : 0, bob = Math.sin(t * 3 + cl.order * 0.9) * 0.8;
         rDuck(c, cl.x - 1, cl.y + 9 + bob - hop, 0.42 * sc, { quack: t - cl.litAt < 0.25 || (won && Math.sin((t - S.winAt) * 7 + cl.order) > 0.6), expr: lost ? 'sad' : null });
       }
     }
+    // a ring draws itself round each cubby as it is counted
+    for (const cl of S.cells) { if (cl.litAt < 0 || t < cl.litAt) continue; const k = (t - cl.litAt) / 0.5; if (k >= 1) continue;
+      c.save(); c.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4; c.strokeStyle = '#fff2a0'; c.shadowColor = GOLD; c.shadowBlur = 10; c.lineWidth = 2.5; c.lineCap = 'round';
+      c.beginPath(); c.arc(cl.x, cl.y, CS * 0.62 + k * 3, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * M.easeIO(Math.min(1, k / 0.55))); c.stroke(); c.restore(); }
     for (const f of S.floats) { const k = (t - f.t0) / 0.9; c.save(); c.globalAlpha = 1 - k * k; c.font = MK.NUMF(12, 700); c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = '#2a1020'; c.strokeText(f.text, f.x, f.y - 14 - k * 16); c.fillStyle = '#ffe9a0'; c.fillText(f.text, f.x, f.y - 14 - k * 16); c.restore(); }
 
     // the count's red balloon: limp on the shelf until the event is tapped, then it inflates; it pops when its number is taken
     { const { x: bx, y: by, r } = balloonAt(S, t);
       if (!S.numFilled) {
         balloon(c, bx, by, r, '#e8404a', { string: [RX - 10, 482] });
-        if (S.tapped && !S.counted) P.label(c, '?', bx, by + 9, 28, INKC, 'center', 800);
+        if (S.tapped && !S.cntNode) P.label(c, '?', bx, by + 9, 28, INKC, 'center', 800);
         M.drawEx(g, c, 'cnt');
       } else { const k = M.clamp((t - S.popAt) / 0.3, 0, 1); if (k < 1) { c.save(); c.globalAlpha = 1 - k; c.fillStyle = '#e8404a'; for (let i = 0; i < 8; i++) { const an = i * 0.785 + 0.3, d = 14 + k * 30; c.save(); c.translate(RX + Math.cos(an) * d, RY + Math.sin(an) * d); c.rotate(an + k * 4); c.fillRect(-5, -2, 10, 4); c.restore(); } c.restore(); } } }
     // the plank with 6 × 6 = 36, the 36 on a little gold balloon
@@ -332,7 +380,10 @@ MG.add({
     for (const p of S.splash) { const k = (t - p.t0) / 0.8; if (k < 0) continue; c.strokeStyle = `rgba(200,240,255,${0.7 * (1 - k)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(p.x, 586, 6 + k * 24, 2 + k * 5, 0, 0, 7); c.stroke();
       c.fillStyle = `rgba(200,240,255,${0.8 * (1 - k)})`; for (let j = -1; j <= 1; j++) { c.beginPath(); c.arc(p.x + j * (4 + k * 10), 584 - Math.sin(k * Math.PI) * 12 * (1 - Math.abs(j) * 0.3), 1.8, 0, 7); c.fill(); } }
     { const ak = M.clamp((t - S.actAt) / 0.4, 0, 1), acting = ak < 1, wk = won ? t - S.winAt : 0, hop = won ? Math.abs(Math.sin(wk * 6)) * 14 : acting ? Math.sin(ak * Math.PI) * 10 : 0;
-      host(c, 314, 604 - hop, 1.05, { t, pose: won ? 'cheer' : acting ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : S.tapped ? 'wow' : 'happy', facing: -1, quack: acting && ak < 0.6, flap: acting ? t * 30 : 0 }); }
+      host(c, 314, 604 - hop, 1.05, { t, pose: won ? 'cheer' : acting ? 'hop' : S.point ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : S.tapped ? 'wow' : 'happy', facing: -1, quack: acting && ak < 0.6, flap: acting ? t * 30 : 0 }); }
+    // sparks streaming from the cubbies into the sign, one per outcome
+    for (const p of S.sparks) { if (t < p.t0) continue; const b = M.box(g, p.to); if (!b) continue; const k = M.easeIO((t - p.t0) / p.dur), x = M.lerp(p.x, b.x, k), y = M.lerp(p.y, b.y, k) - Math.sin(k * Math.PI) * 40;
+      c.save(); c.globalAlpha = 0.95 - 0.4 * k; c.fillStyle = p.col; c.shadowColor = p.col; c.shadowBlur = 10; c.beginPath(); c.arc(x, y, 3.2 - k, 0, 7); c.fill(); c.restore(); }
     M.drawUI(g, c);
   },
 });

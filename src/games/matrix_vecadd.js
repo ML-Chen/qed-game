@@ -1,11 +1,12 @@
 // matrix_vecadd.js — VECTOR ADD! Add two vectors, on the card (as columns) and on a grid of seaweed lines in a sandy lagoon.
-// Moves (any valid order; nothing waits on an animation):
-//  - slide: drag the second vector's arrow (or its column on the card) onto the first arrow's tip: it jumps tip to tail.
-//    Dragging the first onto the second also works (a + b = b + a).
-//  - for each component, drag the matching parts together (1 onto 2): "2 + 1" is written in that answer slot at once,
-//    and on the grid that leg of the sum walks out (first vector's steps, then the second's).
-//  - then tap "2 + 1": it becomes 3, and the leg turns gold.
-//  When all are done, the gold sum arrow shoots from the start of the first arrow to the tip of the second.
+// Moves (any valid order), each acted out by itself (show your work; the fuse stands still while the working plays):
+//  - slide: drag the second vector's arrow (or its column on the card) onto the first arrow's tip: it glides there,
+//    tip to tail, and a ring pulses where they join. Dragging the first onto the second also works (a + b = b + a).
+//  - for each component, drag the matching parts together (1 onto 2): both are circled, copies of the 2 and the 1 fly
+//    into that answer slot to make "2 + 1", and on the grid that leg of the sum walks out step by step (the first
+//    vector's steps, then the second's), each with its step count beside it.
+//  - then tap "2 + 1": the "+ 1" slides into the 2, which rolls over to 3, and the leg turns gold with a 3 beside it.
+//  When all are done, the gold sum arrow draws itself from the start of the first arrow to the tip of the second.
 // Wrong move: dragging an x-part onto a y-part (mixing components). From level 1 up it is a miss: the steps are walked
 // along the wrong line on the grid, with a red cross, and the octopus is puzzled.
 // Level 0: 2D, components 0..3. Level 1: 2D with negatives. Level 2: 3D columns (x, y, z) on an oblique 3D grid.
@@ -15,6 +16,7 @@ const COL = { A: '#f2684a', Ad: '#bf3a20', B: '#8c63ea', Bd: '#5733c0', S: '#f8b
 const KZ = [-0.42, -0.36]; // the z axis points toward the viewer: drawn down and to the left, a bit shorter
 const clamp = M.clamp, lerp = M.lerp, ease = M.ease, easeIO = M.easeIO;
 const AX = ['x', 'y', 'z'];
+let T = 1; // the tempo (MK.pace) of the current microgame, set in init
 const proj = v => [v[0] + (v[2] || 0) * KZ[0], v[1] + (v[2] || 0) * KZ[1]];
 const unit = (k, n, d) => { const v = Array(d).fill(0); v[k] = n; return v; };
 
@@ -273,7 +275,7 @@ MG.add({
     ask: 'What is (4, 1) + (−2, 3)? What is (1, 2, 0) + (3, −2, 5)?',
   },
   init(g) {
-    const S = g.s; M.setup(g); 
+    const S = g.s; M.setup(g); T = M.pace(g);
     S.dim = g.level === 2 ? 3 : 2; const d = S.dim;
     S.board = { x0: 14, x1: 346, y0: d === 3 ? 326 : 306, y1: 522 };
     pick(g, S);
@@ -306,13 +308,15 @@ MG.add({
     // time scales with the number of moves: the slide, then a drag and a tap for each component
     const nMoves = 1 + 2 * d; g.dur *= (2.6 + 1.05 * nMoves) / 8;
     const allDone = () => S.slid && S.st.every(v => v === 2);
+    // the finale: the gold sum arrow draws itself from the first tail to the last tip, and the answer column lights up
+    const sumGo = g => { if (S.sumT0 != null) return; S.sumT0 = g.t + 0.1 * T; M.show(g, 0.9 * T); S.point = true; g.sfx('swoosh');
+      M.at(g, [[0.75 * T, g => { M.indicate(g, 'vS', { dur: 0.45 * T, col: COL.S, sc: 1.08 }); S.oct.happyAt = g.t; }]]); };
     const slide = (g, who) => {
       const other = who === 'A' ? 'B' : 'A';
-      S.slid = { who, t0: g.t, dur: 0.22, to: S.vec[other] }; g.sfx('whoosh');
+      S.slid = { who, t0: g.t, dur: 0.6 * T, to: S.vec[other] }; g.sfx('whoosh'); M.show(g, 0.8 * T); S.point = true;
+      M.indicate(g, 'v' + who, { dur: 0.45 * T, col: COL[who], sc: 1.1 });
       const mk = g.s.mk; for (const z of ['arrA', 'arrB', 'dockA', 'dockB', 'landA', 'landB']) { delete mk.zones[z]; delete mk.box[z]; }
-      const vn = M.node(g, 'v' + who); if (vn) vn.pop = g.t;
-      S.oct.happyAt = g.t; if (allDone()) S.sumT0 = g.t + 0.12;
-      M.later(g, 0.22, g => { g.sfx('bubble'); const p = scr(S, S.vec[other]); g.burst(p[0], p[1], ['#fff', '#bdf0ff', COL[who]], 8, 90); });
+      M.at(g, [[0.6 * T, g => { g.sfx('bubble'); const p = scr(S, S.vec[other]); g.burst(p[0], p[1], ['#fff', '#bdf0ff', COL[who]], 10, 100); S.joinAt = g.t; S.oct.happyAt = g.t; if (allDone()) sumGo(g); }]]);
     };
     M.play(g, {
       moves(g) {
@@ -331,29 +335,44 @@ MG.add({
             drag: ['b' + k, 'a' + k], to: ['a' + k, 'b' + k, 's' + k], reach: 64, busy: 0.1,
             then(g) {
               const start = S.zero.map((_, j) => S.st[j] ? S.s[j] : 0); S.st[k] = 1; // this leg starts where the legs so far end
-              S.legs.push({ k, start, a, b, t0: g.t, d: 0.11, gold: null });
-              const f = sumRow(S, k); f.id = 'c' + k; f.pop = g.t; S.slots[k].fill = f; S.relay();
-              for (const id of ['a' + k, 'b' + k]) { const n = M.node(g, id), bb = M.box(g, id); if (n) n.alpha = 0.32; if (bb) g.burst(bb.x, bb.y, ['#ffffff', '#bdf4ff'], 6, 70); }
-              const sb = M.box(g, 's' + k); if (sb) g.burst(sb.x, sb.y, ['#ffffff', '#bdf4ff', '#ffe9a8'], 8, 90);
-              S.oct.happyAt = g.t; g.sfx('splash'); M.later(g, 0.11, g => g.sfx('drip'));
+              // the leg walks one step at a time: first vector's steps, then the second's
+              const d1 = T * Math.min(0.5, 0.1 + 0.12 * Math.abs(a)), d2 = T * Math.min(0.5, 0.1 + 0.12 * Math.abs(b)), t0 = g.t + 0.35 * T;
+              S.legs.push({ k, start, a, b, t0, d1, d2, gold: null });
+              M.show(g, 0.35 * T + d1 + d2 + 0.15 * T); S.point = true;
+              M.circle(g, ['a' + k, 'b' + k], { dur: 0.45 * T, col: '#fff6c0' });
+              // the slot gets "a + b", built from copies of the two numbers flying in
+              const f = sumRow(S, k), [na, pl, nb] = f.items; f.id = 'c' + k; na.id = 'ca' + k; pl.id = 'cp' + k; nb.id = 'cb' + k;
+              for (const q of f.items) q.alpha = 0; S.slots[k].fill = f; S.relay(); M.inert(g, ['ca' + k, 'cp' + k, 'cb' + k]);
+              const land = (q, col) => g => { q.alpha = 1; q._born = null; q.pop = g.t; M.sparkle(g, q, { n: 6, cols: ['#fff', col] }); g.sfx('drip'); };
+              M.fly(g, { node: M.num(a, null, { col: COL.Ad }), from: 'a' + k, to: 'ca' + k, delay: 0.1 * T, dur: 0.4 * T, arc: -18, then: land(na, COL.A) });
+              M.at(g, [[0.35 * T, g => { pl.alpha = 1; pl.pop = g.t; }]]);
+              M.fly(g, { node: v2n(b, COL.Bd), from: 'b' + k, to: 'cb' + k, delay: 0.25 * T, dur: 0.4 * T, arc: -18, then: land(nb, COL.B) });
+              for (const id of ['a' + k, 'b' + k]) { const n = M.node(g, id); if (n) M.tween(g, n, { alpha: 0.32 }, 0.3 * T, { delay: 0.35 * T }); }
+              S.oct.happyAt = g.t; g.sfx('splash'); M.at(g, [[t0 - g.t, g => g.sfx('bubble')], [t0 - g.t + d1, g => g.sfx('bubble')]]);
             },
           });
           else if (S.st[k] === 1) out.push({
             // tap "a + b" to add
-            tap: ['c' + k, 's' + k], busy: 0.1, askAt: 0, after: 0.1, ask: { v: sv, wrong: [a * b, a - b, oth, b - a, sv + 1, sv - 1] },
-            then(g) { S.st[k] = 2; },
-            resolve(g) {
-              S.slots[k].fill = M.num(sv, null, { col: COL.Sd, pop: g.t }); S.relay(); g.sfx('coin'); S.oct.happyAt = g.t;
-              const sb = M.box(g, 's' + k); if (sb) g.burst(sb.x, sb.y, ['#fff6c0', COL.S, '#fff'], 10, 110);
-              const lg = S.legs.find(l => l.k === k); if (lg) { lg.gold = g.t; const p = scr(S, lg.start.map((v, j) => j === k ? sv : v)); g.burst(p[0], p[1], ['#fff6c0', COL.S, '#fff'], 8, 80); }
-              if (allDone()) S.sumT0 = g.t + 0.05;
+            tap: ['c' + k, 's' + k], busy: 0.1, askAt: 0.35 * T, after: 0.75 * T, ask: { v: sv, wrong: [a * b, a - b, oth, b - a, sv + 1, sv - 1] },
+            then(g) { S.st[k] = 2; M.show(g, 0.35 * T); S.point = true; const f = S.slots[k].fill; M.circle(g, 's' + k, { dur: 0.4 * T, col: COL.S });
+              for (const q of f.items) M.indicate(g, q, { dur: 0.3 * T, sc: 1.18, col: '#fff6c0' }); },
+            resolve(g) { M.show(g, 0.75 * T);
+              // the "+ b" slides into a, and a rolls over to the sum like an odometer
+              const f = S.slots[k].fill, [na, pl, nb] = f.items, bo = M.box(g, 'ca' + k);
+              for (const q of [pl, nb]) { const b0 = M.box(g, q.id); if (bo && b0) M.tween(g, q, { dx: bo.x - b0.x, alpha: 0, sc: 0.5 }, 0.28 * T); }
+              M.at(g, [[0.12 * T, g => { M.roll(g, na, sv, { dur: 0.32 * T }); na.col = COL.Sd; g.sfx('coin'); }],
+                [0.45 * T, g => { na.id = null; na.pop = g.t; S.slots[k].fill = na; S.relay(); S.oct.happyAt = g.t;
+                  const sb = M.box(g, 's' + k); if (sb) g.burst(sb.x, sb.y, ['#fff6c0', COL.S, '#fff'], 10, 110);
+                  const lg = S.legs.find(l => l.k === k); if (lg) { lg.gold = g.t; const p = scr(S, lg.start.map((v, j) => j === k ? sv : v)); g.burst(p[0], p[1], ['#fff6c0', COL.S, '#fff'], 8, 80); }
+                  if (allDone()) sumGo(g); }]]);
             },
           });
         });
         return out;
       },
       area(g) { if (!S.slid) return ['arrB', 'dockA']; const k = S.st.findIndex(v => v < 2); return k < 0 ? null : S.st[k] === 0 ? ['a' + k, 'b' + k] : 'c' + k; },
-      onMiss(g, info) {
+    });
+    S.onMiss = (g, info) => {
         S.oct.sadAt = g.t;
         const f = info.drag && /^[ab]\d$/.test(info.drag) ? info.drag : null, to = info.to && /^[abs]\d$/.test(info.to) ? info.to : null;
         if (f && to && f[1] !== to[1]) { // mixed an x-part with a y-part: walk those steps along the wrong line
@@ -361,10 +380,12 @@ MG.add({
           S.mix = { t0: g.t, kt, vf, vt, cf: f[0] === 'a' ? COL.A : COL.B, ct: to[0] === 'b' ? COL.B : COL.A, from: f, to };
           M.fly(g, { node: M.num(vf, null, { col: COL.BAD || M.BAD }), from: f, to, dur: 0.25, arc: -30, then(g) { g.sfx('boing'); } });
         }
-      },
-    });
+    };
+    S.seenMiss = -1;
   },
-  update(g, dt) { M.update(g, dt); },
+  update(g, dt) { M.update(g, dt); const S = g.s, mk = S.mk;
+    if (mk.missAt >= 0 && mk.missAt !== S.seenMiss) { S.seenMiss = mk.missAt; try { S.onMiss(g, mk.missInfo || {}); } catch (e) { console.error(e); } }
+    if (!M.showing(g)) S.point = false; },
   down(g, x, y) {
     const S = g.s, mk = S.mk;
     if (!S.slid && !g.done && !(mk.busyT > 0) && !mk.ask) { const id = grabArrow(S, [x, y]); if (id) { mk.press = { id, x0: x, y0: y, x, y, dragging: false, t: g.t }; return; } }
@@ -415,7 +436,7 @@ MG.add({
     // the legs of the sum: first vector's steps, then the second's, along one axis
     for (const L of S.legs) {
       const k = L.k, p0 = scr(S, L.start), p1 = scr(S, L.start.map((v, j) => j === k ? v + L.a : v)), p2 = scr(S, L.start.map((v, j) => j === k ? v + L.a + L.b : v));
-      const k1 = clamp((t - L.t0) / L.d, 0, 1), k2 = clamp((t - L.t0 - L.d) / L.d, 0, 1), gk = L.gold == null ? 0 : clamp((t - L.gold) / 0.3, 0, 1);
+      const k1 = clamp((t - L.t0) / L.d1, 0, 1), k2 = clamp((t - L.t0 - L.d1) / L.d2, 0, 1), gk = L.gold == null ? 0 : clamp((t - L.gold) / 0.3, 0, 1);
       const nrm = k === 0 ? [0, 7] : k === 1 ? [7, 0] : [5, -5];
       c.save(); c.lineCap = 'round';
       if (gk < 1 && k1 > 0) {
@@ -432,7 +453,17 @@ MG.add({
       if (gk > 0) { c.globalAlpha = gk * 0.85; c.setLineDash([7, 6]); c.strokeStyle = COL.Sb; c.lineWidth = 4; c.beginPath(); c.moveTo(p0[0], p0[1]); c.lineTo(p2[0], p2[1]); c.stroke(); c.setLineDash([]);
         c.fillStyle = COL.S; c.beginPath(); c.arc(p2[0], p2[1], 4.5, 0, 7); c.fill(); c.strokeStyle = COL.Sd; c.lineWidth = 1.5; c.stroke(); }
       c.restore();
+      // the step counts beside each leg: the first vector's, the second's, then their sum in gold
+      const lab = (txt, p, q, col, al, side = 1) => { if (al <= 0) return; const m = mid(p, q), o0 = k === 0 ? [0, 18] : k === 1 ? [-18, 0] : [13, 13], off = [o0[0] * side, o0[1] * side];
+        c.save(); c.globalAlpha *= clamp(al, 0, 1); c.font = M.NUMF(19, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 4; c.strokeStyle = 'rgba(255,255,240,0.95)'; c.lineJoin = 'round';
+        const s = String(txt).replace(/^-/, '−'); c.strokeText(s, m[0] + off[0], m[1] + off[1]); c.fillStyle = col; c.fillText(s, m[0] + off[0], m[1] + off[1]); c.restore(); };
+      if (L.a) lab(L.a, p0, p1, COL.Ad, (k1 > 0.3 ? 1 : 0) * (1 - gk));
+      if (L.b) lab(L.b, [p1[0] + nrm[0], p1[1] + nrm[1]], [p2[0] + nrm[0], p2[1] + nrm[1]], COL.Bd, (k2 > 0.3 ? 1 : 0) * (1 - gk), Math.sign(L.a) === Math.sign(L.b) ? 1 : -1);
+      if (gk > 0 && L.a + L.b) lab(L.a + L.b, p0, p2, COL.Sd, gk);
     }
+    // the ring where the two arrows join, tip to tail
+    if (S.joinAt != null && t - S.joinAt < 0.6) { const k = (t - S.joinAt) / 0.6, p = scr(S, S.vec[S.slid.who === 'A' ? 'B' : 'A']);
+      c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#ffffff'; c.lineWidth = 3; c.beginPath(); c.arc(p[0], p[1], 8 + k * 22, 0, 7); c.stroke(); c.restore(); }
     // the original spot of the arrow that slid, fading
     if (S.slid) { const k = clamp((t - S.slid.t0) / 1.0, 0, 1), w = S.slid.who; if (k < 1) dashed(c, scr(S, S.zero), scr(S, S.vec[w]), COL[w], 3, 0.5 * (1 - k)); }
     // 3D: dashed drop lines from each tip back to the x-y plane show how far toward you it is
@@ -451,7 +482,7 @@ MG.add({
     drawVec('A', offA); drawVec('B', offB);
     // the sum arrow, from the very start to the final tip
     if (S.sumT0 != null && t >= S.sumT0) {
-      const k = ease((t - S.sumT0) / 0.25), o = scr(S, S.zero), e = scr(S, S.s), p = [lerp(o[0], e[0], k), lerp(o[1], e[1], k)];
+      const k = easeIO((t - S.sumT0) / (0.6 * T)), o = scr(S, S.zero), e = scr(S, S.s), p = [lerp(o[0], e[0], k), lerp(o[1], e[1], k)];
       drop(S.s, COL.Sd, 0.6 * k);
       c.save(); c.shadowColor = 'rgba(255,220,90,0.9)'; c.shadowBlur = 14; arrow(c, o, p, COL.S, COL.Sd, 8); c.restore();
       if (k >= 1) { fishOn(c, o, e, t, 0.25, '#ffe58a'); for (let i = 0; i < 3; i++) { const a = t * 2.4 + i * 2.1; sparkle(c, e[0] + Math.cos(a) * 18, e[1] + Math.sin(a) * 14, 5, 0.85); } }
@@ -505,7 +536,7 @@ MG.add({
     const hk = (t - S.oct.happyAt) / 0.45, busyK = hk >= 0 && hk < 1, sadK = lost || t - S.oct.sadAt < 1.5;
     const ox = 62, oy = 606 - (busyK ? Math.sin(hk * Math.PI) * 16 : 0) - (won ? Math.abs(Math.sin(t * 7)) * 8 : 0), os = 1.0;
     try {
-      if (typeof ANI !== 'undefined' && ANI.draw) ANI.draw(c, 'octopus', ox, oy, 1.3, { t, pose: won ? 'cheer' : busyK ? 'hop' : 'idle', expr: won ? 'laugh' : sadK ? 'sad' : busyK ? 'wow' : 'happy' });
+      if (typeof ANI !== 'undefined' && ANI.draw) ANI.draw(c, 'octopus', ox, oy, 1.3, { t, pose: won ? 'cheer' : busyK ? 'hop' : S.point ? 'point' : 'idle', expr: won ? 'laugh' : sadK ? 'sad' : busyK ? 'wow' : 'happy' });
       else octo(c, ox, oy, os, t, won || busyK ? 'cheer' : sadK ? 'sad' : 'happy');
     } catch (e) { octo(c, ox, oy, os, t, 'happy'); }
     for (let i = 0; i < 3; i++) { const k = (t * 0.5 + i / 3) % 1; c.strokeStyle = `rgba(255,255,255,${0.7 * (1 - k)})`; c.lineWidth = 1.5; c.beginPath(); c.arc(ox + 20 + Math.sin(t * 3 + i) * 4, oy - 70 - k * 70, 2.5 + i, 0, 7); c.stroke(); }

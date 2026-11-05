@@ -43,7 +43,9 @@ MG.add({
     S.x0 = Math.round(180 - S.max * S.cs / 2 + 12);
     S.rows = 1; S.cols = 1; S.born = {}; S.born['0,0'] = -9;
     S.phase = 'stretch'; S.ang = 0; S.drag = null; S.lastMoveT = 0;
-    S.ant = { cheerAt: -9, shrugAt: -9 };
+    S.ant = { cheerAt: -9, shrugAt: -9 }; S.T = M.pace(g); S.signBox = {};
+    // the sign keeps its number nodes, so they can swell while the work is shown and the total can land in its slot
+    S.sg = { R: M.num(S.R), C: M.num(S.C), tot: M.num(S.R * S.C, 'tot', { col: '#ffe27a' }), slot: M.slot('slot', { col: '#ffe6b0' }), turn: null };
     M.zone(g, 'handle', handleBox(S));
     M.zone(g, 'sign', { x: 180, y: SIGN_Y, w: 200, h: 56 });
     M.play(g, {
@@ -60,13 +62,14 @@ MG.add({
     // after a timeout the array stretches (and turns) to the right size by itself
     if (g.done && g.result === 'fail' && !S.shownAt && g.t - g.doneAt > 0.35) {
       S.shownAt = g.t;
-      if (S.phase === 'stretch' || S.phase === 'ask') { setSize(g, S.R, S.C, true); S.skipAt = g.t + 0.1; S.signAt = g.t; S.phase = 'shown'; S.answerShown = true; }
+      if (S.phase === 'stretch' || S.phase === 'ask') { setSize(g, S.R, S.C, true); quickSkip(g); S.phase = 'shown'; S.answerShown = true; S.totalShown = true; S.sg.tot.pop = g.t; }
       else if (S.phase === 'turn') turned(g, true);
     }
   },
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask && !K.ask.closing) { M.down(g, x, y); return; }
+    if (M.showing(g) || K.busyT > 0) return; // the working is being shown
     if (S.phase === 'stretch') {
       const h = handleXY(S), near = g.level === 0 ? 48 : 36;
       if (Math.hypot(x - h.x, y - h.y) < near) { S.drag = { kind: 'stretch', ox: x - h.x, oy: y - h.y }; g.sfx('tap'); return; }
@@ -137,24 +140,59 @@ function setSize(g, rows, cols, quiet) {
   S.rows = rows; S.cols = cols; S.sizeAt = g.t;
   if (!quiet) g.sfx(grew ? 'pop' : 'tap');
 }
+// The working, after the array has the right size (show your work):
+//   1. the rows count themselves down the left edge while the sign's first number swells, then the columns along the top
+//      while the second number swells (medium mode: the tray asks for the total here);
+//   2. skip counting: one row at a time lights up and its ants hop, a counter slides down the right edge and rolls up
+//      by one row ("+6": 6, 12, 18, 24);
+//   3. the final count flies up into the sign: 4 × 6 = 24.
+// At level 2 the turned array does it again: "= 6 × 4" writes itself on the sign, the new rows are counted by fours,
+// and the count flies onto the 24 already there: the total is the same.
+function sweep(g, R, C, nR, nC) { // the edge counts light one after another while the matching number on the sign swells
+  const S = g.s, T = S.T, d = Math.min(0.07, 0.24 / Math.max(R, C)) * T;
+  S.sweep = { r0: g.t, c0: g.t + 0.22 * T, d };
+  M.indicate(g, nR, { dur: 0.3 * T, sc: 1.35 }); M.indicate(g, nC, { dur: 0.3 * T, sc: 1.35, delay: 0.22 * T });
+  M.at(g, [[0.02, g => g.sfx('tap')], [0.22 * T, g => g.sfx('tap')]]);
+  return 0.46 * T;
+}
+function startSkip(g, land) { // skip count the rows, then fly the count to the sign; returns how long it takes
+  const S = g.s, T = S.T, R = S.rows, C = S.cols, per = Math.min(0.26, 1 / R) * T, t0 = 0.05 * T;
+  S.skip = { t0: g.t + t0, per };
+  S.pills = [...Array(R)].map((_, r) => M.num((r + 1) * C, null, r ? { roll: { from: r * C, t0: g.t + t0 + r * per, dur: 0.6 * per } } : {}));
+  M.at(g, [...Array(R)].map((_, r) => [t0 + r * per, g => { g.sfx(r === R - 1 ? 'ding' : 'pop'); S.mk.lastMove = g.t; }]));
+  const tEnd = t0 + (R - 1) * per + 0.6 * per + 0.08 * T, fl = 0.34 * T;
+  M.at(g, [[tEnd, g => { const p = pillXY(S, R - 1), b = S.signBox.slot && !S.totalShown ? S.signBox.slot : S.signBox.tot; if (!b) { land(g); return; }
+    S.flyOut = g.t; g.sfx('whoosh');
+    M.fly(g, { node: M.num(R * C, null, { col: '#3a8a3a' }), from: [p.x, p.y], to: [b.x, b.y], dur: fl, arc: -50, s0: 19, s1: b.s || 30, then: land }); }]]);
+  return tEnd + fl + 0.12 * T;
+}
+function quickSkip(g) { const S = g.s; S.skip = { t0: g.t + 0.1, per: 0.13 }; S.pills = [...Array(S.rows)].map((_, r) => M.num((r + 1) * S.cols)); }
+function landTotal(g) { const S = g.s, b = S.signBox.slot || S.signBox.tot; S.totalShown = true; S.sg.tot.pop = g.t; S.ant.cheerAt = g.t; g.sfx('coin'); g.sfx('cheer'); if (b) g.burst(b.x, b.y, ['#ffe27a', '#fff', '#ffb21f'], 14, 140); }
 function success(g) {
-  const S = g.s; S.ant.cheerAt = g.t; g.sfx('cheer'); g.sfx('sparkle'); const c = center(S); g.burst(c.x, c.y, ['#ffd45a', '#ff8a5a', '#fff'], 18, 180);
-  S.signAt = g.t;
-  if (g.mode === 'medium') {
-    const p = S.R * S.C;
-    S.phase = 'ask'; S.mk.busyT = 1e9;
-    M.openAsk(g, { ask: { v: p, wrong: [S.R + S.C, p - S.C, p + S.C, (S.R - 1) * (S.C + 1), p + 1] }, after: 0.05, resolve(g) { S.answerShown = true; S.skipAt = g.t; S.phase = S.turn ? 'turn' : 'done'; S.lastMoveT = g.t; g.sfx('coin'); } });
-  } else { S.answerShown = true; S.skipAt = g.t + 0.05; S.phase = S.turn ? 'turn' : 'done'; }
+  const S = g.s, T = S.T; S.ant.cheerAt = g.t; g.sfx('sparkle'); const c = center(S); g.burst(c.x, c.y, ['#ffd45a', '#ff8a5a', '#fff'], 18, 180);
+  S.signAt = g.t; S.answerShown = true; S.phase = 'work';
+  const askAt = sweep(g, S.R, S.C, S.sg.R, S.sg.C); M.show(g, askAt);
+  const p = S.R * S.C, mv = { ask: { v: p, wrong: [S.R + S.C, p - S.C, p + S.C, (S.R - 1) * (S.C + 1), p + 1] }, after: 0.05,
+    resolve(g) { S.phase = 'work'; const len = startSkip(g, g => landTotal(g)); M.show(g, len);
+      M.at(g, [[len - 0.02, g => { S.phase = S.turn ? 'turn' : 'done'; S.lastMoveT = g.t; }]]); } };
+  M.at(g, [[askAt, g => { if (g.mode === 'medium') { S.phase = 'ask'; S.mk.busyT = 1e9; M.openAsk(g, mv); } else mv.resolve(g); }]]);
 }
 function turned(g, quiet) {
-  const S = g.s, c0 = center(S), sgn = S.ang < 0 ? -1 : 1;
+  const S = g.s, T = S.T, c0 = center(S);
   S.phase = 'done'; S.turnedAt = g.t;
   // the turned array: columns become rows. Keep its centre where it is for a moment, then slide it into place
   const o = turnOff(S); c0.x += o.x; c0.y += o.y; const R0 = S.rows, C0 = S.cols; S.rows = C0; S.cols = R0; S.ang = 0; S.born = {}; for (let r = 0; r < S.rows; r++) for (let c = 0; c < S.cols; c++) S.born[r + ',' + c] = -9;
-  const c1 = center(S); S.slide = { t0: g.t, dx: c0.x - c1.x, dy: c0.y - c1.y };
-  S.skipAt = g.t + 0.15; S.signAt2 = g.t; S.ant.cheerAt = g.t;
-  if (!quiet) { g.sfx('swoosh'); g.sfx('magic'); g.burst(c0.x, c0.y, ['#9ae07a', '#ffd45a', '#fff'], 16, 160); }
+  const c1 = center(S); S.slide = { t0: g.t, dx: c0.x - c1.x, dy: c0.y - c1.y }; S.skip = null; S.ant.cheerAt = g.t;
+  const nR = M.num(S.rows), nC = M.num(S.cols); S.sg.turn = M.row(M.op('='), nR, M.op('×'), nC);
+  if (quiet) { quickSkip(g); return; }
+  g.sfx('swoosh'); g.sfx('magic'); g.burst(c0.x, c0.y, ['#9ae07a', '#ffd45a', '#fff'], 16, 160);
+  M.writeIn(g, S.sg.turn, { dur: 0.3 * T, delay: 0.05 * T });
+  // once the array has slid into place: count its new rows and columns, then skip count again and land on the same total
+  M.show(g, 0.34 * T);
+  M.at(g, [[0.34 * T, g => { const t1 = sweep(g, S.rows, S.cols, nR, nC); M.show(g, t1);
+    M.at(g, [[t1, g => { M.show(g, startSkip(g, g => { S.sg.tot.pop = g.t; M.indicate(g, S.sg.tot, { dur: 0.4 * T, sc: 1.3, col: '#9ae07a' }); S.ant.cheerAt = g.t; g.sfx('ding'); const b = S.signBox.tot; if (b) g.burst(b.x, b.y, ['#9ae07a', '#fff', '#ffe27a'], 14, 140); })); }]]); }]]);
 }
+const pillXY = (S, r) => ({ x: S.x0 + S.cols * S.cs + 22, y: Y0 + (r + 0.5) * S.cs });
 
 // ---------------- the world ----------------
 function yard(c, w, h) {
@@ -196,9 +234,9 @@ function rr(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); c.beginPath(); c.
 function drawSign(g, c, S) {
   const t = g.t, wob = S.signWobAt != null && t - S.signWobAt < 0.4 ? Math.sin((t - S.signWobAt) * 30) * 0.04 * (1 - (t - S.signWobAt) / 0.4) : 0;
   const p = S.R * S.C, solved = S.answerShown, asking = S.phase === 'ask';
-  const parts = [M.num(S.R), M.op('×'), M.num(S.C)];
-  if (S.turnedAt != null) parts.push(M.op('='), M.num(S.C, null, { pop: S.signAt2 }), M.op('×'), M.num(S.R, null, { pop: S.signAt2 }));
-  if (solved) parts.push(M.op('='), M.num(p, null, { pop: S.signAt, col: '#ffe27a' })); else if (asking) parts.push(M.op('='), M.slot(null, { col: '#ffe6b0' }));
+  const parts = [S.sg.R, M.op('×'), S.sg.C];
+  if (S.sg.turn) parts.push(S.sg.turn);
+  if (S.totalShown) parts.push(M.op('='), S.sg.tot); else if (asking || S.phase === 'work') parts.push(M.op('='), S.sg.slot);
   const node = M.row(...parts); let s = 34; const w0 = M.lay(node, s).w; if (w0 > 270) s *= 270 / w0;
   const m = M.lay(node, s), w = Math.max(170, m.w + 44), hh = 64;
   c.save(); c.translate(180, SIGN_Y + 30); c.rotate(wob); c.translate(-180, -SIGN_Y - 30);
@@ -209,7 +247,7 @@ function drawSign(g, c, S) {
   const gr = c.createLinearGradient(0, SIGN_Y - hh / 2, 0, SIGN_Y + hh / 2); gr.addColorStop(0, '#a8703f'); gr.addColorStop(1, '#6e4524'); c.fillStyle = gr; rr(c, 180 - w / 2, SIGN_Y - hh / 2, w, hh, 12); c.fill();
   c.strokeStyle = 'rgba(50,25,8,0.3)'; c.lineWidth = 1.5; for (let k = 1; k < 4; k++) { const yy = SIGN_Y - hh / 2 + k * hh / 4; c.beginPath(); c.moveTo(180 - w / 2 + 10, yy); c.bezierCurveTo(140, yy + 3, 220, yy - 3, 180 + w / 2 - 10, yy); c.stroke(); }
   c.fillStyle = '#d8c090'; for (const px of [180 - w / 2 + 10, 180 + w / 2 - 10]) { c.beginPath(); c.arc(px, SIGN_Y - hh / 2 + 10, 3, 0, 7); c.fill(); }
-  M.draw(c, node, 180 - m.w / 2, SIGN_Y + 4, s, { t, col: '#fff4dc' });
+  M.draw(c, node, 180 - m.w / 2, SIGN_Y + 4, s, { t, col: '#fff4dc', box: S.signBox });
   // a small key that names the two numbers
   c.font = '800 11px Nunito, system-ui, sans-serif'; c.fillStyle = 'rgba(255,236,200,0.85)'; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText(S.turnedAt != null ? 'rows × columns, turned' : 'rows × columns', 180, SIGN_Y + hh / 2 - 8);
@@ -239,25 +277,38 @@ function drawGrid(g, c, S) {
   c.strokeStyle = bad ? `rgba(216,69,74,${0.5 + bad * 0.5})` : right || S.answerShown ? '#5aa04a' : 'rgba(150,100,50,0.6)'; c.lineWidth = 2.5; c.setLineDash([6, 5]); rr(c, -w / 2, -h / 2, w, h, 8); c.stroke(); c.setLineDash([]);
   c.strokeStyle = 'rgba(150,100,50,0.25)'; c.lineWidth = 1; c.beginPath(); for (let q = 1; q < S.cols; q++) { c.moveTo(-w / 2 + q * cs, -h / 2 + 4); c.lineTo(-w / 2 + q * cs, h / 2 - 4); } for (let r = 1; r < S.rows; r++) { c.moveTo(-w / 2 + 4, -h / 2 + r * cs); c.lineTo(w / 2 - 4, -h / 2 + r * cs); } c.stroke();
   c.restore();
+  // skip counting: the row being counted lights up
+  if (S.skip && Math.abs(S.ang) < 0.02 && !(S.slide && t - S.slide.t0 < 0.3)) for (let r = 0; r < S.rows; r++) { const sa = t - S.skip.t0 - r * S.skip.per; if (sa < 0) continue;
+    const a = sa < 0.25 ? sa / 0.25 : Math.max(0.28, 1 - (sa - 0.25) / 0.4); c.save(); c.globalAlpha = 0.5 * a; c.fillStyle = '#fff2a0'; c.shadowColor = '#ffd45a'; c.shadowBlur = 14; rr(c, S.x0 + 3, Y0 + r * cs + 3, S.cols * cs - 6, cs - 6, 7); c.fill(); c.restore(); }
   // the ants, upright at their (turned) spots; new ones pop out of the anthill
   const as = cs / 66;
   for (let r = 0; r < S.rows; r++) for (let q = 0; q < S.cols; q++) {
     const b = S.born[r + ',' + q] ?? -9, k = clamp((t - b) / 0.18, 0, 1), p = P0(S.x0 + (q + 0.5) * cs, Y0 + (r + 0.5) * cs);
     const x = lerp(ax, p.x, ease(k)), y = lerp(ay, p.y, ease(k)) + cs * 0.32 - Math.sin(k * Math.PI) * 10;
-    const ph = r * 1.3 + q * 0.7, sk = S.skipAt != null && t > S.skipAt + r * 0.13 && t < S.skipAt + r * 0.13 + 0.3;
-    try { ANI.draw(c, 'ant', x, y, as * (0.7 + 0.3 * k), { t, phase: ph, pose: cheer || sk ? 'cheer' : 'carry', expr: cheer ? 'laugh' : shrug ? 'think' : 'happy', hold: cheer || sk ? null : crumb(4), noShadow: k < 1 }); } catch (e) { }
+    const ph = r * 1.3 + q * 0.7, sa = S.skip ? t - S.skip.t0 - r * S.skip.per : -1, sk = sa > 0 && sa < 0.3, hp = sk ? Math.sin(sa / 0.3 * Math.PI) * cs * 0.22 : 0;
+    try { ANI.draw(c, 'ant', x, y - hp, as * (0.7 + 0.3 * k), { t, phase: ph, pose: cheer || sk ? 'cheer' : 'carry', expr: cheer ? 'laugh' : shrug ? 'think' : 'happy', hold: cheer || sk ? null : crumb(4), noShadow: k < 1 }); } catch (e) { }
   }
-  // live counts along the edges (hidden while turning)
+  // live counts along the edges (hidden while turning); while the work is shown they light up one after another
   if (Math.abs(S.ang) < 0.02 && !S.slide || (S.slide && t - S.slide.t0 > 0.3)) {
-    c.font = `800 ${Math.round(Math.min(15, cs * 0.45))}px Fredoka, Nunito, system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    for (let q = 0; q < S.cols; q++) { const last = q === S.cols - 1; c.fillStyle = last ? '#7a2a14' : 'rgba(110,60,30,0.65)'; c.fillText(String(q + 1), S.x0 + (q + 0.5) * cs, Y0 - 9); }
-    for (let r = 0; r < S.rows; r++) { const last = r === S.rows - 1; c.fillStyle = last ? '#7a2a14' : 'rgba(110,60,30,0.65)'; c.fillText(String(r + 1), S.x0 - 10, Y0 + (r + 0.5) * cs); }
+    const fs = Math.round(Math.min(15, cs * 0.45)), W0 = S.sweep, lit = (t0, i) => W0 ? M.clamp((t - t0 - i * W0.d) / 0.12, 0, 1) * (1 - M.clamp((t - t0 - i * W0.d - 0.5) / 0.3, 0, 1)) : 0;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    const lab = (txt, x, y, last, L) => { c.save(); c.translate(x, y); if (L > 0) { c.scale(1 + 0.45 * L, 1 + 0.45 * L); c.shadowColor = '#ffd45a'; c.shadowBlur = 10 * L; }
+      c.font = `800 ${fs}px Fredoka, Nunito, system-ui, sans-serif`; c.fillStyle = L > 0.3 ? '#c8401a' : last ? '#7a2a14' : 'rgba(110,60,30,0.65)'; c.fillText(txt, 0, 0); c.restore(); };
+    for (let q = 0; q < S.cols; q++) lab(String(q + 1), S.x0 + (q + 0.5) * cs, Y0 - 9, q === S.cols - 1, W0 ? lit(W0.c0, q) : 0);
+    for (let r = 0; r < S.rows; r++) lab(String(r + 1), S.x0 - 10, Y0 + (r + 0.5) * cs, r === S.rows - 1, W0 ? lit(W0.r0, r) : 0);
   }
-  // the skip count down the right edge: one more row each beat
-  if (S.skipAt != null && Math.abs(S.ang) < 0.02) {
-    for (let r = 0; r < S.rows; r++) { const k = ease((t - S.skipAt - r * 0.13) / 0.2); if (k <= 0) continue; const x = S.x0 + S.cols * cs + 20 + ox, y = Y0 + (r + 0.5) * cs + oy, last = r === S.rows - 1;
-      c.save(); c.globalAlpha = k; c.translate(x, y); c.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k); c.font = `700 ${last ? 19 : 15}px Fredoka, Nunito, system-ui, sans-serif`; const txt = String((r + 1) * S.cols), tw = c.measureText(txt).width + 12;
-      c.fillStyle = last ? '#3a8a3a' : 'rgba(255,250,236,0.92)'; rr(c, -tw / 2, -11, tw, 22, 11); c.fill(); c.fillStyle = last ? '#ffffff' : '#5a3a1a'; c.fillText(txt, 0, 1); c.restore(); }
+  // the skip count down the right edge: each row adds one more row's worth, the count rolling up (6, 12, 18, 24)
+  if (S.skip && S.pills && Math.abs(S.ang) < 0.02 && !(S.slide && t - S.slide.t0 < 0.3)) {
+    const fs0 = Math.round(Math.min(17, cs * 0.5));
+    for (let r = 0; r < S.rows; r++) { const sa = t - S.skip.t0 - r * S.skip.per, k = ease(sa / 0.2); if (k <= 0) continue; const p = pillXY(S, r), last = r === S.rows - 1, done = last && S.flyOut != null;
+      const node = S.pills[r], fs = last ? fs0 + 3 : fs0, m = M.lay(node, fs), tw = Math.max(m.w + 14, 28);
+      c.save(); c.globalAlpha = k * (r < S.rows - 1 && S.rows > 1 ? 0.85 : 1); c.translate(p.x + (1 - k) * -14, p.y); c.scale(0.6 + 0.4 * k, 0.6 + 0.4 * k);
+      c.fillStyle = last ? '#3a8a3a' : 'rgba(255,250,236,0.94)'; rr(c, -tw / 2, -fs * 0.72, tw, fs * 1.44, fs * 0.72); c.fill();
+      M.draw(c, node, -m.w / 2, (m.a - m.d) / 2, fs, { t, col: last ? '#ffffff' : '#5a3a1a' }); c.restore();
+      // the "+6" that each new row adds, written just under the previous count as it rolls
+      if (r > 0 && sa > 0 && sa < S.skip.per * 1.1) { const a = Math.min(1, sa / 0.08) * (1 - Math.max(0, (sa - S.skip.per * 0.7) / (S.skip.per * 0.4)));
+        c.save(); c.globalAlpha = a; c.font = `800 ${Math.round(fs0 * 0.8)}px Fredoka, Nunito, system-ui, sans-serif`; c.fillStyle = '#c8501a'; c.textAlign = 'left'; c.textBaseline = 'middle'; const lb = '+' + S.cols; c.fillText(lb, Math.min(p.x + tw / 2 + 2, 356 - c.measureText(lb).width), p.y - cs * 0.5); c.restore(); }
+    }
   }
   // the corner handle with its live bubble
   if (S.phase === 'stretch' || S.phase === 'ask') {
