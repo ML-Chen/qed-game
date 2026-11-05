@@ -49,7 +49,7 @@
   SALT.col = '#9a8ad8'; WAT.col = '#3a9ad8';
   function newBeaker(g) { const s = g.s; s.c = s.starts[s.i]; s.k = 1; s.ok = 0; s.lvl = 0.62; s.inT = g.t; s.grains = []; s.popT = 0; s.doneT = 0; }
   MG.add({
-    id: 'dunk', stage: 'cells', cmd: 'MAKE EVERY BLOOD CELL PLUMP!', time: 6, mood: 'sea', winText: 'Just as salty as blood!', failText: 'Pop!',
+    id: 'dunk', stage: 'cells', cmd: 'KEEP EACH BLOOD CELL IN SHAPE!', time: 6, mood: 'sea', winText: 'As salty as blood: cells keep their shape!', failText: 'Pop!',
     card: { title: 'Water goes to the salty side', kind: 'Biology', ref: 'Osmosis',
       text: 'A cell\'s outer skin, its membrane, lets water through but holds the salt back. Water moves through it toward the side with more salt in it. This is called osmosis.\n\nIn fresh water, water rushes into a red blood cell until it swells and can burst. In very salty water, water leaves the cell and it shrivels. When the water around it is just as salty as the inside of the cell, as much water goes in as comes out, and the cell keeps its shape.\n\nThat is why a hospital drip is saline, salt water as salty as blood, and not plain water.',
       note: 'Water moves into or out of a cell toward the saltier side, so cells stay healthy only in water as salty as they are.' },
@@ -115,7 +115,7 @@
         const nx = f(s.c), ok = Math.abs(s.c - 1) <= s.band; c.fillStyle = ok ? '#c8ffc8' : '#ffd45a'; c.strokeStyle = '#1a1030'; c.lineWidth = 2; c.beginPath(); c.moveTo(nx, GY + 6); c.lineTo(nx - 9, GY - 18); c.lineTo(nx + 9, GY - 18); c.closePath(); c.fill(); c.stroke();
         SK.tag(c, 'Salt', GX + 20, GY + 30, 18); SK.tag(c, 'Beaker ' + Math.min(s.i + 1, s.need) + ' / ' + s.need, 180, 502, 18);
         if ((s.saltOn || s.pourOn) && !s.doneT) { const go = s.saltOn ? s.c < 1 - s.band : s.c > 1 + s.band; SK.tag(c, ok ? 'Let go now!' : go ? 'Keep holding...' : 'Too far!', BK.x, BK.y - 80, 20, '#fff6ea', ok ? 'rgba(40,150,70,0.95)' : go ? 'rgba(30,14,36,0.75)' : 'rgba(190,40,40,0.9)'); }
-        else if (ok && s.ok > 0) SK.tag(c, 'Plump!', BK.x, BK.y - 80, 20, '#fff6ea', 'rgba(40,150,70,0.95)'); }
+        else if (ok && s.ok > 0) SK.tag(c, 'In shape!', BK.x, BK.y - 80, 20, '#fff6ea', 'rgba(40,150,70,0.95)'); }
       button(c, SALT, ['Hold to shake', 'salt'], !g.done && s.c < 1 - s.band, t, s.saltOn);
       button(c, WAT, ['Hold to pour', 'water'], !g.done && s.c > 1 + s.band, t, s.pourOn);
       SK.animal(c, 'octopus', 36, 488, 0.66, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.k > 1.3 || s.k < 0.75 ? 'wow' : 'happy', facing: 1 });
