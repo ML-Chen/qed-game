@@ -1,3 +1,4 @@
 # Heurēka! microgames left out of every build until they pass review (one file name or glob per line)
 apps_wire.js  # owner: "feels like a multiple choice test where you have to guess the right answer"
 programs_call.js  # reviewer: CUT (a follow-the-glow chore with four gestures and no decision)
+ai_attend.js  # coordinator: a pick-which-word choice (rule 1); n6 is reworking it
