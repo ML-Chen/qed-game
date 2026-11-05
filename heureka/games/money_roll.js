@@ -100,8 +100,15 @@ MG.add({
     SK.animal(c, 'rabbit', 176, 612, 0.95, { t, pose: won ? 'cheer' : scr ? 'wave' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : scr ? 'wow' : 'happy', facing: 1 });
     if (!won) SK.tag(c, 'Savings goal', gx, gy - L.goal - 16, 18); if (!sink && s.u > 0.05 && (s.u < 0.8 || g.done)) SK.tag(c, 'Keeps interest', SK.clamp(bx - 20, 80, 290), by - s.r - 18, 18);
     if (s.spends.length && t - s.spends[s.spends.length - 1].t < 0.9) { const sp = s.spends[s.spends.length - 1]; SK.tag(c, 'Spent', sp.x + 40, sp.y - 40, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); }
-    if (!s.rolling && !s.end) SK.demo(g, c, 'hold', [bx + 4, by + 6], null, { delay: 0.8, period: 2.4 });
-    if (s.rolling && s.u > 0.8) SK.glow(c, g, gx, gy, L.goal * 0.6); // levels 0 and 1: the place to let go glows
+    // the hold button (anywhere works): 'Hold to roll', then, on the ice, when to let go
+    if (!g.done && !s.end) { const HB = [80, 604], pr = s.rolling ? 1 : 0, [ex] = ballAt(s.u, s.r), inR = s.u > 1 && Math.abs(ex - L.gx) <= L.tol, big = s.r >= L.goal * 0.95;
+      c.fillStyle = '#1a4a7a'; c.beginPath(); c.roundRect(HB[0] - 70, HB[1] - 16, 140, 38, 19); c.fill(); c.fillStyle = s.rolling ? '#3a8ad8' : '#4a9ae8'; c.beginPath(); c.roundRect(HB[0] - 70, HB[1] - 21 + pr * 4, 140, 38, 19); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.stroke();
+      c.save(); c.font = '900 19px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.fillText(s.rolling ? 'Rolling...' : 'Hold to roll', HB[0], HB[1] - 1 + pr * 4); c.restore();
+      if (!s.rolling) SK.glow(c, g, HB[0], HB[1] - 2, 40, '#ffe27a', { level: 2 });
+      // on the ice: wait... then let go inside the ring
+      if (s.rolling && s.u > 0.9) { if (inR && big) { SK.tag(c, 'Let go now!', gx, gy - L.goal - 46, 22, '#fff6ea', 'rgba(40,150,70,0.95)'); SK.glow(c, g, gx, gy, L.goal * 0.6, '#7aff9a', { level: 2 }); } else if (ex < L.gx) SK.tag(c, 'Not yet...', gx, gy - L.goal - 46, 20, '#fff6ea', 'rgba(200,110,30,0.92)'); }
+    }
+    if (!s.rolling && !s.end) SK.demo(g, c, 'hold', [80, 600], null, { delay: 0.8, period: 6 }); // the hand holds 3.9 s, the whole way down the hill
   },
   auto(g, dt, synth) { // hold from the top, and let go when the ball is over the ring
     HILL = HILLS[g.s.hill]; const s = g.s; if (!s._b8 && g.t >= 0.9) { s._b8 = 1; synth('down', 180, 330); }

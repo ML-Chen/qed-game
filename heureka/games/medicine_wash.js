@@ -141,7 +141,25 @@ MG.add({
     const nail = s.germs.find(gm => gm.nail && gm.hits < 3);
     if (nail && g.level <= 1) for (const gm of s.germs) if (gm.nail && gm.hits < 3) { const q = gpos(gm, 0); SK.glow(c, g, q[0], q[1], 18); }
     SK.tag(c, 'Soap', 50, 290, 18); if (!g.done && s.rinse < 0) SK.tag(c, 'Germs', 180, 330, 18);
-    if (s.rinse < 0) { if (nail && s.scrubs > 4) { const q = gpos(nail, 0); SK.demo(g, c, 'tap', [q[0], q[1] + 6], null, { period: 0.5 }); } else SK.demo(g, c, 'drag', [130, 440], [230, 440], { period: 0.7 }); }
+    // rub back and forth: a two-way arrow on the paws, and 'Keep scrubbing' if you stop before the song ends
+    const rubbing = s.lastX != null;
+    if (s.rinse < 0 && !g.done && !rubbing) {
+      c.save(); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; const ay = 476, wob = Math.sin(t * 6) * 6;
+      c.fillStyle = 'rgba(58,22,64,0.55)'; c.beginPath(); c.roundRect(110 + wob, ay - 14, 140, 28, 14); c.fill(); c.fillStyle = '#ffd45a';
+      for (let x = 136; x <= 224; x += 14) { c.beginPath(); c.arc(x + wob, ay, 3.4, 0, 7); c.fill(); }
+      for (const d of [-1, 1]) { const hx = 180 + d * 62 + wob; c.beginPath(); c.moveTo(hx + d * 12, ay); c.lineTo(hx - d * 4, ay - 10); c.lineTo(hx - d * 4, ay + 10); c.closePath(); c.fill(); c.stroke(); }
+      c.restore();
+      if (s.scrubs > 0 && p < 1) SK.tag(c, 'Keep scrubbing!', 180, by + 34, 18, '#fff6ea', 'rgba(200,90,30,0.9)');
+    }
+    if (s.rinse < 0) {
+      if (nail && s.scrubs > 4) { const q = gpos(nail, 0); SK.demo(g, c, 'tap', [q[0], q[1] + 6], null, { period: 0.5 }); }
+      else { // the hand rubs back and forth several times (the kit's drag goes one way only)
+        SK.demo(g, c, 'drag', [130, 440], [230, 440], { never: true });
+        const idle = t - (g.lastIn ?? 0), t0 = g.done || rubbing ? null : !g.s.touched ? 0.9 : idle >= 1.4 ? (g.lastIn ?? 0) + 1.4 : null;
+        if (t0 != null && t >= t0) { const per = 2.4, k = ((t - t0) % per) / per, fade = SK.clamp((t - t0) * 4, 0, 1), pr = k < 0.05 ? k / 0.05 : k < 0.9 ? 1 : 1 - (k - 0.9) / 0.05;
+          SK.hand(c, 180 - 55 * Math.cos(SK.clamp((k - 0.05) / 0.85, 0, 1) * Math.PI * 8), 440, SK.clamp(pr, 0, 1), 0.9 * fade * (k > 0.95 ? 0 : 1)); }
+      }
+    }
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || s.rinse >= 0 || g.t < 0.5) return;

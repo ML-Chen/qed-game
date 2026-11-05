@@ -109,7 +109,8 @@ MG.add({
     SK.animal(c, 'octopus', 316, 600, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: hold the cell, then swipe sideways once lined up
     if (s.split < 0) SK.tag(c, 'Chromosomes', CX, CY + R0 + (s.axis ? 70 : 72), 18);
-    if (s.copied < 0 && !g.done) { SK.glow(c, g, CX, CY, 60); SK.demo(g, c, 'hold', [CX, CY + 10], null); }
+    if (!g.done && s.split < 0) { const msg = s.copied < 0 ? (s.copy > 0 ? 'Copying... keep holding' : 'Hold to copy') : s.lined < 0 ? 'Lining up...' : 'Swipe to pull apart!'; SK.tag(c, msg, CX, 176, s.lined >= 0 ? 20 : 18, s.lined >= 0 ? '#9affb0' : '#fff6ea'); SK.tag(c, 'Cell ' + (s.round + 1) + ' / ' + s.rounds, 70, 580, 18); }
+    if (s.copied < 0 && !g.done) { SK.glow(c, g, CX, CY, 60, '#ffe27a', { level: 2 }); SK.demo(g, c, 'hold', [CX, CY + 10], null); }
     if (s.lined >= 0 && s.split < 0 && !g.done) { if (s.axis) { SK.arrow(c, g, CX + 64, CY, CX + 64, CY - 120, { from: 0, to: 0 }); SK.arrow(c, g, CX + 64, CY, CX + 64, CY + 120, { from: 0, to: 0 }); } else { SK.arrow(c, g, CX, CY + 64, CX - 130, CY + 64, { from: 0, to: 0 }); SK.arrow(c, g, CX, CY + 64, CX + 130, CY + 64, { from: 0, to: 0 }); } }
     if (s.lined >= 0 && s.split < 0 && !g.done) SK.demo(g, c, 'swipe', s.axis ? [CX + 60, CY - 50] : [CX - 50, CY + 60], s.axis ? [CX + 60, CY + 80] : [CX + 80, CY + 60], { delay: 0 });
   },

@@ -74,10 +74,9 @@ MG.add({
       const inB = d >= d0 && d <= d1; c.fillStyle = !s.grab ? '#fff6ea' : inB ? '#7aff9a' : '#ffb060'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.arc(px(d), my + 24, s.grab ? 8 : 6, 0, 7); c.fill(); c.stroke(); c.restore();
       // while pulling: which way to go, more (further back) or less
       if (s.grab && !g.done && !inB) SK.tag(c, d < d0 ? 'Pull more' : 'Less', px(d), my - 34, 18, '#ffe27a');
-      s.band = [d0, d1];
       if (!g.done) SK.tag(c, 'Orbit', px((d0 + d1) / 2), my + 48, 18, '#fff6ea', 'rgba(30,90,40,0.8)'); }
     // the drag: grab the plunger, pull it back into the green stretch
-    if (!g.done && !s.grab && g.t >= s.reload && s.band) { const tx = mx - 40 - (s.band[0] + s.band[1]) / 2; SK.grab(c, g, mx - 40, my, 20); SK.target(c, g, tx, my, 18); SK.arrow(c, g, mx - 40, my, tx, my, { from: 24, to: 26 }); }
+    if (!g.done && !s.grab && g.t >= s.reload) { const r0 = Math.hypot(LA_MUZ[0] + 6 - LA_C[0], LA_MUZ[1] - LA_C[1]), dOf = rx => LA_PULL * Math.sqrt(2 * LA_GM * rx / (r0 * (r0 + rx))) / LA_VC, tx = mx - 40 - (dOf(L.rp) + dOf(L.ra)) / 2; SK.grab(c, g, mx - 40, my, 20); SK.target(c, g, tx, my, 18); SK.arrow(c, g, mx - 40, my, tx, my, { from: 24, to: 26 }); }
     // the rabbit on the mountain ducks as balls whizz round, cheers when they stay up
     const whizz = s.balls.some(b => b.st === 'orbit' && SK.dist(b.x, b.y, mx, my) < 60);
     const won = g.result === 'win', lost = g.result === 'fail';

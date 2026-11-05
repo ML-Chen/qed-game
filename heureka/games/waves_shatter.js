@@ -115,6 +115,9 @@
       SK.tag(c, 'High', TR.x + 52, TR.y1 - 4, 18); SK.tag(c, 'Low', TR.x + 48, TR.y0 + 4, 18);
       const q0 = next(s);
       if (!g.done && q0) { SK.grab(c, g, TR.x, ky, 24); SK.target(c, g, TR.x, yOf(q0.f0), 22); SK.arrow(c, g, TR.x + 30, ky, TR.x + 30, yOf(q0.f0), { from: 0, to: 0 }); }
+      // which glass the note is for now: a bobbing arrow over it; while sliding, "Higher" / "Lower" / "Hold it there"
+      if (!g.done && q0) { const top = GL.y - 4 - 54 * q0.sz - 26 + 4 * Math.sin(t * 5); c.save(); c.fillStyle = '#ffe27a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(q0.cx, top + 12); c.lineTo(q0.cx - 10, top - 2); c.lineTo(q0.cx + 10, top - 2); c.closePath(); c.fill(); c.stroke(); c.restore();
+        if (s.drag) { const d = f - q0.f0, ok = Math.abs(d) < 0.1; SK.tag(c, ok ? 'Hold it there' : d < 0 ? 'Higher' : 'Lower', TR.x + 74, SK.clamp(ky, TR.y1, TR.y0), 18, ok ? '#8affa8' : '#ffe27a'); } }
       if (q0) SK.demo(g, c, 'drag', [TR.x + 4, s.knob + 6], [TR.x + 4, yOf(q0.f0) + 6]);
     },
     auto(g, dt, synth) {

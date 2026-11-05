@@ -73,8 +73,13 @@
       c.restore();
       if (t - s.badT < 1.2) SK.tag(c, 'Hey!', p.x, p.y - 96, 20);
       SK.shadow(c, p.x, GND + 2, 26, 5, 0.18);
-      const per = Math.PI * 2 / W0; let d0 = per / 2 - 0.45 * per; while (d0 < 0.7) d0 += per;
-      SK.demo(g, c, 'tap', [FOXX + 40, GND - 50], null, { delay: d0, period: per });
+      // what a tap does, at the fox's paws
+      if (!g.done) SK.tag(c, 'Tap to push', FOXX + 44, GND + 30, 18);
+      // guidance (SK.demo's timing: from the start, then after 1.4 s idle): a hand that presses exactly while a push
+      // would help (the swing is back at the fox and turning round), and lifts the rest of the time, so it beats in time
+      const good = s.th < ZONE && s.w > -0.35;
+      if (!g.done && !(g.ptr && g.ptr.down)) { const idle = t - (g.lastIn ?? 0), t0 = !s.touched ? 0.9 : idle >= 1.4 ? (g.lastIn ?? 0) + 1.4 : 1e9;
+        if (t >= t0) { const hp = good ? 1 : 0; SK.hand(c, FOXX + 40, GND - 50 + 10 * (1 - hp), hp, 0.9 * SK.clamp((t - t0) * 4, 0, 1)); } }
     },
     auto(g, dt, synth) { const s = g.s; if (g.done) return; if (s.lastTurn > 0 && g.t - s.lastTurn < 0.05 && g.t - s.pushT > 0.4) { synth('down', 180, 560); synth('up', 180, 560); } },
   });

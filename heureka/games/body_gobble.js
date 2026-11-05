@@ -82,7 +82,7 @@ MG.add({
       if (b.y < AR.t + 12) { b.y = AR.t + 12; b.vy = Math.abs(b.vy); } if (b.y > AR.b - 12) { b.y = AR.b - 12; b.vy = -Math.abs(b.vy); }
       b.a = Math.atan2(b.vy, b.vx);
       if (!g.done && s.tgt && SK.dist(b.x, b.y, w.x, w.y) < WR + 15) { // it only swallows while you steer it (hunting), so an idle cell catches nothing
-        if (b.cap && !nearWall(b)) { const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * 170; b.vy = dy / d * 170; b.x = w.x + dx / d * (WR + 16); b.y = w.y + dy / d * (WR + 16); if (g.t - (b.slip || -9) > 0.3) { g.sfx('slurp'); b.slip = g.t; } }
+        if (b.cap && !nearWall(b)) { const dx = b.x - w.x, dy = b.y - w.y, d = Math.hypot(dx, dy) || 1; b.vx = dx / d * 170; b.vy = dy / d * 170; b.x = w.x + dx / d * (WR + 16); b.y = w.y + dy / d * (WR + 16); if (g.t - (b.slip || -9) > 0.3) { g.sfx('slurp'); b.slip = g.t; } s.slipT = g.t; }
         else { b.eat = g.t; s.eaten++; g.sfx('munch'); g.sfx('pop'); g.burst(w.x, w.y, ['#fff6ea', '#a8f07a'], 8, 90); }
       }
     }
@@ -114,6 +114,8 @@ MG.add({
     for (const e of [-1, 1]) { const ex = w.x + e * 11, ey = w.y + 15; c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, 5, 0, 7); c.fill(); c.fillStyle = '#2a1424'; c.beginPath(); c.arc(ex + Math.cos(la) * 2, ey + Math.sin(la) * 2, 2.6, 0, 7); c.fill(); }
     SK.animal(c, 'rabbit', 330, 628, 0.55, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (!g.done) { SK.tag(c, 'White blood cell', SK.clamp(w.x, 92, 268), w.y + (w.y > 500 ? -62 : 58), 18); const r0 = s.rbc[1]; if (r0 && r0.x > 60 && r0.x < 300) SK.tag(c, 'Red blood cell', SK.clamp(r0.x, 86, 274), r0.y - 34, 18); }
+    if (!g.done) SK.tag(c, s.eaten + ' / ' + s.bac.length + ' eaten', 270, 176, 18);
+    if (!g.done && s.slipT != null && t - s.slipT < 1.6) SK.tag(c, 'Slippery! Pin it to a wall', 180, 214, 18, '#bfe6ff');
     if (near && !g.done) { SK.target(c, g, near.x, near.y, 22); SK.arrow(c, g, w.x, w.y, near.x, near.y, { from: 46, to: 34 }); SK.grab(c, g, w.x, w.y, 44); }
     if (near) SK.demo(g, c, 'drag', [w.x, w.y], [near.x, near.y]);
   },

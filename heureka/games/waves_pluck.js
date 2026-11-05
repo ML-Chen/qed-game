@@ -96,6 +96,10 @@
       bowl(c, s.B, s.step / s.steps + Math.min(s.got, s.need) / s.need / s.steps, s.back);
       const pk = t - s.peck < 0.3;
       SK.animal(c, 'bird', Math.min(340, s.B.x + s.B.w / 2 + 14), 520, 1.0, { t, facing: -1, pose: won ? 'cheer' : pk ? 'hop' : 'idle', expr: won ? 'laugh' : t - s.mute < 1 ? 'sad' : pk ? 'laugh' : 'happy', noShadow: true });
+      // while pulling: a ring where to let go, green once the pull is about right, with "More" / "Less"
+      if (s.pull && !g.done) { const want = pullFor(s), tol = Math.max(5, want * (s.B.w / 2 - 4) / (s.B.x - DRUM.x + 5) * 0.6), d = Math.abs(s.pull.d), ok = Math.abs(d - want) <= tol, ty = s.pull.y;
+        c.save(); c.strokeStyle = ok ? '#6aff8a' : '#ffe27a'; c.lineWidth = 3.5; c.setLineDash([6, 5]); c.lineDashOffset = -t * 20; c.beginPath(); c.arc(BAND.x + Math.sign(s.pull.d || 1) * want, ty, 20, 0, 7); c.stroke(); c.restore();
+        SK.tag(c, ok ? 'Let go!' : d < want ? 'More' : 'Less', SK.clamp(BAND.x + Math.sign(s.pull.d || 1) * want, 60, 300), ty - 38, 18, ok ? '#8affa8' : '#ffe27a'); }
       // guidance: the band glows; the hand grabs it and pulls it sideways the right amount
       if (!s.pull && s.amp < 0.1 && !g.done) { SK.grab(c, g, BAND.x, 360, 26); SK.target(c, g, BAND.x + pullFor(s), 360, 20); SK.arrow(c, g, BAND.x, 360, BAND.x + pullFor(s), 360, { from: 20, to: 24 }); SK.demo(g, c, 'drag', [BAND.x, 360], [BAND.x + pullFor(s), 360]); }
     },

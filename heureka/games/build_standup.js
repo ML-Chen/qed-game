@@ -62,7 +62,7 @@ MG.add({
       // first the beaver tests the first plank: one step on, it bows down toward the water, and the beaver hops back
       const T = g.t, x1 = SU_X0 + s.span * 0.36; s.bx = T < 0.3 ? 24 : T < 0.8 ? SK.lerp(24, x1, SK.easeInOut((T - 0.3) / 0.5)) : T < 1.3 ? x1 : T < 1.7 ? SK.lerp(x1, 24, SK.easeInOut((T - 1.3) / 0.4)) : 24;
       if (T >= 0.8 && !s.testT) { s.testT = T; g.sfx(s.pl[0].r < 0.8 ? 'stretch' : 'thud'); }
-      const all = s.pl.every(q => q.r > 1.3) && !s.grab; if (T > 1.7 && (all || (!B5.patient() && T > SK.clamp(g.dur * 0.32, 2.6, 4.4)))) { s.walkT = T; g.sfx('stretch'); } return; }
+      const all = s.pl.every(q => q.r > 1.3) && !s.grab; if (T > 1.7 && (all || (!B5.patient() && T > g.dur - 4.2) /* it waits until every plank is up, or until just before the fuse ends */)) { s.walkT = T; g.sfx('stretch'); } return; }
     if (s.wet || g.done) return;
     s.bx += 92 * dt;
     const q = s.pl.find(q => s.bx >= q.x0 && s.bx < q.x1);
@@ -88,6 +88,7 @@ MG.add({
     SK.animal(c, 'beaver', s.bx, by, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : s.walkT ? 'carry' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : !s.walkT && s.bx > 30 && s.pl[0].r < 0.8 ? 'wow' : 'happy',
       hold: won ? null : o => { o.fillStyle = '#a06a3a'; o.strokeStyle = '#4a2a18'; o.lineWidth = 2; o.beginPath(); o.roundRect(-34, -9, 68, 18, 8); o.fill(); o.stroke(); o.fillStyle = '#e8c08a'; o.beginPath(); o.ellipse(34, 0, 5, 9, 0, 0, 7); o.fill(); o.stroke(); } });
     if (s.wet) { c.fillStyle = 'rgba(122,208,224,0.85)'; c.fillRect(s.bx - 30, SU_WATER - 2, 60, 6); }
+    if (!g.done && !s.walkT) { const nu = s.pl.filter(q => q.r > 1.3).length; SK.tag(c, nu + ' / ' + s.pl.length + ' on edge', 180, 560, 18, nu === s.pl.length ? '#9affb0' : '#fff6ea'); }
     const q0 = s.pl.find(q => q.r < 1.3); if (q0 && !s.walkT) B5.hint(c, g, [q0.x0 + 24, SU_TOP + 10], [q0.x0 + 24, SU_TOP - 78], { ra: 22, rb: 20 });
     if (q0) SK.demo(g, c, 'drag', [q0.x0 + 24, SU_TOP + 12], [q0.x0 + 24, SU_TOP - 80]);
   },

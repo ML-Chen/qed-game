@@ -56,6 +56,10 @@ MG.add({
     SK.animal(c, 'hedgehog', 268, 560, 0.85, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.n ? 'think' : 'happy' });
     const tip = bbArm(s.a)[1];
     if (!g.done) SK.glow(c, g, tip[0], tip[1] + 20, 30, '#ffe27a', { level: 2 });
+    // a big arrow on the free end, pointing the way to swipe next (the other side); after a same-way swipe, "Other way!"
+    if (!g.done && !s.sw) { const d = -s.side, bob = ((t * 1.8) % 1) * 16, ax = tip[0] + d * (34 + bob), ay = tip[1] + 30; c.save(); c.translate(ax, ay); c.scale(d, 1); c.globalAlpha = 0.9; c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a2a1a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-16, -9); c.lineTo(6, -9); c.lineTo(6, -18); c.lineTo(24, 0); c.lineTo(6, 18); c.lineTo(6, 9); c.lineTo(-16, 9); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    if (!g.done && s.wob && t - s.wob < 1.2) SK.tag(c, 'Other way!', 180, 220, 20, '#ffd080');
+    if (!g.done) SK.tag(c, s.n + ' / ' + L.n + ' bends', 180, 566, 18);
     // guidance: swipe the free end over to the other side
     SK.demo(g, c, 'swipe', [tip[0], tip[1] + 30], [tip[0] - s.side * 150, tip[1] + 40], { period: 1.0 });
   },

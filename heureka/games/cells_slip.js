@@ -99,7 +99,9 @@ MG.add({
     for (const m of s.m) if (m.st === 'wait' || m.st === 'drag') SK.tag(c, NAME[m.kind], SK.clamp(m.x, 58, 302), m.y - 34, 18);
     SK.animal(c, 'octopus', 322, 624, 0.55, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : t - s.bounce < 0.8 ? 'wow' : 'happy', facing: -1 });
     // guidance: the next molecule and where it goes (tap the pump when potassium sits in it)
-    if (s.pumpMol && !g.done) { SK.glow(c, g, P2.pump, MY, 40); SK.demo(g, c, 'tap', [P2.pump, MY + 4], null, { period: 0.6 }); return; }
+    if (!g.done) { const ni = s.m.filter(m => m.st === 'in' || m.st === 'cross').length; SK.tag(c, ni + ' / ' + s.m.length + ' inside', 250, 560, 18, ni === s.m.length ? '#9affb0' : '#fff6ea'); }
+    if (s.pumpMol && !g.done) SK.tag(c, 'Tap the pump ' + s.pumpTaps + ' / 3', SK.clamp(P2.pump, 100, 260), MY - 64, 18, '#ffd080');
+    if (s.pumpMol && !g.done) { SK.glow(c, g, P2.pump, MY, 40, '#ffe27a', { level: 2 }); SK.demo(g, c, 'tap', [P2.pump, MY + 4], null, { period: 0.6 }); return; }
     const next = s.m.find(m => m.st === 'wait');
     if (next && !dr && !g.done) { const tx = next.kind === 'o2' ? next.x : next.kind === 'k' ? P2.pump : P2[next.kind]; const ty = next.kind === 'k' ? MY - 22 : next.kind === 'o2' ? MY + 10 : MY - 36; SK.target(c, g, tx, ty, 22); SK.arrow(c, g, next.x, next.y, tx, ty); SK.grab(c, g, next.x, next.y, 26); SK.demo(g, c, 'drag', [next.x, next.y], [tx, next.kind === 'k' ? MY - 22 : MY + 40]); }
   },

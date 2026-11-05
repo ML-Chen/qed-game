@@ -8,7 +8,7 @@ const TRACKS = [
   [[18, 366], [64, 330], [110, 286], [146, 340], [178, 500], [208, 522], [240, 446], [276, 330], [312, 256], [348, 214]],
   [[18, 368], [52, 320], [88, 300], [116, 470], [142, 508], [170, 420], [196, 352], [224, 450], [252, 430], [290, 300], [348, 212]],
 ];
-const SPEED = [70, 86, 96], GRIP = 74;
+const SPEED = [70, 86, 96], GRIP = 74, HB = [180, 604]; // HB: the big 'Hold to stay on' button
 function cr(P0, P1, P2, P3, k) { const k2 = k * k, k3 = k2 * k; return 0.5 * (2 * P1 + (-P0 + P2) * k + (2 * P0 - 5 * P1 + 4 * P2 - P3) * k2 + (-P0 + 3 * P1 - 3 * P2 + P3) * k3); }
 function trackY(T, x) { // a smooth curve through the points (Catmull-Rom), as y at x
   let i = 0; while (i < T.length - 2 && T[i + 1][0] < x) i++;
@@ -47,14 +47,14 @@ MG.add({
   },
   val(g, y) { return Math.max(1, Math.round(10 * (600 - y) / (600 - g.s.startY))); }, // the coins your money is worth at this height (10 at the start)
   pos(g, x) { const y = trackY(g.s.T, x), y2 = trackY(g.s.T, x + 2); return { x, y, ang: Math.atan2(y2 - y, 2) }; },
-  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.off) return; const p = this.pos(g, s.x); if (SK.dist(x, y, p.x, p.y - 30) < GRIP) { s.go = true; s.ptr = { x, y }; g.sfx('click'); } },
+  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.off) return; const p = this.pos(g, s.x); if (SK.dist(x, y, p.x, p.y - 30) < GRIP || SK.dist(x, y, HB[0], HB[1]) < 60) { s.go = true; s.ptr = { x, y }; s.onBtn = SK.dist(x, y, HB[0], HB[1]) < 60; g.sfx('click'); } },
   move(g, x, y) { const s = g.s; if (s.ptr) s.ptr = { x, y }; },
   up(g) { const s = g.s; if (s.go && !s.off && !g.done) this.jump(g); s.ptr = null; },
   jump(g) { const s = g.s; s.off = g.t; s.offX = s.x; s.go = false; g.sfx('boing'); if (trackY(s.T, s.x) > s.startY) { g.sfx('fail'); } }, // hopped off
   update(g, dt) {
     const s = g.s; if (g.done && g.result === 'win') return;
     if (s.go || s.off) { const p = this.pos(g, s.x), slope = Math.sin(p.ang); s.x = Math.min(342, s.x + s.v * (1 + 0.35 * slope) * dt); } // a bit faster downhill
-    if (s.go && s.ptr) { const p = this.pos(g, s.x); if (SK.dist(s.ptr.x, s.ptr.y, p.x, p.y - 30) > GRIP * 1.25) this.jump(g); } // your finger slipped off the bar
+    if (s.go && s.ptr && !s.onBtn) { const p = this.pos(g, s.x); if (SK.dist(s.ptr.x, s.ptr.y, p.x, p.y - 30) > GRIP * 1.25) this.jump(g); } // your finger slipped off the bar
     if (s.x >= 342 && !g.done) { if (s.go) { g.win(); g.sfx('cheer'); g.burst(342, trackY(s.T, 342) - 30, ['#ffe27a', '#7ad070', '#fff6ea'], 24, 220); } else if (s.off) { g.fail(); g.sfx('laugh'); } }
     if (s.off && !g.done && trackY(s.T, s.offX) <= s.startY + 2 && g.t - s.off > 0.2 && s.x >= 342) g.fail();
   },
@@ -75,20 +75,23 @@ MG.add({
     let lowX = 18; for (let x = 18; x < 340; x += 2) if (trackY(T, x) > trackY(T, lowX)) lowX = x; const lowY = trackY(T, lowX);
     c.fillStyle = '#c8b8a0'; c.fillRect(lowX - 56, lowY + 30, 112, 9); c.fillStyle = '#a89880'; c.fillRect(lowX - 50, lowY + 39, 6, 600); c.fillRect(lowX + 44, lowY + 39, 6, 600);
     for (const [dx, kind] of [[-34, s.riders[0]], [34, s.riders[1]]]) SK.animal(c, kind, lowX + dx, lowY + 30, 0.6, { t, phase: dx, pose: won ? 'sad' : 'wave', expr: won ? 'sad' : 'happy', facing: dx < 0 ? 1 : -1 });
-    if (won || s.x > lowX + 40) SK.tag(c, 'They sold for ' + this.val(g, lowY), lowX, lowY + 58, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); else SK.tag(c, 'Sell', lowX, lowY + 58, 18);
+    if (won || s.x > lowX + 40) SK.tag(c, 'They sold for ' + this.val(g, lowY), SK.clamp(lowX, 100, 260), Math.min(566, lowY + 58), 18, '#fff6ea', 'rgba(190,40,40,0.85)'); else SK.tag(c, 'Sell', lowX, Math.min(566, lowY + 58), 18);
     const rattle = s.go && Math.abs(s.x - lowX) < 40 ? Math.sin(t * 50) * 2.5 : 0;
     cart(c, p.x + rattle, p.y - 6, p.ang, t, !s.off, s.go);
     if (s.off) { const ox = s.offX, oy = trackY(T, ox); c.fillStyle = '#c8b8a0'; c.fillRect(ox - 24, oy + 4, 48, 8); SK.animal(c, 'turtle', ox, oy + 4, 0.8, { t, pose: 'sad', expr: 'sad' }); B8.cashBag(c, ox + 30, oy - 8, 0.45); }
     if (won) SK.animal(c, 'turtle', 300, 590, 0.9, { t, pose: 'cheer', expr: 'laugh' });
     // your hand on the bar
-    if (s.go && s.ptr) { c.save(); c.globalAlpha = 0.35; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y - 30, GRIP * 0.5, 0, 7); c.stroke(); c.restore(); }
-    if (!s.go && !s.off && !g.done) SK.grab(c, g, p.x, p.y - 30, 30); // press and keep holding the bar
+    if (s.go && s.ptr && !s.onBtn) { c.save(); c.globalAlpha = 0.35; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y - 30, GRIP * 0.5, 0, 7); c.stroke(); c.restore(); }
     SK.tag(c, 'Stock market', 180, 178, 20); SK.tag(c, 'Price you paid', 300, s.startY + 22, 18);
     if (!s.off) SK.tag(c, 'Your money: ' + this.val(g, p.y), SK.clamp(p.x, 70, 290), p.y - 74, 18); else SK.tag(c, 'Sold for ' + this.val(g, trackY(T, s.offX)), SK.clamp(s.offX, 70, 290), trackY(T, s.offX) - 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
-    SK.demo(g, c, 'hold', [p.x + 6, p.y - 26], null, { delay: 0.8 });
+    // the big button: hold it for the whole ride (letting go = jumping off = selling)
+    if (!s.off && !g.done) { const pr = s.go ? 1 : 0; c.fillStyle = '#1a5a2a'; c.beginPath(); c.roundRect(HB[0] - 92, HB[1] - 16, 184, 38, 19); c.fill(); c.fillStyle = s.go ? '#3ab860' : '#4ad070'; c.beginPath(); c.roundRect(HB[0] - 92, HB[1] - 21 + pr * 4, 184, 38, 19); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.stroke();
+      c.save(); c.font = '900 20px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.fillText(s.go ? 'Holding on...' : 'Hold to stay on', HB[0], HB[1] - 1 + pr * 4); c.restore();
+      if (!s.go) SK.glow(c, g, HB[0], HB[1] - 2, 44, '#ffe27a', { level: 2 }); }
+    SK.demo(g, c, 'hold', [HB[0] + 20, HB[1]], null, { delay: 0.8, period: 9.5 }); // the hand holds 6.2 s, longer than the whole ride
   },
   auto(g, dt, synth) { // press the bar and follow the cart all the way
     const s = g.s; if (g.done) return; const p = this.pos(g, s.x);
-    if (!s._b8 && g.t > 0.9) { s._b8 = 1; synth('down', p.x, p.y - 30); } else if (s._b8 === 1) synth('move', p.x, p.y - 30);
+    if (!s._b8 && g.t > 0.9) { s._b8 = 1; synth('down', HB[0], HB[1]); }
   },
 });

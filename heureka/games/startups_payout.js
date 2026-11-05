@@ -78,6 +78,11 @@ MG.add({
     c.save(); c.translate(s.px, BAGY); c.rotate(s.pour ? 2.6 : 0); B8.cashBag(c, 0, 0, bs); c.restore();
     c.strokeStyle = '#7a5a8a'; c.lineWidth = 2; c.beginPath(); c.moveTo(s.px, BAGY - 40); c.lineTo(s.px, BAGY - 22 * bs); c.stroke();
     if (!s.pour) { SK.grab(c, g, s.px, BAGY, 32); SK.target(c, g, this.topX(g, 0), BAGY, 34); SK.arrow(c, g, s.px, BAGY, this.topX(g, 0), BAGY, { to: 50 }); }
+    // while pouring: is the stream landing in the top bucket? a green ring on its rim when it is; when it misses, an
+    // arrow from the bag toward the bucket (keep the bag over it as it sways)
+    if (s.pour && !g.done) { const tx = this.topX(g, 0), ty = this.topY(0, n), hit = Math.abs(s.px - tx) < 40;
+      c.save(); c.lineWidth = 4; c.strokeStyle = hit ? '#6aff8a' : '#ff9a5a'; c.beginPath(); c.ellipse(tx, ty + 2, 42, 10, 0, 0, 7); c.stroke(); c.restore();
+      if (!hit) { const d = Math.sign(tx - s.px), ax = s.px + d * 40, ay = BAGY + 4; c.save(); c.fillStyle = c.strokeStyle = '#ffe27a'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(ax, ay); c.lineTo(ax + d * 26, ay); c.stroke(); c.beginPath(); c.moveTo(ax + d * 38, ay); c.lineTo(ax + d * 24, ay - 9); c.lineTo(ax + d * 24, ay + 9); c.closePath(); c.fill(); c.restore(); } }
     SK.tag(c, 'Founders', FOUND.x, FOUND.y0 + 34, 18); if (!s.pour) SK.tag(c, 'Sale money', s.px, BAGY + 48, 18);
     s.tops.forEach((b, i) => SK.tag(c, n > 1 ? (i ? 'Early investor' : 'Late investor') : 'Investors', this.topX(g, i), this.topY(i, n) + 34, 18));
     SK.demo(g, c, 'drag', [s.px, BAGY], [this.topX(g, 0), BAGY], { delay: 0.8 }); // press the bag and slide it over the top bucket

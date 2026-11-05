@@ -74,7 +74,7 @@ MG.add({
   },
   update(g, dt) {
     const s = g.s, tr = s.truck, all = s.sq.every(q => q.brace);
-    if (!s.goT) { const at = SK.clamp(g.dur * 0.5, g.level >= 2 ? 3.0 : 3.6, 7); if ((all && !s.allT) || 0) s.allT = g.t; if ((s.allT && g.t - s.allT > 0.35) || (!B5.patient() && g.t > at)) { s.goT = g.t; g.sfx('rumble'); } }
+    if (!s.goT) { const at = g.dur - 3; /* the truck waits until the bridge is braced (or until just before the fuse ends), so a player following the hand has time */ if ((all && !s.allT) || 0) s.allT = g.t; if ((s.allT && g.t - s.allT > 0.35) || (!B5.patient() && g.t > at)) { s.goT = g.t; g.sfx('rumble'); } }
     if (!s.goT) return;
     for (const q of s.sq) if (q.at) q.fold = Math.min(1, q.fold + dt * 1.8);
     if (!s.stopT) tr.v = Math.min(170, tr.v + 300 * dt); else tr.v *= Math.exp(-6 * dt);
@@ -107,6 +107,7 @@ MG.add({
     // the beaver on the far cliff waves the truck over
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 348, BR_YT - 8, 0.5, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
+    if (!g.done && !s.goT) { const nb = s.sq.filter(q => q.brace).length; SK.tag(c, nb + ' / ' + s.n + ' braced', 180, BR_YT + s.S + 40, 18, nb === s.n ? '#9affb0' : '#fff6ea'); }
     const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0 && !s.goT) B5.hint(c, g, T[k0], B[k0 + 1], { ra: 16, rb: 16 });
     if (k0 >= 0) SK.demo(g, c, 'drag', T[k0], B[k0 + 1], { never: !!s.goT });
   },

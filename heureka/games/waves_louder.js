@@ -95,15 +95,17 @@
       const yA = s.A * APX, path = () => { c.beginPath(); for (let x = SCR.x0; x <= SCR.x1; x += 2) { const y = SCR.mid - Math.sin((x - SCR.x0) / s.lam * Math.PI * 2 + Math.PI / 2 * 0 - s.ph * 0) * 0 - Math.cos((x - SCR.x0 - s.lam / 4) / s.lam * Math.PI * 2) * yA; x === SCR.x0 ? c.moveTo(x, y) : c.lineTo(x, y); } };
       c.strokeStyle = 'rgba(120,255,200,0.3)'; c.lineWidth = 10; path(); c.stroke(); c.strokeStyle = '#a0ffd2'; c.lineWidth = 3.5; path(); c.stroke();
       c.restore();
-      // levels 0 and 1: a dashed line at the height that wakes the next sleeper
+      // a dashed line at the height that wakes the next sleeper
       const nx = s.who.find(w => !w.awake);
-      if (nx && g.level < 2 && !g.done) { const yy = SCR.mid - (s.band[0] + s.band[1]) / 2 / nx.att * APX; c.save(); c.strokeStyle = 'rgba(255,226,122,0.7)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.moveTo(SCR.x0 + 6, yy); c.lineTo(SCR.x1 - 6, yy); c.stroke(); c.restore(); }
+      if (nx && !g.done) { const yy = SCR.mid - (s.band[0] + s.band[1]) / 2 / nx.att * APX; c.save(); c.strokeStyle = 'rgba(255,226,122,0.7)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.moveTo(SCR.x0 + 6, yy); c.lineTo(SCR.x1 - 6, yy); c.stroke(); c.restore(); }
       SK.tag(c, 'Sound wave', 262, SCR.y0 - 24, 18);
       // the handle on the first crest
       const hx = crestX(s), hy = SCR.mid - yA; SK.ball(c, hx, hy, 13, '#ffd45a', { edge: '#7a4a10' });
       c.strokeStyle = 'rgba(255,212,90,0.6)'; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, SCR.mid); c.stroke(); c.setLineDash([]);
       const tgt = s.who.find(w => !w.awake);
-      if (!g.done && tgt) { const ty = SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX; SK.grab(c, g, hx, hy, 20); SK.target(c, g, hx, ty, 18); }
+      if (!g.done && tgt) { const ty = SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX; SK.grab(c, g, hx, hy, 20); SK.target(c, g, hx, ty, 18); SK.arrow(c, g, hx, hy, hx, ty, { from: 22, to: 24 });
+        // while dragging: taller or shorter for the next sleeper
+        if (s.drag) { const h = s.A * tgt.att, ok = h >= s.band[0] && h <= s.band[1]; SK.tag(c, ok ? 'Just right' : h < s.band[0] ? 'Taller' : 'Too loud', SK.clamp(hx + 70, 70, 290), SK.clamp(hy, SCR.y0 + 14, SCR.y1 - 14), 18, ok ? '#8affa8' : h < s.band[0] ? '#ffe27a' : '#ff9a7a'); } }
       if (tgt) SK.demo(g, c, 'drag', [hx, hy], [hx, SCR.mid - ((s.band[0] + s.band[1]) / 2 / tgt.att) * APX]);
     },
     auto(g, dt, synth) {

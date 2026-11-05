@@ -94,7 +94,7 @@ MG.add({
     c.restore();
     // the copy tally: one dot per molecule, up to the goal
     for (let i = 0; i < s.goal; i++) { const x = 231 + (i % 8) * 5.2, y = 466 + Math.floor(i / 8) * 9, on = i < s.n; c.fillStyle = on ? '#7affc0' : 'rgba(120,160,200,0.25)'; c.beginPath(); c.arc(x, y, 2.2, 0, 7); c.fill(); }
-    SK.tag(c, '×' + s.n, ZC[0] + 92, ZC[1] - 92, 22, '#fff6ea', s.dbl >= 0 && t - s.dbl < 0.4 ? 'rgba(60,160,110,0.9)' : 'rgba(30,40,70,0.75)');
+    SK.tag(c, (won ? '×' + s.n : s.n + ' / ' + s.goal + ' copies'), ZC[0] + 92, ZC[1] - 92, won ? 22 : 18, '#fff6ea', s.dbl >= 0 && t - s.dbl < 0.4 ? 'rgba(60,160,110,0.9)' : 'rgba(30,40,70,0.75)');
     // the thermometer with its hot and cool bands
     c.fillStyle = '#fff'; c.strokeStyle = '#5a6a80'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(TB.x - 11, TB.y1 - 14, 22, TB.y0 - TB.y1 + 22, 11); c.fill(); c.stroke();
     c.beginPath(); c.arc(TB.x, TB.y0 + 18, 17, 0, 7); c.fill(); c.stroke();
@@ -109,9 +109,11 @@ MG.add({
     // the ant technician
     SK.animal(c, 'ant', 40, 600, 0.95, { t, pose: won ? 'cheer' : s.hold ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy' });
     // guidance: hold while the needle climbs to red, let go once the ladders unzip
-    if (!g.done && !s.hold && s.sep < 1) SK.glow(c, g, BTN[0], BTN[1], 44);
-    if (!g.done && s.hold && s.sep >= 1 && g.level <= 1) { const p = 0.5 + 0.5 * Math.sin(t * 10); c.strokeStyle = `rgba(80,150,255,${0.5 + 0.5 * p})`; c.lineWidth = 4; c.beginPath(); c.arc(TB.x, (tY(COOL) + tY(TMIN)) / 2, 22 + p * 4, 0, 7); c.stroke(); }
-    SK.tag(c, 'DNA', ZC[0] - 86, ZC[1] - 96, 20); SK.tag(c, 'Heat', BTN[0], BTN[1] + 36, 18);
+    if (!g.done && !s.hold && s.sep < 1) SK.glow(c, g, BTN[0], BTN[1], 44, '#ffe27a', { level: 2 });
+    if (!g.done && s.hold && s.sep >= 1) { const p = 0.5 + 0.5 * Math.sin(t * 10); c.strokeStyle = `rgba(80,150,255,${0.5 + 0.5 * p})`; c.lineWidth = 4; c.beginPath(); c.arc(TB.x, (tY(COOL) + tY(TMIN)) / 2, 22 + p * 4, 0, 7); c.stroke(); }
+    SK.tag(c, 'DNA', ZC[0] - 86, ZC[1] - 96, 20); SK.tag(c, 'Hold to heat', BTN[0], BTN[1] + 36, 18);
+    // what to do now: heat until the ladders unzip, then let go and wait while it cools and copies
+    if (!g.done) { if (s.hold && s.sep >= 1) SK.tag(c, 'Let go to cool!', ZC[0], ZC[1] + ZR + 20 - Math.abs(Math.sin(t * 8)) * 4, 20, '#bfe6ff', 'rgba(30,70,140,0.9)'); else if (s.hold) SK.tag(c, 'Heating...', ZC[0], ZC[1] + ZR + 20, 18, '#ffd0a0'); else if (s.sep >= 1) SK.tag(c, 'Copying...', ZC[0], ZC[1] + ZR + 20, 18, '#bfe6ff'); }
     if (s.sep < 1 && s.cp === 0) SK.demo(g, c, 'hold', BTN, null, { period: 2.0 });
   },
   // the bot: hold until the strands have unzipped, let go until the copies are made, repeat

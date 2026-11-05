@@ -50,9 +50,11 @@ MG.add({
   draw(g, c) {
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', L = s.L, st = s.stop;
     c.drawImage(g.bake('b8price_s', paintStreet), 0, 0, 360, 640);
-    // the needle
+    // the prices that would keep the jar on track to reach its line in the days left: a green band round the dial
     const a = st ? st.a : this.angle(g), ang = Math.PI + a * Math.PI, k = st ? st.k : Math.min(NK - 1, Math.floor(a * NK));
-    c.save(); c.strokeStyle = '#fff6ea'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(DIAL.x, DIAL.y); c.lineTo(DIAL.x + Math.cos(ang) * (DIAL.r - 6), DIAL.y + Math.sin(ang) * (DIAL.r - 6)); c.stroke();
+    const perDay = (s.need - s.jar) / Math.max(1, L.days - s.day), good = kk => s.buy[kk] * (kk + 1 - L.cost) >= perDay - 0.01;
+    if (!g.done) { c.save(); c.lineWidth = 9; c.lineCap = 'butt'; for (let kk = 0; kk < NK; kk++) if (good(kk)) { c.strokeStyle = '#5ad07a'; c.beginPath(); c.arc(DIAL.x, DIAL.y, DIAL.r + 5, Math.PI + kk * Math.PI / NK + 0.02, Math.PI + (kk + 1) * Math.PI / NK - 0.02); c.stroke(); } c.restore(); }
+    c.save(); c.strokeStyle = !st && !g.done && good(k) ? '#9affb0' : '#fff6ea'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(DIAL.x, DIAL.y); c.lineTo(DIAL.x + Math.cos(ang) * (DIAL.r - 6), DIAL.y + Math.sin(ang) * (DIAL.r - 6)); c.stroke();
     c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.stroke(); c.restore();
     if (st) { c.save(); c.globalAlpha = 0.5 + 0.5 * Math.sin(t * 14); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.arc(DIAL.x, DIAL.y, DIAL.r + 4, Math.PI + k * Math.PI / NK, Math.PI + (k + 1) * Math.PI / NK); c.stroke(); c.restore(); }
     B8.coin(c, DIAL.x - DIAL.r + 6, DIAL.y + 18, 9); for (let i = 0; i < 4; i++) B8.flatCoin(c, DIAL.x + DIAL.r - 8, DIAL.y + 24 - i * 5, 10, 0);

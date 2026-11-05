@@ -112,7 +112,8 @@ MG.add({
     c.fillStyle = '#7a3a5a'; c.beginPath(); c.roundRect(DROP[0] - 14, 506, 28, 24, 8); c.fill(); c.fillStyle = '#eae0e8'; c.beginPath(); c.moveTo(DROP[0] - 5, 506); c.lineTo(DROP[0] + 5, 506); c.lineTo(DROP[0], 486); c.fill();
     c.fillStyle = '#fff'; c.fillRect(DROP[0] - 9, 548, 18, 5); c.fillRect(DROP[0] - 2.5, 541, 5, 19);
     SK.animal(c, 'duck', 46, 618, 0.7, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    if (ready && !g.done) SK.glow(c, g, DROP[0], 548, 40);
+    if (ready && !g.done) SK.glow(c, g, DROP[0], 548, 40, '#ffe27a', { level: 2 });
+    if (!g.done) SK.tag(c, s.bugs.length + ' germs left', DC[0], DC[1] - DR - 40, 18);
     SK.tag(c, 'Antibiotic', DROP[0] + 98, 548, 18); const ra = s.bugs.find(b => b.arm); if (ra && !g.done) SK.tag(c, 'Resistant germ', SK.clamp(ra.x, 84, 276), ra.y - 30, 18);
     if (ready) SK.demo(g, c, 'tap', [DROP[0], 552], null);
   },
