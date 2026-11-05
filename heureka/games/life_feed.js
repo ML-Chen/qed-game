@@ -166,7 +166,9 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'frog', 180, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
       { const nf = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2); if (nf && !s.held && !s.can.pour) { const sn = LIVING[nf.kind] === 'snack' && !nf.lv, a = sn ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y]; SK.grab(c, g, a[0], a[1], 40); SK.target(c, g, nf.x, nf.y, 40); SK.arrow(c, g, a[0], a[1], nf.x, nf.y, { from: 46, to: 54 }); } }
-      const nx = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2), snack = nx && LIVING[nx.kind] === 'snack';
+      // a thing that has had one feed shows two pips, one filled: it wants one more
+      if (!g.done) for (const it of s.items) if (it.lv) for (let i = 0; i < 2; i++) { const px = it.x - 9 + i * 18, py = it.y + 46; c.fillStyle = 'rgba(30,14,36,0.75)'; c.beginPath(); c.arc(px, py, 8, 0, 7); c.fill(); c.fillStyle = i < it.lv ? '#7aff9a' : 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(px, py, 5, 0, 7); c.fill(); }
+      const nx = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2), snack = nx && LIVING[nx.kind] === 'snack' && !nx.lv;
       SK.demo(g, c, 'drag', snack ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y], nx ? (snack ? [nx.x, nx.y + 4] : [nx.x - 30, nx.y - 8]) : [180, 300], { never: !nx || !!s.can.pour });
     },
     // the bot feeds each living thing twice, one drag at a time

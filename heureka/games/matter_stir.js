@@ -105,9 +105,25 @@
       // the fox waits for its drink
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'fox', 312, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : W > 0.4 ? 'wow' : 'happy', facing: -1 });
-      if (!s.doneT && !s.spoon) { SK.grab(c, g, G.cx + 40, G.bot - 60, 20); SK.target(c, g, G.cx, MID[1] + 20, 56); }
-      // the ghost hand stirs in circles (level 0, until the first touch)
-      SK.demo(g, c, 'drag', [G.cx - 50, 420], [G.cx + 50, 420], { arc: 60, period: 1.4, never: !!s.doneT });
+      if (!s.doneT && !g.done) {
+        // how many spoonfuls are left to dissolve
+        if (s.heaps > 1) SK.tag(c, 'Spoonful ' + (s.round + 1) + ' / ' + s.heaps, G.cx, G.top - 36, 18);
+        if (!s.spoon) {
+          SK.grab(c, g, G.cx + 40, G.bot - 60, 20);
+          // a circular arrow in the glass: stir round and round
+          c.save(); c.fillStyle = '#fff6ea'; c.globalAlpha = 0.85; const R = 58, n = 26, off = (t * 1.4) % 1;
+          for (let i = 0; i < n - 3; i++) { const a = -Math.PI / 2 + ((i + off) / n) * Math.PI * 2; c.beginPath(); c.arc(MID[0] + Math.cos(a) * R, MID[1] + Math.sin(a) * R, 3.2, 0, 7); c.fill(); }
+          const ah = -Math.PI / 2 + (n - 2) / n * Math.PI * 2; c.translate(MID[0] + Math.cos(ah) * R, MID[1] + Math.sin(ah) * R); c.rotate(ah + Math.PI / 2); c.beginPath(); c.moveTo(12, 0); c.lineTo(-6, -9); c.lineTo(-6, 9); c.closePath(); c.fill(); c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.stroke(); c.restore();
+        } else if (W < 0.35) SK.tag(c, 'Faster!', G.cx, G.top - 2, 20, '#fff6ea', 'rgba(200,90,30,0.9)'); // too slow to lift the sugar
+        else SK.tag(c, 'Good!', G.cx, G.top - 2, 20, '#fff6ea', 'rgba(40,140,70,0.9)');
+      }
+      // the ghost hand stirs round and round (the kit's drag goes only one way, so it is drawn here)
+      SK.demo(g, c, 'drag', [G.cx - 50, 420], [G.cx + 50, 420], { never: true });
+      if (!s.doneT && !g.done && !s.spoon) {
+        const idle = t - (g.lastIn ?? 0), t0 = !g.s.touched ? 0.9 : idle >= 1.4 ? (g.lastIn ?? 0) + 1.4 : null;
+        if (t0 != null && t >= t0) { const per = 2.6, k = ((t - t0) % per) / per, fade = SK.clamp((t - t0) * 4, 0, 1), p = k < 0.06 ? k / 0.06 : k < 0.9 ? 1 : 1 - (k - 0.9) / 0.05, a = -Math.PI / 2 + SK.clamp((k - 0.06) / 0.84, 0, 1) * Math.PI * 6;
+          SK.hand(c, MID[0] + Math.cos(a) * 50, MID[1] + Math.sin(a) * 50, SK.clamp(p, 0, 1), 0.9 * fade * (k > 0.95 ? 0 : 1)); }
+      }
     },
     // the bot: stir in circles until the sugar is gone
     auto(g, dt, synth) {

@@ -6,8 +6,8 @@
 // Level 2: clean, pale birch bark instead of soot: now the dark moths stand out and pale moths take over.
 (() => {
   const TRUNK_SETS = [[62, 180, 298], [90, 270], [44, 136, 228, 318], [70, 200, 312]], TW = 78, N = 10, TOP = 196, BOT = 548;
-  const TARGET = [7, 9, 9];
-  function sched(g) { if (g.s.S) return g.s.S; const D = Math.min(g.dur - 0.4, [10.5, 8.5, 7.4][Math.min(2, g.level)]), R = D / 3; return (g.s.S = [0, 1, 2].map(i => ({ a: 0.6 + i * R, b: 0.6 + i * R + R - 0.75 }))); }
+  const TARGET = [6, 7, 9]; // moths to eat; with the rounds below, tapping each moth the ghost hand points at is enough at levels 0-1
+  function sched(g) { if (g.s.S) return g.s.S; const D = Math.min(g.dur - 0.4, [18, 15, 7.4][Math.min(2, g.level)]), R = D / 3; return (g.s.S = [0, 1, 2].map(i => ({ a: 0.6 + i * R, b: 0.6 + i * R + R - 0.75 }))); }
   function place(g, darks) {
     const ms = [];
     for (const dark of darks) { let x = 0, y = 0;
@@ -90,7 +90,8 @@
       // the bird, its tummy filling up
       const won = g.result === 'win', lost = g.result === 'fail', full = Math.min(1, s.eaten / s.target);
       SK.animal(c, 'bird', 300, 590, 1 + 0.25 * full, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.pecks.length && t - s.pecks[s.pecks.length - 1].t < 0.2 ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy' });
-      const pale = s.moths.find(m => m.alive && m.dark === s.clean); if (s.phase === 'hunt' && pale) SK.glow(c, g, pale.x, pale.y, 22, '#ffe27a', { level: 0 });
+      const pale = s.moths.find(m => m.alive && m.dark === s.clean); if (s.phase === 'hunt' && pale) SK.glow(c, g, pale.x, pale.y, 22, '#ffe27a');
+      if (!g.done) SK.tag(c, `Tummy: ${Math.min(s.eaten, s.target)} / ${s.target}`, 262, 530, 18, s.eaten >= s.target ? '#9dffb0' : '#fff6ea'); // moths still to eat
       const p0 = s.moths.find(m => m.alive && m.dark === s.clean) || s.moths.find(m => m.alive);
       SK.demo(g, c, 'tap', p0 ? [p0.x, p0.y] : [180, 360], null, { never: !p0 || s.phase !== 'hunt' });
     },

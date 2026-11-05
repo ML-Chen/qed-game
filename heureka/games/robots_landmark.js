@@ -87,7 +87,7 @@ MG.add({
     // the camera's view cone from the real robot
     if (!g.done) { c.save(); c.fillStyle = 'rgba(140,220,255,0.10)'; c.beginPath(); c.moveTo(r.x, r.y); c.arc(r.x, r.y, s.C.range, r.h - 0.95, r.h + 0.95); c.closePath(); c.fill(); c.restore(); }
     // posters: lit while the camera can see them
-    POSTERS.forEach((p, i) => { const vis = !g.done && !s.used[i] && sees(s, i); poster(c, p, vis || s.used[i], t); if (s.used[i]) { c.fillStyle = '#5aff7a'; c.beginPath(); c.arc(p.x + 16, p.y - 14, 6, 0, 7); c.fill(); } if (vis) SK.glow(c, g, p.x, p.y, 30); });
+    POSTERS.forEach((p, i) => { const vis = !g.done && !s.used[i] && sees(s, i); poster(c, p, vis || s.used[i], t); if (s.used[i]) { c.fillStyle = '#5aff7a'; c.beginPath(); c.arc(p.x + 16, p.y - 14, 6, 0, 7); c.fill(); } if (vis) SK.glow(c, g, p.x, p.y, 30, '#ffe27a', { level: 2 }); }); // every level: a poster can only be tapped while the camera sees it, often for under 2 s
     // the ghost (where the robot thinks it is) and the real robot, joined by a thin line when they disagree
     const gx = q.x + s.dev.x, gy = q.y + s.dev.y, e = Math.hypot(r.x - gx, r.y - gy);
     if (e > 4 && !won) { c.save(); c.strokeStyle = `rgba(255,120,120,${Math.min(0.8, e / 40)})`; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(gx, gy); c.lineTo(r.x, r.y); c.stroke(); c.restore(); }

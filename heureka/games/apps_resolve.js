@@ -7,6 +7,13 @@ const SETS = [
   { base: ['"frog"', '"red"', '2'], a: ['"duck"', '"red"', '2'], b: ['"frog"', '"blue"', '5'], pre: [] },
   { base: ['"duck"', '"red"', '2'], a: ['"frog"', '"blue"', '2'], b: ['"duck"', '"red"', '5'], pre: [] },
 ];
+// variants: which part each branch changes (kind, colour or size) and the original's values
+const OPT = [['"frog"', '"duck"'], ['"red"', '"blue"'], ['2', '5']], PAIRS = [[1, 2], [2, 1], [0, 1], [1, 0], [0, 2], [2, 0]];
+function makeSet(g, L) {
+  const [ia, ib] = PAIRS[SK.variant(g, 6)], r = OPT.map(() => (g.rand() < 0.5 ? 0 : 1)), base = OPT.map((o, i) => o[r[i]]);
+  const a = base.slice(), b = base.slice(); a[ia] = OPT[ia][1 - r[ia]]; b[ib] = OPT[ib][1 - r[ib]];
+  return { base, a, b, pre: L === 0 ? [3 - ia - ib] : [] };
+}
 const TY = { o: 176, a: 282, m: 400, b: 518 }, EW = 58, CW = 70, PICX = 318;
 const COLS = { a: '#ff7ab0', b: '#5ab0ff' };
 const LABEL = { o: 'Original', a: "Fox's branch", b: "Rabbit's branch", m: 'Merged' };
@@ -53,7 +60,7 @@ MG.add({
     text: 'In version control, people work on separate copies called branches and later merge them back together. Usually the computer combines the changes by itself.\n\nWhen two branches change the same line, it cannot tell which version to keep. That is a merge conflict, and a person has to decide what the line should say.\n\nOften the right answer keeps both changes. Here the fox made the frog blue and the rabbit made it bigger, so the merged line draws a big blue frog.',
     note: 'When two branches change the same line, a person writes the merged line, usually keeping both changes.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level), S = SETS[L]; s.S = S; s.L = L;
+    const s = g.s, L = Math.min(2, g.level), S = makeSet(g, L); void SETS; s.S = S; s.L = L;
     s.slots = S.base.map((v, i) => S.pre.includes(i) ? { v, from: 'o' } : null); s.drag = null; s.go = null; s.res = null;
     s.want = S.base.map((v, i) => S.a[i] !== v ? S.a[i] : S.b[i]);
   },
@@ -68,7 +75,9 @@ MG.add({
     if (Math.abs(y - TY.m) < 56) { let bi = -1, bd = 56; for (let i = 0; i < 3; i++) { const dd = Math.abs(x - carX(i)); if (dd < bd) { bd = dd; bi = i; } } if (bi >= 0) { s.slots[bi] = { v: d.v, from: d.k, t: g.t, ch: d.v !== s.S.base[d.i] }; g.sfx('click'); } }
   },
   update(g, dt) {
-    const s = g.s; if (!s.go || g.done) return;
+    const s = g.s; if (g.done) return;
+    // the merge train runs by itself once every carriage is loaded (the command is enough: keep both changes)
+    if (!s.go) { if (s.slots.every(v => v) && !s.drag) { s.fullT = s.fullT ?? g.t; if (g.t - s.fullT > 0.6) { s.go = { t: g.t }; g.sfx('bell'); g.sfx('whoosh'); } } else s.fullT = null; return; }
     if (g.t - s.go.t > 1.1 && !s.res) {
       const ok = s.slots.every((v, i) => v.v === s.want[i]);
       const lostA = s.S.a.some((v, i) => v !== s.S.base[i] && s.slots[i].v !== v), lostB = s.S.b.some((v, i) => v !== s.S.base[i] && s.slots[i].v !== v);

@@ -86,8 +86,10 @@ MG.add({
     if (lost) { const k = Math.min(1, s.screech * 4); c.fillStyle = `rgba(255,60,60,${0.12 * k + 0.08 * Math.sin(t * 40)})`; c.fillRect(0, 0, 360, 640); }
     // guidance: drag the first squealing singer away from its speaker (the ghost hand shows one quiet spot; any will do)
     const m0 = s.mics.find(m => t >= m.live && !m.calm);
-    if (m0 && !g.done && !SK.dragging(g)) { let bs = s.spk[0], bd = 1e9; for (const p of s.spk) { const d = SK.dist(p[0], p[1], m0.x, m0.y); if (d < bd) { bd = d; bs = p; } } const ux = (m0.x - bs[0]) / bd, uy = (m0.y - bs[1]) / bd; SK.grab(c, g, m0.x, m0.y - 30, 36); SK.arrow(c, g, m0.x, m0.y - 30, m0.x + ux * 120, m0.y - 30 + uy * 120, { from: 40, to: 0 }); }
-    if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.hx, m0.hy - 30], [s.safe[i][0], s.safe[i][1] - 30], { delay: m0.live }); }
+    if (m0 && !g.done && !SK.dragging(g)) { let bs = s.spk[0], bd = 1e9; for (const p of s.spk) { const d = SK.dist(p[0], p[1], m0.x, m0.y); if (d < bd) { bd = d; bs = p; } } const ux = (m0.x - bs[0]) / bd, uy = (m0.y - bs[1]) / bd; const sp = s.safe[s.mics.indexOf(m0)]; SK.grab(c, g, m0.x, m0.y - 30, 36); SK.target(c, g, sp[0], sp[1] - 30, 34); SK.arrow(c, g, m0.x, m0.y - 30, sp[0], sp[1] - 30, { from: 40, to: 50 }); void ux; void uy; }
+    // while a singer is dragged: is its mic far enough yet? (one lap round the loop makes the sound bigger, or smaller)
+    { const dm = SK.dragging(g); if (dm && !g.done) { const ok = dm.G < 1; SK.tag(c, ok ? 'Quiet' : 'Too close', dm.x, dm.y - 104, 18, ok ? '#8affa8' : '#ff9a7a'); } }
+    if (m0) { const i = s.mics.indexOf(m0); SK.demo(g, c, 'drag', [m0.x, m0.y - 30], [s.safe[i][0], s.safe[i][1] - 30], { delay: m0.live }); }
   },
   auto(g, dt, synth) {
     const s = g.s; s.mics.forEach((m, i) => { SK.bot.drag(g, synth, 'm' + i, m.live + 0.2, [m.hx, m.hy - 20], [s.safe[i][0], s.safe[i][1] - 20], 0.35); });

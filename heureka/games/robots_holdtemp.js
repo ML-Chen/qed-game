@@ -78,7 +78,7 @@ MG.add({
     if (!g.done) { const d = s.dT || 0, y = tY(s.T), up = d > 0, L = SK.clamp(Math.abs(d) * 90, 8, 30);
       if (Math.abs(d) > 0.01) { c.save(); c.fillStyle = c.strokeStyle = up ? '#ff7a5a' : '#6ab8ff'; c.lineWidth = 5; c.lineCap = 'round'; const ax = TH.x - 34; c.beginPath(); c.moveTo(ax, y + (up ? L / 2 : -L / 2)); c.lineTo(ax, y + (up ? -L / 2 : L / 2)); c.stroke();
         c.beginPath(); const hy = y + (up ? -L / 2 - 8 : L / 2 + 8); c.moveTo(ax, hy); c.lineTo(ax - 8, hy + (up ? 9 : -9)); c.lineTo(ax + 8, hy + (up ? 9 : -9)); c.closePath(); c.fill(); c.restore(); }
-      if (s.T < C.lo) SK.tag(c, 'Too cold', TH.x - 62, tY(C.lo) + 30, 18, '#9ad0ff'); else if (s.T > C.hi) SK.tag(c, 'Too warm', TH.x - 62, tY(C.hi) - 30, 18, '#ffb08a'); }
+      if (s.T < C.lo) SK.tag(c, 'Too cold', TH.x - 54, tY(C.lo) + 30, 18, '#9ad0ff'); else if (s.T > C.hi) SK.tag(c, 'Too warm', TH.x - 54, tY(C.hi) - 30, 18, '#ffb08a'); }
     // the hedgehog: shivering when cold, wilting when stuffy, happy in the band
     const inBand = s.T >= C.lo && s.T <= C.hi, cold = s.T < C.lo, sh = cold && !won ? Math.sin(t * 50) * (C.lo - s.T) * 14 : 0;
     SK.animal(c, 'hedgehog', SEAT.x + sh, SEAT.y + 4, 1.3, { t, pose: won ? 'cheer' : 'idle', expr: won || inBand ? 'laugh' : s.T > C.hi ? 'sad' : 'wow', tint: s.cold ? '#a8c8f0' : s.T > 0.82 ? '#e89a7a' : undefined });
@@ -86,7 +86,7 @@ MG.add({
     if (s.cold) { c.fillStyle = 'rgba(200,230,255,0.5)'; c.beginPath(); c.roundRect(SEAT.x - 50, SEAT.y - 100, 100, 104, 14); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 3; c.stroke(); }
     if (s.hot) { c.fillStyle = 'rgba(255,120,60,0.18)'; c.fillRect(0, 0, 360, 640); }
     // the comfy heart fills with every second in the band
-    const k = SK.clamp(s.comfy / C.need, 0, 1), hx = SEAT.x, hy = 380, R = 26;
+    const k = SK.clamp(s.comfy / C.need, 0, 1), hx = SEAT.x - 34, hy = 380, R = 26;
     const heart = () => { c.beginPath(); c.moveTo(hx, hy + R * 0.9); c.bezierCurveTo(hx - R * 1.6, hy - R * 0.1, hx - R * 0.6, hy - R * 1.2, hx, hy - R * 0.4); c.bezierCurveTo(hx + R * 0.6, hy - R * 1.2, hx + R * 1.6, hy - R * 0.1, hx, hy + R * 0.9); c.closePath(); };
     c.save(); heart(); c.fillStyle = 'rgba(255,255,255,0.18)'; c.fill(); c.clip(); c.fillStyle = '#ff5a7a'; c.fillRect(hx - 50, hy + R - k * 2.2 * R, 100, 2.2 * R + 10); c.restore();
     c.save(); heart(); c.strokeStyle = inBand ? '#ffe27a' : '#fff6ea'; c.lineWidth = 3; c.stroke(); c.restore();

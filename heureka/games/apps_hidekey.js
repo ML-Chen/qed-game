@@ -39,7 +39,7 @@ function foxBot(c, x, y, t, mood) {
   c.save(); c.translate(x - 6, y - 52); c.fillStyle = '#9aa4b4'; c.strokeStyle = '#3a4050'; c.lineWidth = 2; c.beginPath(); c.roundRect(-14, -12, 28, 12, 4); c.fill(); c.stroke(); c.fillStyle = '#ff5a5a'; c.beginPath(); c.arc(0, -16, 3, 0, 7); c.fill(); c.restore(); // a robot visor and antenna
 }
 MG.add({
-  id: 'cs_hidekey', stage: 'apps', cmd: 'HIDE THE API KEY, THEN PUSH!', time: 7, mood: 'party', winText: 'Secret kept!', failText: 'Key leaked!',
+  id: 'cs_hidekey', stage: 'apps', cmd: 'KEEP YOUR KEY SECRET, THEN PUSH!', time: 7, mood: 'party', winText: 'Secret kept!', failText: 'Key leaked!',
   card: { title: 'Keep keys out of your code', kind: 'Computer science', ref: 'Secrets management (.env and .gitignore)',
     text: 'An API key is a secret password that lets your app use a paid service. Anyone who has it can spend your money.\n\nBots scan public code sites all day looking for keys. So the key goes in a separate file, often called .env, and the code reads it from there. The file .gitignore lists files that git must never upload, and .env goes on that list.\n\nIf a key was ever pushed, hiding it later is not enough: copies may already exist. Make a new key and switch the old one off.',
     note: 'Keep secret keys out of shared code: store them in an ignored file, and replace any key that leaked.' },
@@ -78,6 +78,7 @@ MG.add({
     c.fillStyle = '#fff6ea'; c.font = `700 18px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; SK.tag(c, "Don't upload", FENCE.x - 10, FENCE.y - 60, 18);
     // the key cutter (level 2): makes a fresh key and switches the leaked one off
     if (s.old) { c.save(); c.translate(CUTTER.x, CUTTER.y); c.fillStyle = s.cut ? '#5a8a6a' : '#8a6aa0'; c.strokeStyle = '#2a2040'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(-34, -30, 68, 60, 10); c.fill(); c.stroke(); c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(-10, 0, 9, 0, 7); c.fill(); c.fillRect(-2, -3, 26, 6); c.fillRect(14, 3, 4, 6); c.restore(); }
+    SK.tag(c, 'Push', PUSH.x, PUSH.y + 40, 18); if (s.old) SK.tag(c, s.cut ? 'New key made' : 'Make new key', CUTTER.x + 4, CUTTER.y - 48, 18);
     SK.tag(c, 'Your computer', 96, s.panelB + 18, 18); SK.tag(c, 'Public site', BOARD.x, BOARD.y - 82, 18);
     if (s.keys.length) { const [a, b] = strSpan(s, s.keys[0]); SK.tag(c, 'API key', Math.min(300, b + 52), s.lay.lineY(s.keys[0]), 18, '#fff', '#c83a6a'); }
     // the push button (a cloud with an arrow up)
@@ -106,8 +107,8 @@ MG.add({
     if (!P0 && !s.drag) {
       if (s.keys.length) { const i = s.keys[0], [a, b] = strSpan(s, i), ly = s.lay.lineY(i); SK.grab(c, g, (a + b) / 2, ly, 30); SK.target(c, g, s.safe.x, s.safe.y, 44); SK.arrow(c, g, (a + b) / 2, ly, s.safe.x, s.safe.y); SK.demo(g, c, 'drag', [(a + b) / 2, ly], [s.safe.x, s.safe.y]); }
       else if (!s.safe.ign) { SK.grab(c, g, s.safe.x, s.safe.y, 40); SK.target(c, g, FENCE.x, FENCE.y, 0, { w: 90, h: 100 }); SK.arrow(c, g, s.safe.x, s.safe.y, FENCE.x, FENCE.y); SK.demo(g, c, 'drag', [s.safe.x, s.safe.y], [FENCE.x, FENCE.y]); }
-      else if (s.old && !s.cut) { SK.glow(c, g, CUTTER.x, CUTTER.y, 40); SK.demo(g, c, 'tap', [CUTTER.x, CUTTER.y]); }
-      else { SK.glow(c, g, PUSH.x, PUSH.y, 40); SK.demo(g, c, 'tap', [PUSH.x, PUSH.y]); }
+      else if (s.old && !s.cut) { SK.glow(c, g, CUTTER.x, CUTTER.y, 40, '#ffe27a', { level: 2 }); SK.demo(g, c, 'tap', [CUTTER.x, CUTTER.y]); }
+      else { SK.glow(c, g, PUSH.x, PUSH.y, 40, '#ffe27a', { level: 2 }); SK.demo(g, c, 'tap', [PUSH.x, PUSH.y]); }
     }
   },
   // the bot: keys into the safe, the safe onto the ignore list, a new key at level 2, then push (B7FAIL: pushes at once)
