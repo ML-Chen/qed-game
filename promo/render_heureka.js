@@ -28,7 +28,7 @@ const OFFSET = process.env.PROMO_MUSIC_OFFSET != null ? +process.env.PROMO_MUSIC
 const ff = (...a) => execFileSync('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error', ...a]);
 
 // The cover's hook line, in the game's lettering style. Two rows so it can be large inside the 3:4 safe area.
-const HOOK = ['100个小游戏', '玩懂科学'];
+const HOOK = ['100个小游戏', '玩懂科学和商业'];
 const URL = 'ml-chen.github.io/qed-game/heureka';
 
 // Shots, in bars (1.6 s at 150 BPM). mg: a microgame (its id in the build) played by its bot from `from` seconds in,
@@ -196,7 +196,7 @@ if (!ONLY.length && !process.env.PROMO_SCOUT) for (const f of fs.readdirSync(pat
         if (s.title) {
           // inside the centre 3:4 area (y 80 to 560): "Heurēka!" at y 168, the hook below it where Play and Cards sit
           PRhook(c, HOOK[0], 180, 276, 50, -0.05);
-          PRhook(c, HOOK[1], 184, 340, 56, -0.05);
+          PRhook(c, HOOK[1], 184, 340, HOOK[1].length > 5 ? 46 : 56, -0.05);
         }
         if (s.end) {
           const a = Math.min(1, Math.max(0, (t - 0.5) / 0.6));
