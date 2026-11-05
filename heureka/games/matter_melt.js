@@ -26,13 +26,13 @@
     o.fillStyle = '#5a7a9a'; o.fillRect(TH.x - 2, 210, 4, 28);
   }
   MG.add({
-    id: 'matter_melt', stage: 'matter', cmd: 'MELT IT!', time: 5, mood: 'sea', winText: 'Nailed it!', failText: 'Still icy!',
+    id: 'matter_melt', stage: 'matter', cmd: 'MELT IT!', time: 5, mood: 'sea', winText: 'Latent heat!', failText: 'Whoops!',
     card: { title: 'Melting takes heat', kind: 'Chemistry', ref: 'Latent heat and changes of state',
       text: 'In ice, the particles are held in neat rows. Heating makes them jiggle faster, so the ice gets warmer. At 0 °C the heat goes into breaking particles out of their rows instead, so the thermometer stops rising until all the ice has melted. Melting ice takes about as much heat as warming the water from 0 to 80 °C.\n\nBoiling works the same way. At 100 °C the heat goes into setting particles free as steam, and the temperature stays at 100 °C until the water has boiled away.',
       note: 'While ice melts or water boils, the heat breaks particles free, so the temperature stops rising.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level); s.boil = lv >= 2;
-      s.Q = 0; s.rate = s.boil ? 75 : 40; s.heat = false; s.offT = -9; s.T0 = lv === 1 ? -30 : -20;
+      s.Q = 0; s.rate = s.boil ? 75 : 40; s.cold = lv === 1 ? 15 : 20; s.heat = false; s.offT = -9; s.T0 = lv === 1 ? -30 : -20;
       s.cells = []; const x0 = (B.l + B.r) / 2 - (COLS - 1) * PR, y0 = B.b - 14 - (ROWS - 1) * PR * 2;
       for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) s.cells.push({ hx: x0 + c * PR * 2 + (r % 2 ? 4 : -4), hy: y0 + r * PR * 2, free: 0, gas: 0, ph: g.rand() * 6, vx: 0, vy: 0 });
       // the outside particles break free first
@@ -57,8 +57,12 @@
           else q.vy -= 200 * dt;
         }
       }
-      const doneNow = s.boil ? s.vap >= 0.22 : s.melt >= 1;
-      if (doneNow && !g.done) { g.win(); g.sfx('cheer'); g.sfx('slurp'); }
+      // the penguin wants ice-cold water: stop once the last ice has melted, before it warms up (level 2: stop while it boils)
+      if (!g.done) {
+        if (!s.boil && s.melt >= 1 && s.T > s.cold) { s.hot = g.t; g.fail(); g.sfx('fail'); }
+        else if (s.boil && s.vap >= 0.45) { s.hot = g.t; g.fail(); g.sfx('fail'); }
+        else if (!s.heat && (s.boil ? s.vap >= 0.1 : s.melt >= 1)) { g.win(); g.sfx('cheer'); g.sfx('slurp'); }
+      }
     },
     draw(g, c) {
       const s = g.s, t = g.t, T = s.T ?? s.T0, jig = 0.6 + Math.max(0, T + 30) * 0.06;
@@ -79,6 +83,8 @@
       // the beaker glass
       c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 4; c.beginPath(); c.moveTo(B.l - 6, B.t - 4); c.lineTo(B.l, B.t); c.lineTo(B.l, B.b - 10); c.quadraticCurveTo(B.l, B.b, B.l + 10, B.b); c.lineTo(B.r - 10, B.b); c.quadraticCurveTo(B.r, B.b, B.r, B.b - 10); c.lineTo(B.r, B.t); c.stroke();
       c.strokeStyle = 'rgba(80,120,160,0.45)'; c.lineWidth = 1.5; c.stroke(); c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(B.l + 8, B.t + 12, 6, 150);
+      // the penguin's target on the thermometer: ice-cold (0 to 20 °C), or boiling (100 °C)
+      { const y0 = s.boil ? tY(104) : tY(s.cold), y1 = s.boil ? tY(96) : tY(0); c.fillStyle = 'rgba(80,170,255,0.45)'; c.fillRect(TH.x - 9, y0, 18, y1 - y0); c.fillStyle = '#2a6ab0'; c.beginPath(); c.moveTo(TH.x - 26, (y0 + y1) / 2 - 7); c.lineTo(TH.x - 14, (y0 + y1) / 2); c.lineTo(TH.x - 26, (y0 + y1) / 2 + 7); c.fill(); }
       // the thermometer's red column, and a tag while it is stuck at 0 °C (or 100 °C)
       const ty = tY(T); c.fillStyle = '#e8403a'; c.beginPath(); c.arc(TH.x, TH.b + 6, 11, 0, 7); c.fill(); c.fillRect(TH.x - 4, ty, 8, TH.b + 6 - ty);
       const stuck = (T === 0 && s.melt > 0 && s.melt < 1) || (T === 100 && s.vap > 0); if (stuck) SK.tag(c, T === 0 ? '0 °C' : '100 °C', TH.x - 8, ty - 26, 18);
@@ -87,11 +93,14 @@
       // the penguin: waits with its cup, skates on the leftover ice if you stop, cheers with a drink
       const won = g.result === 'win', lost = g.result === 'fail', skate = !s.heat && s.melt > 0 && s.melt < 1 && t - s.offT > 0.5 || (lost && s.melt < 1);
       if (skate && ice.length) { let x0 = 999, x1 = 0, y0 = 999; for (const q of ice) { x0 = Math.min(x0, q.hx); x1 = Math.max(x1, q.hx); y0 = Math.min(y0, q.hy); } const k = 0.5 + 0.5 * Math.sin(t * 2.4); SK.animal(c, 'penguin', SK.lerp(x0, x1, k), y0 - PR - 2, 0.5, { t, pose: 'balance', expr: 'laugh', facing: Math.cos(t * 2.4) > 0 ? 1 : -1 }); }
-      else SK.animal(c, 'penguin', 312, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.heat ? 'wow' : 'happy', facing: -1 });
+      else SK.animal(c, 'penguin', 312, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? (s.hot ? 'wow' : 'sad') : s.heat ? 'wow' : 'happy', facing: -1 });
       if (!s.heat) SK.glow(c, g, BTN[0], BTN[1], 32);
       SK.demo(g, c, 'hold', BTN, null);
     },
     // the bot: hold the burner on until it is done
-    auto(g, dt, synth) { SK.bot.hold(g, synth, 'burn', 1.0, BTN[0], BTN[1], 60); },
+    auto(g, dt, synth) {
+      const s = g.s; if (g.done || g.t < 1) return; if (!s.botOn) { s.botOn = 1; synth('down', BTN[0], BTN[1]); return; }
+      if (s.heat && (s.boil ? s.vap >= 0.2 : s.melt >= 1 && s.T >= 2)) synth('up', BTN[0], BTN[1]);
+    },
   });
 })();

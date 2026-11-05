@@ -1,9 +1,9 @@
-// DILUTE! (business SV-20) — the company is a pie owned by its two founders, the rabbit and the beaver. The fox investor
-// holds out a new slice and a bag of cash. Drag the slice into the pie: the old slices squeeze thinner to make room, the
-// cash goes in, and the whole pie grows bigger in the oven. Say no (wait) and the pie stays small while the old oven
-// sputters, smokes and breaks down. Level 2: the owl also brings an option-pool slice for future staff: two drags.
-const PIE = { x: 180, y: 322, r: 74 }, OVEN = { x: 300, y: 236 };
-const COL = { rabbit: '#f49ab8', beaver: '#c98a52', fox: '#5aa8e8', owl: '#7ac870' };
+// DILUTE! (business SV-20) — the company is a pie owned by its two founders, the rabbit and the beaver. Investors come
+// one funding round at a time, each holding out a new slice and a bag of cash. Drag each slice into the pie: the old
+// slices squeeze thinner to make room, the cash goes in, and the whole pie grows bigger in the oven. Say no (wait) and the pie stays small while the old oven
+// sputters, smokes and breaks down. Level 0: two rounds; level 1: three; level 2: three plus the staff option pool.
+const PIE = { x: 180, y: 330, r: 62 }, OVEN = { x: 300, y: 236 };
+const COL = { rabbit: '#f49ab8', beaver: '#c98a52', fox: '#5aa8e8', owl: '#7ac870', duck: '#f5c23a', turtle: '#a88ae0' };
 function paintKitchen(o) {
   const wall = o.createLinearGradient(0, 0, 0, 440); wall.addColorStop(0, '#ffd8c0'); wall.addColorStop(1, '#ffeedd'); o.fillStyle = wall; o.fillRect(0, 0, 360, 640);
   o.strokeStyle = 'rgba(200,120,110,0.18)'; o.lineWidth = 2; for (let y = 130; y < 430; y += 30) { o.beginPath(); o.moveTo(0, y); o.lineTo(360, y); o.stroke(); } for (let x = 0; x < 360; x += 30) { o.beginPath(); o.moveTo(x, 130); o.lineTo(x, 430); o.stroke(); }
@@ -28,26 +28,33 @@ function wedge(c, x, y, r, a0, da, col) { // a loose slice of pie, apex at (x, y
   c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, a0, a0 + da); c.closePath(); c.stroke();
 }
 MG.add({
-  id: 'dilute', stage: 'startups', cmd: 'DILUTE!', time: 5, mood: 'party', winText: 'Bigger pie!', failText: 'Oven broke!', hold: 2.1,
+  id: 'dilute', stage: 'startups', cmd: 'DILUTE!', time: 5, mood: 'party', winText: 'Dilution!', failText: 'Oven broke!', hold: 2.1,
   card: { title: 'A thinner slice of a bigger pie', kind: 'Startups', ref: 'Dilution',
-    text: 'The pie is the company, and each slice is the share one owner holds. When an investor buys in, the company makes new shares for them. Every old slice becomes a smaller part of the whole. That is called dilution.\n\nThe investor\'s cash makes the company worth more, so the pie gets bigger. Right after a fair deal, a founder\'s thinner slice is worth about what the old slice was. The cash is meant to help the whole pie grow, and then the thinner slice can be worth much more.',
+    text: 'The pie is the company, and each slice is the share one owner holds. Each time an investor buys in, the company makes new shares for them. Every old slice becomes a smaller part of the whole. That is called dilution.\n\nThe investor\'s cash makes the company worth more, so the pie gets bigger. Right after a fair deal, a founder\'s thinner slice is worth about what the old slice was. The cash is meant to help the whole pie grow, and then the thinner slice can be worth much more.',
     note: 'Selling a slice to an investor makes your share smaller, but the cash can make the whole company bigger.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
-    s.items = [{ who: 'fox', f: L >= 2 ? 0.2 : 0.25, x: 292, y: 470, hx: 292, hy: 470, in: 0 }];
-    if (L >= 2) s.items.push({ who: 'owl', f: 0.1, x: 62, y: 470, hx: 62, hy: 470, in: 0 });
-    s.r = PIE.r; s.dealT = 0; s.bag = { fly: 0 };
+    // funding rounds, one investor at a time, each from a different spot (level 2 ends with the staff option pool)
+    const R = [
+      { who: 'fox', f: 0.25, hx: 296, hy: 470, ax: 302, ay: 606, face: -1 },
+      { who: 'owl', f: 0.2, hx: 62, hy: 470, ax: 54, ay: 606, face: 1 },
+      { who: 'duck', f: 0.15, hx: 316, hy: 296, ax: 320, ay: 400, face: -1 },
+      { who: 'turtle', f: 0.1, hx: 46, hy: 296, ax: 42, ay: 400, face: 1 },
+    ].slice(0, [2, 3, 4][L]);
+    s.items = R.map((it, i) => ({ ...it, x: it.hx, y: it.hy, in: 0, show: i ? 0 : 0.01 }));
+    s.r = PIE.r; s.dealT = 0;
   },
-  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const it = SK.pick(s.items.filter(i => !i.in), x, y, 56); if (it) { SK.dragStart(g, it, x, y); g.sfx('tap'); } },
+  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const it = SK.pick(s.items.filter(i => !i.in && i.show && g.t > i.show + 0.3), x, y, 56); if (it) { SK.dragStart(g, it, x, y); g.sfx('tap'); } },
   move(g, x, y) { SK.dragMove(g, x, y); },
   up(g) {
     const s = g.s, d = SK.dragEnd(g); if (!d || !d.obj) return; const it = d.obj;
-    if (SK.dist(it.x, it.y, PIE.x, PIE.y) < s.r + 34) { it.in = g.t; g.sfx('whoosh'); g.sfx('coin'); g.burst(PIE.x, PIE.y - s.r, ['#ffe27a', '#fff6ea', COL[it.who]], 14, 160); if (s.items.every(i => i.in)) s.dealT = g.t; }
+    if (SK.dist(it.x, it.y, PIE.x, PIE.y) < s.r + 34) { it.in = g.t; g.sfx('whoosh'); g.sfx('coin'); g.burst(PIE.x, PIE.y - s.r, ['#ffe27a', '#fff6ea', COL[it.who]], 14, 160);
+      const nx = s.items.find(i => !i.show); if (nx) nx.show = g.t + 0.35; if (s.items.every(i => i.in)) s.dealT = g.t; }
     else { it.back = g.t; g.sfx('boing'); }
   },
   update(g, dt) {
     const s = g.s;
-    for (const it of s.items) if (!it.in && !SK.dragging(g)) { it.x += (it.hx - it.x) * Math.min(1, dt * 9); it.y += (it.hy - it.y) * Math.min(1, dt * 9); }
+    for (const it of s.items) if (!it.in && SK.dragging(g) !== it) { it.x += (it.hx - it.x) * Math.min(1, dt * 9); it.y += (it.hy - it.y) * Math.min(1, dt * 9); }
     // each slice that goes in adds cash: the pie grows in proportion (same area per share right after a fair deal) ...
     let target = PIE.r; for (const it of s.items) if (it.in) target = target / Math.sqrt(1 - it.f) * 1.0;
     // ... and once the deal is done, the cash is put to work: the oven roars and the pie keeps growing
@@ -75,25 +82,25 @@ MG.add({
     slices.push({ f: rest / 2, col: COL.beaver, draw: icon('beaver') }, { f: rest / 2, col: COL.rabbit, draw: icon('rabbit') });
     B8.pie(c, PIE.x, PIE.y, s.r, slices);
     // a dashed ghost of the rabbit's old slice, on the old small pie: thinner now, but on a bigger pie
-    if (s.dealT) { const a0 = Math.PI / 2; c.save(); c.globalAlpha = SK.clamp((t - s.dealT) * 2, 0, 0.9); c.strokeStyle = '#3a1640'; c.lineWidth = 3; c.setLineDash([7, 6]); c.beginPath(); c.moveTo(PIE.x, PIE.y); c.arc(PIE.x, PIE.y, PIE.r, a0, a0 + Math.PI); c.closePath(); c.stroke(); c.restore(); }
+    const in0 = s.items[0].in; if (in0) { const a0 = Math.PI / 2; c.save(); c.globalAlpha = SK.clamp((t - in0) * 2, 0, 0.9); c.strokeStyle = '#3a1640'; c.lineWidth = 3; c.setLineDash([7, 6]); c.beginPath(); c.moveTo(PIE.x, PIE.y); c.arc(PIE.x, PIE.y, PIE.r, a0, a0 + Math.PI); c.closePath(); c.stroke(); c.restore(); }
     // coins tumbling from the cash bag into the pie
-    if (s.dealT) for (let i = 0; i < 6; i++) { const q = (t - s.dealT) * 1.8 - i * 0.12; if (q > 0 && q < 1) B8.coin(c, SK.lerp(318, PIE.x + (i - 2.5) * 12, q), SK.lerp(540, PIE.y, q) - Math.sin(q * Math.PI) * 90, 10, q * 9); }
+    for (const it of s.items) if (it.in) for (let i = 0; i < 5; i++) { const q = (t - it.in) * 1.8 - i * 0.12; if (q > 0 && q < 1) B8.coin(c, SK.lerp(it.ax, PIE.x + (i - 2) * 12, q), SK.lerp(it.ay - 30, PIE.y, q) - Math.sin(q * Math.PI) * 90, 10, q * 9); }
     // the animals: the founders in front, the fox investor with its cash, the owl with the staff pool (level 2)
     SK.animal(c, 'rabbit', 132, 606, 1.0, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy' });
     SK.animal(c, 'beaver', 212, 606, 1.0, { t, phase: 1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
-    SK.animal(c, 'fox', 300, 606, 1.0, { t, phase: 2, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy', facing: -1 });
-    if (!s.dealT) B8.cashBag(c, 330, 572, 0.9);
-    if (L >= 2) SK.animal(c, 'owl', 56, 606, 0.95, { t, phase: 3, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : 'happy' });
+    for (const it of s.items) if (it.show && t > it.show) { const k = SK.easeOut((t - it.show) / 0.35), ox = (1 - k) * 90 * -it.face;
+      SK.animal(c, it.who, it.ax + ox, it.ay, it.ay < 500 ? 0.8 : 0.95, { t, phase: it.ax, pose: won ? 'cheer' : k < 1 ? 'walk' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'happy', facing: it.face });
+      if (!it.in) B8.cashBag(c, it.ax + ox + it.face * -26, it.ay - 28, it.ay < 500 ? 0.6 : 0.8); }
     // the loose slices (in the animals' paws, or in your hand)
-    for (const it of s.items) if (!it.in) {
+    for (const it of s.items) if (!it.in && it.show && t > it.show + 0.2) {
       const da = it.f * Math.PI * 2, rr = PIE.r * 0.95, a0 = -Math.PI / 2 - da / 2; // pointing down, apex up
       wedge(c, it.x, it.y - rr * 0.55, rr, a0 + Math.PI, da, COL[it.who]);
       if (!SK.dragging(g)) SK.glow(c, g, it.x, it.y, 40);
     }
-    const first = s.items.find(i => !i.in);
+    const first = s.items.find(i => !i.in && i.show && t > i.show + 0.3);
     if (first) SK.demo(g, c, 'drag', [first.x, first.y], [PIE.x + 10, PIE.y], { delay: 0.7 });
   },
   auto(g, dt, synth) {
-    const s = g.s; s.items.forEach((it, i) => SK.bot.drag(g, synth, 'd' + i, 1.0 + i * 0.8, [it.hx, it.hy], [PIE.x + (i ? -20 : 20), PIE.y], 0.45));
+    const s = g.s; s.items.forEach((it, i) => { if (it.show && g.t > it.show + 0.32) SK.bot.drag(g, synth, 'd' + i, Math.max(1.0, it.show + 0.35), [it.hx, it.hy], [PIE.x, PIE.y], 0.4); });
   },
 });

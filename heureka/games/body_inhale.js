@@ -3,7 +3,8 @@
 // Push it up instead and the air rushes out and the cheeks puff. Let go and it springs back up (breathing out).
 // Level 2: breathe in, then let go to blow out the birthday candles; a half breath leaves some still lit.
 const EDGE = 472, REST = 378, LOW = 538, UP_FAIL = 330; // diaphragm: edge height, apex at rest, apex fully pulled, apex pushed too far up
-const MOUTH = [180, 252], CANDLES = [[252, 262], [276, 270], [300, 262], [324, 270]];
+const MOUTH = [180, 252];
+const candleXY = (i, n) => [250 + i * (84 / (n - 1)), 266 + (i % 2) * 6];
 const apexOf = cy => 0.5 * EDGE + 0.5 * cy; // the curve's midpoint for control y cy
 const ctrlOf = ay => 2 * ay - EDGE;
 
@@ -68,13 +69,13 @@ function bunny(c, t, fill, ay, cheeks, won, lost) {
 }
 
 MG.add({
-  id: 'body_inhale', stage: 'body', cmd: 'INHALE!', time: 5, mood: 'bright', winText: 'Ahhh!', failText: 'Pfffft!',
+  id: 'body_inhale', stage: 'body', cmd: 'INHALE!', time: 8, mood: 'bright', winText: 'Diaphragm!', failText: 'Pfffft!',
   card: { title: 'Breathing in', kind: 'Biology', ref: 'The diaphragm and the lungs',
     text: 'Your lungs have no muscles of their own to pull in air. Under them sits the diaphragm, a dome-shaped sheet of muscle.\n\nWhen you breathe in, the diaphragm tightens and pulls down, and muscles between your ribs lift your chest outward. The space inside your chest gets bigger, so the air pressure in your lungs drops below the pressure of the air outside. Air rushes in through your nose and mouth to fill the space.\n\nWhen the diaphragm relaxes, it springs back up, the space shrinks, and air is pushed out.',
     note: 'Pulling the diaphragm down makes more room in your chest, so air flows into your lungs.' },
   init(g) {
     const s = g.s; s.ay = apexOf(REST); s.ayRest = apexOf(REST); s.fill = 0.25; s.air = []; s.cheeks = 0; s.held = false; s.full = -1;
-    s.candles = g.level >= 2 ? CANDLES.map(() => ({ lit: 1 })) : []; s.blow = 0; s.pushed = -1;
+    s.candles = Array.from({ length: [4, 6, 8][Math.min(2, g.level)] }, () => ({ lit: 1 })); s.blow = 0; s.vol = 0; s.outThis = 0; s.pushed = -1;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (Math.abs(y - s.ay) < 70 && x > 90 && x < 270) { s.held = true; s.grabDy = s.ay - y; } },
   move(g, x, y) { const s = g.s; if (!s.held || g.done) return; s.ay = SK.clamp(y + s.grabDy, apexOf(UP_FAIL) - 10, apexOf(LOW)); },
@@ -89,7 +90,11 @@ MG.add({
     for (const a of s.air) a.k += dt * a.sp; s.air = s.air.filter(a => a.k < 1);
     // breathing out: the stream of air blows candles out (level 2)
     s.blow = Math.max(0, -flow / dt);
-    if (s.candles.length && s.blow > 0.15) for (const [i, cd] of s.candles.entries()) { if (cd.lit && s.blow > 0.15 + i * 0.05) cd.lit = Math.max(0, cd.lit - dt * 6 * s.blow); if (cd.lit === 0 && !cd.out) { cd.out = true; g.sfx('wind'); } }
+    // each breath out can blow out up to two candles, nearest first: a deep breath blows two, a shallow one fewer
+    if (flow > 0.002) { s.vol = 0; s.outThis = 0; } else if (flow < 0) s.vol += -flow;
+    const want = (s.vol > 0.26 ? 1 : 0) + (s.vol > 0.58 ? 1 : 0);
+    while (s.outThis < want) { const cd = s.candles.find(q => !q.out); if (!cd) break; cd.out = true; cd.outAt = g.t; s.outThis++; g.sfx('wind'); }
+    for (const cd of s.candles) if (cd.out) cd.lit = Math.max(0, cd.lit - dt * 6);
     s.cheeks = Math.max(0, s.cheeks - dt * 1.5);
     if (g.done) return;
     // pushed up too far: the air is shoved out, cheeks puff
@@ -101,10 +106,10 @@ MG.add({
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail';
     c.drawImage(g.bake('body_inhale_room', paintRoom), 0, 0, 360, 640);
     // the cake (level 2)
-    if (s.candles.length) {
+    if (s.candles.length) { const n = s.candles.length;
       c.fillStyle = '#fff0f4'; c.strokeStyle = '#c86a8a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(240, 276, 100, 40, 8); c.fill(); c.stroke();
       c.fillStyle = '#ff9ab8'; c.beginPath(); c.roundRect(240, 276, 100, 12, 6); c.fill(); c.fillStyle = '#e8d0b0'; c.fillRect(230, 314, 120, 6);
-      for (const [i, [x, y]] of CANDLES.entries()) { const cd = s.candles[i]; c.fillStyle = ['#7ad0ff', '#ffd25a', '#9ae07a', '#ff7a8a'][i]; c.fillRect(x - 3, y - 4, 6, 280 - y + 4); if (cd.lit > 0.05) { const f = cd.lit, w = Math.sin(t * 20 + i) * 1.5 - s.blow * 6; c.fillStyle = '#ffb030'; c.beginPath(); c.ellipse(x + w, y - 12, 4.5 * f, 9 * f, w * 0.06, 0, 7); c.fill(); c.fillStyle = '#fff4a0'; c.beginPath(); c.ellipse(x + w, y - 10, 2.2 * f, 5 * f, 0, 0, 7); c.fill(); } else { c.strokeStyle = 'rgba(120,110,120,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 6); c.quadraticCurveTo(x + 6, y - 18, x, y - 30 - (t % 1) * 6); c.stroke(); } }
+      for (const [i, cd] of s.candles.entries()) { const [x, y] = candleXY(i, n); c.fillStyle = ['#7ad0ff', '#ffd25a', '#9ae07a', '#ff7a8a'][i % 4]; c.fillRect(x - 3, y - 4, 6, 280 - y + 4); if (cd.lit > 0.05) { const f = cd.lit, w = Math.sin(t * 20 + i) * 1.5 - s.blow * 6; c.fillStyle = '#ffb030'; c.beginPath(); c.ellipse(x + w, y - 12, 4.5 * f, 9 * f, w * 0.06, 0, 7); c.fill(); c.fillStyle = '#fff4a0'; c.beginPath(); c.ellipse(x + w, y - 10, 2.2 * f, 5 * f, 0, 0, 7); c.fill(); } else { c.strokeStyle = 'rgba(120,110,120,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - 6); c.quadraticCurveTo(x + 6, y - 18, x, y - 30 - (t % 1) * 6); c.stroke(); } }
     }
     bunny(c, t, s.fill, s.ay, s.cheeks, won, lost);
     // air: dots stream in through the nose, down the windpipe into the lungs (or back out)

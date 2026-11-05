@@ -1,10 +1,15 @@
 // FUZZ! (earth_eng EE-30) — a night-club stage: the fox strums, the guitar's wave runs through an amp onto a big
 // screen with the power rails drawn as two glowing bars. Turn the gain knob up: the wave grows until its tops hit the
 // rails and are sliced flat, the sound turns to buzzing fuzz and the crowd head-bangs. Leave it low: a gentle lullaby
-// and the crowd dozes off. Level 2: a bigger power supply (rails farther apart) and a softer strum need more gain.
+// and the crowd dozes off. Three songs in a row, each on a different instrument (guitar, bass, ukulele) with a different
+// signal size, and the stagehand resets the knob between songs, so each needs its own turn. Level 2: a bigger power
+// supply (rails farther apart), so every instrument needs more gain.
 const SC = { x0: 30, x1: 330, y0: 128, y1: 300 }, CY = 214, AMP = { x: 70, y: 318, w: 220, h: 148 };
 const CFG = [ // rail height above the centre line (px), the guitar's wave size (px), the most gain the knob gives
-  { R: 56, A: 17, gmax: 7 }, { R: 64, A: 16, gmax: 8 }, { R: 74, A: 13, gmax: 11 },
+  { R: 56, A: 18, gmax: 9.5 }, { R: 64, A: 17, gmax: 11 }, { R: 74, A: 15, gmax: 14 },
+];
+const SONGS = [ // each instrument's signal size (times the level's A), how fast it wiggles on the screen, and its look
+  { A: 1, f: 3.4, col: '#d8283a', sc: 1.35, neck: 78 }, { A: 1.5, f: 2.1, col: '#2a6ad8', sc: 1.5, neck: 96 }, { A: 0.5, f: 5.4, col: '#d89a4a', sc: 0.95, neck: 46 },
 ];
 const STRUM = 0.62, SPEED = 230; // seconds per strum; how fast the trace scrolls (px/s)
 const wav = th => (Math.sin(th) + 0.38 * Math.sin(2 * th + 0.6) + 0.18 * Math.sin(3 * th + 1.3)) / 1.32; // a guitar-ish shape
@@ -40,38 +45,43 @@ function paintClub(o) {
   o.fillStyle = '#222'; o.beginPath(); o.arc(x + 32, y + 52, 9, 0, 7); o.fill(); o.fillStyle = '#888'; o.beginPath(); o.arc(x + 32, y + 52, 4, 0, 7); o.fill();
   o.fillStyle = '#ff3a3a'; o.beginPath(); o.arc(x + w - 30, y + 52, 6, 0, 7); o.fill(); o.fillStyle = 'rgba(255,120,120,0.4)'; o.beginPath(); o.arc(x + w - 30, y + 52, 11, 0, 7); o.fill();
 }
-function guitar(c, x, y, rot, strum) { // a red electric guitar, held across the fox
-  c.save(); c.translate(x, y); c.rotate(rot); c.scale(1.35, 1.35);
-  c.fillStyle = '#7a4a22'; c.fillRect(0, -4, 78, 8); c.fillStyle = '#3a2210'; c.fillRect(74, -7, 16, 14);
-  c.fillStyle = '#d8283a'; c.strokeStyle = '#5a0a14'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(-14, 0, 24, 19, 0, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.ellipse(8, 0, 16, 14, 0, 0, 7); c.fill(); c.stroke();
+function guitar(c, x, y, rot, strum, so) { // the instrument held across the fox: guitar, bass or ukulele
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(so.sc, so.sc);
+  c.fillStyle = '#7a4a22'; c.fillRect(0, -4, so.neck, 8); c.fillStyle = '#3a2210'; c.fillRect(so.neck - 4, -7, 16, 14);
+  c.fillStyle = so.col; c.strokeStyle = '#5a0a14'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(-14, 0, 24, 19, 0, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.ellipse(8, 0, 16, 14, 0, 0, 7); c.fill(); c.stroke();
   c.fillStyle = '#fff6ea'; c.beginPath(); c.ellipse(-12, 6, 10, 6, 0.3, 0, 7); c.fill();
-  c.strokeStyle = 'rgba(255,240,200,0.9)'; c.lineWidth = 1; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-26, i * 2 + Math.sin(strum * 40 + i) * strum * 2); c.lineTo(88, i * 1.3); c.stroke(); }
+  c.strokeStyle = 'rgba(255,240,200,0.9)'; c.lineWidth = 1; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-26, i * 2 + Math.sin(strum * 40 + i) * strum * 2); c.lineTo(so.neck + 10, i * 1.3); c.stroke(); }
   c.restore();
 }
 MG.add({
-  id: 'fuzz', stage: 'circuits', cmd: 'FUZZ!', time: 5, mood: 'night', winText: 'Rock on!', failText: 'Zzz...',
+  id: 'fuzz', stage: 'circuits', cmd: 'FUZZ!', time: 7, mood: 'night', winText: 'Clipping!', failText: 'Zzz...',
   card: { title: 'Too much gain clips the wave', kind: 'Engineering', ref: 'Amplifier clipping',
     text: 'An amplifier makes a signal bigger. The gain knob sets how many times bigger. The amplifier gets its power from a supply with a top voltage and a bottom voltage, called the rails, and its output can never go past them.\n\nTurn the gain up far enough and the peaks of the wave hit the rails and are sliced flat. A flat-topped wave holds extra high, buzzy tones that the smooth wave did not have. Guitar players clip on purpose to get fuzz. In a phone call or a recording, the same clipping is unwanted distortion.',
     note: "An amplifier's output can't go past its power rails, so too much gain slices the wave's tops flat and makes it buzz." },
   init(g) {
     const s = g.s, L = CFG[Math.min(2, g.level)];
-    s.L = L; s.kn = B6.knob(180, AMP.y + 52, 30, 0.06); s.fz = 0; s.nextStrum = 0.3; s.strum = 0; s.sleep = 0; s.bang = 0;
+    s.L = L; s.kn = B6.knob(180, AMP.y + 52, 30, 0.06); s.fz = 0; s.song = 0; s.songT0 = 0; s.swap = 0; s.nextStrum = 0.3; s.strum = 0; s.sleep = 0; s.bang = 0;
   },
   down(g, x, y) { SK.touched(g); if (!g.done) B6.knobDown(g, g.s.kn, x, y); },
   move(g, x, y) { if (!g.done) B6.knobMove(g, g.s.kn, x, y); },
   up(g) { B6.knobUp(g.s.kn); },
   update(g, dt) {
-    const s = g.s, L = s.L, gain = 1 + (L.gmax - 1) * s.kn.k, peak = gain * L.A, fuzzy = peak >= L.R * 1.45;
+    const s = g.s, L = s.L, gain = 1 + (L.gmax - 1) * s.kn.k, so = SONGS[s.song], peak = gain * L.A * so.A, fuzzy = s.swap <= 0 && peak >= L.R * 1.3;
     s.gain = gain; s.fuzzy = fuzzy; s.strum = Math.max(0, s.strum - dt * 3);
     if (g.t >= s.nextStrum) { s.nextStrum += STRUM; s.strum = 1; if (!g.done || g.result === 'win') { if (fuzzy) { g.sfx('buzz', { pitch: 0.55, vol: 0.7 }); g.sfx('harp', { pitch: 0.5, vol: 0.5 }); } else g.sfx('harp', { pitch: 0.5, vol: 0.35 + 0.4 * Math.min(1, peak / L.R) }); } }
     if (g.done) { if (g.result === 'win') s.bang += dt; else s.sleep = Math.min(1, s.sleep + dt); return; }
+    s.swap = Math.max(0, s.swap - dt);
     s.fz = fuzzy ? s.fz + dt : Math.max(0, s.fz - dt * 2);
     s.sleep = fuzzy ? Math.max(0, s.sleep - dt * 3) : Math.min(0.7, s.sleep + dt * 0.12 * (peak < L.R ? 1 : 0.3));
     if (fuzzy) s.bang += dt;
-    if (s.fz >= 0.5) { g.win(); g.sfx('cheer'); g.burst(180, CY, ['#ff5ad0', '#5ae0ff', '#ffe27a'], 26, 220); g.shake(4, 0.3); }
+    if (s.fz >= 0.45) {
+      g.burst(180, CY, ['#ff5ad0', '#5ae0ff', '#ffe27a'], 26, 220); g.shake(4, 0.3);
+      if (s.song >= SONGS.length - 1) { g.win(); g.sfx('cheer'); return; }
+      s.song++; s.songT0 = g.t; s.swap = 0.45; s.fz = 0; s.kn.k = 0.04; s.kn.grab = null; g.sfx('clap'); g.sfx('swoosh'); // the stagehand swaps the instrument and turns the amp back down
+    }
   },
   draw(g, c) {
-    const s = g.s, L = s.L, t = g.t, gain = s.gain || 1;
+    const s = g.s, L = s.L, t = g.t, gain = s.gain || 1, so = SONGS[s.song];
     c.drawImage(g.bake('fuzz_club', paintClub), 0, 0, 360, 640);
     B6.motes(c, t, 18, 7, [0, 0, 360, 470], 'rgba(255,220,255,0.8)');
     // rails: the power supply's top and bottom, as glowing bars
@@ -83,7 +93,7 @@ MG.add({
     // the wave: the clipped output, plus a faint ghost of what was sliced off beyond the rails
     c.save(); c.beginPath(); c.roundRect(SC.x0, SC.y0, SC.x1 - SC.x0, SC.y1 - SC.y0, 10); c.clip();
     const pts = [];
-    for (let px = SC.x0; px <= SC.x1; px += 2) { const tau = t - (SC.x1 - px) / SPEED, v = gain * L.A * env(tau) * wav(tau * 3.4 * Math.PI * 2); pts.push([px, v]); }
+    for (let px = SC.x0; px <= SC.x1; px += 2) { const tau = t - (SC.x1 - px) / SPEED, v = gain * L.A * so.A * env(tau) * wav(tau * so.f * Math.PI * 2) * (1 - s.swap / 0.45); pts.push([px, v]); }
     c.strokeStyle = 'rgba(180,255,200,0.22)'; c.lineWidth = 2; c.setLineDash([4, 5]); c.beginPath(); pts.forEach(([px, v], i) => i ? c.lineTo(px, CY - v) : c.moveTo(px, CY - v)); c.stroke(); c.setLineDash([]);
     for (const [w, a] of [[9, 0.18], [3.5, 1]]) { c.strokeStyle = `rgba(140,255,170,${a})`; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); pts.forEach(([px, v], i) => { const y = CY - SK.clamp(v, -L.R, L.R); i ? c.lineTo(px, y) : c.moveTo(px, y); }); c.stroke(); }
     // sparks where the wave grinds along a rail
@@ -93,13 +103,14 @@ MG.add({
     SK.glow(c, g, s.kn.x, s.kn.y, 44);
     B6.drawKnob(c, s.kn, { col: '#2a2420', cap: '#e8d8b0', arc: s.fuzzy ? '#ff5ad0' : '#ffb43a' });
     // the speaker grille thumps with the sound
-    const thump = s.strum * Math.min(1, gain * L.A / L.R);
+    const thump = s.strum * Math.min(1, gain * L.A * so.A / L.R);
     c.save(); c.globalAlpha = 0.18 * thump; c.fillStyle = s.fuzzy ? '#ff5ad0' : '#ffe8a0'; c.beginPath(); c.ellipse(180, AMP.y + 124, 92 + thump * 6, 20 + thump * 3, 0, 0, 7); c.fill(); c.restore();
     // the fox and its guitar, cable to the amp
     const won = g.result === 'win', lost = g.result === 'fail', bob = Math.sin(t * (s.fuzzy || won ? 14 : 4)) * (s.fuzzy || won ? 5 : 1.5);
     c.strokeStyle = '#111'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(AMP.x + 32, AMP.y + 52); c.bezierCurveTo(30, 380, 20, 560, 50, 570); c.stroke();
     SK.animal(c, 'fox', 84, 606 + bob * 0.3, 1.5, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.fuzzy ? 'laugh' : 'happy' });
-    guitar(c, 74, 556 + bob * 0.3, -0.5, s.strum);
+    const sw = s.swap / 0.45; guitar(c, 74 - sw * 140, 556 + bob * 0.3, -0.5, s.strum, so);
+    for (let i = 0; i < SONGS.length; i++) { c.fillStyle = i < s.song || g.result === 'win' ? '#ffe27a' : 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(156 + i * 24, AMP.y + 132, 7, 0, 7); c.fill(); } // songs played
     // the crowd: head-banging to the fuzz, or nodding off to the lullaby
     const crowd = [['hedgehog', 208, 608, 1.05, 0], ['rabbit', 266, 602, 1.0, 1.3], ['duck', 322, 608, 0.95, 2.1]];
     for (const [kind, x, y, sc, ph] of crowd) {
@@ -112,5 +123,5 @@ MG.add({
     // guidance: turn the knob up, over the top
     SK.demo(g, c, 'drag', [s.kn.x - 44, s.kn.y + 18], [s.kn.x + 44, s.kn.y + 18], { arc: 66 });
   },
-  auto(g, dt, synth) { B6.botTurn(g, synth, g.s.kn, 'turn', 1.1, 0.95, 0.7); },
+  auto(g, dt, synth) { const s = g.s; B6.botTurn(g, synth, s.kn, 'turn' + s.song, s.song ? s.songT0 + 0.55 : 1.1, 0.97, 0.45); },
 });

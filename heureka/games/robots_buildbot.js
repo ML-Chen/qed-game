@@ -47,7 +47,7 @@ function drawPart(c, kind, x, y, h, t, on, sc = 1.15, tray = false) { // on: 0..
 // where each part sits on the robot, in its own frame (forward = -y)
 const SLOT = { eye: [0, -30], brain: [0, 5], wheels: [0, 5], bumper: [0, 0] };
 MG.add({
-  id: 'buildbot', stage: 'robots', cmd: 'BUILD A BOT!', time: 6, mood: 'party', winText: 'Slurp!', failText: 'Bonk!',
+  id: 'buildbot', stage: 'robots', cmd: 'BUILD A BOT!', time: 6, mood: 'party', winText: 'Robot loop!', failText: 'Bonk!',
   card: { title: 'Sense, decide, act', kind: 'Robotics', ref: 'The robot loop (sense, think, act)',
     text: 'Every robot needs three kinds of part. A sensor notices the world: here, a camera eye spots a crumb. A brain decides what to do: a small computer turns toward the crumb. Motors act: the wheels roll it there.\n\nThen the robot does it all again, many times a second. That repeating cycle is called the robot loop.\n\nTake away the eye and the brain gets no news about the world. The wheels still turn, but the robot can only drive blindly, so it bumps into the fridge again and again.',
     note: 'A robot senses, decides and acts, over and over. Without a sense, it cannot react to the world.' },

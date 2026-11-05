@@ -1,6 +1,6 @@
 // CATCH UP! (space EE AS-01) — a capsule orbits the Earth behind a space station. Swipe to fire the thruster: each swipe is
 // one short burn in that direction. Brake (swipe against the motion) and the capsule drops into a lower orbit, which is
-// faster: it races round the inside track and rises back up right where the station has got to. Boost forward instead
+// faster: it races round the inside track and rises back up just behind the station; boost forward there to dock. Boost forward instead
 // and it climbs into a higher, slower orbit and falls even further behind.
 // The orbits are real: gravity pulls toward the Earth's centre with strength GM / r².
 // Level 2: the station is further ahead, so the capsule must brake twice and dip lower.
@@ -47,22 +47,22 @@ function cuCapsule(c, x, y, a, flame, t) { // a: heading (radians), flame: >0 ex
   c.restore();
 }
 MG.add({
-  id: 'catchup', stage: 'space', cmd: 'CATCH UP!', time: 6, mood: 'night', winText: 'Docked!', failText: 'Left behind!',
+  id: 'catchup', stage: 'space', cmd: 'CATCH UP!', time: 6, mood: 'night', winText: 'Lower, faster!', failText: 'Left behind!',
   card: { title: 'Slow down to catch up', kind: 'Astronomy', ref: 'Orbital mechanics (phasing)',
     text: 'In orbit, a lower path is a faster lap. Closer to the Earth, gravity pulls harder, so a spacecraft must move faster to keep falling around it, and the circle it travels is shorter.\n\nSo to catch a space station ahead of you, you brake. The capsule drops into a lower orbit, gains on the station every lap, then boosts back up beside it. Push forward instead and you rise into a higher, slower orbit and fall further behind.\n\nReal crews plan their trips to the space station this way.',
     note: 'A lower orbit is faster, so to catch something ahead of you in orbit, you brake and drop lower.' },
   init(g) {
-    const s = g.s, burns = g.level >= 2 ? 2 : 1, lead = cuLead(burns); s.burns = burns;
+    const s = g.s, burns = g.level >= 2 ? 2 : 1, lead = cuLead(burns) - 0.16; s.burns = burns; // arrives just behind the station
     const th = -Math.PI / 2; s.st = { th }; // the station: a circular orbit, moving anticlockwise on screen
     const tc = th + lead; s.cap = { x: CU_C[0] + CU_R * Math.cos(tc), y: CU_C[1] + CU_R * Math.sin(tc), vx: CU_VC * Math.sin(tc), vy: -CU_VC * Math.cos(tc) };
-    s.fired = 0; s.lastBurn = 0; s.flame = 0; s.flameT = -9; s.dock = 0; s.crash = 0; s.sw = null;
+    s.fired = 0; s.brakes = 0; s.boosts = 0; s.lastBurn = 0; s.flame = 0; s.flameT = -9; s.dock = 0; s.crash = 0; s.sw = null;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); s.sw = [x, y]; },
   up(g, x, y) {
     const s = g.s, a = s.sw; s.sw = null; if (!a || g.done) return; const dx = x - a[0], dy = y - a[1], L = Math.hypot(dx, dy); if (L < 24) return;
     const b = s.cap, v = Math.hypot(b.vx, b.vy), along = (dx * b.vx + dy * b.vy) / (L * v); if (Math.abs(along) < 0.35) return; // a sideways swipe does nothing
     const d = Math.sign(along); b.vx += d * CU_DV * b.vx / v; b.vy += d * CU_DV * b.vy / v; // one short burn along (or against) the motion
-    s.fired++; s.lastBurn = g.t; s.flame = d; s.flameT = g.t; g.sfx('whoosh'); g.sfx(d < 0 ? 'shrink' : 'grow');
+    s.fired++; if (d < 0) s.brakes++; else s.boosts++; s.lastBurn = g.t; s.flame = d; s.flameT = g.t; g.sfx('whoosh'); g.sfx(d < 0 ? 'shrink' : 'grow');
   },
   update(g, dt) {
     const s = g.s, b = s.cap;
@@ -72,10 +72,10 @@ MG.add({
     s.st.th -= 2 * Math.PI / CU_T * dt;
     if (g.done) return;
     const sx = CU_C[0] + CU_R * Math.cos(s.st.th), sy = CU_C[1] + CU_R * Math.sin(s.st.th), r = Math.hypot(b.x - CU_C[0], b.y - CU_C[1]);
-    if (s.fired && SK.dist(b.x, b.y, sx, sy) < 32) { s.dock = g.t; g.win(); g.sfx('click'); g.sfx('chime'); g.sfx('cheer'); g.burst(sx, sy, ['#fff6c0', '#8ad0ff', '#ffd45a'], 20, 160); return; }
+    if (s.brakes === s.burns && s.boosts === s.burns && SK.dist(b.x, b.y, sx, sy) < 40) { s.dock = g.t; g.win(); g.sfx('click'); g.sfx('chime'); g.sfx('cheer'); g.burst(sx, sy, ['#fff6c0', '#8ad0ff', '#ffd45a'], 20, 160); return; }
     if (r < CU_EARTH + 6) { s.crash = g.t; g.fail(); g.sfx('fire'); g.burst(b.x, b.y, ['#ff8a40', '#ffd45a', '#fff'], 22, 200); return; }
     // a whole lap since the last burn without meeting the station: it is not going to happen
-    if (s.fired && g.t - s.lastBurn > cuPeriod(b) * 1.04) { g.fail(); g.sfx('wrong'); g.sfx('laugh'); }
+    if (s.fired && g.t - s.lastBurn > cuPeriod(b) * 1.12) { g.fail(); g.sfx('wrong'); g.sfx('laugh'); }
   },
   draw(g, c) {
     const s = g.s, t = g.t, b = s.cap;
@@ -84,7 +84,7 @@ MG.add({
     c.save(); c.strokeStyle = 'rgba(200,210,255,0.28)'; c.lineWidth = 2; c.setLineDash([4, 8]); c.beginPath(); c.arc(CU_C[0], CU_C[1], CU_R, 0, 7); c.stroke(); c.restore();
     cuEarth(c, t);
     // the capsule's own path for the next lap (worked out from the same gravity), drawn after a burn
-    if (s.fired && !s.dock && !s.crash) { const q = { x: b.x, y: b.y, vx: b.vx, vy: b.vy }, T = Math.min(5, cuPeriod(b)), n = 90; c.save(); c.strokeStyle = s.flame < 0 ? 'rgba(130,230,170,0.6)' : 'rgba(255,150,120,0.6)'; c.lineWidth = 2.5; c.setLineDash([3, 6]); c.beginPath(); c.moveTo(q.x, q.y);
+    if (s.fired && !s.dock && !s.crash) { const q = { x: b.x, y: b.y, vx: b.vx, vy: b.vy }, T = Math.min(5, cuPeriod(b)), n = 90; c.save(); c.strokeStyle = 'rgba(140,230,200,0.6)'; c.lineWidth = 2.5; c.setLineDash([3, 6]); c.beginPath(); c.moveTo(q.x, q.y);
       for (let i = 0; i < n; i++) { for (let k = 0; k < 4; k++) cuStep(q, T / n / 4); c.lineTo(q.x, q.y); if (Math.hypot(q.x - CU_C[0], q.y - CU_C[1]) < CU_EARTH) break; } c.stroke(); c.restore(); }
     const sx = CU_C[0] + CU_R * Math.cos(s.st.th), sy = CU_C[1] + CU_R * Math.sin(s.st.th);
     cuStation(c, sx, sy, s.st.th, t);
@@ -96,10 +96,15 @@ MG.add({
     c.save(); c.strokeStyle = 'rgba(200,230,255,0.8)'; c.lineWidth = 2.5; c.fillStyle = 'rgba(180,220,255,0.16)'; c.beginPath(); c.arc(56, 560, 30, 0, 7); c.fill(); c.stroke(); c.restore();
     // guidance: swipe backward, against the capsule's motion
     const v = Math.hypot(b.vx, b.vy); SK.demo(g, c, 'swipe', [b.x, b.y], [b.x - b.vx / v * 70, b.y - b.vy / v * 70], { period: 1.4 });
+    // back up beside the station: the hand shows the boost forward (level 0), and the capsule glows (levels 0 and 1)
+    if (!g.done && s.brakes === s.burns && s.boosts < s.burns && t - s.lastBurn > 0.7 && Math.hypot(b.x - CU_C[0], b.y - CU_C[1]) > CU_R - 26) { SK.glow(c, g, b.x, b.y, 26, '#a8ffb8');
+      if (g.level === 0) { const k = (t * 2.5) % 1; SK.hand(c, b.x + b.vx / v * 60 * SK.easeOut(k), b.y + b.vy / v * 60 * SK.easeOut(k) + 18, k < 0.6 ? 1 : 0, 0.85); } }
   },
-  // the bot brakes: a quick swipe against the motion (twice at level 2)
+  // the bot brakes with quick swipes against the motion (twice at level 2), then boosts forward once back up by the station
   auto(g, dt, synth) {
-    const s = g.s, b = s.cap, B = s._bot = s._bot || {};
-    for (let i = 0; i < s.burns; i++) if (!B['b' + i] && g.t >= 1.0 + i * 0.08 && s.fired === i) { B['b' + i] = 1; const v = Math.hypot(b.vx, b.vy); synth('down', b.x, b.y); synth('up', b.x - b.vx / v * 60, b.y - b.vy / v * 60); }
+    const s = g.s, b = s.cap, B = s._bot = s._bot || {}, v = Math.hypot(b.vx, b.vy), r = Math.hypot(b.x - CU_C[0], b.y - CU_C[1]); if (g.done) return;
+    const swipe = d => { synth('down', b.x, b.y); synth('up', b.x + d * b.vx / v * 60, b.y + d * b.vy / v * 60); };
+    if (s.brakes < s.burns && g.t >= 1.0 + s.brakes * 0.06 && (!B.last || g.t - B.last > 0.05)) { B.last = g.t; swipe(-1); return; }
+    if (s.brakes === s.burns && s.boosts < s.burns && g.t - s.lastBurn > 0.5 && r > CU_R - 3 && (!B.last || g.t - B.last > 0.05)) { B.last = g.t; swipe(1); }
   },
 });

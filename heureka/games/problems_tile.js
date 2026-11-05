@@ -4,20 +4,23 @@
 // gap somewhere, and the mouse (the cause you missed) runs out of that hole.
 const TAU = Math.PI * 2, TS = 0.7, FY = 172; let C = 56; // C: the cell size, set per level by lay()
 const LEVELS = [
-  { cols: 3, rows: 2, pcs: [
-    { cells: [[0, 0], [1, 0], [0, 1]], home: [0, 0], col: '#e8604a', tray: [48, 420] },
-    { cells: [[1, 0], [0, 1], [1, 1]], home: [1, 0], col: '#4aa8d8', tray: [196, 440] }] },
   { cols: 3, rows: 3, pcs: [
-    { cells: [[0, 0], [1, 0], [2, 0]], home: [0, 0], col: '#e8604a', tray: [40, 400] },
-    { cells: [[0, 0], [0, 1], [1, 1]], home: [0, 1], col: '#4aa8d8', tray: [40, 468] },
-    { cells: [[0, 0], [1, 0], [1, 1]], home: [1, 1], col: '#f0b030', tray: [170, 440] }] },
+    { cells: [[0, 0], [1, 0], [2, 0]], home: [0, 0], col: '#e8604a', tray: [34, 404] },
+    { cells: [[0, 0], [0, 1], [1, 1]], home: [0, 1], col: '#4aa8d8', tray: [40, 482] },
+    { cells: [[0, 0], [1, 0], [1, 1]], home: [1, 1], col: '#f0b030', tray: [180, 452] }] },
   { cols: 4, rows: 3, pcs: [
     { cells: [[0, 0], [1, 0], [2, 0], [0, 1]], home: [0, 0], col: '#e8604a', tray: [24, 396] },
     { cells: [[0, 0], [0, 1], [0, 2]], home: [3, 0], col: '#4aa8d8', tray: [172, 396] },
     { cells: [[0, 0], [1, 0]], home: [1, 1], col: '#f0b030', tray: [24, 500] },
     { cells: [[0, 0], [1, 0], [2, 0]], home: [0, 2], col: '#8ac850', tray: [128, 540] }] },
+  { cols: 4, rows: 4, pcs: [
+    { cells: [[0, 0], [1, 0], [2, 0], [0, 1]], home: [0, 0], col: '#e8604a', tray: [24, 398] },
+    { cells: [[0, 0], [0, 1], [0, 2]], home: [3, 0], col: '#4aa8d8', tray: [150, 398] },
+    { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], home: [1, 1], col: '#f0b030', tray: [206, 400] },
+    { cells: [[0, 0], [0, 1]], home: [0, 2], col: '#b070d0', tray: [30, 498] },
+    { cells: [[0, 0], [1, 0], [2, 0]], home: [1, 3], col: '#8ac850', tray: [96, 540] }] },
 ];
-function lay(g) { const L = LEVELS[Math.min(2, g.level)]; C = [72, 62, 56][Math.min(2, g.level)]; return { L, fx: 180 - L.cols * C / 2, fy: FY }; }
+function lay(g) { const L = LEVELS[Math.min(2, g.level)]; C = [62, 56, 48][Math.min(2, g.level)]; return { L, fx: 180 - L.cols * C / 2, fy: FY }; }
 function bbox(p) { let w = 0, h = 0; for (const [i, j] of p.cells) { w = Math.max(w, i + 1); h = Math.max(h, j + 1); } return [w, h]; }
 function paintRoom(o, L, fx, fy) {
   // a sunny tiled-room seen from above: warm plank floor around a sunken pit (the floor still to be covered)
@@ -65,7 +68,7 @@ function mouse(c, x, y, t, o = {}) { // a grey mouse; o.peek draws only the head
   c.restore();
 }
 MG.add({
-  id: 'tileit', stage: 'problems', cmd: 'TILE IT!', time: 5, mood: 'party', winText: 'Covered!', failText: 'It got out!',
+  id: 'tileit', stage: 'problems', cmd: 'TILE IT!', time: 6, mood: 'party', winText: 'MECE!', failText: 'It got out!',
   card: { title: 'No gaps, no overlaps', kind: 'Problem solving', ref: 'MECE (mutually exclusive, collectively exhaustive)',
     text: 'The floor is the whole problem, and each tile is one part of it. The tiles worked because together they covered every bit of the floor, and no two tiles sat on the same spot.\n\nConsultants call a split like that MECE: mutually exclusive (no part overlaps another) and collectively exhaustive (the parts cover everything). Overlaps make you do the same work twice. A gap is worse: the cause you are looking for can hide in the part nobody checked, like the mouse.',
     note: 'When you split a problem into parts, make the parts cover everything without overlapping.' },

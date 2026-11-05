@@ -26,13 +26,13 @@
     for (let i = 0; i < 4; i++) { o.fillStyle = ['#ff6a5a', '#ffd45a', '#6ae07a', '#6ac8ff'][i]; o.beginPath(); o.arc(268 + i * 22, 584, 5, 0, 7); o.fill(); }
   }
   MG.add({
-    id: 'atoms_control', stage: 'atoms', cmd: 'CONTROL!', time: 6, mood: 'night', winText: 'Steady!', failText: 'Meltdown!',
+    id: 'atoms_control', stage: 'atoms', cmd: 'CONTROL!', time: 6, mood: 'night', winText: 'Critical!', failText: 'Runaway!',
     card: { title: 'A steady chain reaction', kind: 'Physics', ref: 'Nuclear reactor control',
-      text: 'In a reactor, each uranium nucleus that splits frees two or three neutrons. If more than one of them goes on to split another nucleus, the count grows faster and faster. If fewer than one does, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Pushing them in slows the reaction, and pulling them out speeds it up. Operators keep them where each split causes exactly one more, so the reactor gives steady heat. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
+      text: 'In a reactor, each uranium nucleus that splits frees two or three neutrons. If more than one of them goes on to split another nucleus, the count grows faster and faster. If fewer than one does, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Pushing them in slows the reaction, and pulling them out speeds it up. Operators keep them where each split causes exactly one more, so the reactor gives steady heat. Engineers call this steady state critical. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
       note: 'A reactor runs steadily when each split causes exactly one more split.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
-      s.d = 1; s.de = 1; s.ln = Math.log(0.05); s.steady = 0; s.need = lv ? 2.6 : 2.0; s.lag = lv >= 2 ? 0.9 : 0.12; s.amp = [0.05, 0.1, 0.1][lv];
+      s.d = 1; s.de = 1; s.ln = Math.log(0.05); s.steady = 0; s.need = lv ? 2.8 : 2.4; s.lag = lv >= 2 ? 0.9 : 0.12; s.amp = [0.08, 0.11, 0.11][lv];
       s.ph = g.rand() * 6; s.bar = { x: 160, y: TIP_IN - ROD }; s.boom = 0; s.splits = [];
     },
     down(g, x, y) { const s = g.s; SK.touched(g); if (y > 120 && y < 600 && x < 280) SK.dragStart(g, s.bar, x, y); },

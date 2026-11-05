@@ -81,16 +81,16 @@ function hog(c, x, y, k, t, rot = 0, sad = false) {
 }
 
 MG.add({
-  id: 'body_curl', stage: 'body', cmd: 'CURL UP!', time: 5, mood: 'bright', winText: 'Prickly!', failText: 'Bonk!',
+  id: 'body_curl', stage: 'body', cmd: 'CURL UP!', time: 7, mood: 'bright', winText: 'Adaptation!', failText: 'Bonk!',
   card: { title: 'Spines that protect', kind: 'Biology', ref: 'Adaptations: the hedgehog',
     text: "A hedgehog's back is covered in about 5,000 to 7,000 stiff spines. Each spine is a hollow hair made of keratin, the same material as your fingernails.\n\nWhen danger comes close, a ring of muscle under the skin pulls tight like the string of a drawstring bag, and the hedgehog rolls into a ball. Its soft face, belly and legs end up tucked inside, and the spines stand up all around. A fox that sniffs the ball gets a sore nose and usually leaves it alone.",
     note: 'Body parts that help an animal survive, like a hedgehog\'s spines, are called adaptations.' },
   init(g) {
     const s = g.s, f = 1 + (g.speed - 1) * 0.35, L = Math.min(2, g.level);
     s.f = f; s.fox = { x: L < 2 ? 34 : 14, ph: 'creep', pt: 0, crouch: 0, flee: 0, wait: 0, faked: L < 2 }; s.curl = 0; s.curlAt = -1; s.used = false;
-    s.creepV = (L === 0 ? 40 : L === 1 ? 50 : 64) * f;
+    s.creepV = (L === 0 ? 46 : L === 1 ? 58 : 74) * f;
     s.fakeAt = HX - 30 - 82 - g.rand() * 14; // level 2: where the fox fakes a pounce
-    s.pauseAt = [60 + g.rand() * 20, 100 + g.rand() * 20]; s.end = null; s.roll = null; s.leaves = [];
+    s.pauseAt = [60 + g.rand() * 20, 100 + g.rand() * 20]; s.end = null; s.round = 0; s.rounds = [2, 3, 3][L]; s.roll = null; s.leaves = [];
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done || s.used) return;
@@ -117,11 +117,14 @@ MG.add({
     } else if (F.ph === 'lunge') {
       F.crouch = Math.max(0, 1 - F.pt * 6); F.x += 260 * f * dt;
       if (nose >= contact && !g.done) {
-        if (s.curl > 0.85) { s.end = 'win'; F.ph = 'yelp'; F.pt = 0; g.win(); g.sfx('boing'); g.sfx('wrong'); g.burst(contact, GY - 40, ['#fff6ea', '#ff5a5a', '#ffd45a'], 16, 160); g.shake(4, 0.2); }
+        if (s.curl > 0.85) { F.ph = 'yelp'; F.pt = 0; g.sfx('boing'); g.sfx('wrong'); g.burst(contact, GY - 40, ['#fff6ea', '#ff5a5a', '#ffd45a'], 16, 160); g.shake(4, 0.2);
+          s.round++; if (s.round >= s.rounds) { s.end = 'win'; g.win(); } else { F.back = true; F.retX = 20 + g.rand() * 40; } }
         else { s.end = 'fail'; F.ph = 'nudge'; F.pt = 0; s.roll = { x: HX, v: 0, rot: 0 }; g.fail(); g.sfx('boing'); g.sfx('laugh'); }
       }
     } else if (F.ph === 'yelp') { // jumps back, then runs away
-      if (F.pt < 0.35) F.x -= 160 * dt; else F.x -= 330 * dt;
+      if (F.pt < 0.35) F.x -= 160 * dt; else F.x -= (F.back ? 300 : 330) * dt;
+      if (F.back && F.pt > 0.35 && F.x <= F.retX) { // it shakes off the prickle and tries again, a little faster and from a new spot
+        F.back = false; F.ph = 'creep'; F.pt = 0; F.crouch = 0; s.used = false; s.creepV *= 1.15; s.pauseAt = L < 2 ? [F.x + 20 + g.rand() * 30] : []; F.faked = L < 2 || g.rand() < 0.4; s.fakeAt = HX - 30 - 60 - g.rand() * 14; }
     } else if (F.ph === 'nudge') { if (F.pt < 0.3) F.x += 20 * dt; }
     if (s.roll) { // the tumble downhill
       const r = s.roll; r.v = Math.min(260, r.v + (r.x > SLOPE_X ? 520 : 300) * dt); r.x += r.v * dt; r.rot += r.v * dt / 30;
@@ -155,10 +158,10 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'rabbit', 72, 598, 0.75, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     // guidance: the ring shows when the fox is close enough
-    const near = F.x + NOSE > HX - 120 && s.curlAt < 0;
+    const near = (F.ph === 'crouch' || F.ph === 'lunge' || F.x + NOSE > HX - 30 - 55) && !s.used;
     if (near && !g.done) SK.glow(c, g, HX, GY - 34, 46);
     if (!s.touched && g.level === 0 && near && !g.done) SK.hand(c, HX + 6, GY - 26 + 8 * (1 - Math.abs(Math.sin(t * 5))), Math.abs(Math.sin(t * 5)), 0.9);
   },
   // the bot: tap the moment the fox crouches for its real pounce (not the fake one)
-  auto(g, dt, synth) { const s = g.s; if (s.fox.ph === 'crouch' && s.fox.pt > 0.05) SK.bot.tap(g, synth, 'curl', 0, HX, GY - 34); },
+  auto(g, dt, synth) { const s = g.s; if (s.fox.ph === 'crouch' && s.fox.pt > 0.05) SK.bot.tap(g, synth, 'curl' + s.round, 0, HX, GY - 34); },
 });

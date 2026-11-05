@@ -2,7 +2,8 @@
 // pictures: logs (fuel), a flame (heat) and a puff of air (oxygen). Swipe across any side to take it away: the rake
 // pulls the logs apart, a shovel of sand cuts off the air, or a bucket of water cools it. The flames shrink to smoke.
 // Swiping through the fire itself fans it: more air, the flames leap and the fox's marshmallow burns to charcoal.
-// Level 2: the embers stay hot and start to glow again; swipe the heat side to stir and cool them too.
+// Each tool works once (the bucket is empty, the sand is used, the rake is stuck), so the next campfire needs another
+// side. Level 0: two campfires; level 1: three; level 2: three, and each spreads if it burns too long.
 (() => {
   const V = [[180, 178], [44, 470], [316, 470]], FIRE = { x: 180, y: 418 };
   const SIDES = [ // which side, its two corners, its picture's centre
@@ -41,19 +42,20 @@
     c.restore();
   }
   MG.add({
-    id: 'smother', stage: 'fire', cmd: 'SMOTHER!', time: 5, mood: 'storm', winText: 'Out!', failText: 'Toasted!',
+    id: 'smother', stage: 'fire', cmd: 'SMOTHER!', time: 6, mood: 'storm', winText: 'Fire triangle!', failText: 'Toasted!',
     card: { title: 'The fire triangle', kind: 'Chemistry', ref: 'The fire triangle (combustion)',
       text: 'A fire needs three things at the same time: fuel to burn, heat, and oxygen from the air. These are the three sides of the fire triangle. Take away any one side and the fire goes out.\n\nRaking the logs apart takes away the fuel. Sand over the fire keeps the air out. Water cools the fire until it is too cold to keep burning. Fanning does the opposite: it brings more oxygen, so the flames grow.\n\nEmbers can stay hot for hours and start a fire again. Put out a campfire with an adult, and keep cooling and stirring it until it feels cold.',
       note: 'Fire needs fuel, heat and oxygen at once. Remove any one and it goes out.' },
-    init(g) { const s = g.s; s.fire = 1; s.broken = {}; s.act = null; s.ember = 0; s.fan = 0; s.out = 0; s.coolT = 0; s.mallow = 0; s.relit = 0; },
+    init(g) { const s = g.s; s.fire = 1; s.broken = {}; s.act = null; s.ember = 0; s.fan = 0; s.out = 0; s.coolT = 0; s.mallow = 0; s.relit = 0; s.n = g.level >= 1 ? 3 : 2; s.k = 0; s.used = {}; s.litT = 0; s.dud = null; s.lightT = -9; },
     down(g, x, y) { SK.touched(g); g.s.path = [{ x, y }]; },
     move(g, x, y) { const p = g.s.path; if (p) { p.push({ x, y }); if (p.length > 40) p.shift(); } },
     up(g, x, y) {
       const s = g.s, p = s.path; s.path = null; if (!p || g.done || s.act) return; p.push({ x, y });
       const len = Math.hypot(p[p.length - 1].x - p[0].x, p[p.length - 1].y - p[0].y); if (len < 40) return;
-      const needCool = g.level >= 2 && s.out && !s.coolT;
+      const needCool = false;
       for (const sd of SIDES) if (pathNear(p, sd.x, sd.y, 42)) {
         if (s.out && !needCool) return;
+        if (s.used[sd.id]) { s.dud = { id: sd.id, t: g.t }; g.sfx('wrong'); g.sfx('thud'); return; }
         if (needCool && sd.id !== 'heat') return;
         s.act = { id: sd.id, t0: g.t }; g.sfx('swoosh'); return;
       }
@@ -63,15 +65,17 @@
       const s = g.s, A = s.act;
       if (A) {
         const k = g.t - A.t0;
-        if (k > 0.45 && !A.hit) { A.hit = true; s.broken[A.id] = s.broken[A.id] || g.t;
+        if (k > 0.45 && !A.hit) { A.hit = true; s.broken[A.id] = s.broken[A.id] || g.t; s.used[A.id] = true;
           g.sfx(A.id === 'heat' ? 'splash' : A.id === 'air' ? 'crunch' : 'rustle'); if (A.id === 'heat') g.sfx('sweep');
           if (s.out && A.id === 'heat') s.coolT = g.t; }
         if (k > 0.45) s.fire = Math.max(0, s.fire - dt * 2.2);
-        if (k > 1.1) { s.act = null; if (!s.out) { s.out = g.t; s.ember = g.level >= 2 && A.id !== 'heat' ? 1 : 0.4; if (g.level >= 2 && A.id === 'heat') s.ember = 1; } }
+        if (k > 0.95) { s.act = null; if (!s.out) { s.out = g.t; s.ember = g.level >= 2 && A.id !== 'heat' ? 1 : 0.4; if (g.level >= 2 && A.id === 'heat') s.ember = 1; } }
       }
       if (s.fan) { s.fire = Math.min(1.9, s.fire + dt * 2.5); s.mallow = Math.min(1, s.mallow + dt * 1.6); if (g.t - s.fan > 0.9 && !g.done) { g.sfx('laugh'); g.fail(); } }
+      if (!s.out && !s.act && !s.fan && g.level >= 2 && g.t - s.litT > 3.2 && !g.done) { s.fan = g.t; g.sfx('fire'); } // left too long, it spreads
       if (s.out) {
-        if (g.level < 2) { if (!g.done && g.t - s.out > 0.3) { g.win(); g.sfx('cheer'); } }
+        if (s.k + 1 < s.n) { if (g.t - s.out > 0.6) { s.k++; s.fire = 1; s.broken = {}; s.out = 0; s.ember = 0; s.litT = g.t; s.lightT = g.t; g.sfx('fire'); g.sfx('whoosh'); } }
+        else if (!g.done && g.t - s.out > 0.3) { g.win(); g.sfx('cheer'); }
         else if (s.coolT) { s.ember = Math.max(0, s.ember - dt * 1.5); if (!g.done && g.t - s.coolT > 0.6) { g.win(); g.sfx('cheer'); } }
         else { s.ember = Math.min(1.3, s.ember + dt * 0.25); s.relit = SK.clamp((g.t - s.out - 0.6) / 2.4, 0, 1); if (s.relit > 0) s.fire = Math.max(s.fire, s.relit * 0.6); if (s.relit >= 1 && !g.done) { g.sfx('fire'); g.fail(); } }
       }
@@ -82,8 +86,8 @@
       const fk = s.fire;
       B3.glow(c, FIRE.x, FIRE.y - 20, 150 * (0.3 + 0.7 * Math.min(1.4, fk)), '255,140,60', 0.35);
       // the triangle: three glowing sides, the broken one gone
-      for (const sd of SIDES) { if (s.broken[sd.id] && sd.id !== 'heat') continue; if (sd.id === 'heat' && s.broken.heat && !(g.level >= 2 && s.out && !s.coolT)) continue;
-        const [ax, ay] = V[sd.a], [bx, by] = V[sd.b], hot = sd.id === 'air' && s.fan ? 1 : 0, relit = sd.id === 'heat' && s.out && g.level >= 2 && !s.coolT;
+      for (const sd of SIDES) { if (s.broken[sd.id] && sd.id !== 'heat') continue; if (sd.id === 'heat' && s.broken.heat && !(false)) continue;
+        const [ax, ay] = V[sd.a], [bx, by] = V[sd.b], hot = sd.id === 'air' && s.fan ? 1 : 0, relit = sd.id === 'heat' && false;
         c.save(); c.lineCap = 'round'; c.strokeStyle = sd.col; c.globalAlpha = relit ? 0.35 + 0.5 * Math.min(1, s.relit * 2 + 0.3) : 0.85; c.lineWidth = 8 + hot * 6 + Math.sin(t * 4) * 1.5; c.shadowColor = sd.col; c.shadowBlur = 16 + hot * 20; c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.stroke(); c.restore(); }
       // broken sides fly apart as two stubs
       for (const sd of SIDES) { const bt = s.broken[sd.id]; if (!bt) continue; const q = SK.clamp((t - bt) * 1.5, 0, 1); if (q >= 1) continue; const [ax, ay] = V[sd.a], [bx, by] = V[sd.b];
@@ -98,7 +102,11 @@
       stones(c, true);
       if (s.fan) for (let i = 0; i < 10; i++) { const q = ((t - s.fan) * 1.5 + i / 10) % 1; c.fillStyle = `rgba(255,${200 - q * 120 | 0},80,${1 - q})`; c.beginPath(); c.arc(FIRE.x + Math.sin(i * 2.3 + t * 3) * 30 * q, FIRE.y - 60 - q * 150, 3, 0, 7); c.fill(); }
       // the side pictures
-      for (const sd of SIDES) { const bt = s.broken[sd.id]; const relit = sd.id === 'heat' && g.level >= 2 && s.out && !s.coolT; icon(c, sd, t, 1, bt && !relit ? SK.clamp((t - bt) * 1.5, 0, 1) : 0); }
+      for (const sd of SIDES) { const bt = s.broken[sd.id]; const relit = sd.id === 'heat' && false; icon(c, sd, t, 1, bt && !relit ? SK.clamp((t - bt) * 1.5, 0, 1) : 0); }
+      for (const sd of SIDES) if (s.used[sd.id] && !s.broken[sd.id]) { const w = s.dud && s.dud.id === sd.id ? Math.sin((t - s.dud.t) * 40) * 6 * Math.max(0, 1 - (t - s.dud.t) * 2) : 0;
+        c.save(); c.translate(sd.x + w, sd.y); c.fillStyle = 'rgba(30,14,36,0.62)'; c.beginPath(); c.arc(0, 0, 28, 0, 7); c.fill(); c.strokeStyle = 'rgba(200,190,200,0.8)'; c.lineWidth = 3; c.setLineDash([5, 5]); c.beginPath(); c.arc(0, 0, 31, 0, 7); c.stroke(); c.restore(); }
+      for (let i = 0; i < s.n; i++) { const x = 26 + i * 28, y = 150, done = i < s.k || (i === s.k && s.out); if (done) { c.fillStyle = 'rgba(150,140,150,0.8)'; c.beginPath(); c.arc(x, y, 8, 0, 7); c.fill(); } else B3.flame(c, x, y + 9, 0.3, t, 1, i); }
+      if (t - s.lightT < 0.5) { c.fillStyle = `rgba(255,200,120,${0.5 * (1 - (t - s.lightT) * 2)})`; c.fillRect(0, 0, 360, 640); }
       // the tool that does the job, flying in
       if (A) { const k = SK.clamp((t - A.t0) / 0.45, 0, 1), e = SK.easeInOut(k);
         if (A.id === 'heat') { const x = SK.lerp(30, FIRE.x - 46, e), y = SK.lerp(250, FIRE.y - 90, e); c.save(); c.translate(x, y); c.rotate(e * 1.6); c.fillStyle = '#8aa0b8'; c.beginPath(); c.moveTo(-18, -20); c.lineTo(18, -20); c.lineTo(13, 18); c.lineTo(-13, 18); c.closePath(); c.fill(); c.strokeStyle = '#3a4a5a'; c.lineWidth = 2; c.stroke(); c.beginPath(); c.arc(0, -20, 18, Math.PI, 0); c.stroke(); c.restore();
@@ -115,15 +123,15 @@
         if (m > 0.5) B3.smoke(c, mx, my - 12, t, m, '60,50,60', 4, 50); }
       // guidance
       if (!A && !s.out && !s.fan) SK.glow(c, g, SIDES[2].x, SIDES[2].y, 32);
-      if (g.level >= 2 && s.out && !s.coolT && !A) SK.glow(c, g, SIDES[0].x, SIDES[0].y, 32, '#ffe27a', { level: 2 });
+      if (false && !A) SK.glow(c, g, SIDES[0].x, SIDES[0].y, 32, '#ffe27a', { level: 2 });
       if (s.path && s.path.length > 1) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.6)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.path[0].x, s.path[0].y); for (const p of s.path) c.lineTo(p.x, p.y); c.stroke(); c.restore(); }
       SK.demo(g, c, 'swipe', [148, 432], [212, 512]);
     },
     auto(g, dt, synth) {
-      const s = g.s; if (g.done) return;
-      const sw = (key, t, a, b) => { const B = s._bot = s._bot || {}; if (B[key] || g.t < t) return; B[key] = 1; synth('down', a[0], a[1]); synth('move', (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); synth('up', b[0], b[1]); };
-      sw('fuel', 1.0, [148, 432], [212, 512]);
-      if (g.level >= 2 && s.out && !s.act) sw('cool', s.out + 0.4, [78, 300], [146, 350]);
+      const s = g.s; if (g.done || s.act || s.out || s.fan) return;
+      const P0 = [[[148, 432], [212, 512]], [[218, 296], [282, 350]], [[78, 300], [146, 350]]][s.k], B = s._b = s._b || {};
+      if (B[s.k] || g.t < Math.max(1.0, s.litT + 0.45)) return; B[s.k] = 1;
+      synth('down', P0[0][0], P0[0][1]); synth('move', (P0[0][0] + P0[1][0]) / 2, (P0[0][1] + P0[1][1]) / 2); synth('up', P0[1][0], P0[1][1]);
     },
   });
 })();
