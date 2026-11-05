@@ -133,13 +133,20 @@ MG.add({
       inCard(c, cd.k, cd.x, cd.y, cd.state === 'tray' ? s.trayS : 1, cd.rot, t, cd.state !== 'tray');
     }
     if (dc) inCard(c, dc.k, dc.x, dc.y, 1.1, 0, t);
+    // levels 0-1, while you drag a card: the arc it would fly on if you let go now (green if it drops into the hopper)
+    if (dc && g.level <= 1 && !g.done) { const D = g.s._drag, pts = D.pts, n = pts.length, last = pts[n - 1]; let i = n - 1; while (i > 0 && last.t - pts[i - 1].t < 0.1) i--;
+      const dtv = Math.max(1 / 60, last.t - pts[i].t); let vx = (last.x - pts[i].x) / dtv, vy = (last.y - pts[i].y) / dtv; const sp = Math.hypot(vx, vy);
+      if (sp >= 250 && vy <= -100) { if (sp > 1400) { vx *= 1400 / sp; vy *= 1400 / sp; } let x = dc.x, y = dc.y, py = y, hit = false; const dots = [];
+        for (let k = 0; k < 90; k++) { const h = 1 / 60; vy += GRAV * h; x += vx * h; py = y; y += vy * h; if (k % 3 === 0) dots.push([x, y]); if (py < HOP.y && y >= HOP.y && vy > 0) { hit = Math.abs(x - hx) < HOP.w / 2; break; } if (y > 600) break; }
+        c.save(); c.fillStyle = hit ? 'rgba(110,240,130,0.95)' : 'rgba(255,246,234,0.7)'; for (const [px, qy] of dots) { c.beginPath(); c.arc(px, qy, 3, 0, 7); c.fill(); } c.restore(); }
+      else SK.tag(c, 'Flick it up!', dc.x, dc.y - 52, 18); }
     // time ran out with bugs still hiding: real users pour in and the machine blows up in garbled letters
     if (lost) { const q = t - g.doneAt; c.save(); c.globalAlpha = Math.max(0, 1 - q * 0.6); c.font = '900 22px monospace'; c.textAlign = 'center'; for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, r = q * 220; c.fillStyle = ['#ff7a8a', '#ffd45a', '#7ee8ff'][i % 3]; c.fillText('□Ã?#'[i % 4], 180 + Math.cos(a) * r, 370 + Math.sin(a) * r * 0.8 + q * q * 80); } c.restore(); }
     // guidance: glow the weird cards; the ghost hand flings the first one into the hopper
     // the hand flings the next weird card still in the tray up at the hopper
     const next = s.cards.find(cd => isBug(cd.k) && cd.state === 'tray');
     if (next && !SK.dragging(g)) { SK.grab(c, g, next.hx, next.hy, 34); SK.target(c, g, hx, HOP.y + 6, 0, { w: HOP.w + 10, h: 36 }); SK.arrow(c, g, next.hx, next.hy - 30, hx, HOP.y + 20); }
-    if (next) SK.demo(g, c, 'swipe', [next.hx, next.hy], [SK.lerp(next.hx, hx, 0.4), next.hy - 130]);
+    if (next) SK.demo(g, c, 'swipe', [next.hx, next.hy], [SK.lerp(next.hx, hx, 0.15), next.hy - 190], { period: 0.95 }); // a quick flick, about as fast as a throw that lands
   },
   // the bot flings each weird card on an arc that drops into the hopper (B7FAIL: throws only the normal names)
   auto(g, dt, synth) {

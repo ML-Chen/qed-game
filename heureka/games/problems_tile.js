@@ -127,12 +127,16 @@ MG.add({
     // the trapped mouse: a wriggling bump under the finished floor, squeaking
     if (s.trap) { const k = t - s.trap, w = Math.sin(t * 18) * 3; c.save(); c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(mx + w, my, 18, 10 + Math.abs(w), 0, 0, TAU); c.fill(); c.strokeStyle = 'rgba(60,30,50,0.4)'; c.lineWidth = 2; c.stroke(); c.restore(); if (k < 1.5) B9.txt(c, '♪', mx + 14 + k * 20, my - 22 - k * 30, 22, '#fff6ea', { stroke: 'rgba(40,20,40,0.6)' }); }
     SK.tag(c, 'Floor to cover', 180, FY - 16, 18); if (s.pcs.some(p => !p.placed)) SK.tag(c, 'Tiles', 300, 398, 18); if (!g.done && s.grid[s.mz.j][s.mz.i] < 0) SK.tag(c, 'Mouse', mx, my + 34, 18, '#ffd0d0');
-    if (s.drag) { const pc = s.drag.pc, ci = Math.round((pc.x - fx) / C), cj = Math.round((pc.y - fy) / C); c.save(); c.globalAlpha = 0.3; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (const [i, j] of pc.p.cells) { c.beginPath(); c.roundRect(fx + (ci + i) * C + 3, fy + (cj + j) * C + 3, C - 6, C - 6, 8); c.stroke(); } c.restore(); piece(c, pc.p, pc.x, pc.y - 6, 1, t, { lift: true }); }
+    if (s.drag) { const pc = s.drag.pc, ci = Math.round((pc.x - fx) / C), cj = Math.round((pc.y - fy) / C), off = Math.hypot(pc.x - (fx + ci * C), pc.y - (fy + cj * C));
+      // where it would land: green if it fits with no overlap, red if it would sit on another tile or off the floor
+      const inF = off < C * 0.6 && pc.p.cells.every(([i, j]) => ci + i >= 0 && ci + i < L.cols && cj + j >= 0 && cj + j < L.rows), ok = inF && pc.p.cells.every(([i, j]) => s.grid[cj + j][ci + i] < 0);
+      c.save(); c.globalAlpha = inF ? 0.9 : 0.3; c.strokeStyle = !inF ? '#fff6ea' : ok ? '#6af08a' : '#ff5a5a'; c.lineWidth = inF ? 4 : 3; for (const [i, j] of pc.p.cells) { c.beginPath(); c.roundRect(fx + (ci + i) * C + 3, fy + (cj + j) * C + 3, C - 6, C - 6, 8); c.stroke(); } c.restore(); piece(c, pc.p, pc.x, pc.y - 6, 1, t, { lift: true }); }
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'octopus', 318, 606, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: the next tile, and where it goes
     const nx = s.pcs.find(p => !p.placed); if (nx && !s.drag && !g.done) {
       const [bw, bh] = bbox(nx.p), a = [nx.x + bw * C * TS / 2, nx.y + bh * C * TS / 2], b = [fx + (nx.p.home[0] + bw / 2) * C, fy + (nx.p.home[1] + bh / 2) * C];
+      c.save(); c.strokeStyle = 'rgba(255,226,122,0.85)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 24; for (const [i, j] of nx.p.cells) { c.beginPath(); c.roundRect(fx + (nx.p.home[0] + i) * C + 4, fy + (nx.p.home[1] + j) * C + 4, C - 8, C - 8, 8); c.stroke(); } c.restore(); // the exact cells it covers
       SK.grab(c, g, a[0], a[1], 34); SK.target(c, g, b[0], b[1], 30, { w: bw * C + 8, h: bh * C + 8 }); SK.arrow(c, g, a[0], a[1], b[0], b[1]);
       SK.demo(g, c, 'drag', a, b);
     }

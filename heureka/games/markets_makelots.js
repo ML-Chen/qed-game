@@ -26,7 +26,7 @@ MG.add({
   card: { title: 'Bigger batches, cheaper cups', kind: 'Economics', ref: 'Economies of scale',
     text: 'The big machine costs the same whether it makes one cup or a hundred. That is a fixed cost. Make more cups and that cost is shared out over all of them, so each cup costs less. That is called an economy of scale.\n\nBut a factory has a limit. Push far past it and workers crowd each other, machines break down, and each extra cup costs more again. The cheapest cups come from making a lot, but not more than the factory can handle.',
     note: 'Making more spreads the fixed costs, so each unit costs less, up to a point.' },
-  init(g) { const s = g.s, v = SK.variant(g, 4), L0 = LVM[Math.min(2, g.level)], L = { ...L0, cap: L0.cap + [0, 2, -1, 1][v] }; s.v = v; s.L = L; s.q = 0; s.start = 0; s.end = 0; s.cups = []; s.lastTap = -9; s.badge = 60; },
+  init(g) { const s = g.s, v = SK.variant(g, 4), L0 = LVM[Math.min(2, g.level)], L = { ...L0, cap: L0.cap + [0, 2, 1, 3][v] }; /* never below the level cap: a smaller factory at level 2 had no cup count cheap enough */ s.v = v; s.L = L; s.q = 0; s.start = 0; s.end = 0; s.cups = []; s.lastTap = -9; s.badge = 60; },
   down(g) {
     const s = g.s; SK.touched(g); if (g.done || s.end) return;
     if (!s.start) s.start = g.t; s.q++; s.lastTap = g.t; s.cups.push({ t: g.t, i: s.q }); g.sfx(s.q > s.L.cap ? 'thud' : 'pop');
@@ -79,6 +79,6 @@ MG.add({
   },
   auto(g, dt, synth) { // mash until the badge is inside the ring with a little room to spare, then stop
     const s = g.s; const B = s._b8 = s._b8 || { next: 0.9 }; if (g.done || g.t < B.next || s.end) return;
-    const goal = Math.ceil(FIXED / (s.L.price - VAR)) + 1; if (s.q < goal) { synth('down', MACH.x, MACH.y - 40); synth('up', MACH.x, MACH.y - 40); B.next = g.t + 0.12; }
+    let goal = 1; for (let q = 1; q <= 40; q++) if (ac(q, s.L.cap) < ac(goal, s.L.cap)) goal = q; for (let q = 1; q <= 40; q++) if (ac(q, s.L.cap) <= s.L.price - 0.02) { goal = Math.max(q, Math.min(goal, q + 1)); break; } if (s.q < goal) { synth('down', MACH.x, MACH.y - 40); synth('up', MACH.x, MACH.y - 40); B.next = g.t + 0.12; }
   },
 });

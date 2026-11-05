@@ -111,6 +111,7 @@ MG.add({
     for (const w of s.whacks) { const k = (t - w.t) / 0.35; if (k < 1) { c.save(); c.translate(w.x, w.y); c.rotate(-0.6 + Math.min(1, k * 4) * 0.6); c.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3; c.fillStyle = '#8a5a2a'; c.fillRect(-4, -60, 8, 50); c.fillStyle = '#e84a4a'; c.beginPath(); c.roundRect(-22, -16, 44, 22, 6); c.fill(); c.fillStyle = 'rgba(255,255,255,0.3)'; c.fillRect(-18, -13, 36, 5); c.restore(); } }
     // the squashes left: one mallet each
     for (let i = 0; i < s.L.hits; i++) { const x = 220 + i * 40, y = 572, on = i < s.hits; c.save(); c.globalAlpha = on ? 1 : 0.25; c.translate(x, y); c.rotate(-0.5); c.fillStyle = '#8a5a2a'; c.fillRect(-3, -6, 6, 32); c.fillStyle = '#e84a4a'; c.beginPath(); c.roundRect(-14, -16, 28, 14, 4); c.fill(); c.restore(); }
+    if (!g.done) SK.tag(c, s.hits + ' squashes left', 260, 604, 18);
     // the hedgehog developer and its coffee, which sloshes with the shaking (and spills on a fail)
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'hedgehog', 64, 604, 0.9, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : amp > 0.5 ? 'wow' : 'think' });

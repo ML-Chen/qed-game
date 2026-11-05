@@ -93,9 +93,17 @@
       else if (!g.done && g.t >= s.next - 0.2) { SK.ball(c, h.x, h.y, BR, '#ff8a5a'); }
       if (t - s.lostT < 0.8) { const [x, y] = s.lostAt; c.save(); c.globalAlpha = 1 - (t - s.lostT) / 0.8; c.translate(x, y); c.rotate(t * 3); c.fillStyle = '#ffffff'; c.beginPath(); for (let i = 0; i < 8; i++) { const q = i * Math.PI / 4, r = i % 2 ? 4 : 14; c.lineTo(Math.cos(q) * r, Math.sin(q) * r); } c.closePath(); c.fill(); c.restore(); }
       // the throw arrow while dragging: direction and speed
-      const d = s.drag; if (d) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.min(280, Math.hypot(dx, dy)), a = Math.atan2(dy, dx); if (L > 6) { c.save(); c.translate(h.x, h.y); c.rotate(a); c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -4); c.lineTo(L - 12, -4); c.lineTo(L - 12, -10); c.lineTo(L, 0); c.lineTo(L - 12, 10); c.lineTo(L - 12, 4); c.lineTo(0, 4); c.closePath(); c.fill(); c.stroke(); c.restore(); } }
+      const d = s.drag, Lb0 = Math.sqrt(GM / h.r0) / KV; if (d) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.min(280, Math.hypot(dx, dy)), a = Math.atan2(dy, dx); if (L > 6) { c.save(); c.translate(h.x, h.y); c.rotate(a); c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -4); c.lineTo(L - 12, -4); c.lineTo(L - 12, -10); c.lineTo(L, 0); c.lineTo(L - 12, 10); c.lineTo(L - 12, 4); c.lineTo(0, 4); c.closePath(); c.fill(); c.stroke(); c.restore(); } }
       // orbits still to make
-      for (let i = 0; i < s.order.length; i++) { const x = 180 + (i - (s.order.length - 1) / 2) * 30; c.fillStyle = i < s.k ? '#ffd45a' : 'rgba(255,255,255,0.3)'; c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, 590, 8, 0, 7); c.fill(); c.stroke(); }
+      if (!won) SK.tag(c, 'Orbits ' + s.k + ' / ' + s.order.length, 180, 592, 18);
+      // levels 0-1, while aiming: the path this throw would take, green if it goes all the way round
+      if (d && g.level <= 1) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.hypot(dx, dy);
+        if (L >= 14) { const k = Math.min(L, 280) / L, q = { x: h.x, y: h.y, vx: dx * k * KV, vy: dy * k * KV }, pts = []; let th0 = Math.atan2(h.y - C.y, h.x - C.x), went = 0, end = 'lost', tt = 0;
+          for (let i = 0; i < 600 && tt < 3; i++) { const hh = 1 / 200, rx = q.x - C.x, ry = q.y - C.y, r2 = rx * rx + ry * ry, r = Math.sqrt(r2), a = GM / r2; q.vx -= a * rx / r * hh; q.vy -= a * ry / r * hh; q.x += q.vx * hh; q.y += q.vy * hh; tt += hh;
+            const th = Math.atan2(q.y - C.y, q.x - C.x); went += Math.atan2(Math.sin(th - th0), Math.cos(th - th0)); th0 = th; if (i % 4 === 0) pts.push([q.x, q.y]);
+            if (tt > 0.12 && SK.dist(q.x, q.y, h.x, h.y) < 24) { end = Math.abs(went) > 5.2 ? 'orbit' : 'head'; break; } if (r < surf(th) + BR) { end = 'land'; break; } if (q.x < -30 || q.x > 390 || q.y < 50 || q.y > 650) break; }
+          c.save(); c.fillStyle = end === 'orbit' ? 'rgba(110,240,130,0.9)' : 'rgba(255,255,255,0.55)'; for (let i = 0; i < pts.length; i += 2) { c.beginPath(); c.arc(pts[i][0], pts[i][1], 2.2, 0, 7); c.fill(); } c.restore();
+          SK.tag(c, end === 'orbit' ? 'Orbit! Let go' : end === 'land' ? (Math.abs(went) < 0.6 && L < Lb0 * 0.6 ? 'Too slow' : 'Faster') : end === 'lost' ? 'Too fast' : 'Sideways', 160, 178, 20, '#fff6ea', end === 'orbit' ? 'rgba(40,150,70,0.95)' : 'rgba(30,14,36,0.75)'); } }
       if (!s.ball && !g.done && g.t >= s.next - 0.2) { const tg = { x: -Math.sin(h.a), y: Math.cos(h.a) }, Lb = 1.0 * Math.sqrt(GM / h.r0) / KV; SK.grab(c, g, h.x, h.y, 20); SK.target(c, g, h.x + tg.x * Lb, h.y + tg.y * Lb, 18); SK.arrow(c, g, h.x, h.y, h.x + tg.x * Lb, h.y + tg.y * Lb); SK.demo(g, c, 'drag', [h.x, h.y], [h.x + tg.x * Lb, h.y + tg.y * Lb]); }
     },
     auto(g, dt, synth) {

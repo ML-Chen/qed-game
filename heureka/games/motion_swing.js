@@ -115,14 +115,16 @@
       if (ready) {
         const p = ball(s, s.th), vx = -Math.sin(s.th), vy = Math.cos(s.th), pop = SK.clamp((t - s.reload) * 5 + 1, 0, 1);
         // level 0: a faint dotted line shows where the ball would go if you let go now
-        if (g.level === 0 && !g.done) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 3; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x + vx * 260, p.y + vy * 260); c.stroke(); c.restore(); }
+        // levels 0-1: it turns green while letting go now would hit the board
+        const tx = T ? T.x - p.x : 0, ty = T ? T.y - p.y : 0, along = tx * vx + ty * vy, willHit = !!T && along > 0 && Math.abs(tx * vy - ty * vx) < TR - 6;
+        if (g.level <= 1 && !g.done) { c.save(); c.strokeStyle = willHit ? 'rgba(90,230,120,0.95)' : 'rgba(255,255,255,0.8)'; c.lineWidth = 3; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(p.x + vx * 260, p.y + vy * 260); c.stroke(); c.restore(); }
         for (let i = 1; i <= 4; i++) { const q = ball(s, s.th - i * 0.09); c.fillStyle = `rgba(255,255,255,${(0.32 - i * 0.07) * pop})`; c.beginPath(); c.arc(q.x, q.y, BR, 0, 7); c.fill(); }
         c.strokeStyle = '#5a3a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(hx, hy); c.lineTo(p.x, p.y); c.stroke();
         snowball(c, p.x, p.y, 1, pop);
         // the pull of the string: an arrow toward the centre, growing as the spin speeds up
         const pull = Math.min(R - 20, 14 + s.w * s.w * 1.5), hot = SK.clamp((s.w - 6.5) / 2, 0, 1);
         arrow(c, p.x - Math.cos(s.th) * (BR + 2), p.y - Math.sin(s.th) * (BR + 2), p.x - Math.cos(s.th) * (BR + 2 + pull), p.y - Math.sin(s.th) * (BR + 2 + pull), P.mix('#ff7a5a', '#e01a2a', hot), 7 + hot * 3);
-        if (!g.done && T) { const r = ball(s, T.rel); SK.glow(c, g, r.x, r.y, 18); }
+        if (!g.done && T) { const r = ball(s, T.rel); SK.glow(c, g, r.x, r.y, 18, willHit ? '#7aff9a' : undefined); if (willHit && g.level <= 1) SK.tag(c, 'Let go now!', C.x, C.y - R - 40, 20, '#fff6ea', 'rgba(40,150,70,0.95)'); }
       } else {
         const b = s.free;
         if (b) {
@@ -135,6 +137,7 @@
         c.quadraticCurveTo(hx + Math.cos(s.relAt) * 30, hy + Math.sin(s.relAt) * 30 + fl * 30, hx + Math.cos(s.relAt) * (s.snapT ? 34 : 54) * (1 - fl * 0.4), hy + Math.sin(s.relAt) * 40 + fl * 46); c.stroke();
       }
       if (s.snapT && t - s.snapT < 0.8) SK.tag(c, 'Snap!', hx, hy - 34, 20);
+      if (!won) SK.tag(c, s.tg.filter(b => b.hit).length + ' / ' + s.tg.length + ' targets', 84, 604, 18);
       if (ready && T) { const per = Math.PI * 2 / s.w, ph = ((((T.rel - (s.th - s.w * t)) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / s.w, r = ball(s, T.rel);
         let d0 = ph - 0.45 * per; while (d0 < 0.7) d0 += per; SK.demo(g, c, 'tap', [r.x - 6, r.y + 16], null, { delay: d0, period: per }); }
     },

@@ -73,12 +73,14 @@ MG.add({
     // the deposit stamp press above the belt
     const pk = SK.clamp(1 - (t - s.press) / 0.16, 0, 1), py = BELT.y - 120 + pk * 40;
     c.fillStyle = '#8a8a98'; c.fillRect(SX - 4, 400, 8, py - 400); c.fillStyle = '#6a6a78'; c.beginPath(); c.roundRect(SX - 22, py, 44, 18, 5); c.fill(); B9.coin(c, SX, py + 22, 10);
-    c.save(); c.strokeStyle = 'rgba(255,240,170,0.5)'; c.lineWidth = 2; c.setLineDash([4, 5]); c.beginPath(); c.moveTo(SX - 28, BELT.y - 80); c.lineTo(SX - 28, BELT.y + 18); c.moveTo(SX + 28, BELT.y - 80); c.lineTo(SX + 28, BELT.y + 18); c.stroke(); c.restore();
-    SK.tag(c, 'Deposit stamp', SX + 98, BELT.y - 104, 18, '#ffe9a0'); SK.tag(c, 'Return bin', BIN[0] + 18, BIN[1] - 20, 18); SK.tag(c, 'Park', 300, 214, 18);
+    const inZone = !g.done && s.b.some(b => b.st === 'belt' && b.coin < s.L.stamps && Math.abs(b.x - SX) < 26);
+    c.save(); c.strokeStyle = inZone ? 'rgba(110,240,130,0.95)' : 'rgba(255,240,170,0.5)'; c.lineWidth = inZone ? 4 : 2; c.setLineDash([4, 5]); c.beginPath(); c.moveTo(SX - 28, BELT.y - 80); c.lineTo(SX - 28, BELT.y + 18); c.moveTo(SX + 28, BELT.y - 80); c.lineTo(SX + 28, BELT.y + 18); c.stroke(); c.restore();
+    SK.tag(c, 'Deposit stamp', SX + 98, BELT.y - 104, 18, '#ffe9a0'); if (inZone) SK.tag(c, 'Stamp now!', SX - 92, BELT.y - 104, 20, '#fff6ea', 'rgba(40,150,70,0.95)');
+    if (!g.done) SK.tag(c, 'Returned ' + s.b.filter(b => b.st === 'back').length + ' / ' + s.L.need, BIN[0] + 22, BIN[1] + 82, 18); SK.tag(c, 'Return bin', BIN[0] + 18, BIN[1] - 20, 18); SK.tag(c, 'Park', 300, 214, 18);
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'duck', 300, 618, 0.9, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     const nb = s.b.find(b => b.st === 'belt' && b.coin < s.L.stamps && b.x < SX + 28);
-    if (nb && !g.done) { SK.glow(c, g, SX, BELT.y - 34, 40); if (Math.abs(nb.x - SX) < 40) SK.demo(g, c, 'tap', [SX, BELT.y - 70], null, { delay: 0, period: 0.6 }); }
+    if (nb && !g.done) { SK.glow(c, g, SX, BELT.y - 34, 40, inZone ? '#7aff9a' : undefined, { level: 2 }); if (Math.abs(nb.x - SX) < 40) SK.demo(g, c, 'tap', [SX, BELT.y - 70], null, { delay: 0, period: 0.6 }); }
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || g.t - s.press < 0.17) return;

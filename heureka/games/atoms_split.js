@@ -36,7 +36,7 @@
     c.beginPath(); c.moveTo(x - 44, y); c.quadraticCurveTo(x, y + (bowl ? 44 : 18), x + 44, y); c.closePath(); c.fill(); c.stroke();
   }
   MG.add({
-    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT THE NUCLEUS!', time: 6, mood: 'night', winText: 'The pieces weigh less!', failText: 'Missed!',
+    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT THE NUCLEUS!', cmdAt: [null, null, 'JOIN THE NUCLEI!'], time: 6, mood: 'night', winText: 'The pieces weigh less!', failText: 'Missed!',
     card: { title: 'Splitting a nucleus', kind: 'Physics', ref: 'Nuclear fission and E = mc²',
       text: 'The middle of an atom is its nucleus, a tight ball of protons and neutrons. A neutron has no electric charge, so it flies straight in. A big nucleus such as uranium can wobble and split in two when a neutron hits it, and two or three spare neutrons fly out.\n\nWeigh all the pieces and they come to a tiny bit less than the nucleus did. That missing mass has turned into a huge amount of energy, the flash. Nuclear power stations run on this. Joining two small nuclei (fusion) also loses mass and powers the Sun.',
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },

@@ -122,6 +122,8 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'penguin', 316, 632, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: the ghost hand flicks toward a clear line to the net
+    if (!s.moving && !s.next && !g.done) { const [ax, ay] = aimFor(s.L, [p.x, p.y]), L = Math.hypot(ax - p.x, ay - p.y); // flick: the puck, the way to flick it, and the net
+      SK.grab(c, g, p.x, p.y, 24); SK.arrow(c, g, p.x, p.y, p.x + (ax - p.x) / L * 150, p.y + (ay - p.y) / L * 150, { from: 30, to: 0 }); SK.target(c, g, (NET.x0 + NET.x1) / 2, NET.y - 16, 0, { w: NET.x1 - NET.x0 + 8, h: 44 }); }
     if (!s.moving && !s.next) { const [ax, ay] = aimFor(s.L, [p.x, p.y]), L = Math.hypot(ax - p.x, ay - p.y); SK.demo(g, c, 'swipe', [p.x, p.y], [p.x + (ax - p.x) / L * 120, p.y + (ay - p.y) / L * 120]); }
   },
   // the bot: for each puck, flick along a clear straight line to the net, or bank it off a side wall

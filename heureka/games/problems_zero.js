@@ -53,7 +53,7 @@ MG.add({
     s.calm += ((s.end || s.ok ? 0 : SK.clamp((ratio - 1.05) / 1.5, 0, 1.5)) - s.calm) * Math.min(1, dt * 5);
   },
   draw(g, c) {
-    const s = g.s, t = g.t, ch = s.list[s.i];
+    const s = g.s, t = g.t, ch = s.list[s.i], won = g.result === 'win';
     c.drawImage(g.bake('startzero', paintRoom), 0, 0, 360, 640);
     const sl = s.slide ? SK.clamp((t - s.slide) / 0.35, 0, 1) : 1, off = (1 - SK.easeOut(sl)) * 300;
     c.save(); c.beginPath(); c.rect(26, 136, 308, 406); c.clip(); c.translate(off, 0);
@@ -71,13 +71,16 @@ MG.add({
     c.strokeStyle = '#3a2a4a'; c.lineWidth = 3; c.beginPath(); c.moveTo(X0 - 6, TOP - 10); c.lineTo(X0 - 6, F); c.stroke();
     for (let k = 0; k <= 4; k++) { const y = TOP + k * (F - TOP) / 4; c.beginPath(); c.moveTo(X0 - 12, y); c.lineTo(X0 - 6, y); c.stroke(); }
     // the bottom edge with its grab handle
-    const hot = !!s.drag; c.fillStyle = hot ? '#e8604a' : '#5a4a6a'; c.beginPath(); c.roundRect(X0 - 14, F - 5, X1 - X0 + 28, 10, 5); c.fill();
-    c.fillStyle = hot ? '#ff8a6a' : '#7a6a8a'; c.beginPath(); c.roundRect(150, F - 13, 60, 26, 13); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; for (const dx of [-8, 0, 8]) { c.beginPath(); c.moveTo(180 + dx, F - 6); c.lineTo(180 + dx, F + 6); c.stroke(); }
+    const hot = !!s.drag, atZ = hot && Math.abs(s.F - Z) <= s.tol; c.fillStyle = atZ ? '#3ab860' : hot ? '#e8604a' : '#5a4a6a'; c.beginPath(); c.roundRect(X0 - 14, F - 5, X1 - X0 + 28, 10, 5); c.fill();
+    c.fillStyle = atZ ? '#6ae08a' : hot ? '#ff8a6a' : '#7a6a8a'; c.beginPath(); c.roundRect(150, F - 13, 60, 26, 13); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; for (const dx of [-8, 0, 8]) { c.beginPath(); c.moveTo(180 + dx, F - 6); c.lineTo(180 + dx, F + 6); c.stroke(); }
     c.restore();
+    // while dragging: which way to go, and when it's on zero
+    if (s.drag && !g.done) SK.tag(c, Math.abs(s.F - Z) <= s.tol ? 'On zero: let go!' : s.F < Z ? 'Lower...' : 'Too low', 250, Math.min(s.F, Z) - 34, 18, '#fff6ea', Math.abs(s.F - Z) <= s.tol ? 'rgba(40,150,70,0.95)' : 'rgba(30,14,36,0.75)');
+    if (!won) SK.tag(c, 'Chart ' + Math.min(s.i + 1, s.list.length) + ' / ' + s.list.length, 92, 154, 18);
     // the chart's place in the run: one dot per chart
     s.list.forEach((_, k) => { c.fillStyle = k < s.i || (k === s.i && (s.ok || s.end)) ? '#8ad0a0' : k === s.i ? '#ffe27a' : 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(300 - (s.list.length - 1 - k) * 18, 154, 6, 0, TAU); c.fill(); });
     // the audience: alarmed while the gap looks huge, calm once it is fixed; the duck faints if it balloons
-    const alarm = s.calm > 0.45, won = g.result === 'win';
+    const alarm = s.calm > 0.45;
     [['owl', 60, 604], ['rabbit', 130, 610], ['duck', 230, 606], ['frog', 300, 610]].forEach(([kind, x, y], k) => {
       if (kind === 'duck' && s.faint) { c.save(); c.translate(x, y - 10); c.rotate(-1.5 * SK.clamp((t - s.faint) * 3, 0, 1)); SK.animal(c, kind, 0, 10, 0.75, { t, expr: 'sad', pose: 'sad', noShadow: true }); c.restore(); return; }
       SK.animal(c, kind, x, y + (alarm ? -Math.abs(Math.sin(t * 9 + k)) * 6 : 0), 0.72, { t, phase: k, pose: won ? 'cheer' : alarm ? 'hop' : 'idle', expr: won ? 'laugh' : alarm ? 'wow' : 'happy' });

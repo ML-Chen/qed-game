@@ -104,8 +104,23 @@
       c.fillStyle = '#2a2a3a'; c.beginPath(); c.arc(GRIP.x, GRIP.y, 5, 0, 7); c.fill();
       c.save(); c.translate(hx, hy); c.rotate(-a); c.fillStyle = P.mix('#c8c8d8', '#e84030', wind); c.strokeStyle = '#3a3a4a'; c.lineWidth = 2; c.beginPath(); c.roundRect(-6, -6, 20, 10, 3); c.fill(); c.stroke(); c.restore();
       if (s.snail > -30) snail(c, s.snail, GY + 26, s.snail < b.x + 60);
-      for (let i = 0; i < s.holes.length; i++) { const x = 180 + (i - (s.holes.length - 1) / 2) * 30, y = 596; c.fillStyle = i < s.hi ? '#ffd45a' : 'rgba(255,255,255,0.45)'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); c.stroke(); }
-      if (s.phase === 'ready' && !g.done) { SK.glow(c, g, GRIP.x + 14, GY - 40, 40, undefined, { level: 2 }); SK.demo(g, c, 'hold', [GRIP.x + 16, GY - 40], null, { period: 2.2 }); }
+      if (!won) SK.tag(c, 'Hole ' + Math.min(s.hi + 1, s.holes.length) + ' / ' + s.holes.length, 296, 402, 18);
+      // the power bar: how far the putter is swung back; at levels 0-1 a green band shows the swing that sinks this hole
+      const [lo, hi] = vWin(s, H), f0 = SK.clamp((lo - VMIN) / (VMAX - VMIN), 0, 1), f1 = SK.clamp((hi - VMIN) / (VMAX - VMIN), 0, 1), band = g.level <= 1, PB = { x: 104, y: 540, w: 220 };
+      if (!g.done) {
+        c.fillStyle = 'rgba(30,14,36,0.6)'; c.beginPath(); c.roundRect(PB.x - 8, PB.y - 14, PB.w + 16, 28, 14); c.fill();
+        if (band) { c.fillStyle = '#5ad07a'; c.fillRect(PB.x + PB.w * f0, PB.y - 9, PB.w * (f1 - f0), 18); }
+        const fw = s.phase === 'wind' ? s.windNow : s.phase === 'ready' ? 0 : s.wind, inB = fw >= f0 && fw <= f1;
+        c.fillStyle = band && inB ? '#c8ffc8' : '#ffd45a'; c.beginPath(); c.roundRect(PB.x, PB.y - 5, Math.max(10, PB.w * fw), 10, 5); c.fill();
+        c.fillStyle = '#fff6ea'; c.beginPath(); c.moveTo(PB.x + PB.w * fw, PB.y - 16); c.lineTo(PB.x + PB.w * fw - 7, PB.y - 26); c.lineTo(PB.x + PB.w * fw + 7, PB.y - 26); c.closePath(); c.fill();
+        c.save(); c.font = '900 18px Nunito, system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.lineWidth = 4; c.strokeStyle = 'rgba(30,14,36,0.7)'; c.strokeText('Power', PB.x - 14, PB.y); c.fillText('Power', PB.x - 14, PB.y); c.restore();
+        if (s.phase === 'wind' && band) SK.tag(c, fw < f0 ? 'Keep holding...' : fw <= f1 ? 'Let go now!' : 'Too hard!', PB.x + PB.w / 2, PB.y - 44, 20, '#fff6ea', fw < f0 ? 'rgba(30,14,36,0.75)' : fw <= f1 ? 'rgba(40,150,70,0.95)' : 'rgba(190,40,40,0.9)');
+        // the hold button (holding anywhere works)
+        if (s.phase === 'ready' || s.phase === 'wind') { const HB = [214, 600], pr = s.phase === 'wind' ? 1 : 0; c.fillStyle = '#7a3a1a'; c.beginPath(); c.roundRect(HB[0] - 96, HB[1] - 16, 192, 36, 18); c.fill(); c.fillStyle = '#e8803a'; c.beginPath(); c.roundRect(HB[0] - 96, HB[1] - 20 + pr * 4, 192, 36, 18); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.stroke();
+          c.save(); c.font = '900 19px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.fillText(pr ? 'Swinging back...' : 'Hold to swing back', HB[0], HB[1] - 2 + pr * 4); c.restore(); }
+      }
+      if (s.phase === 'ready' && !g.done) { SK.glow(c, g, 214, 598, 40, undefined, { level: 2 }); // the hand holds exactly as long as this hole needs
+        const need = ((lo + hi) / 2 - VMIN) / (VMAX - VMIN) * WIND_T; SK.demo(g, c, 'hold', [234, 600], null, { period: Math.max(1.2, need / 0.65) }); }
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || (s.phase !== 'ready' && s.phase !== 'wind') || g.t < s.next) return;
