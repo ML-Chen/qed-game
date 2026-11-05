@@ -39,7 +39,7 @@
     init(g) {
       const s = g.s; s.L = Math.min(2, g.level); s.v = SK.variant(g, 4); s.pl = PLANS[s.L];
       s.words = []; s.base = START[s.v]; s.tricks = []; s.bub = []; s.p = 0.35; s.since = 0; s.nextB = 0.35; s.pops = []; s.flip = 0; s.found = 0; s.buried = 0;
-      for (let i = 0; i < 3; i++) { spawn(g); s.bub[i].y = FIELD.y1 - 60 - i * 70; s.bub[i].trick = false; }
+      for (let i = 0; i < 3; i++) { s.since = 0; spawn(g); s.bub[i].y = FIELD.y1 - 60 - i * 70; }
     },
     down(g, x, y) {
       const s = g.s; SK.touched(g); if (g.done || s.found || s.buried) return;
