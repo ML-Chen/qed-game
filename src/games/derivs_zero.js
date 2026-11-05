@@ -4,11 +4,13 @@
 // lily pad. The player flicks away the terms whose derivative is 0, the constants (swipe them off the pad in any
 // direction). A flicked constant spins away, turns into 0 and bursts into sparks that become a new star; a faint 0 stays
 // on its pad. Flicking a term with x in it does not work: it stretches like rubber and boings back, and the frog laughs.
-// When every constant is gone, the rest differentiate themselves in a quick flourish (4x³ → 12x², −2x → −2), the
-// empty pads sink, and the pads glide together into the answer: = 12x² − 2. No more input is needed.
+// Show your work: each flick writes "d/dx 7 = 0" by the pad while the constant spins away. When every constant is gone,
+// the rest differentiate themselves one after another with the power rule (the term is circled, its power lifts off
+// and drops in front, "3 × 4 = 12" writes itself by the pad, and 4x³ turns into 12x²; −2x → −2 the same way with the
+// power 1), the empty pads sink, and the pads glide together into the answer: = 12x² − 2. No more input is needed.
 // Level 0: three terms with one constant. Level 1: four terms with two constants.
 // Level 2: five terms with constants in disguise: 5x⁰ (which is 5, because x⁰ = 1) and π.
-// Medium mode: after the flourish the linear term's pad shows "?", and the player picks its derivative from the tray.
+// Medium mode: after the other terms are worked out, the linear term's pad shows "?", and the player picks its derivative from the tray.
 //
 // The flick is a continuous gesture, so this file handles down/move/up itself (like calc_tangent.js). It runs on
 // MK.play: moves(g) returns one placeholder drag (the constants that are left) until the answer is shown, then an
@@ -49,6 +51,8 @@ function termNode(q, first) {
   else body = [A === 1 ? null : M.num(A), q.n === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(q.n))];
   return M.row(...sign, ...body);
 }
+// where a working note goes: above a pad, or below it for the lower row of two
+const noteAt = (S, i) => { const p = S.pos[i], low = S.pos.some(q => q.y < p.y - 20); return [M.clamp(p.x, 70, 290), low ? p.y + 46 : p.y - 46]; };
 // the derivative of a term (a·xⁿ → n·a·xⁿ⁻¹), as a term
 const dTerm = q => q.isC ? { k: 'c', a: 0, n: 0 } : q.n === 1 ? { k: 'c', a: q.a, n: 0 } : { k: 'x', a: q.a * q.n, n: q.n - 1 };
 
@@ -64,7 +68,11 @@ function fling(g, i, vx, vy) {
   q.gone = true; q.goneAt = g.t; q.fly = { x: p.x + q.dx, y: p.y + q.dy, vx, vy, spin: (vx >= 0 ? 1 : -1) * (5 + g.rand() * 4), t0: g.t };
   q.dx = 0; q.dy = 0; S.lastMoveT = g.t; S.frog.hopAt = g.t; S.frog.look = p.x;
   g.sfx('whoosh'); g.sfx('sparkle');
-  if (S.terms.every(r => !r.isC || r.gone)) M.later(g, 0.22, flourish);
+  // the working: "d/dx 7 = 0" writes itself by the pad while the constant spins away and turns into 0
+  const T = M.pace(g), body = termNode({ ...q, a: Math.abs(q.a) }, true), arg = q.a < 0 ? M.paren(M.row(M.op('-'), body)) : body;
+  if (!g.done) { M.show(g, 0.75 * T); S.point = true; M.later(g, 0.75 * T, g => { S.point = false; }); }
+  M.note(g, { node: M.row(M.ddx('x'), M.gap(3), arg, M.op('='), M.num(0)), at: noteAt(S, i), s: 22, col: '#fff0b0', write: 0.3 * T, hold: 0.3 * T, fade: 0.2 * T });
+  if (S.terms.every(r => !r.isC || r.gone)) M.later(g, 0.5 * T, flourish, true);
 }
 function boing(g, i) {
   const S = g.s, q = S.terms[i]; q.boingAt = g.t; q.bx = q.dx; q.by = q.dy; q.dx = 0; q.dy = 0;
@@ -73,18 +81,28 @@ function boing(g, i) {
 // every constant is gone: the rest differentiate themselves, the empty pads sink, and the answer gathers into a row
 function flourish(g) {
   const S = g.s; if (S.flourishAt != null) return; S.flourishAt = g.t; g.sfx('magic');
-  const live = S.terms.map((q, i) => i).filter(i => !S.terms[i].isC);
-  live.forEach((i, k) => M.later(g, 0.05 + k * 0.09, g => {
-    const q = S.terms[i]; if (g.mode === 'medium' && q.n === 1) return;
-    q.d = true; q.dAt = g.t; g.sfx('pop'); const p = S.pos[i]; g.burst(p.x, p.y - 8, ['#ffe8a0', '#ffb04a', '#fff'], 9, 110);
-  }));
-  const after = 0.1 + live.length * 0.09;
+  // the rest differentiate one after another, each acted out with the power rule: the term is circled, its power
+  // lifts off and drops in front, "3 × 4 = 12" writes itself by the pad, and the term turns into its derivative
+  const T = g.done ? 0.5 : M.pace(g), live = S.terms.map((q, i) => i).filter(i => !S.terms[i].isC), STEP = 0.78 * T;
+  const work = live.filter(i => !(g.mode === 'medium' && S.terms[i].n === 1)), after = 0.1 * T + work.length * STEP;
+  if (!g.done) { M.show(g, after + 0.4); S.point = true; }
+  work.forEach((i, k) => {
+    const q = S.terms[i], p = S.pos[i], t0 = 0.1 * T + k * STEP, b = { x: p.x, y: p.y - 4, w: p.w - 18, h: 36 };
+    M.circle(g, b, { delay: t0, dur: 0.4 * T, col: '#ffd46a' });
+    M.later(g, t0 + 0.08 * T, g => { // the power lifts off the x and drops in front of the term
+      const w = M.lay(q.node, S.sz).w; S.frog.hopAt = g.t; g.sfx('tap');
+      M.fly(g, { node: M.num(q.n), from: [p.x + w / 2 - 4, p.y - 16], to: [p.x - w / 2 - 8, p.y - 2], dur: 0.3 * T, arc: -26, s0: S.sz * 0.62, s1: S.sz * 0.8, col: '#ffd46a' });
+      const A = q.a < 0 ? M.paren(M.num(q.a)) : M.num(q.a), dv = q.a * q.n;
+      M.note(g, { node: M.row(M.num(q.n), M.op('×'), A, M.op('='), M.num(dv)), at: noteAt(S, i), s: 22, col: '#fff0b0', delay: 0.2 * T, write: 0.25 * T, hold: 0.3 * T, fade: 0.18 * T });
+    }, true);
+    M.later(g, t0 + 0.5 * T, g => { q.d = true; q.dAt = g.t; g.sfx('pop'); S.frog.hopAt = g.t; g.burst(p.x, p.y - 8, ['#ffe8a0', '#ffb04a', '#fff'], 9, 110); }, true);
+  });
   if (g.mode === 'medium') {
     const li = live.find(i => S.terms[i].n === 1), q = S.terms[li], b = q.a;
     M.later(g, after, g => {
       S.askI = li; S.askAt = g.t;
       M.openAsk(g, { ask: { v: b, wrong: [M.row(M.num(b), M.vr('x')), 0, -b, b + (b > 0 ? 1 : -1), 1] }, after: 0.05,
-        resolve(g) { S.askI = null; q.d = true; q.dAt = g.t; g.sfx('coin'); gather(g); } });
+        resolve(g) { S.askI = null; q.d = true; q.dAt = g.t; g.sfx('coin'); M.show(g, 0.4); gather(g); } });
       S.mk.busyT = 1e9;
     });
   } else M.later(g, after, gather);
@@ -92,12 +110,14 @@ function flourish(g) {
 function gather(g) {
   const S = g.s; S.gatherAt = g.t;
   // the answer row: "=" and then each derivative, centred under the problem
-  const live = S.terms.map((q, i) => i).filter(i => !S.terms[i].isC), sz = 32;
-  const nodes = live.map((i, k) => termNode(dTerm(S.terms[i]), k === 0)), eq = M.row(M.op('='));
-  const ws = nodes.map(n => M.lay(n, sz).w), we = M.lay(eq, sz).w, gap = 44, tot = we + ws.reduce((p, q) => p + q, 0) + gap * live.length;
+  // the answer row (pads included) is shrunk to fit the screen
+  const live = S.terms.map((q, i) => i).filter(i => !S.terms[i].isC), nodes = live.map((i, k) => termNode(dTerm(S.terms[i]), k === 0)), eq = M.row(M.op('='));
+  const width = z => M.lay(eq, z).w + nodes.reduce((p, n) => p + M.lay(n, z).w, 0) + z * 1.4 * live.length + 30;
+  const sz = S.finSz = Math.min(32, 32 * 336 / width(32)), gap = sz * 1.4;
+  const ws = nodes.map(n => M.lay(n, sz).w), we = M.lay(eq, sz).w, tot = we + ws.reduce((p, q) => p + q, 0) + gap * live.length;
   let x = 180 - tot / 2; S.eqPos = { x: x + we / 2 }; x += we + gap;
   live.forEach((i, k) => { S.terms[i].final = { x: x + ws[k] / 2, node: nodes[k] }; x += ws[k] + gap; });
-  M.later(g, 0.34, g => { S.answered = true; });
+  S.point = false; M.later(g, 0.34, g => { S.answered = true; }, true);
 }
 
 MG.add({
@@ -146,7 +166,7 @@ MG.add({
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask && !K.ask.closing) { M.down(g, x, y); return; }
-    if (S.flourishAt != null) return;
+    if (S.flourishAt != null || M.showing(g)) return;
     const i = grab(g, x, y); if (i < 0) return;
     const q = S.terms[i]; q.boingAt = null; S.grab = { i, x0: x, y0: y, hist: [[g.t, x, y]], moved: false }; S.frog.look = S.pos[i].x; g.sfx('tap');
   },
@@ -176,7 +196,7 @@ MG.add({
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask) { if (!K.ask.closing) M.auto(g, dt, synth); return; }
     if (S.bot) { const b = S.bot, k = clamp((g.t - b.t0) / 0.14, 0, 1), x = b.x + b.dx * k, y = b.y + b.dy * k; synth('move', x, y); if (k >= 1) { synth('up', x, y); S.bot = null; S.botNext = g.t + 0.3; } return; }
-    if (S.flourishAt != null || g.t < (S.botNext ?? 0.5)) return;
+    if (S.flourishAt != null || M.showing(g) || g.t < (S.botNext ?? 0.5)) return;
     const i = S.terms.findIndex(q => q.isC && !q.gone); if (i < 0) return;
     const p = S.pos[i]; synth('down', p.x, p.y - 6); S.bot = { t0: g.t, x: p.x, y: p.y - 6, dx: (p.x - 180) * 0.4, dy: -110 };
   },
@@ -190,7 +210,7 @@ MG.add({
     drawGuide(g, c, S);
     drawFlying(g, c, S);
     drawFrog(g, c, S);
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });
 
@@ -275,11 +295,11 @@ function termOffset(g, q) {
 function drawPads(g, c, S) {
   const t = g.t, sink = S.gatherAt != null ? ease((t - S.gatherAt) / 0.35) : 0, fade = S.flourishAt != null ? ease((t - S.flourishAt) / 0.3) : 0;
   // the "=" that leads the answer
-  if (S.eqPos) { c.save(); c.globalAlpha = sink; const n = M.row(M.op('=')), m = M.lay(n, 32); c.shadowColor = 'rgba(255,200,120,0.9)'; c.shadowBlur = 12; M.draw(c, n, S.eqPos.x - m.w / 2, 392 + 12, 32, { col: INKL }); c.restore(); }
+  if (S.eqPos) { c.save(); c.globalAlpha = sink; const n = M.row(M.op('=')), m = M.lay(n, S.finSz); c.shadowColor = 'rgba(255,200,120,0.9)'; c.shadowBlur = 12; M.draw(c, n, S.eqPos.x - m.w / 2, 392 + 12, S.finSz, { col: INKL }); c.restore(); }
   S.terms.forEach((q, i) => {
     const p = S.pos[i], bob = Math.sin(t * 1.4 + i * 1.3) * 1.5;
     const fin = q.final, gx = fin ? lerp(p.x, fin.x, easeIO(sink)) : p.x, gy = fin ? lerp(p.y, 392, easeIO(sink)) : p.y;
-    const pw = fin ? lerp(p.w, M.lay(fin.node, 32).w + 30, sink) : p.w;
+    const pw = fin ? lerp(p.w, M.lay(fin.node, S.finSz).w + S.finSz * 0.9, sink) : p.w;
     // the pad (an empty constant pad sinks away during the flourish)
     if (q.isC && sink > 0) { c.save(); c.globalAlpha = 1 - sink; c.translate(0, sink * 12); }
     // ripples ring the pad when its term leaves or changes
@@ -299,7 +319,7 @@ function drawPads(g, c, S) {
       c.strokeStyle = '#2c5a3e'; c.lineCap = 'round'; c.lineWidth = Math.max(3, 9 - d * 0.08); c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + oy * 0.2, (y0 + y1) / 2 - ox * 0.2, x1, y1 + 4); c.stroke();
       c.strokeStyle = 'rgba(160,230,150,0.5)'; c.lineWidth = 2; c.stroke(); }
     const asked = S.askI === i, dK = q.d ? clamp((t - q.dAt) / 0.22, 0, 1) : 0;
-    const sz = fin ? lerp(S.sz, 32, sink) : S.sz;
+    const sz = fin ? lerp(S.sz, S.finSz, sink) : S.sz;
     const bad = (q.boingAt != null && t - q.boingAt < 0.5) || (q.wobAt != null && t - q.wobAt < 0.3);
     const col = bad ? '#ff9aa0' : q.d ? '#fff0b0' : INKL;
     c.save(); c.translate(gx + ox, gy + oy + bob);
@@ -355,6 +375,6 @@ function drawFrog(g, c, S) {
   const x = 64, y = 600;
   for (let i = 0; i < 2; i++) { const k = ((t * 0.45 + i / 2) % 1); c.strokeStyle = `rgba(255,210,190,${0.25 * (1 - k)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(x, y + 2, 40 + k * 50, (40 + k * 50) * 0.32, 0, 0, 7); c.stroke(); }
   pad(c, x, y + 2, 46, true);
-  const pose = won ? 'cheer' : hop > 0 ? 'hop' : laugh ? 'wave' : 'idle', expr = won || laugh ? 'laugh' : lost ? 'sad' : hop > 0 ? 'wow' : 'happy';
+  const pose = won ? 'cheer' : hop > 0 ? 'hop' : laugh ? 'wave' : S.point && M.showing(g) ? 'point' : 'idle', expr = won || laugh ? 'laugh' : lost ? 'sad' : hop > 0 ? 'wow' : 'happy';
   try { if (typeof ANI !== 'undefined') ANI.draw(c, 'frog', x, y - hop * 40, 1.25, { t, pose, expr, facing: 1 }); else P.sheep(c, x, y - hop * 40, 1, { t }); } catch (e) { }
 }

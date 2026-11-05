@@ -61,11 +61,13 @@ function cut(g, cl) {
   }
   if (bad) { S.wobAt = t; S.ohAt = t; K.wrong = (K.wrong || 0) + 1; K.missAt = t; g.sfx('boing'); }
   if (ok) {
-    S.hopAt = t; S.lastMoveT = t; K.lastMove = t; g.sfx('crunch'); g.sfx('snap');
-    for (const an of S.anims.filter(q => q.at === t)) g.burst(CX + Math.cos(an.a) * R * 0.9, CY + Math.sin(an.a) * R * 0.9, S.crumbs, 7, 90);
+    S.hopAt = t; S.lastMoveT = t; K.lastMove = t; g.sfx('crunch'); const T = S.T;
+    // the knife runs out from the centre along the snapped line; crumbs fly where it leaves the crust
+    for (const an of S.anims.filter(q => q.at === t)) { an.dur = 0.26 * T; M.later(g, an.dur, g => { g.sfx('snap'); g.burst(CX + Math.cos(an.a) * R * 0.95, CY + Math.sin(an.a) * R * 0.95, S.crumbs, 7, 90); }, true); }
+    M.show(g, 0.34 * T);
   }
   if (!ok && !bad) g.sfx('tap');
-  if (S.rays.length >= S.n) partition(g);
+  if (S.rays.length >= S.n) M.later(g, 0.3 * S.T, partition, true);
 }
 function chordOf(cl) { // the swipe's line, clipped to the pie
   const dx = cl.x1 - cl.x0, dy = cl.y1 - cl.y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
@@ -76,18 +78,46 @@ function wedges(S) {
   const sorted = S.rays.slice().sort((p, q) => wrapA(p - S.th0) - wrapA(q - S.th0));
   return sorted.map((a0, i) => { const a1 = a0 + (wrapA((sorted[(i + 1) % sorted.length]) - a0) || TAU); return { a0, a1, mid: (a0 + a1) / 2 }; });
 }
+// The working once the pie is in n equal parts (show your work):
+//   1. the slices part a little, and are counted one by one: a badge 1, 2, ..., n pops on each slice; the count n
+//      flies up into the fraction's bottom number (n equal parts make the whole);
+//   2. the first of the k slices lifts out toward the rabbit with its badge turned into 1/n (medium mode: "?", and the
+//      tray asks what one slice is);
+//   3. the other slices lift out one at a time, each a 1/n, and the count k flies up into the top number.
 function partition(g) {
-  const S = g.s, K = S.mk, t = g.t; S.parted = t; S.wedges = wedges(S);
+  const S = g.s, K = S.mk, T = S.T; S.parted = g.t; S.wedges = wedges(S); S.liftT = {}; S.badge = {};
   // the k slices that lift out: the run of k neighbours that faces the rabbit best
   let bj = 0, bd = 9; for (let j = 0; j < S.n; j++) { const mid = S.wedges[j].a0 + S.k * TAU / S.n / 2, d = angDiff(mid, LIFT_DIR); if (d < bd) { bd = d; bj = j; } }
-  S.lifted = new Set([...Array(S.k)].map((_, i) => (bj + i) % S.n)); S.liftMid = S.wedges[bj].a0 + S.k * TAU / S.n / 2;
-  g.sfx('magic'); const tb = M.box(g, 'tgt'); if (tb) g.burst(tb.x, tb.y, ['#ffd45a', '#fff6c0', '#ff9ab0'], 14, 140);
-  if (g.mode === 'medium') {
-    K.busyT = 1e9; const n = S.n, F = (a, b) => M.frac(M.num(a), M.num(b));
-    M.later(g, 0.35, g => M.openAsk(g, { ask: { v: F(1, n), wrong: [F(n, 1), F(1, swipesOf(n)), S.k > 1 ? F(S.k, n) : null, F(1, n + 1), n > 2 ? F(1, n - 1) : null].filter(Boolean) }, after: 0.05,
-      resolve(g) { S.answered = g.t; g.sfx('sparkle'); S.hopAt = g.t; } }));
-  } else { S.answered = t; K.busyT = 0.3; }
+  S.liftOrder = [...Array(S.k)].map((_, i) => (bj + i) % S.n); S.lifted = new Set(S.liftOrder); S.liftMid = S.wedges[bj].a0 + S.k * TAU / S.n / 2;
+  g.sfx('magic'); S.hopAt = g.t; K.lastMove = g.t;
+  // 1. count the slices, starting at the first one that will lift
+  const d = Math.min(0.21, 0.9 / S.n) * T, t0 = 0.12 * T, order = [...Array(S.n)].map((_, i) => (bj + i) % S.n);
+  order.forEach((w, i) => M.later(g, t0 + i * d, g => { S.badge[w] = { v: i + 1, t0: g.t }; g.sfx(i === S.n - 1 ? 'ding' : 'tap'); }, true));
+  const tCount = t0 + (S.n - 1) * d + 0.14 * T, fl = 0.34 * T;
+  M.later(g, tCount, g => { const last = order[S.n - 1], p = badgeXY(S, last); S.countFly = g.t; M.indicate(g, 'td', { delay: fl, dur: 0.35 * T, sc: 1.4 });
+    M.fly(g, { node: M.num(S.n, null, { col: '#c8401a' }), from: [p.x, p.y], to: 'td', dur: fl, arc: -40, s0: 22, s1: 44, then(g) { M.sparkle(g, 'td', { n: 10 }); g.sfx('pop'); S.hopAt = g.t; } }); }, true);
+  // 2. the first slice lifts out with its label: one slice is 1/n
+  const tLift = tCount + fl + 0.12 * T, askAt = tLift + 0.32 * T;
+  M.later(g, tLift, g => { S.countDone = g.t; S.liftT[order[0]] = g.t; g.sfx('swoosh'); }, true);
+  M.show(g, askAt);
+  const n = S.n, F = (a, b) => M.frac(M.num(a), M.num(b));
+  const mv = { ask: { v: F(1, n), wrong: [F(n, 1), F(1, swipesOf(n)), S.k > 1 ? F(S.k, n) : null, F(1, n + 1), n > 2 ? F(1, n - 1) : null].filter(Boolean) }, after: 0.05,
+    resolve(g) { S.oneShown = g.t; g.sfx('sparkle'); S.hopAt = g.t; K.lastMove = g.t;
+      // 3. the rest of the k slices lift one at a time, then the count k flies into the top number
+      const e = Math.min(0.26, 0.8 / S.k) * T;
+      S.liftOrder.slice(1).forEach((w, i) => M.later(g, 0.22 * T + i * e, g => { S.liftT[w] = g.t; g.sfx('pop'); }, true));
+      const tK = 0.22 * T + (S.k - 1) * e + 0.3 * T;
+      M.later(g, tK, g => { const p = badgeXY(S, S.liftOrder[S.k - 1], true); M.indicate(g, 'tn', { delay: fl, dur: 0.35 * T, sc: 1.4 });
+        M.fly(g, { node: M.num(S.k, null, { col: '#c8401a' }), from: [p.x, p.y], to: 'tn', dur: fl, arc: -40, s0: 22, s1: 44, then(g) { M.sparkle(g, 'tn', { n: 10 }); g.sfx('coin'); S.hopAt = g.t; } }); }, true);
+      const len = tK + fl + 0.22 * T; M.show(g, len); M.later(g, len, g => { S.answered = g.t; }, true);
+      mv.after = len; } };
+  M.later(g, askAt, g => { if (g.mode === 'medium') { K.busyT = 1e9; M.openAsk(g, mv); } else mv.resolve(g); }, true);
 }
+// where a slice's badge sits (lifted slices carry theirs)
+function badgeXY(S, i, lifted) { const w = S.wedges[i], rr = S.n === 2 ? R * 0.5 : R * 0.62, o = lifted ? liftOf(S, i, 1) : [0, 0]; return { x: CX + Math.cos(w.mid) * rr + o[0], y: CY + Math.sin(w.mid) * rr + o[1] }; }
+// how far a lifted slice has moved out toward the rabbit (k = 0..1)
+function liftOf(S, i, k) { const d = 26 * k; return [Math.cos(S.liftMid) * d, Math.sin(S.liftMid) * d - 6 * k]; }
+const liftK = (g, S, i) => S.liftT && S.liftT[i] != null ? ease((g.t - S.liftT[i]) / (0.3 * S.T)) : 0;
 
 // ---------------- the art ----------------
 function picnic(c, w, h) {
@@ -189,7 +219,7 @@ MG.add({
     S.kind = ['pie', 'pizza', 'cake'][Math.floor(g.rand() * 3)]; S.crumbs = CRUMBS[S.kind];
     g.dur *= 0.55 + 0.15 * swipesOf(n);
     M.zone(g, 'pie', { x: CX, y: CY, w: R * 2, h: R * 2 });
-    M.place(g, 'target', M.frac(M.num(k), M.num(n), 'tgt'), 180, TY + 0.3 * 54, 54, { col: '#5a1e2a' });
+    M.place(g, 'target', M.frac(M.num(k, 'tn'), M.num(n, 'td'), 'tgt'), 180, TY + 0.3 * 54, 54, { col: '#5a1e2a' }); S.T = M.pace(g);
     M.zone(g, 'rabbit', { x: RAB.x, y: RAB.y - 40, w: 60, h: 80 });
     M.play(g, {
       moves(g) { return S.answered ? [] : [{ drag: 'pie', to: 'pie' }]; },
@@ -204,7 +234,7 @@ MG.add({
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask && !K.ask.closing) { M.down(g, x, y); return; }
-    if (S.parted) return;
+    if (S.parted || M.showing(g)) return;
     S.sw = { x0: x, y0: y, x, y }; S.trail = [{ x, y, t: g.t }];
   },
   move(g, x, y) { const S = g.s; if (!S.sw || g.done) return; S.sw.x = x; S.sw.y = y; S.trail.push({ x, y, t: g.t }); if (!S.sw.whoosh && Math.hypot(x - S.sw.x0, y - S.sw.y0) > 40) { S.sw.whoosh = true; g.sfx('swoosh'); } },
@@ -220,7 +250,7 @@ MG.add({
   auto(g, dt, synth) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask) { if (!K.ask.closing) M.auto(g, dt, synth); return; }
-    if (S.parted) return;
+    if (S.parted || (M.showing(g) && !S.bot)) return;
     if (S.bot) { const b = S.bot, k = clamp((g.t - b.t0) / b.dur, 0, 1), x = lerp(b.A[0], b.B[0], easeIO(k)), y = lerp(b.A[1], b.B[1], easeIO(k)); synth('move', x, y); if (k >= 1) { synth('up', x, y); S.bot = null; S.botNext = g.t + 0.25; } return; }
     if (g.t < (S.botNext ?? 0.5)) return;
     const nc = nextCut(S); if (!nc) return; const [A, B] = cutPath(nc);
@@ -266,12 +296,11 @@ function ambient(g, c, t) {
 function drawTarget(g, c, S) {
   const t = g.t, wig = S.tgtWig != null && t - S.tgtWig < 0.4 ? Math.sin((t - S.tgtWig) * 40) * 0.06 * (1 - (t - S.tgtWig) / 0.4) : 0;
   c.save(); c.translate(180, TY); c.rotate(wig); c.translate(-180, -TY);
-  if (S.parted) M.glowBox(c, { x: 180, y: TY, w: 86, h: 86 }, t, 0.9, true);
+  if (S.answered) M.glowBox(c, { x: 180, y: TY, w: 86, h: 86 }, t, 0.9, true);
   M.drawEx(g, c, 'target');
   c.restore();
 }
 function wedgeClip(c, a0, a1, r = R + 4) { c.beginPath(); c.moveTo(CX, CY); c.arc(CX, CY, r, a0, a1); c.closePath(); }
-function liftOffset(g, S) { const k = ease((g.t - S.parted) / 0.3), d = 26 * k; return [Math.cos(S.liftMid) * d, Math.sin(S.liftMid) * d - 6 * k]; }
 function drawPie(g, c, S) {
   const t = g.t, img = g.bake('fr_slice_' + S.kind, food(S.kind));
   // jelly wobble after an uneven cut
@@ -281,16 +310,17 @@ function drawPie(g, c, S) {
     c.drawImage(img, 0, 0, W, H);
     // the cuts so far: a dark gap with a light edge; a new cut flashes and slides to its snapped angle
     for (const an of S.anims) {
-      const k = clamp((t - an.at) / 0.12, 0, 1), a = lerp(an.from + nearestTurn(an.from, an.a), an.a, ease(k)), ux = Math.cos(a), uy = Math.sin(a);
-      c.lineCap = 'round'; c.strokeStyle = 'rgba(60,18,16,0.7)'; c.lineWidth = 5; c.beginPath(); c.moveTo(CX, CY); c.lineTo(CX + ux * (R + 2), CY + uy * (R + 2)); c.stroke();
-      c.strokeStyle = 'rgba(255,244,226,0.8)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(CX - uy * 3, CY + ux * 3); c.lineTo(CX + ux * (R + 2) - uy * 3, CY + uy * (R + 2) + ux * 3); c.stroke();
-      const fl = t - an.at; if (fl < 0.3) { c.save(); c.globalAlpha = 1 - fl / 0.3; c.shadowColor = '#fff6c0'; c.shadowBlur = 14; c.strokeStyle = '#fffbe8'; c.lineWidth = 4; c.beginPath(); c.moveTo(CX, CY); c.lineTo(CX + ux * (R + 6), CY + uy * (R + 6)); c.stroke(); c.restore(); }
+      const k = clamp((t - an.at) / 0.1, 0, 1), a = lerp(an.from + nearestTurn(an.from, an.a), an.a, ease(k)), ux = Math.cos(a), uy = Math.sin(a), L = (R + 2) * easeIO((t - an.at) / (an.dur || 0.01));
+      c.lineCap = 'round'; c.strokeStyle = 'rgba(60,18,16,0.7)'; c.lineWidth = 5; c.beginPath(); c.moveTo(CX, CY); c.lineTo(CX + ux * L, CY + uy * L); c.stroke();
+      c.strokeStyle = 'rgba(255,244,226,0.8)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(CX - uy * 3, CY + ux * 3); c.lineTo(CX + ux * L - uy * 3, CY + uy * L + ux * 3); c.stroke();
+      const fl = t - an.at; if (fl < (an.dur || 0) + 0.3) { c.save(); c.globalAlpha = Math.min(1, 1 - (fl - (an.dur || 0)) / 0.3); c.shadowColor = '#fff6c0'; c.shadowBlur = 14; c.strokeStyle = '#fffbe8'; c.lineWidth = 4; c.beginPath(); c.moveTo(CX, CY); c.lineTo(CX + ux * (L + 4), CY + uy * (L + 4)); c.stroke();
+        if (L < R) { c.fillStyle = '#ffffff'; c.beginPath(); c.arc(CX + ux * L, CY + uy * L, 5, 0, TAU); c.fill(); } c.restore(); }
     }
   } else {
-    const [lx, ly] = liftOffset(g, S);
     S.wedges.forEach((w, i) => { if (S.lifted.has(i)) return; const gp = 2.5 * ease((t - S.parted) / 0.15);
       c.save(); c.translate(Math.cos(w.mid) * gp, Math.sin(w.mid) * gp); wedgeClip(c, w.a0, w.a1); c.clip(); c.drawImage(img, 0, 0, W, H); c.restore(); });
-    if (!(S.winAt != null && t - S.winAt > 0.5)) drawLifted(g, c, S, false, lx, ly);
+    if (!(S.winAt != null && t - S.winAt > 0.5)) drawLifted(g, c, S, false);
+    drawBadges(g, c, S);
   }
   // uneven cuts: a ragged line that wobbles and then heals with sparkles
   for (const b of S.bads) {
@@ -307,25 +337,33 @@ function drawPie(g, c, S) {
 }
 const nearestTurn = (from, to) => Math.round((to - from) / TAU) * TAU;
 function star(c, x, y, r) { c.beginPath(); c.moveTo(x, y - r * 2); c.quadraticCurveTo(x, y, x + r * 2, y); c.quadraticCurveTo(x, y, x, y + r * 2); c.quadraticCurveTo(x, y, x - r * 2, y); c.quadraticCurveTo(x, y, x, y - r * 2); c.fill(); }
-// the lifted slices: raised with a shadow and labelled 1/n; on the win they hop onto the rabbit's plate
-function drawLifted(g, c, S, toPlate, lx = 0, ly = 0) {
-  const t = g.t, img = g.bake('fr_slice_' + S.kind, food(S.kind));
-  if (toPlate) [lx, ly] = liftOffset(g, S);
+// the lifted slices: each raised with a shadow as it lifts, labelled 1/n; on the win they hop onto the rabbit's plate
+function drawLifted(g, c, S, toPlate) {
+  const t = g.t, img = g.bake('fr_slice_' + S.kind, food(S.kind)), gp = 2.5 * ease((t - S.parted) / 0.15);
   let k = 0; if (toPlate) k = easeIO((t - S.winAt - 0.5) / 0.35);
-  const mx = CX + Math.cos(S.liftMid) * R * 0.5 + lx, my = CY + Math.sin(S.liftMid) * R * 0.5 + ly, px = S.plate ? S.plate.x : RAB.x - 30, py = S.plate ? S.plate.y - 6 : RAB.y - 40;
+  const [lx, ly] = liftOf(S, 0, 1), mx = CX + Math.cos(S.liftMid) * R * 0.5 + lx, my = CY + Math.sin(S.liftMid) * R * 0.5 + ly, px = S.plate ? S.plate.x : RAB.x - 30, py = S.plate ? S.plate.y - 6 : RAB.y - 40;
   const sc = lerp(1, 0.34 / Math.max(1, S.k * 0.6), k), hop = Math.sin(k * Math.PI) * 60;
   c.save(); c.translate(lerp(0, px - mx, k), lerp(0, py - my, k) - hop); c.translate(mx, my); c.scale(sc, sc); c.translate(-mx, -my);
-  c.save(); c.translate(lx + 5, ly + 9); c.fillStyle = 'rgba(70,30,30,0.28)'; for (const i of S.lifted) { const w = S.wedges[i]; wedgeClip(c, w.a0, w.a1, R + 2); c.fill(); } c.restore();
-  for (const i of S.lifted) { const w = S.wedges[i]; c.save(); c.translate(lx, ly); wedgeClip(c, w.a0, w.a1); c.clip(); c.drawImage(img, 0, 0, W, H); c.restore(); }
+  const off = i => { const q = toPlate ? 1 : liftK(g, S, i), o = liftOf(S, i, q), w = S.wedges[i]; return [o[0] + Math.cos(w.mid) * gp * (1 - q), o[1] + Math.sin(w.mid) * gp * (1 - q), q]; };
+  for (const i of S.lifted) { const [ox, oy, q] = off(i), w = S.wedges[i]; if (q <= 0) continue; c.save(); c.globalAlpha = q; c.translate(ox + 5, oy + 9); c.fillStyle = 'rgba(70,30,30,0.28)'; wedgeClip(c, w.a0, w.a1, R + 2); c.fill(); c.restore(); }
+  for (const i of S.lifted) { const [ox, oy] = off(i), w = S.wedges[i]; c.save(); c.translate(ox, oy); wedgeClip(c, w.a0, w.a1); c.clip(); c.drawImage(img, 0, 0, W, H); c.restore(); }
   // the label on each lifted slice: 1/n ("?" until it is answered in medium mode)
-  if (k < 0.5) for (const i of S.lifted) {
-    const w = S.wedges[i], rr = S.n === 2 ? R * 0.5 : R * 0.62, x = CX + Math.cos(w.mid) * rr + lx, y = CY + Math.sin(w.mid) * rr + ly, pk = clamp((t - S.parted - 0.15) / 0.25, 0, 1); if (pk <= 0) continue;
-    const node = S.answered ? M.frac(M.num(1), M.num(S.n)) : M.txt('?'), s = S.answered ? 22 : 26, m = M.lay(node, s), pop = 1 + Math.sin(pk * Math.PI) * 0.3;
+  if (k < 0.5) for (const i of S.lifted) { if (!S.liftT[i] && !toPlate) continue;
+    const [ox, oy] = off(i), b = badgeXY(S, i), x = b.x + ox, y = b.y + oy, t0 = S.liftT[i] ?? S.parted, pk = clamp((t - t0 - 0.1) / 0.25, 0, 1); if (pk <= 0) continue;
+    const q = g.mode === 'medium' && !S.oneShown, node = q ? M.txt('?') : M.frac(M.num(1), M.num(S.n)), s = q ? 26 : 22, m = M.lay(node, s), rp = S.oneShown && i === S.liftOrder[0] ? clamp((t - S.oneShown) / 0.3, 0, 1) : 1, pop = 1 + Math.sin(pk * Math.PI) * 0.3 + Math.sin(rp * Math.PI) * 0.3;
     c.save(); c.globalAlpha = 1 - k * 2; c.translate(x, y); c.scale(pop, pop);
     c.shadowColor = '#ffe27a'; c.shadowBlur = 16; c.fillStyle = 'rgba(255,252,240,0.94)'; c.beginPath(); c.arc(0, 0, 21, 0, TAU); c.fill(); c.shadowBlur = 0; c.strokeStyle = '#d89a3a'; c.lineWidth = 2.5; c.stroke();
     M.draw(c, node, -m.w / 2, (m.a - m.d) / 2, s, { t, col: '#5a1e2a' }); c.restore();
   }
   c.restore();
+}
+// the counting badges (1, 2, ..., n), one per slice; they fade once the count has flown into the fraction
+function drawBadges(g, c, S) {
+  if (!S.badge) return; const t = g.t, rad = S.n >= 6 ? 15 : 18, fs = S.n >= 6 ? 18 : 21, out = S.countDone != null ? clamp((t - S.countDone) / 0.25, 0, 1) : 0; if (out >= 1) return;
+  for (const [i, bd] of Object.entries(S.badge)) { const w = +i, q = liftK(g, S, w), o = liftOf(S, w, q), b = badgeXY(S, w), k = clamp((t - bd.t0) / 0.2, 0, 1), pop = 0.4 + 0.6 * ease(k) + Math.sin(k * Math.PI) * 0.35, last = bd.v === S.n;
+    c.save(); c.globalAlpha = 1 - out; c.translate(b.x + o[0], b.y + o[1]); c.scale(pop, pop);
+    c.fillStyle = last ? '#c8401a' : 'rgba(255,252,240,0.95)'; c.shadowColor = 'rgba(60,20,20,0.35)'; c.shadowBlur = 6; c.beginPath(); c.arc(0, 0, rad, 0, TAU); c.fill(); c.shadowBlur = 0;
+    c.font = M.NUMF(fs, 700); c.fillStyle = last ? '#ffffff' : '#5a1e2a'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(bd.v), 0, 1); c.restore(); }
 }
 function drawSwipe(g, c, S) {
   const t = g.t;

@@ -140,7 +140,7 @@ const MK = (() => {
   // MK.setup(g) must be called first in init. Expressions are placed with MK.place(g, key, node, cx, baseline, size):
   // the node is laid out centred on cx with its baseline at `baseline`, and every token's box goes into g.s.mk.box.
   function setup(g) { g.s.mk = { ex: {}, box: {}, flies: [], busyT: 0, moveT: 0, missAt: -1, stars: 0, fx: [], press: null, opts: null, timers: [] }; return g.s.mk; }
-  function place(g, key, node, cx, y, s, o = {}) { const M = g.s.mk; const m = lay(node, s); M.ex[key] = { node, x: cx - (o.left ? 0 : m.w / 2), y, s, col: o.col }; relayout(g, key); return M.ex[key]; }
+  function place(g, key, node, cx, y, s, o = {}) { const M = g.s.mk; const m = lay(node, s); M.ex[key] = { node, x: cx - (o.left ? 0 : m.w / 2), y, s, col: o.col, still: o.still }; relayout(g, key); return M.ex[key]; }
   function relayout(g, key) { const M = g.s.mk, e = M.ex[key]; if (!e) return; lay(e.node, e.s); draw(nullCtx, e.node, e.x, e.y, e.s, { box: M.box }); }
   const nullCtx = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 1; return cv.getContext('2d'); })(); // a 1x1 canvas: drawing into it just records boxes
   // Manim-style motion (the owner asked for 3Blue1Brown-like equations): when an expression is rewritten, every symbol
@@ -158,6 +158,7 @@ const MK = (() => {
     for (const n of all) {
       const b = tmp[n.id]; if (!b) continue; const prev = lastPos.get(n), first = !M.seen || !M.seen[key];
       if (!prev && !first && !n._born && !LEAF.test(n.k) && !allNew(n)) { lastPos.set(n, { x: b.x, y: b.y }); continue; } // a new wrapper around old symbols: the symbols glide, nothing fades
+      if (e.still) { n._glide = null; lastPos.set(n, { x: b.x, y: b.y }); n._ax = n._ay = 0; continue; } // placed with { still: true }: the game moves it itself
       if (prev && (Math.abs(prev.x - b.x) > 1.5 || Math.abs(prev.y - b.y) > 1.5)) n._glide = { dx: prev.x - b.x + (n._ax || 0), dy: prev.y - b.y + (n._ay || 0), t0: g.t };
       else if (!prev && !first && !n._born) n._born = g.t;
       lastPos.set(n, { x: b.x, y: b.y });
@@ -170,14 +171,18 @@ const MK = (() => {
     const par = new Map(); (function walk(n, p) { if (!n) return; par.set(n, p); for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])]) walk(ch, n); })(e.node, null);
     for (const n of all) { const p = par.get(n); n._gx = (n._ax || 0) - (p ? p._ax || 0 : 0); n._gy = (n._ay || 0) - (p ? p._ay || 0 : 0); }
     // symbols that vanished since the last frame fly into the nearest newly born symbol and fade (4 and 3 merge into 12)
-    const prev = (M.prevNodes = M.prevNodes || {})[key] || [], cur = new Set(all), born = all.filter(n => n._born === g.t && tmp[n.id]);
-    for (const p of prev) { if (cur.has(p.n) || p.n.alpha === 0 || !/^(num|var|txt|op)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost
+    const prevT = (M.prevT = M.prevT || {})[key], prev = prevT != null && g.t - prevT < 0.15 ? ((M.prevNodes = M.prevNodes || {})[key] || []) : [], cur = new Set(all), born = all.filter(n => n._born === g.t && tmp[n.id]);
+    for (const p of prev) { if (cur.has(p.n) || !p.vis || !/^(num|var|txt|op)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost
       let best = null, bd = 160; for (const n of born) { const b = tmp[n.id], d = Math.hypot(b.x - p.b.x, b.y - p.b.y); if (d < bd) { bd = d; best = b; } }
       (M.ghosts = M.ghosts || []).push({ n: { ...p.n, alpha: 1, pop: null, mark: null, dx: 0, dy: 0, _gx: 0, _gy: 0, _born: null, id: undefined }, a: p.b, b: best || p.b, t0: g.t, s: p.s, merge: !!best }); }
-    M.prevNodes[key] = all.filter(n => tmp[n.id]).map(n => ({ n, b: tmp[n.id], s: tmp[n.id].s }));
-    for (const [n, id] of ids) n.id = id; // restore real ids (undefined for anonymous nodes)
+    // vis: the symbol could be seen (no hidden or faded-out ancestor), so only symbols that were really on screen in the
+    // last frame leave a ghost (a note key that was not drawn for a while and is then reused never brings old symbols back)
+    const seenA = n => { let a = 1; for (let q = n; q; q = par.get(q)) { if (q.hide) return 0; a *= q.alpha ?? 1; } return a; };
+    (M.prevNodes = M.prevNodes || {})[key] = all.filter(n => tmp[n.id]).map(n => ({ n, b: tmp[n.id], s: tmp[n.id].s, vis: seenA(n) > 0.05 })); M.prevT[key] = g.t;
     (M.seen = M.seen || {})[key] = true;
+    // every node records its box (anonymous ones under their private id), so helpers can also be given node objects
     draw(c, e.node, e.x, e.y, e.s, { box: M.box, t: g.t, col: e.col });
+    for (const [n, id] of ids) n.id = id; // restore real ids (undefined for anonymous nodes)
     if (M.ghosts && M.ghosts.length) { M.ghosts = M.ghosts.filter(q => g.t - q.t0 < 0.34);
       for (const q of M.ghosts) { const k = ease(clamp((g.t - q.t0) / 0.32, 0, 1)), x = lerp(q.a.x, q.b.x, k), y = lerp(q.a.y, q.b.y, k), sz = q.s * (q.merge ? 1 - 0.35 * k : 1);
         const m = lay(q.n, sz); c.save(); c.globalAlpha *= 1 - k; draw(c, q.n, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col: e.col }); c.restore(); } }
@@ -252,8 +257,11 @@ const MK = (() => {
     const M = g.s.mk, id = info.to || info.tap || info.drag, n = node(g, id), src = info.drag ? node(g, info.drag) : null;
     for (const q of [n, src]) if (q) { q.pop = g.t; if (q.mark !== 'good') { q.mark = 'bad'; later(g, 0.6, () => { if (q.mark === 'bad') q.mark = null; }); } }
     M.missAt = g.t; M.missInfo = info; M.wrong = (M.wrong || 0) + 1; M.wobbleAt = g.t; g.sfx('boing');
+    if (M.onMiss) M.onMiss(g, info);
     return false;
   }
+  // MK.onMiss(g, fn): fn(g, info) runs after every wrong move (info is the move: { tap } or { drag, to }, or { ask } for a wrong tray tile)
+  function onMiss(g, fn) { g.s.mk.onMiss = fn; }
   function hitToken(g, x, y, skip) {
     const M = g.s.mk; let hit = null, best = 1e9;
     for (const [id, b] of Object.entries(M.box)) {
@@ -315,7 +323,7 @@ const MK = (() => {
   function pickAsk(g, i) {
     const M = g.s.mk, A = M.ask, ch = A.list[i]; ch.at = g.t; A.pickAt = g.t;
     if (ch.ok) { ch.state = 'good'; g.sfx('coin'); A.closing = g.t; later(g, 0.25, g => { if (M.ask === A) M.ask = null; }); try { A.mv.resolve(g); } catch (e) { console.error('resolve', e); } M.busyT = Math.max(A.mv.after ?? 0.05, (M.showUntil || 0) - g.t); }
-    else { if (ch.state === 'bad') return; ch.state = 'bad'; M.missAt = g.t; M.missInfo = { ask: ch.v }; M.wrong = (M.wrong || 0) + 1; g.sfx('boing'); }
+    else { if (ch.state === 'bad') return; ch.state = 'bad'; M.missAt = g.t; M.missInfo = { ask: ch.v }; M.wrong = (M.wrong || 0) + 1; g.sfx('boing'); if (M.onMiss) M.onMiss(g, M.missInfo); }
   }
   function drawAsk(g, c) {
     const M = g.s.mk, A = M.ask; if (!A) return;
@@ -429,7 +437,7 @@ const MK = (() => {
   // overlay animations drawn on top of the expressions: { t0, dur, draw(c, g, k, t) }
   function anim(g, a) { const M = g.s.mk; a.t0 = g.t + (a.delay || 0); (M.anims = M.anims || []).push(a); return (a.delay || 0) + a.dur; }
   function drawAnims(g, c) { const M = g.s.mk; if (!M.anims) return; M.anims = M.anims.filter(a => g.t < a.t0 + a.dur + (a.linger || 0)); for (const a of M.anims) { if (g.t < a.t0) continue; c.save(); try { a.draw(c, g, clamp((g.t - a.t0) / a.dur, 0, 1), g.t - a.t0); } catch (e) { console.error('anim', e); } c.restore(); } }
-  const boxOf = (g, tgt) => Array.isArray(tgt) && typeof tgt[0] === 'number' ? { x: tgt[0], y: tgt[1], w: 0, h: 0, s: tgt[2] || 30 } : unionBox(ids(tgt).map(i => typeof i === 'string' ? g.s.mk.box[i] : i));
+  const boxOf = (g, tgt) => Array.isArray(tgt) && typeof tgt[0] === 'number' ? { x: tgt[0], y: tgt[1], w: 0, h: 0, s: tgt[2] || 30 } : unionBox(ids(tgt).map(i => typeof i === 'string' ? g.s.mk.box[i] : i && i.k ? g.s.mk.box[i.id || i._pid] : i)); // ids, node objects or boxes
   // manim's Circumscribe: a glowing loop is drawn around the part, then fades
   function circle(g, tgt, o = {}) { const dur = o.dur || 0.6, col = o.col || HL, pad = o.pad ?? 7;
     return anim(g, { delay: o.delay, dur, draw(c, g, k) { const b = boxOf(g, tgt); if (!b) return; const w = b.w + pad * 2, h = b.h + pad * 2, r = Math.min(h / 2, 16), per = 2 * (w + h);
@@ -445,7 +453,8 @@ const MK = (() => {
       const p = where(); let x = p.x, y = p.y, sz = s0, al = 1, wk = clamp(t / wr, 0, 1);
       if (t > wr + hold && o.to) { const kk = easeIO((t - wr - hold) / fl), b0 = boxOf(g, o.to) || p, b = o.toOff ? { ...b0, x: b0.x + o.toOff[0], y: b0.y + o.toOff[1] } : b0; x = lerp(p.x, b.x, kk); y = lerp(p.y, b.y, kk) - Math.sin(kk * Math.PI) * (o.arc ?? 36); sz = lerp(s0, o.s1 || (b.s || s0), kk); if (kk >= 1) return; }
       else if (t > wr + hold) al = 1 - (t - wr - hold) / fade;
-      const m = lay(nd, sz); c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
+      const m = lay(nd, sz); if (!(t > wr + hold && o.to)) x = clamp(x, m.w / 2 + 10, 350 - m.w / 2); // keep a note inside the 360-wide screen
+      c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
       if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4, y - sz * 1.5, (m.w + 8) * easeIO(wk), sz * 3); c.clip(); }
       draw(c, nd, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col });
       if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }
@@ -498,5 +507,5 @@ const MK = (() => {
 
   return { INK, MID, GOOD, BAD, GLOW, NUMF, VARF, num, vr, txt, op, sup, frac, row, paren, mat, slot, gap, ddx, wrap, lay, draw, find,
     setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp,
-    HL, mix, pace, show, showing, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at };
+    HL, mix, pace, show, showing, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss };
 })();

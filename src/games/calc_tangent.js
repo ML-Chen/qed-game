@@ -2,8 +2,9 @@
 // A twilight pond: the graph of f(x) hangs in the dusk sky as a glowing dragonfly flight path, and the axes are reeds.
 // At each marked point a reed is pinned to the path with a dragonfly perched on its end. The player drags the
 // dragonfly to turn the reed; while turning, a rise-over-run triangle shows the reed's slope (rise for a run of 1).
-// Released close to the true slope f′(a), the reed snaps to the tangent and a firefly lands on the pond at
-// (a, f′(a)): the pond is a second graph that collects the slopes. When every point is done, the derivative curve
+// Released close to the true slope f′(a), the reed eases onto the tangent and the working plays by itself: a
+// rise-over-run staircase draws itself (run 1, then the rise counting up), "rise ÷ 1 = slope" writes itself and
+// becomes the label f′(a) = slope, and a firefly drops from the pin onto the pond at (a, f′(a)): the pond is a second graph that collects the slopes. When every point is done, the derivative curve
 // f′(x) is drawn across the water through the fireflies.
 // Level 0: a parabola with 2 points, a generous tolerance and a ghost hand that turns the first reed.
 // Level 1: a cubic with 3 points; only the next reed glows. Level 2: a cubic with 3 points, a tight tolerance, no help.
@@ -110,16 +111,39 @@ function openAsk(g, mv) {
 }
 
 // ---------------- the moves ----------------
+// The working, acted out once a reed snaps (show your work): the reed eases onto the tangent, then a rise-over-run
+// staircase draws itself from the pin: one step right (run 1), then up or down by the slope while the rise counts up.
+// "rise ÷ 1 = slope" writes itself beside the pin and turns into the label f′(a) = slope, and the dragonfly's firefly
+// drops from the pin straight down onto the pond at height f′(a).
+const RUN = 0.05, RISE = 0.34, STAIR = 0.72; // beat times (× pace): run starts, rise starts, staircase done
 function snap(g, i) {
-  const S = g.s, p = S.pts[i], P0 = pivot(S, p);
-  p.th = p.thT; p.done = true; p.snapAt = g.t; S.frog.hopT = g.t; S.frog.look = i;
+  const S = g.s, p = S.pts[i], P0 = pivot(S, p), T = S.T;
+  p.snapFrom = p.th; p.done = true; p.snapAt = g.t; S.frog.hopT = g.t; S.frog.look = i; S.point = true;
   g.sfx('snap'); g.sfx('ribbit'); g.burst(P0.x, P0.y, ['#fff3b0', '#ffd45a', DF_COLS[i % 3][0]], 12, 130);
+  M.show(g, STAIR * T);
+  M.at(g, [[RUN * T, g => g.sfx('tap')], [RISE * T, g => g.sfx('swoosh')]]);
+  const mv = { ask: { v: p.m, wrong: [] }, after: 0.95 * T, resolve(g) { work(g, i); } };
   if (g.mode === 'medium') {
     const nb = [S.df(p.a + 1), S.df(p.a - 1)].filter(v => v !== p.m);
-    openAsk(g, { ask: { v: p.m, wrong: [valNode(p.fa), p.m ? -p.m : null, nb[0], nb[1], p.m + 1, p.m - 1] }, after: 0, resolve(g) { plot(g, i); } });
-  } else plot(g, i);
+    mv.ask.wrong = [valNode(p.fa), p.m ? -p.m : null, nb[0], nb[1], p.m + 1, p.m - 1];
+    M.at(g, [[STAIR * T, g => openAsk(g, mv)]]);
+  } else M.at(g, [[STAIR * T, g => mv.resolve(g)]]);
 }
-function plot(g, i) { const S = g.s, p = S.pts[i]; p.answered = true; p.dotAt = g.t; g.sfx('sparkle'); S.frog.look = i; }
+// the rest of the working, from the moment the slope is known
+function work(g, i) {
+  const S = g.s, p = S.pts[i], T = S.T, lp = pillPos(S, p); p.revealed = true; M.show(g, 0.95 * T); g.sfx('ding');
+  M.note(g, { node: M.row(M.num(p.m), M.op('÷'), M.num(1), M.op('='), M.num(p.m)), at: [lp.x, lp.y], s: 16, col: '#ffe6f2', write: 0.3 * T, hold: 0.18 * T, fade: 0.12 * T });
+  M.at(g, [[0.5 * T, g => { p.namedAt = g.t; g.sfx('pop'); S.frog.hopT = g.t; }],
+    [0.55 * T, g => { p.dropAt = g.t; p.dropDur = 0.36 * T; g.sfx('swoosh'); }],
+    [0.92 * T, g => { plot(g, i); g.burst(X(S, p.a), MYv(S, p.m), ['#eaff8a', '#fff', '#d8ff7a'], 10, 110); S.point = false; }]]);
+}
+function plot(g, i) { const S = g.s, p = S.pts[i]; p.answered = true; p.dotAt = g.t; g.sfx('sparkle'); S.frog.look = i; S.frog.hopT = g.t; }
+// where the f′(a) label sits: beside the pin, on the side of the reed away from the curve (curves bend away from tangents)
+function pillPos(S, p) {
+  const P0 = pivot(S, p), bend = S.f(p.a + 0.4) + S.f(p.a - 0.4) - 2 * p.fa; let sd = bend > 0 ? 1 : -1; const nx = -Math.sin(p.thT), ny = Math.cos(p.thT);
+  const D = 34; if (P0.y + ny * sd * D < PY0 + 6 || P0.y + ny * sd * D > PY1 + 6) sd = -sd;
+  return { x: clamp(P0.x + nx * sd * D, 44, 316), y: P0.y + ny * sd * D };
+}
 function fail(g, info) {
   const S = g.s, K = S.mk; K.missAt = g.t; K.missInfo = info; S.frog.sadAt = g.t; g.sfx('wrong'); g.sfx('splash'); S.splashAt = g.t; g.fail();
 }
@@ -142,7 +166,7 @@ MG.add({
     ask: 'Where is the tangent line of f(x) = x² flat? What is its slope at x = −2?',
   },
   init(g) {
-    const S = g.s; M.setup(g); Object.assign(S, pickProblem(g));
+    const S = g.s; M.setup(g); Object.assign(S, pickProblem(g)); S.T = M.pace(g);
     S.pts = S.xs.map(a => ({ a, fa: S.f(a), m: S.df(a) }));
     setupView(S); S.L = S.pts.length > 2 ? 44 : 60;
     g.dur *= 0.5 + 0.5 * S.pts.length / 3; // the fuse scales with the number of reeds to turn
@@ -178,12 +202,14 @@ MG.add({
     const S = g.s; M.update(g, dt);
     S.pts.forEach((p, i) => {
       if (p.springAt != null) { const k = (g.t - p.springAt) / 0.18; p.th = lerp(p.springFrom, p.th0, ease(k)); if (k >= 1) p.springAt = null; }
+      if (p.snapFrom != null) { const k = (g.t - p.snapAt) / (0.16 * S.T); p.th = lerp(p.snapFrom, p.thT, ease(k)); if (k >= 1) { p.th = p.thT; p.snapFrom = null; } }
       const h = handleAt(S, p, p.th); M.zone(g, 'st' + i, { x: h.x, y: h.y, w: 34, h: 34 });
     });
   },
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask && !K.ask.closing) { M.down(g, x, y); return; }
+    if (K.ask || M.showing(g) || K.busyT > 0) return; // input waits while the working is shown
     let bi = -1, bd = 34; S.pts.forEach((p, i) => { if (p.done) return; const d = stickDist(S, p, x, y); if (d < bd) { bd = d; bi = i; } });
     if (bi >= 0) { const p = S.pts[bi]; p.springAt = null; S.drag = { i: bi, x0: x, y0: y, moved: false, lastInt: Math.round(slopeOf(S, p.th)) }; S.frog.look = bi; g.sfx('buzz'); return; }
     if (curveDist(S, x, y) < 16) S.press = { x, y };
@@ -204,6 +230,7 @@ MG.add({
   auto(g, dt, synth) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask) { if (!K.ask.closing) M.auto(g, dt, synth); return; }
+    if (!S.bot && (M.showing(g) || K.busyT > 0)) { S.botNext = g.t + 0.3; return; }
     if (S.bot) {
       const b = S.bot, p = S.pts[b.i], k = clamp((g.t - b.t0) / b.dur, 0, 1), h = handleAt(S, p, lerp(b.from, p.thT, easeIO(k)));
       synth('move', h.x, h.y); if (k >= 1) { synth('up', h.x, h.y); S.bot = null; S.botNext = g.t + 0.3; } return;
@@ -224,7 +251,7 @@ MG.add({
     c.save(); c.shadowColor = 'rgba(255,200,120,0.85)'; c.shadowBlur = 12; M.drawEx(g, c, 'fx'); c.restore();
     c.save(); c.globalAlpha = 0.8; M.drawEx(g, c, 'key'); c.restore();
     drawFrog(g, c, S);
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });
 
@@ -375,35 +402,43 @@ function drawReed(g, c, S, p, i) {
 }
 // the slope while turning: a rise-over-run triangle on the reed and the number
 function drawReadout(g, c, S, p, i) {
-  const t = g.t, dragging = S.drag && S.drag.i === i && S.drag.moved, hidden = g.mode === 'medium' && !p.answered;
-  let a = 0; if (dragging) a = 1; else if (p.done && !p.answered) a = 1; else if (p.done) a = 1 - clamp((t - (p.dotAt ?? p.snapAt) - 0.5) / 0.3, 0, 1);
+  const t = g.t, T = S.T, dragging = S.drag && S.drag.i === i && S.drag.moved, hidden = g.mode === 'medium' && !p.revealed;
+  let a = 0; if (dragging) a = 1; else if (p.done && !p.answered) a = 1; else if (p.done) a = 1 - clamp((t - (p.namedAt ?? 1e9) - 0.15) / 0.3, 0, 1); // the staircase fades once its slope is named
   if (p.miss) a = 1;
   const show = shown(g, p); if (show > 0) a = 0;
   const mc = p.done ? p.m : slopeOf(S, p.th), P0 = pivot(S, p);
-  if (a > 0) {
-    const x1 = X(S, p.a + 1), y1 = Y(S, p.fa + mc);
+  // once the reed has snapped, the staircase draws itself: the run first, then the rise, with the rise counting up
+  const kr = p.done ? easeIO((t - p.snapAt - RUN * T) / (0.26 * T)) : 1, ku = p.done ? easeIO((t - p.snapAt - RISE * T) / (0.34 * T)) : 1;
+  if (a > 0 && kr > 0) {
+    const x1 = X(S, p.a + 1), y1 = Y(S, p.fa + mc), xr = lerp(P0.x, x1, kr), yr = lerp(P0.y, y1, ku);
     c.save(); c.globalAlpha = a; c.beginPath(); c.rect(PX0 - 10, PY0 - 16, PX1 - PX0 + 20, PY1 - PY0 + 32); c.clip();
-    c.fillStyle = p.done ? 'rgba(140,255,170,0.16)' : 'rgba(255,230,140,0.16)'; c.beginPath(); c.moveTo(P0.x, P0.y); c.lineTo(x1, P0.y); c.lineTo(x1, y1); c.closePath(); c.fill();
-    c.lineCap = 'round'; c.lineWidth = 3; c.strokeStyle = '#7ad8ff'; c.beginPath(); c.moveTo(P0.x, P0.y); c.lineTo(x1, P0.y); c.stroke();
-    c.strokeStyle = '#ff9ac8'; c.beginPath(); c.moveTo(x1, P0.y); c.lineTo(x1, y1); c.stroke();
+    if (ku > 0) { c.fillStyle = p.done ? 'rgba(140,255,170,0.16)' : 'rgba(255,230,140,0.16)'; c.beginPath(); c.moveTo(P0.x, P0.y); c.lineTo(x1, P0.y); c.lineTo(x1, yr); c.closePath(); c.fill(); }
+    c.lineCap = 'round'; c.lineWidth = 3; c.strokeStyle = '#7ad8ff'; c.shadowColor = '#7ad8ff'; c.shadowBlur = p.done && kr < 1 ? 10 : 0; c.beginPath(); c.moveTo(P0.x, P0.y); c.lineTo(xr, P0.y); c.stroke();
+    if (kr < 1 && p.done) glowDot(c, xr, P0.y, 2, 1, '#bfefff');
+    if (ku > 0) { c.strokeStyle = '#ff9ac8'; c.shadowColor = '#ff9ac8'; c.shadowBlur = p.done && ku < 1 ? 10 : 0; c.beginPath(); c.moveTo(x1, P0.y); c.lineTo(x1, yr); c.stroke(); c.shadowBlur = 0;
+      if (ku < 1 && p.done) glowDot(c, x1, yr, 2, 1, '#ffd0e8'); }
     const up = y1 < P0.y; c.font = '900 13px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = '#9ae4ff'; c.fillText('1', (P0.x + x1) / 2, P0.y + (up ? 10 : -10));
-    if (Math.abs(y1 - P0.y) > 6) { const right = x1 < PX1 - 26; c.textAlign = right ? 'left' : 'right'; c.fillStyle = '#ffb4d8'; c.fillText(hidden ? '?' : fmt(mc), x1 + (right ? 6 : -6), (P0.y + y1) / 2); }
+    c.fillStyle = '#9ae4ff'; c.globalAlpha = a * clamp(kr * 2, 0, 1); c.fillText('1', (P0.x + x1) / 2, P0.y + (up ? 10 : -10)); c.globalAlpha = a;
+    if (ku > 0 && Math.abs(y1 - P0.y) > 6) { const right = x1 < PX1 - 26, v = p.done && ku < 1 ? Math.round(mc * ku) : mc; c.textAlign = right ? 'left' : 'right'; c.fillStyle = '#ffb4d8';
+      c.font = `900 ${p.done && ku >= 1 && t - p.snapAt - RISE * T - 0.34 * T < 0.25 ? 16 : 13}px Nunito, system-ui, sans-serif`; c.fillText(hidden ? '?' : fmt(v), x1 + (right ? 6 : -6), (P0.y + yr) / 2); }
     c.restore();
   }
-  // the slope label, kept small and green once the reed has snapped
-  if (dragging || p.done || p.miss || show > 0) {
+  // the slope label: the live slope while turning; once found it is named f′(a) = slope, in real notation
+  const named = !dragging && (p.done || show > 0);
+  if (dragging || p.miss || show > 0 || (p.done && p.namedAt != null)) {
     const gold = show > 0, h = handleAt(S, p, gold ? p.thT : p.th), above = h.y - 34 > PY0; let lx = clamp(h.x, 44, 316), ly = above ? h.y - 24 : h.y + 26;
-    // a finished slope sits beside the pin, on the side of the reed away from the curve (curves bend away from their tangents)
-    if (!dragging && (p.done || gold)) { const bend = S.f(p.a + 0.4) + S.f(p.a - 0.4) - 2 * p.fa, thh = gold ? p.thT : p.th; let sd = bend > 0 ? 1 : -1; const nx = -Math.sin(thh), ny = Math.cos(thh);
-      if (P0.y + ny * sd * 24 < PY0 + 6 || P0.y + ny * sd * 24 > PY1 + 6) sd = -sd; lx = clamp(P0.x + nx * sd * 24, 40, 320); ly = P0.y + ny * sd * 24; }
-    // while turning: the live slope; once found: f′(a) = slope, in real notation
-    const named = !dragging && (p.done || gold), txt = named ? `f′(${fmt(p.a)}) = ${hidden && !gold ? '?' : fmt(p.m)}` : 'slope ' + (hidden ? '?' : fmt(mc)), size = named ? 13 : 15;
-    c.save(); if (gold) c.globalAlpha = show; c.font = `900 ${size}px Nunito, system-ui, sans-serif`; const w = c.measureText(txt).width + 16, hh = size + 9;
+    if (named) { const q = pillPos(S, p); lx = q.x; ly = q.y; }
+    const pk = p.namedAt != null && !gold ? clamp((t - p.namedAt) / 0.3, 0, 1) : 1, sc = 1 + Math.sin(pk * Math.PI) * 0.3;
+    const txt = named ? `f′(${fmt(p.a)}) = ${fmt(p.m)}` : 'slope ' + (g.mode === 'medium' ? '?' : fmt(mc)), size = named ? 13 : 15;
+    c.save(); c.globalAlpha = gold ? show : pk; c.translate(lx, ly); c.scale(sc, sc); c.translate(-lx, -ly); c.font = `900 ${size}px Nunito, system-ui, sans-serif`; const w = c.measureText(txt).width + 16, hh = size + 9;
     c.fillStyle = gold ? 'rgba(80,56,10,0.88)' : p.miss ? 'rgba(120,20,40,0.85)' : p.done ? 'rgba(20,70,50,0.85)' : 'rgba(30,20,60,0.85)'; c.beginPath(); rr(c, lx - w / 2, ly - hh / 2, w, hh, hh / 2); c.fill();
     c.strokeStyle = gold ? '#ffd84a' : p.miss ? '#ff7a80' : p.done ? '#8af0a0' : 'rgba(255,230,180,0.6)'; c.lineWidth = 1.5; c.stroke();
     c.fillStyle = gold ? '#ffe9a0' : p.miss ? '#ffd0d4' : p.done ? '#d8ffe0' : INKL; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, lx, ly + 1); c.restore();
   }
+  // the dragonfly's firefly drops from the pin straight down to the pond, at height f′(a)
+  if (p.dropAt != null && !p.answered) { const k = easeIO((t - p.dropAt) / p.dropDur), x = X(S, p.a), y = lerp(P0.y, MYv(S, p.m), k);
+    const gr = c.createLinearGradient(0, P0.y, 0, y); gr.addColorStop(0, 'rgba(234,255,138,0)'); gr.addColorStop(1, 'rgba(234,255,138,0.6)'); c.strokeStyle = gr; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, P0.y); c.lineTo(x, y); c.stroke();
+    glowDot(c, x, y, 3.4, 1, '#eaff8a'); }
 }
 function rr(c, x, y, w, h, r) { r = Math.min(r, w / 2, h / 2); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
@@ -413,7 +448,7 @@ function shown(g, p) { return g.done && g.result === 'fail' && !p.done ? clamp((
 function drawGuide(g, c, S) {
   const t = g.t, K = S.mk;
   if (g.done) return; // after a miss or a timeout the unfinished reeds swing to their tangents themselves (see shown)
-  if (K.ask && !K.ask.closing) return;
+  if (K.ask || M.showing(g)) return; // the guide waits while the working is shown
   const i = S.pts.findIndex(p => !p.done); if (i < 0 || S.drag) return; const p = S.pts[i];
   const h0 = handleAt(S, p, p.th);
   M.glowBox(c, { x: h0.x, y: h0.y, w: 30, h: 30 }, t, 0.9, true); // the next reed always glows (owner's rule)
@@ -476,7 +511,7 @@ function drawFrog(g, c, S) {
   // ripples around the pad
   for (let i = 0; i < 2; i++) { const k = (t * 0.5 + i / 2) % 1; c.strokeStyle = `rgba(255,220,200,${0.25 * (1 - k)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(46, 620, 38 + k * 40, (38 + k * 40) * 0.36, 0, 0, 7); c.stroke(); }
   if (S.splashAt != null && t - S.splashAt < 0.5) { const k = (t - S.splashAt) / 0.5; for (let i = 0; i < 7; i++) { const a = -Math.PI * (0.15 + 0.7 * i / 6); glowDot(c, 46 + Math.cos(a) * 30 * k, 614 + Math.sin(a) * 40 * k + 60 * k * k, 1.6, 1 - k, '#bfe0ff'); } }
-  const expr = won ? 'laugh' : lost ? 'sad' : hop > 0 ? 'wow' : t - f.shrugAt < 0.5 ? 'think' : 'happy', pose = won ? 'cheer' : hop > 0 ? 'hop' : 'idle';
+  const expr = won ? 'laugh' : lost ? 'sad' : hop > 0 ? 'wow' : t - f.shrugAt < 0.5 ? 'think' : 'happy', pose = won ? 'cheer' : hop > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
   // where the frog looks: at the reed being turned, or the firefly that just landed
   let lx = 1, ly = -0.4; const tgt = S.drag ? S.pts[S.drag.i] : f.look >= 0 ? S.pts[f.look] : null;
   if (tgt) { const tx = X(S, tgt.a), ty = tgt.answered ? MYv(S, tgt.m) : Y(S, tgt.fa), d = Math.hypot(tx - x, ty - y + 40) || 1; lx = (tx - x) / d; ly = (ty - y + 40) / d; }

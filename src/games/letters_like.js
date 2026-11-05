@@ -4,8 +4,10 @@
 // part ("x"); the player drags the basket left and right to catch only the like terms. Each like term that lands adds
 // into the basket's total at once ("3x + (−2x) = x" pops above the basket, and the basket reads "x"). An unlike term
 // that lands in the basket bounces out with a boing (it never ends the game); a like term that is missed bounces on
-// the grass and grows back on the tree to fall again. When every like term is in, the basket shows the whole sum
-// (3x − 2x + x = 2x) and the sign rewrites itself with the like terms combined (2x + 5 + x²).
+// the grass and grows back on the tree to fall again. Each running sum writes itself above the basket.
+// When every like term is in, the combining is acted out on the sign (show your work): the like terms are circled, slide
+// together to the front of the expression (the other terms glide out of the way), then squeeze into one spot while the
+// basket's total (2x) flies up from the basket and lands there, so the sign reads 2x + 5 + x². The fuse stands still.
 // Level 0: three positive x terms and two numbers. Level 1: four x (or y) terms, one negative, with a number and a
 // square mixed in. Level 2: the basket collects x² or xy terms, with x, y and numbers mixed in.
 // Medium mode: the running total shows "?"; at the end the player picks the combined coefficient from a tray.
@@ -112,19 +114,22 @@ MG.add({
     const S = g.s, K = M.setup(g); Object.assign(S, pickProblem(g));
     const L = g.level, sf = 1 + (g.speed - 1) * 0.35;
     S.gap = GAP[L] / sf; S.fall = FALL[L] / sf; S.hang = HANG / sf; S.acc = 2 * (RIM - SPAWN_Y) / (S.fall * S.fall);
-    S.likes = S.terms.filter(q => q.like); S.sum = S.likes.reduce((p, q) => p + q.c, 0);
+    S.T = M.pace(g); S.likes = S.terms.filter(q => q.like); S.sum = S.likes.reduce((p, q) => p + q.c, 0);
     S.queue = S.terms.slice(); S.nextSpawn = 0.75 / sf; S.apples = []; S.total = null; S.caught = []; S.bx = 180; S.tx = 180; S.lastMoveT = 0;
     S.fox = { x: 112, face: 1 }; S.bubble = null; S.done = null; S.answered = null; S.lastX = null; S.colI = Math.floor(g.rand() * 3);
-    // the fuse: the drop schedule takes a fixed time, so the base time is set so that catching every term the first time earns 3 stars
-    const need = 0.75 / sf + S.terms.length * S.gap + S.hang + S.fall + 0.4;
-    g.dur *= need / 0.58 / (g.def.time / sf);
+    // the fuse: the drop schedule takes a fixed time, so the base time is set so that catching every term the first time
+    // earns 3 stars. The level's generous time factor (g.tf) stretches only the slack beyond the schedule, not the
+    // schedule itself, so the fuse stays reasonable at level 0 (about 33 s instead of 60 s); g.tf is set to match, so
+    // the stars still compare the time taken with the base time.
+    const need = 0.75 / sf + S.terms.length * S.gap + S.hang + S.fall + 0.4, base = need / 0.58;
+    g.dur = need + (base - need) * (g.tf || 1); g.tf = g.dur / base;
     M.zone(g, 'basket', { x: 180, y: RIM + 20, w: 110, h: 60 });
     S.signNode = exprNode(S.terms, 't'); placeSign(g, S.signNode);
     M.inert(g, S.terms.map((q, i) => 'o' + i));
     M.play(g, {
       moves(g) { return S.answered ? [] : [{ drag: 'basket', to: 'basket' }]; },
       area(g) { return 'basket'; },
-      onWin(g) { S.winAt = g.t; const rest = S.terms.filter(q => !q.like); S.signNode = exprNode([{ c: S.sum, v: S.kind }, ...rest]); S.signNode.items[0].pop = g.t; S.signNode.items[0].col = '#c8ffb0'; placeSign(g, S.signNode); S.signPop = g.t; g.sfx('magic'); },
+      onWin(g) { S.winAt = g.t; g.sfx('magic'); },
     });
   },
   update(g, dt) {
@@ -165,7 +170,7 @@ MG.add({
     drawBasket(g, c, S);
     for (const a of S.apples) if (a.state === 'bounce') drawApple(g, c, S, a);
     drawBubble(g, c, S);
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });
 
@@ -217,7 +222,7 @@ function catchLike(g, a) {
   // the running sum, right above the basket: 3x + (−2x) = x
   if (prev != null) {
     const add = q.c < 0 ? M.paren(termNode(q.c, q.v)) : termNode(q.c, q.v);
-    S.bubble = { node: med ? M.row(M.op('+'), add) : M.row(termNode(prev, q.v) , M.op('+'), add, M.op('='), totalNode(S.total, q.v)), t0: t };
+    S.bubble = { node: med ? M.row(M.op('+'), add) : M.row(termNode(prev, q.v), M.op('+'), add, M.op('='), totalNode(S.total, q.v)), t0: t }; S.bubble.node.write = { t0: t, dur: 0.3 };
   }
   S.totalPop = t;
   if (S.caught.length === S.likes.length) finishCatch(g);
@@ -228,13 +233,35 @@ function sumNode(S, ans) { // 3x − 2x + x = 2x
   return M.row(r, M.op('='), ans ? totalNode(S.sum, S.kind) : M.row(M.txt('?'), S.sum === 1 ? null : letters(S.kind)));
 }
 function finishCatch(g) {
-  const S = g.s, K = S.mk, t = g.t; S.done = t;
+  const S = g.s, K = S.mk, t = g.t, T = S.T; S.done = t;
   if (g.mode === 'medium') {
     K.busyT = 1e9; S.bubble = { node: sumNode(S, false), t0: t + 0.2, final: true };
     const others = S.terms.filter(q => !q.like).map(q => q.c), abs = S.likes.reduce((p, q) => p + Math.abs(q.c), 0);
-    M.later(g, 0.35, g => M.openAsk(g, { ask: { v: S.sum, wrong: [abs, S.sum + others[others.length - 1], S.likes.length, -S.sum, S.sum + 1] }, after: 0.05,
-      resolve(g) { S.answered = g.t; S.bubble = { node: sumNode(S, true), t0: g.t, final: true }; S.totalPop = g.t; g.sfx('sparkle'); } }));
-  } else { S.answered = t; K.busyT = 0.45; S.bubble = { node: sumNode(S, true), t0: t + 0.2, final: true }; }
+    M.later(g, 0.35, g => M.openAsk(g, { ask: { v: S.sum, wrong: [abs, S.sum + others[others.length - 1], S.likes.length, -S.sum, S.sum + 1] }, after: combineLen(T),
+      resolve(g) { S.answered = g.t; S.bubble = { node: sumNode(S, true), t0: g.t, final: true }; S.totalPop = g.t; g.sfx('sparkle'); combine(g); } }));
+  } else { S.answered = t; S.bubble = { node: sumNode(S, true), t0: t + 0.2, final: true }; S.bubble.node.write = { t0: t + 0.2, dur: 0.35 * T }; M.show(g, 0.5 * T); M.at(g, [[0.5 * T, combine]]); }
+}
+// the combining, acted out on the sign: the like terms slide together, then become one term that flies up from the basket
+const combineLen = T => 1.75 * T;
+function combine(g) {
+  const S = g.s, T = S.T, row = S.signNode, it = row.items; M.show(g, combineLen(T)); S.combAt = g.t;
+  // the sign's nodes, term by term: term i is it[2i], and its sign is it[2i − 1]
+  const term = i => it[2 * i], sign = i => i ? it[2 * i - 1] : null, likeI = S.terms.filter(q => q.like).map(q => q.i), restI = S.terms.filter(q => !q.like).map(q => q.i);
+  const likeNodes = likeI.flatMap(i => [sign(i), term(i)]).filter(Boolean);
+  M.at(g, [
+    [0, g => { likeI.forEach((i, k) => M.circle(g, term(i), { delay: k * 0.08 * T, dur: 0.5 * T, col: '#c8ffb0' })); g.sfx('sparkle'); S.hopAt = g.t; }],
+    // the like terms slide together to the front (the first term is always a like term with a positive coefficient)
+    [0.42 * T, g => { row.items = [...likeI.flatMap(i => [sign(i), term(i)]).filter(Boolean), ...restI.flatMap(i => [sign(i), term(i)])]; placeSign(g, row); g.sfx('swoosh'); }],
+    [0.85 * T, g => { // they squeeze into one spot, while the basket's total flies up to land there
+      const bs = likeNodes.map(n => M.box(g, n.id)).filter(Boolean), mid = bs.length ? (Math.min(...bs.map(b => b.x - b.w / 2)) + Math.max(...bs.map(b => b.x + b.w / 2))) / 2 : SIGN.x;
+      for (const n of likeNodes) { const b = M.box(g, n.id); if (b) M.tween(g, n, { dx: mid - b.x, sc: 0.4, alpha: 0 }, 0.35 * T); }
+      if (S.bubble) S.bubble.out = g.t;
+      M.fly(g, { node: totalNode(S.sum, S.kind), col: '#c8ffb0', from: [S.bx, RIM + 30], to: [mid, SIGN.y], dur: 0.48 * T, arc: 70, s0: 24, s1: 27,
+        then(g) { const hide = n => { if (!n) return; n.alpha = 0; for (const ch of [n.base, n.exp, n.n, n.d, n.inner, ...(n.items || [])]) hide(ch); }; likeNodes.forEach(hide); // squeezed away: no ghosts
+          const nn = termNode(S.sum, S.kind, 'sum', { col: '#c8ffb0', _born: -1, pop: g.t }); (function born(n) { if (!n) return; n._born = -1; for (const ch of [n.base, n.exp, ...(n.items || [])]) born(ch); })(nn); // it lands from the flight: no fade-in
+          row.items = [nn, ...restI.flatMap(i => [sign(i), term(i)])]; placeSign(g, row); S.combined = g.t;
+          M.sparkle(g, 'sum', { n: 14, cols: ['#c8ffb0', '#fff', '#ffe27a'] }); g.sfx('ding'); S.hopAt = g.t; } }); S.hopAt = g.t; }],
+  ]);
 }
 function nextLike(S) { // the like apple that will land soonest
   let best = null, bt = 1e9;
@@ -259,7 +286,7 @@ function drawSign(g, c, S) {
   c.strokeStyle = 'rgba(40,20,8,0.35)'; c.lineWidth = 1.4; for (let k = 1; k < 3; k++) { c.beginPath(); c.moveTo(x0 + 10, y0 + k * SIGN.h / 3); c.bezierCurveTo(x0 + 110, y0 + k * SIGN.h / 3 + 3, x0 + 220, y0 + k * SIGN.h / 3 - 3, x0 + SIGN.w - 10, y0 + k * SIGN.h / 3); c.stroke(); }
   c.fillStyle = '#d8c090'; for (const px of [x0 + 34, x0 + SIGN.w - 34]) { c.beginPath(); c.arc(px, y0 + 6, 3.2, 0, TAU); c.fill(); }
   // a soft halo behind each like term that is already in the basket
-  for (const q of S.caught) { const b = M.box(g, 't' + q.i); if (!b || S.winAt != null) continue; c.fillStyle = 'rgba(140,230,120,0.22)'; rr(c, b.x - b.w / 2 - 5, b.y - b.h / 2 - 4, b.w + 10, b.h + 8, 8); c.fill(); }
+  for (const q of S.caught) { const b = M.box(g, 't' + q.i); if (!b || S.combAt != null) continue; c.fillStyle = 'rgba(140,230,120,0.22)'; rr(c, b.x - b.w / 2 - 5, b.y - b.h / 2 - 4, b.w + 10, b.h + 8, 8); c.fill(); }
   M.drawEx(g, c, 'sign');
   c.restore();
 }
@@ -306,9 +333,9 @@ function drawBasket(g, c, S) {
 }
 function drawBubble(g, c, S) {
   const B = S.bubble; if (!B) return; const t = g.t, k = (t - B.t0); if (k < 0) return;
-  if (!B.final && k > 0.9) return;
+  if (!B.final && k > 1.1) return;
   const node = B.node, s = B.final ? 26 : 22, m = M.lay(node, s), x = B.final ? 180 : clamp(S.bx, m.w / 2 + 20, W - m.w / 2 - 20), y = B.final ? 478 : RIM - 66;
-  const a = B.final ? clamp(k / 0.15, 0, 1) : clamp(k / 0.1, 0, 1) * clamp((0.9 - k) / 0.2, 0, 1), pop = 1 + Math.sin(clamp(k / 0.25, 0, 1) * Math.PI) * 0.15;
+  const a = (B.final ? clamp(k / 0.15, 0, 1) : clamp(k / 0.1, 0, 1) * clamp((1.1 - k) / 0.2, 0, 1)) * (B.out != null ? clamp(1 - (t - B.out) / 0.25, 0, 1) : 1), pop = 1 + Math.sin(clamp(k / 0.25, 0, 1) * Math.PI) * 0.15;
   c.save(); c.globalAlpha = a; c.translate(x, y - (B.final ? 0 : k * 10)); c.scale(pop, pop);
   if (B.final && (S.answered || g.done)) { c.shadowColor = '#ffe27a'; c.shadowBlur = 18; }
   c.fillStyle = 'rgba(255,250,236,0.95)'; rr(c, -m.w / 2 - 14, -m.a - 8, m.w + 28, m.a + m.d + 16, 16); c.fill(); c.shadowBlur = 0; c.strokeStyle = B.final ? '#d89a3a' : 'rgba(138,90,42,0.6)'; c.lineWidth = 2.5; c.stroke();
