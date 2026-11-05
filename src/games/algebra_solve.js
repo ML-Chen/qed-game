@@ -1,13 +1,16 @@
 // algebra_solve.js — SOLVE FOR x! Two-step linear equations (2x + 5 = 13), acted out on a seesaw on the ice at blue hour.
 // The equation lives on the seesaw: the left side's terms hang on ice tiles under the left pan, the right side's under
 // the right pan, and the = sign is carved into the ice pivot. The pans hold the same equation in things: the left pan
-// has 2 mystery crates (each one is x) and 5 fish, the right pan has 13 fish. Every move is instant (the seesaw and the
-// penguins act alongside, never blocking input):
-//   1. drag the "+ 5" across the pivot (onto the 13 or the right pan): it lands as "− 5", so the sides read 2x and
-//      13 − 5, and 5 fish leave BOTH pans (the 5 from the right pan leave dashed outlines). The seesaw stays level.
-//   2. tap "13 − 5": it becomes 8, and the dashed outlines pop.
-//   3. drag the 2 across: it lands under the right side as a fraction (8 ÷ 2), and both pans split into 2 equal groups.
-//   4. tap "8 ÷ 2": x = 4. Every group but one leaves each pan, and the last crate opens to show 4.
+// has 2 mystery crates (each one is x) and 5 fish, the right pan has 13 fish. Every move's working plays by itself
+// (show your work; the fuse stands still meanwhile):
+//   1. drag the "+ 5" across the pivot (onto the 13 or the right pan): it is circled, then hops over the = sign on a
+//      high arc and its + flips into a − at the top of the arc, landing as "13 − 5". Where it was, "+ 5 − 5 = 0" writes
+//      itself and is crossed out. 5 fish leave BOTH pans (the 5 from the right pan leave dashed outlines).
+//   2. tap "13 − 5": both numbers are circled, the "− 5" slides into the 13 and it rolls down to 8; the outlines pop.
+//   3. drag the 2 across: "÷ 2" writes itself under both sides; on the left it flies into the 2, which is crossed out,
+//      on the right a fraction bar draws itself and the ÷ 2 drops under it (8 / 2). Both pans split into 2 groups.
+//   4. tap "8 / 2": the 2 rises into the 8, which rolls over to 4, and the bar shrinks away: x = 4. Every group but one
+//      leaves each pan, and the last crate opens to show 4. The penguins hop on every landing.
 // Moves 2 and 3 may come in either order (x = (13 − 5) ÷ 2 is fine). Dragging the 2 before moving the + 5 is the
 // classic mistake (it divides only part of the left side): a wrong move, acted out by the seesaw tipping for a moment.
 // Drops are forgiving: moving a term across counts when it is dropped anywhere on the right side of the pivot (RSIDE).
@@ -15,7 +18,7 @@
 // Level 0: a 2..3, x 1..5. Level 1: a 2..5, larger x. Level 2: subtraction, and sometimes a negative answer.
 // Medium mode: the taps on "13 − 5" and "8 ÷ 2" open a tray to pick the result.
 const M = MK;
-const PX = 180, PY = 352, PAN = 104, PANW = 120, BASE = 422, TS = 42, LCX = 86, RCX = 274; // pivot (top of the plank), pans, token row
+const NOTEY = 470, PX = 180, PY = 352, PAN = 104, PANW = 120, BASE = 422, TS = 42, LCX = 86, RCX = 274; // pivot (top of the plank), pans, token row
 const RSIDE = [PX + 26, PY - 96, 360, BASE + 52]; // x0, y0, x1, y1: everything right of the = sign, from above the pan to below the tiles
 const INK = '#f4fbff', MOVED = '#ffe08a', RIGHT = '#b4f5c4';
 const FISH_COLS = ['#9cc4de', '#b4d2e6', '#f0a868', '#9cc4de', '#c4d8e4'];
@@ -247,7 +250,7 @@ MG.add({
     S.nC = M.num(c, 'c'); S.right = S.nC; S.slides = [];
     S.relay = (slideIds = []) => {
       const old = {}; for (const id of slideIds) { const b = M.box(g, id); if (b) old[id] = { ...b }; }
-      const left = S.divided ? [S.nX] : [S.nA, S.nX]; if (!S.moved) left.push(M.gap(12), S.bterm);
+      const left = S.lDiv ? [S.nX] : [S.nA, S.nX]; if (!S.bGone) left.push(M.gap(12), S.bterm);
       M.place(g, 'L', M.row(...left), LCX, BASE, TS, { col: INK }); M.place(g, 'R', M.row(S.right), RCX, BASE, TS, { col: INK });
       for (const id of slideIds) { const n = M.node(g, id), b = M.box(g, id); if (n && b && old[id]) { const dx = old[id].x - b.x, dy = old[id].y - b.y; if (Math.abs(dx) + Math.abs(dy) > 1) { n.dx = dx; n.dy = dy; S.slides.push({ n, dx, dy, t0: g.t }); } } }
     };
@@ -265,66 +268,119 @@ MG.add({
     S.slideOff = Math.random() * 6;
     const burst = (g, id, n = 12) => { const b = M.box(g, id); if (b) g.burst(b.x, b.y, ['#ffe08a', '#9af0ff', '#ffffff'], n, 130); };
     const act = (g, who) => { S.hopAt = g.t; for (const i of who) S.helpers[i].actAt = g.t; };
+    const T = M.pace(g), offL = () => -PAN * Math.sin(S.th), offR = () => PAN * Math.sin(S.th);
+    g.s.mk.relay = () => S.relay(); // M.roll with a delay re-lays the expression when the digits change
+    const sgnRow = (pos, v) => M.row(M.op(pos ? '+' : '-'), M.num(v));
+    // the moved term hops over the = sign on a high arc; at the top of the arc its sign flips (+ turns into −)
+    const hopTerm = (g, from, plusToMinus, dur) => M.anim(g, { dur, draw(c, g, kk) {
+      const to = M.unionBox([M.box(g, 'dop'), M.box(g, 'dk')]); if (!to) return;
+      const ax = from.x, ay = from.y + offL(), bx = to.x, by = to.y + offR(), H = 84, path = u => [M.lerp(ax, bx, u), M.lerp(ay, by, u) - Math.sin(u * Math.PI) * H];
+      const e = M.easeIO(kk), [x, y] = path(e), s = TS * (1 + 0.2 * Math.sin(e * Math.PI)), f = M.clamp((e - 0.38) / 0.24, 0, 1), vert = plusToMinus ? 1 - f : f;
+      c.save(); c.strokeStyle = 'rgba(255,224,138,0.55)'; c.lineWidth = 2.5; c.setLineDash([2, 7]); c.lineCap = 'round'; c.beginPath();
+      for (let i = 0; i <= 20; i++) { const [px, py] = path(e * i / 20); i ? c.lineTo(px, py) : c.moveTo(px, py); } c.stroke(); c.restore();
+      const nn = M.num(ak), m = M.lay(nn, s), sw = s * 0.94, w = sw + m.w, x0 = x - w / 2, yb = y + (m.a - m.d) / 2, cx = x0 + sw / 2, cy = yb - s * 0.3, r = s * 0.2;
+      c.save(); c.shadowColor = MOVED; c.shadowBlur = 16; c.strokeStyle = MOVED; c.lineWidth = s * 0.08; c.lineCap = 'round';
+      c.translate(cx, cy); c.rotate(f * Math.PI); c.beginPath(); c.moveTo(-r, 0); c.lineTo(r, 0); if (vert > 0.02) { c.moveTo(0, -r * vert); c.lineTo(0, r * vert); } c.stroke(); c.restore();
+      c.save(); c.shadowColor = MOVED; c.shadowBlur = 16; M.draw(c, nn, x0 + sw, yb, s, { t: g.t, col: MOVED }); c.restore();
+    } });
+    // the right side works out its value: the "− 5" slides into the 13 and it rolls over to 8
     const computeRight = g => {
-      S.computed = true; S.nR = M.num(r, 'r', { pop: g.t });
-      if (S.divided) S.quot.n = S.nR; else S.right = S.nR;
-      S.relay(); burst(g, 'r', 14); g.sfx('coin'); act(g, [1]);
-      // the dashed outlines (fish already taken away) pop; fish and balloons that were added settle in
-      let i = 0; for (const it of S.pans.R.items) { if (it.st === 'ghost') { it.popAt = Math.max(g.t + 0.02 + i * 0.03, (it.ghostAt || 0) + 0.1); i++; } else if (it.st === 'tag') { it.st = 'on'; it.settle = g.t + i * 0.03; i++; } }
-      if (S.divided) groupPan(S, 'R', a); else layoutPan(S, 'R');
-      S.om += 0.2;
+      S.computed = true; M.show(g, 0.85 * T);
+      const bc = M.box(g, 'c'); for (const q of [S.dOp, S.dK]) { const b = M.box(g, q.id); if (bc && b) M.tween(g, q, { dx: bc.x - b.x, alpha: 0, sc: 0.5 }, 0.3 * T); }
+      M.roll(g, S.nC, r, { delay: 0.12 * T, dur: 0.36 * T }); M.indicate(g, S.nC, { delay: 0.3 * T, dur: 0.35 * T, sc: 1.25, col: MOVED });
+      M.at(g, [[0.45 * T, g => {
+        S.nC.id = 'r'; S.nR = S.nC; if (S.rDiv) S.quot.n = S.nR; else S.right = S.nR;
+        S.relay(); burst(g, 'r', 14); g.sfx('coin'); act(g, [1]);
+        // the dashed outlines (fish already taken away) pop; fish and balloons that were added settle in
+        let i = 0; for (const it of S.pans.R.items) { if (it.st === 'ghost') { it.popAt = Math.max(g.t + 0.02 + i * 0.03, (it.ghostAt || 0) + 0.1); i++; } else if (it.st === 'tag') { it.st = 'on'; it.settle = g.t + i * 0.03; i++; } }
+        if (S.divided) groupPan(S, 'R', a); else layoutPan(S, 'R');
+        S.om += 0.2; }]]);
     };
     M.play(g, {
       moves(g) {
         if (S.solved) return [];
         const out = [];
         if (!S.moved) out.push({
-          // move the constant across the = sign: its operation flips, and the same amount leaves both pans
+          // move the constant across the = sign: it hops over on an arc and its sign flips, the left side shows
+          // "+ 5 − 5 = 0" crossed out, and the same amount leaves both pans
           drag: 'bterm', to: ['c', 'rpan'], area: RSIDE, busy: 0.1,
           then(g) {
-            S.moved = true;
-            S.dOp = M.op(k > 0 ? '-' : '+', 'dop', { pop: g.t, col: MOVED }); S.dK = M.num(ak, 'dk', { pop: g.t, col: MOVED });
-            S.diff = M.row(S.nC, S.dOp, S.dK); S.diff.id = 'diff'; S.right = S.diff;
-            S.relay(['a', 'x', 'c']); burst(g, 'dk', 14); g.sfx('swoosh'); act(g, [0, 1]);
-            const L = S.pans.L, R = S.pans.R, step = Math.min(0.05, 0.4 / ak);
-            L.items.filter(it => it.kind === (k > 0 ? 'fish' : 'balloon')).slice(-ak).forEach((it, i) => { it.leaveAt = g.t + 0.02 + i * step; });
-            if (k > 0) {
-              const on = R.items.filter(it => it.kind === 'fish' && it.st === 'on'), take = Math.min(ak, on.length);
-              on.slice(on.length - take).reverse().forEach((it, i) => { it.st = 'ghost'; it.ghostAt = g.t + 0.02 + i * step; });
-              for (let i = take; i < ak; i++) R.items.push(mkItem('balloon', 'tag', { born: g.t + 0.1 + (i - take) * 0.04 }));
-            } else for (let i = 0; i < ak; i++) R.items.push(mkItem('fish', 'tag', { born: g.t + 0.05 + i * 0.04 }));
-            layoutPan(S, 'L'); layoutPan(S, 'R');
-            for (const it of R.items) if (it.st === 'tag' && !it.placed) { it.placed = true; it.x = it.tx; it.y = it.kind === 'balloon' ? it.ty - 30 : it.ty - 90; }
-            S.om += 0.1;
+            S.moved = true; M.show(g, 1.45 * T); act(g, [0]); g.sfx('tap');
+            M.circle(g, 'bterm', { dur: 0.45 * T, col: MOVED }); M.indicate(g, 'bterm', { dur: 0.35 * T, col: MOVED, sc: 1.18 });
+            M.at(g, [
+              [0.25 * T, g => {
+                const from = { ...M.box(g, 'bterm') }; for (const q of S.bterm.items) q.alpha = 0.22; // a faint ghost stays where it was until the 0 is crossed out
+                S.dOp = M.op(k > 0 ? '-' : '+', 'dop', { col: MOVED, alpha: 0 }); S.dK = M.num(ak, 'dk', { col: MOVED, alpha: 0 });
+                S.diff = M.row(S.nC, S.dOp, S.dK); S.diff.id = 'diff'; S.right = S.diff; S.relay(); g.sfx('swoosh'); S.hopAt = g.t;
+                hopTerm(g, from, k > 0, 0.62 * T);
+                M.at(g, [[0.31 * T, g => { const be = M.box(g, 'eq'); if (be) g.burst(be.x, be.y - 70, ['#ffe08a', '#fff'], 8, 90); }],
+                  [0.62 * T, g => { // the term lands on the right side
+                    S.dOp.alpha = 1; S.dK.alpha = 1; S.dOp.pop = g.t; S.dK.pop = g.t; burst(g, 'dk', 14); g.sfx('snap'); act(g, [0, 1]);
+                    const L = S.pans.L, R = S.pans.R, step = Math.min(0.05, 0.4 / ak);
+                    L.items.filter(it => it.kind === (k > 0 ? 'fish' : 'balloon')).slice(-ak).forEach((it, i) => { it.leaveAt = g.t + 0.02 + i * step; });
+                    if (k > 0) {
+                      const on = R.items.filter(it => it.kind === 'fish' && it.st === 'on'), take = Math.min(ak, on.length);
+                      on.slice(on.length - take).reverse().forEach((it, i) => { it.st = 'ghost'; it.ghostAt = g.t + 0.02 + i * step; });
+                      for (let i = take; i < ak; i++) R.items.push(mkItem('balloon', 'tag', { born: g.t + 0.1 + (i - take) * 0.04 }));
+                    } else for (let i = 0; i < ak; i++) R.items.push(mkItem('fish', 'tag', { born: g.t + 0.05 + i * 0.04 }));
+                    layoutPan(S, 'L'); layoutPan(S, 'R');
+                    for (const it of R.items) if (it.st === 'tag' && !it.placed) { it.placed = true; it.x = it.tx; it.y = it.kind === 'balloon' ? it.ty - 30 : it.ty - 90; }
+                    S.om += 0.1; }]]);
+                // what is left behind on the left: + 5 − 5 = 0, written under the left side and crossed out
+                const lb = M.box(g, 'a'); S.zero = M.row(sgnRow(k > 0, ak), sgnRow(k < 0, ak), M.op('='), M.num(0));
+                M.place(g, 'nL', S.zero, Math.max(70, Math.min(110, from.x - 10)), NOTEY, 24, { col: MOVED }); M.writeIn(g, S.zero, { dur: 0.4 * T, delay: 0.1 * T }); }],
+              [1.0 * T, g => { M.strike(g, S.zero, { dur: 0.22 * T }); g.sfx('tap'); }],
+              [1.2 * T, g => { M.tween(g, S.zero, { alpha: 0 }, 0.22 * T); for (const q of S.bterm.items) M.tween(g, q, { alpha: 0 }, 0.2 * T); }],
+              [1.43 * T, g => { delete g.s.mk.ex.nL; S.bGone = true; S.relay(); }],
+            ]);
           },
         });
         else {
           if (!S.computed) out.push({
-            tap: ['diff', 'c', 'dop', 'dk'], busy: 0.1, askAt: 0, after: 0.1,
+            tap: ['diff', 'c', 'dop', 'dk'], busy: 0.1, askAt: 0.45 * T, after: 0.85 * T,
             ask: r < 0 ? { v: r, wrong: [c + k, -r, r + 1, r - 1] } : { v: r, wrong: [c + k, r - 1, r + 1, -r] },
+            then(g) { M.show(g, 0.45 * T); act(g, [1]); M.circle(g, ['c', 'dk'], { dur: 0.45 * T, col: MOVED });
+              M.indicate(g, S.nC, { dur: 0.3 * T, sc: 1.2, col: MOVED }); M.indicate(g, S.dK, { delay: 0.15 * T, dur: 0.3 * T, sc: 1.2, col: MOVED }); },
             resolve(g) { computeRight(g); },
           });
           if (!S.divided) out.push({
-            // move the coefficient across: it lands under the right side, and both pans split into a equal groups
+            // move the coefficient across: "÷ 2" writes itself under both sides, then each side collapses (2x ÷ 2 = x,
+            // and the right side gets a fraction bar with the 2 under it), and both pans split into a equal groups
             drag: 'a', to: S.computed ? ['r', 'rpan'] : ['diff', 'c', 'dop', 'dk', 'rpan'], area: RSIDE, busy: 0.1,
             then(g) {
-              S.divided = true; S.den = M.num(a, 'den', { pop: g.t, col: MOVED });
-              S.quot = M.frac(S.computed ? S.nR : S.diff, S.den, 'quot'); S.right = S.quot;
-              S.relay(['x']); burst(g, 'den', 14); g.sfx('snap'); act(g, [0, 1]);
-              groupPan(S, 'L', a); if (S.computed) groupPan(S, 'R', a);
-              S.om -= 0.15;
+              S.divided = true; M.show(g, 1.4 * T); act(g, [0]); g.sfx('tap');
+              M.circle(g, 'a', { dur: 0.4 * T, col: MOVED }); M.indicate(g, 'a', { dur: 0.35 * T, col: MOVED, sc: 1.25 });
+              const lb = M.unionBox([M.box(g, 'a'), M.box(g, 'x')]), rb = M.box(g, S.right.id), dv = () => M.row(M.op('÷'), M.num(a));
+              M.note(g, { node: dv(), at: [lb.x, NOTEY], s: 28, col: MOVED, delay: 0.05 * T, write: 0.28 * T, hold: 0.22 * T, to: 'a', fly: 0.25 * T, s1: 30, arc: 14,
+                then(g) { M.strike(g, 'a', { dur: 0.16 * T }); M.tween(g, S.nA, { alpha: 0 }, 0.2 * T, { delay: 0.18 * T }); g.sfx('tap'); } });
+              M.note(g, { node: dv(), at: [rb.x, NOTEY], s: 28, col: MOVED, delay: 0.15 * T, write: 0.28 * T, hold: 0.25 * T, to: 'den', fly: 0.3 * T, s1: TS * 0.82, arc: -8,
+                then(g) { S.den.alpha = 1; S.den.pop = g.t; M.sparkle(g, 'den', { n: 8 }); g.sfx('snap'); act(g, [1]); } });
+              M.at(g, [
+                [0.6 * T, g => { S.den = M.num(a, 'den', { col: MOVED, alpha: 0 }); S.quot = M.frac(S.computed ? S.nR : S.diff, S.den, 'quot', { bar: { t0: g.t + 0.25, dur: 0.3 * T } }); // the bar draws once the top has glided up
+                  S.rDiv = true; S.right = S.quot; S.relay(); groupPan(S, 'L', a); if (S.computed) groupPan(S, 'R', a); S.om -= 0.15; }],
+                [1.15 * T, g => { S.lDiv = true; S.relay(); M.sparkle(g, 'x', { n: 8 }); S.hopAt = g.t; }],
+              ]);
             },
           });
           if (S.divided && S.computed) out.push({
-            tap: ['quot', 'den', 'r'], busy: 0.1, askAt: 0, after: 0.1,
+            tap: ['quot', 'den', 'r'], busy: 0.1, askAt: 0.45 * T, after: 1.0 * T,
             ask: { v: x, wrong: x < 0 ? [r * a, -x, r - a, x - 1] : [r * a, r - a, a, r + a, x + 1, x - 1] },
+            then(g) { M.show(g, 0.45 * T); act(g, [1]); M.circle(g, 'quot', { dur: 0.45 * T, col: RIGHT });
+              M.indicate(g, S.nR, { dur: 0.3 * T, sc: 1.15, col: RIGHT }); M.indicate(g, S.den, { delay: 0.15 * T, dur: 0.3 * T, sc: 1.2, col: RIGHT }); },
             resolve(g) {
-              S.solved = true; S.nAns = M.num(x, 'ans', { pop: g.t, col: RIGHT }); S.right = S.nAns; S.relay(); burst(g, 'ans', 18); g.sfx('magic'); act(g, [0, 1]);
-              // every group but the first leaves each pan, then the kept group slides to the middle; the last crate opens
-              for (const side of ['L', 'R']) { let i = 0; for (const it of S.pans[side].items) if (it.grp > 0 && it.leaveAt == null && it.popAt == null) { it.leaveAt = g.t + 0.02 + i * 0.03; i++; } }
-              S.regroupAt = g.t + 0.3; S.revealAt = g.t + 0.05;
-              const b0 = S.pans.L.items.find(it => it.kind === 'box' && it.grp === 0); if (b0) { const [wx, wy] = toWorld(S, 'L', b0.x, b0.y); g.burst(wx, wy, ['#ffe08a', '#fff', '#9af0b0'], 16, 140); }
-              S.om += 0.2;
+              M.show(g, 1.0 * T); const bn = M.box(g, 'r'), bd = M.box(g, 'den'), bq = { ...M.box(g, 'quot') };
+              // the 2 rises into the 8, the 8 rolls over to 4, and the fraction bar shrinks away
+              if (bn && bd) M.tween(g, S.den, { dy: bn.y - bd.y, alpha: 0, sc: 0.5 }, 0.3 * T);
+              M.roll(g, S.nR, x, { delay: 0.12 * T, dur: 0.36 * T }); g.sfx('swoosh');
+              M.anim(g, { delay: 0.3 * T, dur: 0.2 * T, draw(c, g, kk) { const w = (bq.w - TS * 0.2) * (1 - M.easeIO(kk)); c.fillStyle = INK; c.fillRect(bq.x - w / 2, BASE - TS * 0.33 + offR(), w, TS * 0.07); } });
+              M.at(g, [[0.3 * T, g => { S.nR.id = 'ans'; S.right = S.nR; S.relay(); }],
+                [0.5 * T, g => {
+                  S.solved = true; S.nR.col = RIGHT; S.nR.pop = g.t; burst(g, 'ans', 18); g.sfx('magic'); act(g, [0, 1]);
+                  // every group but the first leaves each pan, then the kept group slides to the middle; the last crate opens
+                  for (const side of ['L', 'R']) { let i = 0; for (const it of S.pans[side].items) if (it.grp > 0 && it.leaveAt == null && it.popAt == null) { it.leaveAt = g.t + 0.02 + i * 0.03; i++; } }
+                  S.regroupAt = g.t + 0.3; S.revealAt = g.t + 0.05;
+                  const b0 = S.pans.L.items.find(it => it.kind === 'box' && it.grp === 0); if (b0) { const [wx, wy] = toWorld(S, 'L', b0.x, b0.y); g.burst(wx, wy, ['#ffe08a', '#fff', '#9af0b0'], 16, 140); }
+                  S.om += 0.2; }]]);
             },
           });
         }
@@ -443,13 +499,13 @@ MG.add({
       c.restore();
     }
     // the equation: ice tiles hanging under each pan, the = sign on the pivot
-    const plank = PY + 12, tileFor = id => { const n = M.node(g, id), b = M.box(g, id); return n && b ? { x: b.x + (n.dx || 0), y: b.y + (n.dy || 0), w: b.w, h: b.h, a: n.alpha == null ? 1 : Math.max(0.35, n.alpha) } : null; };
-    const leftTiles = (S.divided ? [['x']] : [['a', 'x']]).concat(S.moved ? [] : [['bterm']]);
-    const rightId = S.solved ? 'ans' : S.divided ? 'quot' : S.computed ? 'r' : S.moved ? 'diff' : 'c';
+    const plank = PY + 12, tileFor = id => { const n = M.node(g, id), b = M.box(g, id); return n && b ? { x: b.x + (n.dx || 0) + (n._gx || 0), y: b.y + (n.dy || 0) + (n._gy || 0), w: b.w, h: b.h, a: n.alpha == null ? 1 : Math.max(0.35, n.alpha) } : null; };
+    const leftTiles = (S.lDiv ? [['x']] : [['a', 'x']]).concat(S.bGone ? [] : [['bterm']]);
+    const rightId = S.right.id;
     const tiles = (sets, off) => { for (const set of sets) { const bs = set.map(tileFor).filter(Boolean); if (!bs.length) continue; const u = M.unionBox(bs); iceTile(c, { ...u, y: u.y + off }, plank + off, Math.min(...bs.map(b => b.a)), false); } };
     tiles(leftTiles, offL); tiles([[rightId]], offR);
     const be = M.box(g, 'eq'); if (be) { c.save(); c.globalAlpha = 0.5 + 0.2 * Math.sin(t * 2); c.shadowColor = '#bfe6ff'; c.shadowBlur = 14; M.drawEx(g, c, 'EQ'); c.restore(); M.drawEx(g, c, 'EQ'); }
-    c.save(); c.translate(0, offL); M.drawEx(g, c, 'L'); c.restore();
+    c.save(); c.translate(0, offL); M.drawEx(g, c, 'L'); M.drawEx(g, c, 'nL'); c.restore();
     c.save(); c.translate(0, offR); M.drawEx(g, c, 'R'); c.restore();
     if (S.wrongDen) { const w = S.wrongDen, k = M.ease((t - w.t0) / 0.2); c.save(); c.globalAlpha = k * M.clamp((1.0 - (t - w.t0)) / 0.2, 0, 1); c.font = MK.NUMF(30); c.textAlign = 'center'; c.fillStyle = MK.BAD; c.strokeStyle = '#fff'; c.lineWidth = 4; c.strokeText('÷ ' + w.v, w.x, w.y + offR + (1 - k) * -20); c.fillText('÷ ' + w.v, w.x, w.y + offR + (1 - k) * -20); c.restore(); }
     if (S.check) { const k = M.ease((t - S.winAt) / 0.25); c.save(); c.globalAlpha = k; c.fillStyle = 'rgba(10,20,50,0.45)'; const b = mk.ex.CHK; rr(c, 180 - 120, 204, 240, 42, 21); c.fill(); M.drawEx(g, c, 'CHK'); c.restore(); }

@@ -1,8 +1,8 @@
 // complex_rotate.js — QUARTER TURN! Multiplying by i turns a point on the complex plane 90° counterclockwise:
 // i(a + bi) = −b + ai. A physical microgame on a frozen pond: the point a + bi sits on the ice grid, with dashed lines
 // to the axes. The player grabs the point and swings it around the origin; it clicks into place at every quarter turn.
-// Released at a quarter turn counterclockwise, the turn counts: the point stays there and the sign above rewrites
-// i(3 + 2i) as −2 + 3i. Turning the wrong way, or not far enough, springs back (a wrong way turn is a wrong move).
+// Released at a quarter turn counterclockwise, the turn counts: the point stays there and the sign above works the
+// algebra (see work() below): i(3 + 2i) = 3i + 2i² = 3i − 2 = −2 + 3i. Turning the wrong way, or not far enough, springs back (a wrong way turn is a wrong move).
 // Level 0: a point in the first quadrant, times i. Level 1: any quadrant, times i. Level 2: times i² (two quarter turns,
 // one at a time or one half turn at once). Medium mode: after the point clicks into place, the player picks its name.
 // The kit's moves are for taps and drags of tokens, so this file runs the swing itself (like calc_tangent.js) and uses
@@ -13,12 +13,62 @@ function cterm(v, kind, first) { const A = Math.abs(v), sg = first ? (v < 0 ? M.
 const cnum = (a, b) => M.row(...cterm(a, 0, true), ...cterm(b, 1, false));
 const turn = ([a, b], n) => { for (let k = 0; k < n; k++) [a, b] = [-b, a]; return [a, b]; };
 const pos = ([a, b], rot) => { const r = Math.hypot(a, b) * U, t = Math.atan2(b, a) + rot; return { x: OX + Math.cos(t) * r, y: OY - Math.sin(t) * r }; };
+// The sign shows the algebra of each turn, acted out with the same node objects so symbols glide (show your work).
+// S.nd is the current a + bi as nodes: leading sign (or null), |a|, the sign of b, |b| (left out when it is 1), i.
+const sgn = v => M.op(v < 0 ? '-' : '+');
+function zNodes(a, b) { return { sR: a < 0 ? M.op('-') : null, nR: M.num(Math.abs(a)), sI: sgn(b), nI: M.num(Math.abs(b)), iI: M.vr('i'), a, b }; }
+const zRow = d => M.row(d.sR, d.nR, d.sI, Math.abs(d.b) === 1 ? null : d.nI, d.iI);
+function show(g, items, o = {}) { const r = M.row(...items); r._born = -1; if (o.id) r.id = o.id; M.place(g, 'ex', r, 180, 268, o.s || 42, { col: INK }); }
 function build(g) {
-  const S = g.s, fac = S.left === 2 ? M.sup(M.vr('i'), M.num(2)) : M.vr('i');
-  const node = S.left > 0 ? M.row(Object.assign(fac, { id: 'fac' }), M.paren(Object.assign(cnum(...S.z), { id: 'z' }), 'zp')) : Object.assign(cnum(...S.z), { id: 'res', pop: g.t });
-  M.place(g, 'ex', node, 180, 268, 44, { col: INK });
+  const S = g.s, d = S.nd;
+  if (S.left > 0) { const z = Object.assign(zRow(d), { id: 'z' }); S.zp = M.paren(z, 'zp'); show(g, [S.fac, S.zp], { s: 44 }); }
+  else show(g, [zRow(d)], { id: 'res', s: 44 });
 }
-
+const NOTE = '#ffe9a0';
+// The working of one turn on the sign, acted out. A quarter turn: i(3 + 2i) → the i flies into each term: 3i + 2i²
+// → i² = −1 and the sign in front of the 2 flips: 3i − 2 → the parts swap places: −2 + 3i. A half turn at once:
+// i² = −1 writes itself over i², giving (−1)(3 + 2i), then both signs flip: −3 − 2i. In medium mode the tray opens
+// when the working reaches its last computation, and the rest plays after the right tile.
+function work(g, n, ask) {
+  const S = g.s, K = S.mk, T = M.pace(g), d = S.nd, { a, b } = d, outer = S.left > 0 && n === 1 ? S.fi : null; S.hideLab = true; S.point = true;
+  const face = e => { S.face = e; S.faceT = g.t; K.lastMove = g.t; };
+  const wrap = items => outer ? [outer, M.paren(M.row(...items))] : items;
+  const isq = () => M.row(M.sup(M.vr('i'), M.num(2)), M.op('='), M.num(-1));
+  const fin = (g, nd) => { S.nd = nd; S.fac = S.fi; S.fi.id = 'fac'; build(g); M.sparkle(g, S.left > 0 ? 'z' : 'res', { n: 12, cols: ['#fff', '#bfe8ff', NOTE] }); g.sfx('coin'); face('laugh');
+    S.hideLab = false; S.point = false; };
+  const go = (g, at, rest) => { if (!ask) { M.at(g, [[at, g => S.restFn(g)]]); return; }
+    M.at(g, [[at, g => { const [x, y] = S.z, [x0, y0] = turn(S.z, 4 - n); S.answered = false; K.busyT = 1e9;
+      M.openAsk(g, { ask: { v: cnum(x, y), wrong: [cnum(-x, -y), cnum(y0 === 0 ? 1 : y0, x0), cnum(x0, y0)] }, after: rest, resolve(g) { S.answered = true; S.restFn(g); } }); }]]); };
+  if (n === 2) { // a half turn: i² = −1, then −1 flips both signs
+    const neg = M.num(-1, 'neg'), nd = { sR: a > 0 ? M.op('-') : null, nR: d.nR, sI: d.sI, nI: d.nI, iI: d.iI, a: -a, b: -b };
+    M.show(g, 0.9 * T); M.circle(g, 'fac', { dur: 0.4 * T, col: NOTE }); face('think');
+    M.note(g, { node: isq(), at: 'fac', off: [0, -50], s: 26, col: NOTE, write: 0.3 * T, hold: 0.3 * T, fade: 0.2 * T });
+    M.at(g, [[0.55 * T, g => { show(g, [M.paren(neg), M.paren(zRow(d))]); neg.pop = g.t; g.sfx('pop'); face('wow'); }]]);
+    S.restFn = g => { M.show(g, 0.8 * T); M.indicate(g, neg, { dur: 0.35 * T, col: NOTE });
+      M.at(g, [[0.35 * T, g => { d.sI.v = b > 0 ? '−' : '+'; d.sI.pop = g.t; fin(g, nd); }]]); };
+    go(g, 0.9 * T, 0.8 * T); return;
+  }
+  for (const q of [d.iI, M.node(g, 'two'), M.node(g, 'sq'), M.node(g, 'act')]) if (q) q.id = undefined; // ids from the last turn are reused below
+  // a quarter turn. With i² still outside, it splits into i · i: one i does this turn, the other waits outside.
+  const act = S.left > 0 ? M.vr('i', 'act') : S.fi, i1 = M.vr('i', 'ia', { alpha: 0 }), two = M.num(2, 'two', { alpha: 0 }), sq = M.sup(d.iI, two, 'sq');
+  if (S.left > 0) show(g, [outer, M.paren(M.row(act, M.paren(zRow(d))))]); else { act.id = 'act'; M.relayout(g, 'ex'); }
+  M.show(g, 0.85 * T); M.circle(g, 'act', { dur: 0.4 * T, col: NOTE }); face('think');
+  M.at(g, [[0.3 * T, g => { const from = { ...M.box(g, 'act') }; M.tween(g, act, { alpha: 0 }, 0.12 * T);
+    show(g, wrap([d.sR, Math.abs(a) === 1 ? null : d.nR, i1, d.sI, Math.abs(b) === 1 ? null : d.nI, sq])); g.sfx('swoosh');
+    // the i flies into each term: next to 3 it makes 3i, next to 2i it makes 2i²
+    M.fly(g, { node: M.vr('i', null, { col: NOTE }), from: [from.x, from.y], to: 'ia', dur: 0.38 * T, arc: -36, s0: 42, s1: 42 });
+    M.fly(g, { node: M.vr('i', null, { col: NOTE }), from: [from.x, from.y], to: 'two', dur: 0.45 * T, arc: -56, s0: 42, s1: 26,
+      then(g) { i1.alpha = 1; two.alpha = 1; two.pop = g.t; i1.pop = g.t; g.sfx('pop'); face('wow'); } }); }]]);
+  const nd = { sR: b > 0 ? d.sI : null, nR: d.nI, sI: a < 0 ? d.sR : b < 0 ? d.sI : M.op('+'), nI: d.nR, iI: i1, a: -b, b: a };
+  S.restFn = g => { M.show(g, 1.0 * T);
+    // i² = −1: the i² term becomes a real number, so the sign in front of it flips
+    M.indicate(g, sq, { dur: 0.35 * T, sc: 1.2, col: NOTE });
+    M.note(g, { node: isq(), at: 'sq', off: [0, -50], s: 26, col: NOTE, write: 0.25 * T, hold: 0.25 * T, fade: 0.15 * T });
+    M.at(g, [[0.45 * T, g => { d.sI.v = b > 0 ? '−' : '+'; d.sI.pop = g.t; d.nI.pop = g.t; show(g, wrap([d.sR, Math.abs(a) === 1 ? null : d.nR, i1, d.sI, d.nI])); g.sfx('tap'); face('wow'); }],
+      // the real part moves to the front
+      [0.75 * T, g => fin(g, nd)]]); };
+  go(g, 0.85 * T, 1.0 * T);
+}
 MG.add({
   id: 'complex_rotate', stage: 'complex', cmd: 'QUARTER TURN!', hint: 'drag', time: 8, mood: 'bright', winText: 'Turned!', hold: 1.4,
   card: {
@@ -33,6 +83,7 @@ MG.add({
     let a = 1 + r(4), b = 1 + r(3); if (a === b) a = a % 4 + 1;
     if (L >= 1) { if (g.rand() < 0.5) a = -a; if (g.rand() < 0.5) b = -b; }
     S.z = [a, b]; S.z0 = [a, b]; S.left = L === 2 ? 2 : 1; S.rot = 0; S.drag = null; S.trail = []; S.answered = true;
+    S.nd = zNodes(a, b); S.fi = M.vr('i', 'fac'); S.fac = S.left === 2 ? M.sup(S.fi, M.num(2), 'fac') : S.fi;
     build(g);
     M.inert(g, ['turn', 'zp']);
     g.dur *= (2.6 + 1.05 * 2 * S.left) / 8;
@@ -70,12 +121,8 @@ MG.add({
     const tol = TOL[g.level], n = [1, 2].find(k => k <= S.left && Math.abs(S.rot - k * Math.PI / 2) < tol);
     if (n) {
       const from = S.z; S.z = turn(S.z, n); S.left -= n; S.rot = 0; S.trail.push({ from, n, at: g.t }); K.lastMove = g.t;
-      g.sfx('ding'); g.sfx('sparkle'); const p = pos(S.z, 0); g.burst(p.x, p.y, ['#ffffff', '#bfe8ff', PCOL], 12, 130);
-      if (g.mode === 'medium' && S.left === 0) {
-        const [a, b] = S.z, [a0, b0] = from; S.answered = false; S.hideLab = true; K.busyT = 1e9;
-        M.openAsk(g, { ask: { v: cnum(a, b), wrong: [cnum(-a, -b), cnum(b0 === 0 ? 1 : b0, a0), cnum(a0, b0)] }, after: 0.05, resolve(g) { S.answered = true; S.hideLab = false; build(g); } });
-        M.place(g, 'ex', M.row(...(n === 2 && S.trail.length === 1 ? [M.sup(M.vr('i'), M.num(2))] : [M.vr('i')]), M.paren(cnum(...from)), M.op('='), M.txt('?')), 180, 268, 40, { col: INK });
-      } else build(g);
+      g.sfx('ding'); const p = pos(S.z, 0); g.burst(p.x, p.y, ['#ffffff', '#bfe8ff', PCOL], 12, 130);
+      work(g, n, g.mode === 'medium' && S.left === 0);
       return;
     }
     if (Math.abs(S.rot) > 0.6 || (S.rot > 0 && Math.abs(S.rot) > tol)) { K.wrong = (K.wrong || 0) + 1; K.missAt = g.t; K.missInfo = { drag: 'pt', to: 'plane' }; }
@@ -88,7 +135,7 @@ MG.add({
       const b = S.bot, k = M.clamp((g.t - b.t0) / 0.5, 0, 1), p = pos(S.z, M.lerp(0, Math.PI / 2 + 0.04, M.easeIO(k)));
       synth('move', p.x, p.y); if (k >= 1) { synth('up', p.x, p.y); S.bot = null; S.botNext = g.t + 0.3; } return;
     }
-    if (S.left <= 0 || g.t < (S.botNext ?? 0.4) || S.springAt != null) return;
+    if (S.left <= 0 || K.busyT > 0 || g.t < (S.botNext ?? 0.4) || S.springAt != null) return;
     const p = pos(S.z, S.rot); synth('down', p.x, p.y); S.bot = { t0: g.t };
   },
   draw(g, c) {
@@ -129,7 +176,10 @@ MG.add({
       M.draw(c, lab, lx, ly, 20, { t, col: '#8a1a3a' });
     }
     c.restore();
-    SCN.host(g, c, 'penguin', 306, 606, 1.2);
+    // the penguin points at the sign while the work is shown, and hops when a step lands
+    const hopK = K.lastMove != null && t - K.lastMove < 0.35 ? Math.sin((t - K.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
+    const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
+    if (typeof ANI !== 'undefined') ANI.draw(c, 'penguin', 306, 606 - hopK * 22, 1.2, { t, pose, expr, facing: -1 }); else SCN.host(g, c, 'penguin', 306, 606, 1.2);
     M.drawEx(g, c, 'ex');
     M.drawUI(g, c);
   },

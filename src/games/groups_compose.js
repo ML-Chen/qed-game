@@ -2,14 +2,18 @@
 // The six symmetries: e (do nothing), r (turn 120° counter-clockwise), r² (turn 240°), f (flip across the vertical
 // line through the top corner), rf and r²f (the flips across the other two lines). "a ∘ b" means first b, then a:
 // functions compose right to left, so rf = r ∘ f means "flip, then turn".
-// The triangle is a turtle's shell with its corners marked 1, 2, 3 (red, gold, blue). The player drags the right-hand
-// move (the one that happens first) onto the turtle: the shell lifts and acts it out (a smooth turn, or a 3D flip that
-// shows the shell's pale underside). Then the next move to the left. Then a tap on "?" after the = sign rewrites the
-// expression as the single equivalent move while a ghost shell does that one move and lands exactly on the real shell.
+// The triangle is a turtle's shell with its corners marked 1, 2, 3 (red, gold, blue). The player drags (or taps) the
+// right-hand move (the one that happens first): its driftwood lights up, and the working plays by itself (show your work):
+// the shell lifts off the turtle's back and acts the move out slowly, a turn with a curved arrow whose angle counts up
+// (0° ... 120°), or a 3D flip across a dashed mirror line that shows the shell's pale underside; it lands with a sparkle
+// at each numbered corner, and a sand arrow points from this move to the next one on its left (moves run right to left).
+// Then a tap on "?" asks which ONE move does all that: the start position appears as a small ghost shell by the
+// sandcastle, an arrow shows where one corner went, the single move writes itself in, and the ghost does that one move
+// while it grows and glides onto the real shell, landing corner on corner.
 // Every result is computed by composing permutations of the corners (and the matching 2×2 matrices, checked against
 // each other at load); the animations use those matrices, so what the shell does always matches the computed result.
-// Applying the left move first is the classic mistake (the group is not commutative): from level 1 it is a miss, and
-// the shell then plays the wrong order and lands somewhere else, next to a green ghost of where it should have been.
+// Applying the left move first is the classic mistake (the group is not commutative): from level 1 it is a miss, and a
+// red ghost of the shell tries that move for a moment and melts away; nothing changes.
 // Level 0: one rotation and one flip. Level 1: any two moves that do not commute. Level 2: three moves.
 // Medium mode: at the "?" the player picks the single move from tiles that each show a tiny picture of its result.
 const M = MK;
@@ -242,7 +246,7 @@ function turtleBody(c, t, mood, look) {
   c.restore();
 }
 // an arc arrow (turns) or a dashed mirror line (flips) that shows the move being made
-function drawAid(c, key, k, alpha, x = CX, y = CY) {
+function drawAid(c, key, k, alpha, x = CX, y = CY) { // k: progress of the move (0..1)
   if (key === 'e' || alpha <= 0) return;
   c.save(); c.globalAlpha *= alpha; c.lineCap = 'round';
   if (EL[key].rot) {
@@ -251,6 +255,9 @@ function drawAid(c, key, k, alpha, x = CX, y = CY) {
     c.strokeStyle = ROTC; c.lineWidth = 5; c.beginPath(); c.arc(x, y, rad, a0, a1, true); c.stroke();
     const hx = x + Math.cos(a1) * rad, hy = y + Math.sin(a1) * rad, ta = a1 - Math.PI / 2;
     c.fillStyle = ROTC; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.moveTo(hx + Math.cos(ta) * 12, hy + Math.sin(ta) * 12); c.lineTo(hx + Math.cos(ta + 2.4) * 10, hy + Math.sin(ta + 2.4) * 10); c.lineTo(hx + Math.cos(ta - 2.4) * 10, hy + Math.sin(ta - 2.4) * 10); c.closePath(); c.stroke(); c.fill();
+    // the angle so far, counting up as the shell turns (0° to 120°, or to 240°)
+    if (k > 0.15) { const deg = Math.round((key === 'r' ? 120 : 240) * Math.min(1, k) / 10) * 10, am = (a0 + a1) / 2, lx = x + Math.cos(am) * (rad + 24), ly = y + Math.sin(am) * (rad + 18);
+      c.font = '700 19px Fredoka, Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 5; c.strokeStyle = 'rgba(255,250,235,0.95)'; c.strokeText(deg + '°', lx, ly); c.fillStyle = ROTC; c.fillText(deg + '°', lx, ly); }
   } else {
     const psi = axisAngle(key), L = RR + 30, dx = Math.cos(psi) * L, dy = Math.sin(psi) * L;
     c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 8; c.beginPath(); c.moveTo(x - dx, y - dy); c.lineTo(x + dx, y + dy); c.stroke();
@@ -287,17 +294,29 @@ MG.add({
     M.zone(g, 'turtle', { x: CX, y: CY + 6, w: 190, h: 170 });
     // the shell's state: an element of the group, and the animation queue
     S.cur = 'e'; S.shown = EL.e.mat.slice(); S.anim = null; S.queue = []; S.ghost = null; S.answered = false;
-    S.crabX = 50 + g.rand() * 40; S.hopAt = -9; S.sad = -9; S.happyAt = -9;
+    S.crabX = 50 + g.rand() * 40; S.hopAt = -9; S.sad = -9; S.happyAt = -9; S.act = null; S.seenMiss = -1;
     // time scales with the number of moves: one drag per symmetry, then the tap on ?
     const nMoves = keys.length + 1; g.dur *= (2.6 + 1.05 * nMoves) / 8;
-    const ANIM = 0.28; // a quick turn or flip; it never blocks the next move (moves queue up behind it)
+    const T = M.pace(g), MOVE = 0.8 * T, LAND = 0.1 * T + MOVE; S.T = T;
     const startMove = (g, key, dur, delay = 0) => { const a = { key, dur, delay }; if (!S.anim) { a.t0 = g.t + delay; a.from = S.shown.slice(); S.anim = a; } else S.queue.push(a); g.sfx(EL[key].rot ? 'swoosh' : 'whoosh'); };
     S.startMove = startMove;
+    // one move acted out (show your work): the move lights up on its driftwood, the shell lifts off the turtle's back and
+    // turns (an arrow with its angle) or flips (a dashed mirror line, showing the pale underside), lands with a sparkle at
+    // each numbered corner, and a sand arrow points from this move to the next one to the left (moves run right to left)
     const apply = (g, i, tapped) => {
-      S.done[i] = true; const tile = S.tiles[i]; tile.alpha = 0.5; S.hopAt = g.t; S.cur = cmp(S.keys[i], S.cur); S.lastKey = S.keys[i];
-      if (tapped) M.fly(g, { node: { ...tile, id: null, alpha: 1, pop: null, mark: null }, from: 'm' + i, to: [CX, CY], dur: 0.16, arc: -30 });
-      startMove(g, S.keys[i], ANIM, 0);
+      S.done[i] = true; const tile = S.tiles[i]; S.cur = cmp(S.keys[i], S.cur); S.lastKey = S.keys[i]; M.show(g, LAND + 0.4 * T);
+      if (tapped) M.fly(g, { node: { ...tile, id: null, alpha: 1, pop: null, mark: null }, from: 'm' + i, to: [CX, CY - 20], dur: 0.2 * T, arc: -30 });
+      S.active = { i, t0: g.t, t1: g.t + LAND };
+      startMove(g, S.keys[i], MOVE, 0.1 * T);
+      const next = S.done.lastIndexOf(false);
+      M.at(g, [[LAND, g => { S.hopAt = g.t; tile.alpha = 0.55;
+        VTX.forEach((v, j) => { const p = app(S.shown, [v[0] * RR * 0.64, v[1] * RR * 0.64]); g.burst(CX + p[0], CY + p[1], [CORNER[j], '#fff6e0', '#ffffff'], 6, 90); }); }],
+        [LAND + 0.05 * T, g => { const a = M.box(g, 'm' + i), b = next >= 0 ? M.box(g, 'm' + next) : M.box(g, 'ans'); if (!a || !b) return;
+          M.arrow(g, [a.x - a.w * 0.2, a.y - a.h / 2 - 6], [b.x + b.w * 0.2, b.y - b.h / 2 - 6], { dur: 0.3 * T, bend: -22, col: '#fff0d0', linger: 0.35 * T }); }]]);
     };
+    // the start position, a small shell beside the turtle with its corners 1, 2, 3 where they began
+    const GX = 298, GY = 390, GS = 0.46; S.GX = GX; S.GY = GY; S.GS = GS;
+    const ASK = 0.6 * T, AFTER = 1.25 * T, GMOVE = 0.8 * T;
     M.play(g, {
       moves(g) {
         const next = S.done.lastIndexOf(false);
@@ -308,30 +327,27 @@ MG.add({
         if (S.answered) return [];
         const wrong = [S.wrongRes, S.keys[0], S.keys[S.keys.length - 1], ...KEYS].filter((k, i, a) => k !== S.res && a.indexOf(k) === i).slice(0, 3);
         return [{
-          tap: 'ans', busy: 0.1, askAt: 0, after: 0.1,
+          tap: 'ans', busy: 0.1, askAt: ASK, after: AFTER,
           ask: { v: nameNode(S.res, null, { dy: 13 }), wrong: wrong.map(k => nameNode(k, null, { dy: 13 })) },
-          then(g) { S.slot.pop = g.t; S.hopAt = g.t; g.sfx('magic'); S.tiles.forEach(t => { t.alpha = 1; t.pop = g.t; }); },
+          // the question: which ONE move takes the start position to here? The start shell appears, and an arrow shows
+          // where one corner went
+          then(g) { S.slot.pop = g.t; S.hopAt = g.t; g.sfx('magic'); M.show(g, ASK); S.tiles.forEach(t => { t.alpha = 1; t.pop = g.t; });
+            S.ghost = { key: S.res, appear: g.t, t0: null, dur: GMOVE };
+            const j = [0, 1, 2].find(q => EL[S.res].perm[q] !== q);
+            if (j != null) { const a = [VTX[j][0] * RR * 0.64, VTX[j][1] * RR * 0.64], b = app(S.shown, a);
+              M.arrow(g, [GX + a[0] * GS, GY + a[1] * GS], [CX + b[0], CY + b[1]], { delay: 0.2 * T, dur: 0.4 * T, bend: -36, col: CORNER[j], linger: 0.8 * T }); } },
+          // the answer is written in, and the start shell does that single move, growing and gliding onto the real shell,
+          // where it lands corner on corner
           resolve(g) {
-            S.answered = true; const ix = S.ex.items.indexOf(S.slot); S.ansNode = nameNode(S.res, 'ansv', { pop: g.t }); S.ex.items[ix] = S.ansNode; relay(); M.inert(g, ['ansv']); g.sfx('coin');
-            S.ghost = { key: S.res, t0: g.t, dur: 0.45, from: EL.e.mat.slice() }; const b = M.box(g, 'ansv'); if (b) g.burst(b.x, b.y, ['#ffd45a', '#7ad0ff', '#fff'], 12, 130);
+            S.answered = true; M.show(g, AFTER); const ix = S.ex.items.indexOf(S.slot); S.ansNode = nameNode(S.res, 'ansv', { pop: g.t }); S.ex.items[ix] = S.ansNode; relay(); M.inert(g, ['ansv']); g.sfx('coin');
+            M.writeIn(g, S.ansNode, { dur: 0.3 * T }); S.ghost.t0 = g.t + 0.2 * T; g.sfx('whoosh');
+            M.at(g, [[0.2 * T + GMOVE, g => { S.ghost.landed = g.t; S.hopAt = g.t; g.sfx('sparkle');
+              VTX.forEach((v, j) => { const p = app(S.shown, [v[0] * RR * 0.64, v[1] * RR * 0.64]); g.burst(CX + p[0], CY + p[1], [CORNER[j], '#fff6c0', '#7ad0a0'], 9, 130); });
+              M.indicate(g, S.ansNode, { dur: 0.35 * T, sc: 1.2 }); }]]);
           },
         }];
       },
       area(g) { const left = S.done.map((d, i) => d ? null : 'm' + i).filter(Boolean); return left.length ? left : 'ans'; },
-      onMiss(g, info) {
-        S.sad = g.t;
-        const id = info.drag || info.tap;
-        const i = id && /^m\d$/.test(id) ? +id.slice(1) : -1;
-        if (i >= 0 && !S.done[i]) {
-          // act out the wrong order: the tile that was moved first, then the others left to right
-          const order = [i, ...S.done.map((d, j) => d || j === i ? -1 : j).filter(j => j >= 0)];
-          let st = S.cur; for (const j of order) { st = cmp(S.keys[j], st); S.startMove(g, S.keys[j], 0.3, 0); }
-          S.miss = { t0: g.t + order.length * 0.3, right: S.res, wrongEnd: st };
-        } else if (info.ask) {
-          const k = info.ask.el; if (k) S.ghost = { key: k, t0: g.t, dur: 0.45, from: EL.e.mat.slice(), bad: true };
-          S.miss = { t0: g.t + 0.45, right: S.res, wrongEnd: null };
-        }
-      },
       onWin(g) { S.happyAt = g.t; },
     });
   },
@@ -342,8 +358,11 @@ MG.add({
       S.shown = mul(EL[S.anim.key].mat, S.anim.from); S.landAt = g.t; g.sfx('thud');
       const nx = S.queue.shift(); if (nx) { nx.t0 = g.t + (nx.delay > 0.1 ? 0 : 0.02); nx.from = S.shown.slice(); S.anim = nx; } else S.anim = null;
     }
-    if (S.ghost && !S.ghost.landed && g.t >= S.ghost.t0 + S.ghost.dur) { S.ghost.landed = true; if (!S.ghost.bad) { g.sfx('sparkle'); g.burst(CX, CY - 10, ['#fff6c0', '#7ad0a0', '#ffd45a'], 18, 150); } }
     S.crabX = M.clamp(S.crabX + Math.sin(g.t * 0.5) * dt * 22, 30, 110);
+    // a wrong move (the kit counts it): act it out for a moment with a red ghost shell, then it melts away
+    const K = S.mk; if (K.missAt > S.seenMiss && K.missInfo) { S.seenMiss = K.missAt; S.sad = g.t; const info = K.missInfo, id = info.drag || info.tap;
+      if (id && /^m\d$/.test(id) && !S.done[+id.slice(1)]) S.bad = { key: S.keys[+id.slice(1)], from: S.shown.slice(), t0: g.t, dur: 0.45 * S.T };
+      else if (info.ask && info.ask.el) S.bad = { key: info.ask.el, from: EL.e.mat.slice(), t0: g.t, dur: 0.45 * S.T }; }
   },
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); },
   up(g, x, y) {
@@ -377,8 +396,9 @@ MG.add({
     const mk = g.s.mk, pr = mk.press && mk.press.dragging ? mk.press : null;
     S.tiles.forEach((tl, i) => {
       const b = M.box(g, 'm' + i); if (!b) return;
-      const pk = tl.pop != null ? M.clamp((t - tl.pop) / 0.35, 0, 1) : 1, sc = 1 + Math.sin(pk * Math.PI) * 0.2;
-      plank(c, b, t, { sc, tilt: (i - 1) * 0.03 + Math.sin(t * 1.5 + i) * 0.01, alpha: pr && pr.id === 'm' + i ? 0.35 : S.done[i] && !S.answered ? 0.6 : 1, bad: tl.mark === 'bad', lit: S.answered && !lost });
+      const pk = tl.pop != null ? M.clamp((t - tl.pop) / 0.35, 0, 1) : 1, A0 = S.active && S.active.i === i ? M.clamp(Math.min((t - S.active.t0) / 0.15, (S.active.t1 - t) / 0.25), 0, 1) : 0, sc = 1 + Math.sin(pk * Math.PI) * 0.2 + A0 * 0.12;
+      if (A0 > 0) { c.save(); c.globalAlpha = A0; c.shadowColor = '#ffd45a'; c.shadowBlur = 22; c.fillStyle = 'rgba(255,220,120,0.35)'; c.beginPath(); c.ellipse(b.x, b.y, b.w * 0.75, b.h * 0.75, 0, 0, 7); c.fill(); c.restore(); }
+      plank(c, b, t, { sc, lit: A0 > 0.5 || (S.answered && !lost), tilt: (i - 1) * 0.03 + Math.sin(t * 1.5 + i) * 0.01, alpha: pr && pr.id === 'm' + i ? 0.35 : S.done[i] && !S.answered ? 0.6 : 1, bad: tl.mark === 'bad' });
     });
     for (const tl of S.tiles) for (const lf of leaves(tl)) lf.mark = tl.mark;
     const sz = S.sz, cy = BASE - sz * 0.3;
@@ -395,8 +415,10 @@ MG.add({
       }
     } else { const b = M.box(g, 'ansv'); if (b) plank(c, b, t, { lit: true, sc: 1 + Math.sin(M.clamp((t - S.ansNode.pop) / 0.35, 0, 1) * Math.PI) * 0.25 }); }
     M.drawEx(g, c, 'ex');
+    // the key to the notation, written small in the sand under the problem
+    { const key = KEY(), m = M.lay(key, 16); S.keyA = M.lerp(S.keyA ?? 0.85, (S.anim || (S.ghost && !S.ghost.landed && S.ghost.t0 != null)) ? 0.2 : 0.85, 0.15); c.save(); c.globalAlpha = S.keyA; M.draw(c, key, 180 - m.w / 2, BASE + 40, 16, { col: '#6a3a3a' }); c.restore(); }
     // the turtle and its shell
-    const mood = won ? 'laugh' : lost ? 'sad' : S.anim ? 'wow' : 'happy';
+    const mood = won ? 'laugh' : lost || t - S.sad < 0.7 ? 'sad' : S.anim ? 'wow' : 'happy';
     turtleBody(c, t, mood);
     let A = S.shown, lift = 0, aid = null;
     if (S.anim && t >= S.anim.t0) { const k = M.easeIO((t - S.anim.t0) / S.anim.dur); A = mul(motion(S.anim.key, k), S.anim.from); lift = Math.sin(k * Math.PI) * 24; aid = { key: S.anim.key, k, a: Math.min(1, Math.sin(k * Math.PI) * 2.5) }; }
@@ -404,27 +426,18 @@ MG.add({
     const land = S.landAt != null && t - S.landAt < 0.2 ? Math.sin((t - S.landAt) / 0.2 * Math.PI) * 3 : 0;
     if (wob) A = mul(rotM(wob), A);
     c.fillStyle = `rgba(40,30,20,${0.12 + lift * 0.006})`; c.beginPath(); c.ellipse(CX, CY + 10, 62 - lift * 0.3, 30 - lift * 0.2, 0, 0, 7); c.fill();
-    const missTint = S.miss && t >= S.miss.t0 && S.miss.wrongEnd ? 'rgba(230,70,60,0.18)' : null;
-    drawShell(c, CX, CY - lift + land, A, { tint: missTint });
-    if (aid) drawAid(c, aid.key, aid.k, aid.a, CX, CY - lift);
-    // after a wrong order: a small shell on the right, ringed in green, shows where it should have ended
-    if (S.miss && t >= S.miss.t0) {
-      const k = M.ease((t - S.miss.t0) / 0.3), x = 300, y = 396;
-      c.save(); c.globalAlpha = k; c.fillStyle = 'rgba(255,255,240,0.75)'; c.strokeStyle = M.GOOD; c.lineWidth = 4; c.beginPath(); c.arc(x, y, 50 * k, 0, 7); c.fill(); c.stroke();
-      c.translate(x, y + 8); c.scale(0.56 * k, 0.56 * k); drawShell(c, 0, 0, EL[S.miss.right].mat, { dot: 1.45 }); c.restore();
-      if (S.miss.wrongEnd) { c.save(); c.globalAlpha = k; c.strokeStyle = M.BAD; c.lineWidth = 6; c.lineCap = 'round'; const q = 9; c.translate(CX + 70, CY - 58); c.beginPath(); c.moveTo(-q, -q); c.lineTo(q, q); c.moveTo(q, -q); c.lineTo(-q, q); c.stroke(); c.restore(); }
-    }
-    // the ghost doing the single equivalent move, landing exactly on the real shell
-    if (S.ghost && t >= S.ghost.t0) {
-      const G = S.ghost, k = M.easeIO((t - G.t0) / G.dur), gA = mul(motion(G.key, k), G.from), hover = (1 - M.ease((t - G.t0) / G.dur)) * 46;
-      c.save(); c.globalAlpha = G.landed && !G.bad ? Math.max(0.35, 1 - (t - G.t0 - G.dur) * 1.2) : 1;
-      drawShell(c, CX, CY - hover, gA, { ghost: G.bad ? 'bad' : 'white', t });
-      if (!G.landed) drawAid(c, G.key, k, Math.min(1, Math.sin(k * Math.PI) * 2.5), CX, CY - hover);
-      c.restore();
-      if (G.landed && !G.bad) { const q = (t - G.t0 - G.dur); if (q < 0.6) { c.save(); c.globalAlpha = 1 - q / 0.6; c.strokeStyle = '#fff6c0'; c.lineWidth = 5; c.translate(CX, CY); c.scale(1 + q * 0.5, 1 + q * 0.5); triPath(c, RR, 14); c.stroke(); c.restore(); } }
-    }
-    // the key to the notation, written small in the sand under the problem
-    { const key = KEY(), m = M.lay(key, 16); c.save(); c.globalAlpha = 0.85; M.draw(c, key, 180 - m.w / 2, BASE + 40, 16, { col: '#6a3a3a' }); c.restore(); }
+    drawShell(c, CX, CY - lift + land, A);
+    if (aid) drawAid(c, aid.key, aid.k, aid.a, CX, CY - lift * 0.4);
+    // a wrong move, acted out for a moment: a red ghost of the shell tries it, then melts away
+    if (S.bad && t - S.bad.t0 < S.bad.dur + 0.35) { const B = S.bad, k = M.easeIO((t - B.t0) / B.dur), al = t - B.t0 > B.dur ? 1 - (t - B.t0 - B.dur) / 0.35 : 1;
+      c.save(); c.globalAlpha = M.clamp(al, 0, 1) * 0.9; drawShell(c, CX, CY - 30, mul(motion(B.key, k), B.from), { ghost: 'bad', t }); c.restore(); }
+    // the single move: the start position (a small white ghost beside the turtle) does that one move while it grows and
+    // glides onto the real shell, landing corner on corner
+    if (S.ghost) { const G = S.ghost, ap = M.ease((t - G.appear) / (0.3 * S.T)), k = G.t0 != null ? M.easeIO((t - G.t0) / G.dur) : 0;
+      const x = M.lerp(S.GX, CX, k), y = M.lerp(S.GY, CY, k) - Math.sin(k * Math.PI) * 40, sc = M.lerp(S.GS, 1, k) * (0.6 + 0.4 * ap), gA = mul(motion(G.key, k), EL.e.mat);
+      const fade = G.landed ? 1 - (t - G.landed) / 0.5 : 1;
+      if (fade > 0) { c.save(); c.globalAlpha = ap * fade; c.translate(x, y); c.scale(sc, sc); drawShell(c, 0, 0, gA, { ghost: 'white', t }); if (G.t0 != null && k > 0 && k < 1) drawAid(c, G.key, k, Math.min(1, Math.sin(k * Math.PI) * 2.5), 0, 0); c.restore(); }
+      if (G.landed) { const q = t - G.landed; if (q < 0.6) { c.save(); c.globalAlpha = 1 - q / 0.6; c.strokeStyle = '#fff6c0'; c.lineWidth = 5; c.translate(CX, CY); c.scale(1 + q * 0.5, 1 + q * 0.5); triPath(c, RR, 14); c.stroke(); c.restore(); } } }
     if (pr && /^m\d$/.test(pr.id)) { const b = M.box(g, pr.id); if (b) plank(c, { ...b, x: pr.x, y: pr.y - 20 }, t, { sc: 1.12, tilt: -0.05 }); }
     M.drawUI(g, c);
     // medium mode: a tiny picture of each answer's position on its tile

@@ -175,7 +175,7 @@ MG.add({
     const S = g.s; M.setup(g); const pr = pick(g); S.top = pr.top; S.q = pr.q;
     S.ans = num10(S.top) * S.q; const nTop = S.top.length, nAns = digits(S.ans).length, ncols = Math.max(nTop, nAns) + 1;
     const L2 = nTop > 2;
-    S.G = { s: L2 ? 42 : 46, r: L2 ? 22 : 25, cs: 22, cw: L2 ? 50 : 54, ns: L2 ? 23 : 25, yC: 212, yT: 262, yB: 324, yL: 357, yR: 406, yTag: 458 };
+    S.G = { s: L2 ? 42 : 46, r: L2 ? 22 : 25, cs: 22, cw: L2 ? 50 : 54, ns: L2 ? 23 : 25, yC: 212, yT: 262, yB: 324, yL: 357, yR: 406, yTag: 450 };
     const G = S.G; G.x0 = 180 + (ncols - 1) * G.cw / 2; G.ncols = ncols;
     const colX = c => G.x0 - c * G.cw; S.colX = colX;
     // each token gets an ink that suits its cookie: chocolate on chip cookies, plum on sugar cookies, white on blueberries
@@ -309,7 +309,7 @@ MG.add({
     // the host ant at the corner of the blanket
     const H0 = S.host, hk = (t - H0.hopAt) / 0.3, hop = hk >= 0 && hk <= 1 ? Math.sin(hk * Math.PI) : 0, cheer = won ? Math.abs(Math.sin((t - g.doneAt) * 8)) : 0, sad = lost || t - H0.sadAt < 0.8;
     const face = won ? 'laugh' : sad ? 'sad' : H0.faceT != null && t - H0.faceT < 0.7 ? H0.face : hop > 0 ? 'wow' : 'happy';
-    ant(c, 62, 540 - hop * 16 - cheer * 14, 1.5, { t, pose: won ? 'cheer' : sad ? 'sad' : hop > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle', expr: face, facing: 1 });
+    ant(c, 60, 560 - hop * 14 - cheer * 12, 1.5, { t, pose: won ? 'cheer' : sad ? 'sad' : hop > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle', expr: face, facing: 1 });
 
     // ---- the multiplication, on cookies ----
     const pk = n => { if (!n || n.pop == null) return 1; const k = clamp((t - n.pop) / 0.35, 0, 1); return 1 + Math.sin(k * Math.PI) * 0.22; };

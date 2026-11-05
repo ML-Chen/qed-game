@@ -19,10 +19,14 @@ with sync_playwright() as p:
     r2 = pg.evaluate('([id,l,m,f])=>HM.test(id,{auto:true,level:l,mode:m,frames:f})', [gid, level, mode, ts])
     b.close()
 print(gid, 'level', level, mode, r2['result'], 'at', r2['doneAt'], 'fuse', r2['dur'], 'errors', r2['errors'][:5], errs[:5])
-fr = [img(s) for s in r2['shots']]
-fr[0].save(out / f'{gid}_L{level}_{mode}.gif', save_all=True, append_images=fr[1:], duration=int(step * 1000), loop=0)
-fw, fh, cols = 180, 320, 10; rows = (len(fr) + cols - 1) // cols
+# shrink each frame as soon as it is decoded (full-size frames for a long film took over a gigabyte)
+shots = r2.pop('shots'); fr = []; small = []
+for s in shots:
+    f = img(s); fr.append(f.resize((360, 640), Image.LANCZOS)); small.append(f.resize((180, 320), Image.LANCZOS)); del f
+del shots
+fr[0].save(out / f'{gid}_L{level}_{mode}.gif', save_all=True, append_images=fr[1:], duration=int(step * 1000), loop=0); del fr
+fw, fh, cols = 180, 320, 10; rows = (len(small) + cols - 1) // cols
 sheet = Image.new('RGB', (cols * (fw + 4), rows * (fh + 18)), (30, 20, 36)); d = ImageDraw.Draw(sheet)
-for i, f in enumerate(fr):
-    x, y = (i % cols) * (fw + 4), (i // cols) * (fh + 18); sheet.paste(f.resize((fw, fh), Image.LANCZOS), (x, y + 16)); d.text((x + 4, y + 2), f'{ts[i]:.1f}s', fill=(255, 240, 220))
+for i, f in enumerate(small):
+    x, y = (i % cols) * (fw + 4), (i // cols) * (fh + 18); sheet.paste(f, (x, y + 16)); d.text((x + 4, y + 2), f'{ts[i]:.1f}s', fill=(255, 240, 220))
 sheet.save(out / f'{gid}_L{level}_{mode}.jpg', quality=82)

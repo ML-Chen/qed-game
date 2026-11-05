@@ -60,7 +60,7 @@ MG.add({
               S.arcs.push({ kind: 'board', a: 'c' + (a + 1), b: 'c' + (j + 1), wrap, t0: g.t + 0.1 * T, dur: 0.45 * T, cy: ci });
               S.arcs.push({ kind: 'ground', from, to: j, t0: g.t, dur: FL, cy: ci });
               g.sfx(['coo', 'honk', 'pop', 'tap'][a]); g.sfx('whoosh');
-              M.at(g, [[FL, g => { const n = M.node(g, 'c' + (a + 1)); n.mark = 'good'; n.pop = g.t; M.indicate(g, n, { dur: 0.3 * T, col: '#9ae07a' });
+              M.at(g, [[FL, g => { const n = M.node(g, 'c' + (a + 1)); n.col = '#b4f59a'; n.pop = g.t; M.indicate(g, n, { dur: 0.3 * T, col: '#9ae07a' });
                 p.hopT = g.t; S.landT[a] = g.t; if (under >= 0) S.landT[under] = g.t; g.sfx('tap'); g.burst(SX[j], SY - 4, ['#fff6c0', '#9ae07a', '#ffffff'], 8, 90); }]]);
               // the cycle is closed: its arrows light up green one after another, and its animals cheer
               if (last) M.at(g, [[FL + 0.1 * T, g => { S.closed[ci] = g.t; g.sfx('ding'); M.indicate(g, M.node(g, 'cy' + ci), { dur: 0.45 * T, sc: 1.12, col: '#9ae07a' });

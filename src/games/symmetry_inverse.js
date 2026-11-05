@@ -84,6 +84,10 @@ MG.add({
             M.fly(g, { node: nm(t.ans), from: 'k_' + t.ans, to: 'a' + i, dur: 0.3 * T, arc: -30, s0: 36, then(g) { t.ansN.alpha = 1; t.ansN.pop = g.t; t.circ.alpha = 1; M.sparkle(g, 'a' + i, { n: 6 }); } });
             M.indicate(g, t.kN, { dur: 0.3 * T, sc: 1.25 });
             t.anim = { from: t.A, key: t.ans, t0: g.t + 0.15 * T, dur: MOVE }; t.A = MAT.e; t.face = 'wow'; t.faceT = g.t;
+            // for turns, the angles write themselves under the two moves: 120° and 240° make a full 360° turn, which is e
+            if (ROT(t.k)) { const deg = k => M.txt(k === 'r' ? '120°' : '240°'); M.at(g, [[0.15 * T + MOVE * 0.55, g => {
+              M.note(g, { node: deg(t.ans), at: 'a' + i, off: [0, -27], s: 15, col: ROTC, write: 0.22 * T, hold: 0.7 * T, fade: 0.25 * T });
+              M.note(g, { node: deg(t.k), at: 'kk' + i, off: [0, -27], s: 15, col: ROTC, delay: 0.16 * T, write: 0.22 * T, hold: 0.54 * T, fade: 0.25 * T }); }]]); }
             M.at(g, [[0.15 * T + MOVE, g => { t.landAt = g.t; t.hopAt = g.t; g.sfx('ding'); MARKS.forEach(([col, ang], j) => M.later(g, j * 0.06 * T, g => g.burst(TX[i] + Math.cos(ang) * 23.4, TY - 45.6 + Math.sin(ang) * 23.4, [col, '#fff4dc', '#9ae07a'], 6, 90))); }]]); },
           // = e writes itself (every mark is home), then the line rearranges itself into r⁻¹ = r²
           resolve(g) { M.show(g, AFTER); g.sfx('coin');

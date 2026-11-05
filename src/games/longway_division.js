@@ -66,23 +66,31 @@ MG.add({
     const stepMove = k => {
       const st = S.steps[k], last = k === n - 1, qn = node('q' + k), cur = S.curIds(k), ps = String(st.p);
       const prodIds = [...ps].map((_, j) => `p${k}_${j}`), divRow = k === 0 ? -1 : 2 * k;
-      const T0 = M.pace(g), askAt = 0.5 * T0, after = (last ? 1.25 : 1.32) * T0;
+      const T0 = M.pace(g), askAt = 0.5 * T0, after = (last ? 1.45 : 1.5) * T0, D = 0.2; // D: room for the quotient's flight
       return { busy: 0.1, askAt, after, ask: { v: st.qd, wrong: [st.qd + 1, st.qd - 1, st.rem, st.cur - S.d, st.p].filter(w => w >= 0 && w !== st.qd) },
         then(g) {
           const T = M.pace(g); S.next = k + 1; S.point = true; M.show(g, askAt); face('think', false); g.sfx('whoosh');
           // divide: circle the divisor and the part being divided, and write "7 ÷ 3" beside it
           M.circle(g, 'dv', { dur: 0.5 * T, col: '#ffb21f' }); M.circle(g, cur, { dur: 0.5 * T, delay: 0.06 * T, col: '#ffb21f' });
           for (const id of ['dv', ...cur]) M.light(g, id, { dur: 0.2 * T });
-          noteOn('nd' + k, M.row(M.num(st.cur), M.op('÷'), M.num(S.d)), divRow, 0.3 * T);
+          // the note's "= 2" waits, hidden, until the division is worked out
+          S.ndEq = M.row(M.op('='), M.num(st.qd, 'nq' + k)); S.ndEq.hide = true;
+          noteOn('nd' + k, M.row(M.num(st.cur), M.op('÷'), M.num(S.d), S.ndEq), divRow, 0.3 * T);
           if (g.mode === 'medium') { qn.v = '?'; qn.hide = false; qn.col = M.MID; qn.pop = g.t; }
         },
         resolve(g) {
           const T = M.pace(g) * 0.82; M.show(g, after);
-          // the quotient digit writes itself on top
-          qn.v = String(st.qd); qn.col = null; writeDigit('q' + k, 0.22 * T); M.indicate(g, qn, { delay: 0.18 * T, dur: 0.3 * T, sc: 1.25 });
-          M.sparkle(g, qn, { delay: 0.2 * T }); g.sfx('ding'); noteOff('nd' + k, 0.12 * T, 0.2 * T);
-          for (const id of ['dv', ...cur]) M.unlight(g, id, { delay: 0.2 * T });
-          M.at(g, [
+          // "= 2" writes itself into the note, and the 2 flies up onto the bar
+          const eq = S.ndEq; eq.hide = false; M.relayout(g, 'nd' + k); M.writeIn(g, eq, { dur: 0.16 * T }); g.sfx('tap');
+          qn.v = String(st.qd); qn.col = null; qn.hide = true;
+          M.at(g, [[0.16 * T, g => { const b = M.box(g, 'nq' + k); if (!b) return; M.tween(g, 'nq' + k, { alpha: 0.3 }, 0.12 * T);
+            M.fly(g, { node: M.num(st.qd, null, { col: NOTE }), from: [b.x, b.y], to: 'q' + k, dur: 0.3 * T, arc: 30, s0: G.ns, s1: G.big,
+              then(g) { qn.hide = false; qn.alpha = 1; qn.pop = g.t; M.indicate(g, qn, { dur: 0.3 * T, sc: 1.25 }); M.sparkle(g, qn); g.sfx('ding'); } }); }]]);
+          noteOff('nd' + k, (0.18 + D + 0.06) * T, 0.2 * T);
+          for (const id of ['dv', ...cur]) M.unlight(g, id, { delay: (0.2 + D) * T });
+          // the rest of the step starts once the quotient digit has landed
+          const at0 = (list) => M.at(g, list.map(([t, fn]) => [t + D * T, fn]));
+          at0([
             [0.2 * T, g => face('wow')],
             // multiply: quotient digit × divisor, written under the part being divided
             [0.34 * T, g => { M.light(g, qn, { col: NOTE }); M.light(g, 'dv', { col: NOTE });
