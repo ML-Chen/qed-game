@@ -1,7 +1,8 @@
 // TRACE! (space EE EL-05) — a farm at dawn, the Sun peeking over the left hills. Drag the Sun across the sky: up, over the
 // top at noon, and down on the far side. The day plays along with the trace (rooster at sunrise, lunch at noon, the owl
 // wakes at sunset). Drag it straight up and back down and it sets where it rose: the sky goes dark and the owl is baffled.
-// Level 2 is a winter day: the Sun rises and sets closer together and cannot climb as high.
+// Then the full Moon rises in the east: trace it the same way. Level 2: winter (the Sun's path is lower and shorter),
+// and a second day follows the night.
 const TR_H = 452, TR_R = 24;
 const TR_L = [
   { rise: 46, set: 314, peak: 250, cap: 0, winter: false },
@@ -39,12 +40,13 @@ function trGround(o, L) {
   P.grain(o, 360, 640, 0.035);
 }
 MG.add({
-  id: 'trace', stage: 'space', cmd: 'TRACE!', time: 5, mood: 'bright', winText: 'Good night!', failText: 'Huh?',
+  id: 'trace', stage: 'space', cmd: 'TRACE!', time: 6.5, mood: 'bright', winText: 'Earth spins!', failText: 'Huh?',
   card: { title: "The Sun's path", kind: 'Astronomy', ref: 'Apparent motion of the Sun',
-    text: 'Every morning the Sun rises on one side of the sky, the east. It climbs highest around noon and sets on the other side, the west. It never goes straight up and falls back.\n\nThe Sun is not really moving across the sky. The Earth spins once a day, and as we turn, the Sun seems to sweep across from east to west.\n\nIn winter the path is lower and shorter, so days are short and noon shadows are long.',
-    note: 'The Sun rises in the east, is highest at noon and sets in the west, because the Earth spins.' },
+    text: 'Every morning the Sun rises on one side of the sky, the east. It climbs highest around noon and sets on the other side, the west. It never goes straight up and falls back. At night the Moon and the stars cross the sky the same way.\n\nThe Sun is not really moving across the sky. The Earth spins once a day, and as we turn, the Sun, the Moon and the stars seem to sweep across from east to west.\n\nIn winter the path is lower and shorter, so days are short and noon shadows are long.',
+    note: 'The Sun rises in the east, is highest at noon and sets in the west, because the Earth spins. So does the Moon.' },
   init(g) {
     const s = g.s, L = TR_L[Math.min(2, g.level)]; s.L = L;
+    s.rounds = g.level >= 2 ? ['sun', 'moon', 'sun'] : ['sun', 'moon']; s.ri = 0; s.nextT = 0;
     s.sun = { x: L.rise, y: TR_H - 30 }; s.trail = []; s.peak = 999; s.rose = false; s.crow = 0; s.lunch = 0; s.setT = 0; s.backT = 0;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (SK.dist(x, y, s.sun.x, s.sun.y) < 64) SK.dragStart(g, s.sun, x, y); },
@@ -53,32 +55,40 @@ MG.add({
   up(g) { SK.dragEnd(g); },
   update(g, dt) {
     const s = g.s, L = s.L, u = s.sun;
-    if (s.setT) { u.y += 60 * dt; return; } // sinking behind the hills after a good day
+    if (s.setT) { u.y += 70 * dt; // sinking behind the hills; then the next body rises in the east
+      if (!g.done && g.t - s.setT > 0.6) { s.ri++; s.sun = { x: L.rise, y: TR_H - 30 }; s.trail = []; s.peak = 999; s.rose = false; s.setT = 0; s.lunch = 0; s.crow = s.rounds[s.ri] === 'sun' ? 0 : s.crow; s.nextT = g.t; g.sfx(s.rounds[s.ri] === 'moon' ? 'sparkle' : 'tweet'); }
+      return; }
     if (s.backT) { u.y += 50 * dt; return; }
     if (g.done) return;
     const last = s.trail[s.trail.length - 1]; if (!last || SK.dist(last[0], last[1], u.x, u.y) > 6) { s.trail.push([u.x, u.y]); if (s.trail.length > 90) s.trail.shift(); }
     if (u.y < TR_H - 70) s.rose = true;
-    if (!s.crow && u.y < TR_H - 30) { s.crow = g.t; g.sfx('tweet'); g.sfx('bell'); }
+    const moon = s.rounds[s.ri] === 'moon';
+    if (!moon && !s.crow && u.y < TR_H - 30) { s.crow = g.t; g.sfx('tweet'); g.sfx('bell'); }
     if (Math.abs(u.x - 180) < 80) s.peak = Math.min(s.peak, u.y);
-    if (!s.lunch && s.peak < L.peak + 10 && Math.abs(u.x - 180) < 60) { s.lunch = g.t; g.sfx('munch'); }
+    if (!s.lunch && s.peak < L.peak + 10 && Math.abs(u.x - 180) < 60) { s.lunch = g.t; g.sfx(moon ? 'magic' : 'munch'); }
     // set on the far side after passing high over the middle: the day is done
-    if (s.peak < L.peak && u.x > L.set - 34 && u.y > TR_H - 40) { s.setT = g.t; SK.dragEnd(g); g.win(); g.sfx('magic'); g.sfx('cheer'); return; }
+    if (s.peak < L.peak && u.x > L.set - 34 && u.y > TR_H - 40) { s.setT = g.t; SK.dragEnd(g); if (s.ri >= s.rounds.length - 1) { g.win(); g.sfx('cheer'); } g.sfx('chime'); return; }
     // brought back down on the side it rose: the Sun drops back where it came from
     if (s.rose && u.x < 180 - 50 && u.y > TR_H - 22) { s.backT = g.t; SK.dragEnd(g); g.fail(); g.sfx('wrong'); g.sfx('laugh'); }
   },
   draw(g, c) {
-    const s = g.s, L = s.L, u = s.sun, t = g.t, alt = (TR_H - 30 - u.y) / 240;
+    const s = g.s, L = s.L, u = s.sun, t = g.t, moon = s.rounds[s.ri] === 'moon', alt0 = (TR_H - 30 - u.y) / 240, alt = moon ? -0.35 + alt0 * 0.12 : alt0;
     const sk = trSky(alt), gr = c.createLinearGradient(0, 0, 0, TR_H); gr.addColorStop(0, sk[0]); gr.addColorStop(0.6, sk[1]); gr.addColorStop(1, sk[2]); c.fillStyle = gr; c.fillRect(0, 0, 360, 640);
-    if (alt < 0.3) P.stars(c, 360, 380, 40, 7, t); // a few stars before dawn and after dusk
+    if (alt < 0.3) P.stars(c, 360, 380, moon ? 90 : 40, 7, t); // a few stars before dawn and after dusk
     if (alt < 0) { c.fillStyle = `rgba(14,14,40,${Math.min(0.55, -alt * 2)})`; c.fillRect(0, 0, 360, 640); }
     // drifting clouds
     for (let i = 0; i < 3; i++) P.cloud(c, ((i * 140 + t * 8) % 520) - 80, 200 + i * 52, 0.55 - i * 0.08, '#fff6ea', P.mix('#e7c9d6', sk[1], 0.4), 0.5 + SK.clamp(alt, 0, 0.5));
     // the trace: a warm dotted line where the finger took the Sun
-    if (s.trail.length > 1) { c.save(); c.strokeStyle = 'rgba(255,226,140,0.75)'; c.lineWidth = 4; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); s.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore(); }
+    if (s.trail.length > 1) { c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.75)' : 'rgba(255,226,140,0.75)'; c.lineWidth = 4; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); s.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore(); }
+    if (moon) { // the full Moon, pale with craters
+      c.save(); c.globalCompositeOperation = 'lighter'; const mg = c.createRadialGradient(u.x, u.y, 4, u.x, u.y, 70); mg.addColorStop(0, 'rgba(200,215,255,0.4)'); mg.addColorStop(1, 'rgba(200,215,255,0)'); c.fillStyle = mg; c.beginPath(); c.arc(u.x, u.y, 70, 0, 7); c.fill(); c.restore();
+      SK.ball(c, u.x, u.y, TR_R - 2, '#e8ecf4', { edge: '#8a90a8' }); c.fillStyle = 'rgba(150,156,180,0.5)'; for (const [dx, dy, r] of [[-7, -4, 5], [6, 6, 4], [5, -9, 3], [-3, 10, 3]]) { c.beginPath(); c.arc(u.x + dx, u.y + dy, r, 0, 7); c.fill(); }
+    } else {
     // the Sun with soft rays
     c.save(); c.globalCompositeOperation = 'lighter'; const sg = c.createRadialGradient(u.x, u.y, 4, u.x, u.y, 90); sg.addColorStop(0, 'rgba(255,230,150,0.55)'); sg.addColorStop(1, 'rgba(255,200,120,0)'); c.fillStyle = sg; c.beginPath(); c.arc(u.x, u.y, 90, 0, 7); c.fill(); c.restore();
     c.save(); c.translate(u.x, u.y); c.rotate(t * 0.4); c.strokeStyle = '#ffd25a'; c.lineWidth = 4; c.lineCap = 'round'; for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5, r0 = TR_R + 6, r1 = TR_R + 14 + 3 * Math.sin(t * 4 + i); c.beginPath(); c.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); c.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); c.stroke(); } c.restore();
     SK.ball(c, u.x, u.y, TR_R, alt < 0.2 ? '#ffaa4a' : '#ffcc3a', { edge: '#c8641a' });
+    }
     if (!g.done && !SK.dragging(g)) SK.glow(c, g, u.x, u.y, 34);
     // the farm in front
     c.drawImage(g.bake('trace_fg' + (L.winter ? 'w' : 's'), o => trGround(o, L)), 0, 0, 360, 640);
@@ -90,20 +100,22 @@ MG.add({
     SK.animal(c, 'bird', 74, 498, 0.62, { t, tint: '#e8563a', pose: crowing ? 'cheer' : 'idle', expr: crowing ? 'laugh' : lost ? 'wow' : 'happy' });
     // the beaver's picnic: lunch when the Sun is high
     c.fillStyle = '#e85a6a'; c.beginPath(); c.ellipse(150, 590, 56, 15, 0, 0, 7); c.fill(); c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 3; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(150 + i * 20 - 6, 577); c.lineTo(150 + i * 20 + 6, 603); c.stroke(); }
-    const eating = s.lunch && t - s.lunch < 1.6;
-    SK.animal(c, 'beaver', 140, 594, 0.75, { t, pose: won ? 'cheer' : eating ? 'carry' : lost ? 'sad' : 'idle', expr: eating ? 'laugh' : lost ? 'wow' : 'happy', hold: eating ? o => { o.fillStyle = '#f4d28a'; o.fillRect(-9, -6, 18, 12); o.fillStyle = '#7ac456'; o.fillRect(-9, -1, 18, 3); } : null });
+    const eating = !moon && s.lunch && t - s.lunch < 1.6;
+    SK.animal(c, 'beaver', 140, 594, 0.75, { t, pose: won ? 'cheer' : eating ? 'carry' : lost ? 'sad' : 'idle', expr: eating ? 'laugh' : lost ? 'wow' : moon ? 'think' : 'happy', hold: eating ? o => { o.fillStyle = '#f4d28a'; o.fillRect(-9, -6, 18, 12); o.fillStyle = '#7ac456'; o.fillRect(-9, -1, 18, 3); } : null });
     // the owl in the tree: asleep all day, wide awake at sunset (and baffled if the Sun goes back where it rose)
-    const awake = won || lost, ox = 334, oy = L.winter ? 432 : 450;
-    SK.animal(c, 'owl', ox, oy, 0.6, { t, facing: -1, noShadow: true, pose: won ? 'cheer' : 'idle', expr: lost ? 'wow' : won ? 'happy' : 'laugh' });
+    const awake = won || lost || moon, ox = 334, oy = L.winter ? 432 : 450;
+    SK.animal(c, 'owl', ox, oy, 0.6, { t, facing: -1, noShadow: true, pose: won || (moon && s.lunch && t - s.lunch < 1.5) ? 'cheer' : 'idle', expr: lost ? 'wow' : won || moon ? 'happy' : 'laugh' });
     if (!awake) { c.save(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; c.lineJoin = 'round'; for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1, x = ox - 26 - q * 16, y = oy - 46 - q * 34, z = 5 + q * 5; c.globalAlpha = 1 - q; c.beginPath(); c.moveTo(x - z, y - z); c.lineTo(x + z, y - z); c.lineTo(x - z, y + z); c.lineTo(x + z, y + z); c.stroke(); } c.restore(); }
     // guidance: a ghost hand sweeps the Sun over the top of the sky
     SK.demo(g, c, 'drag', [L.rise, TR_H - 30], [L.set, TR_H - 20], { arc: L.winter ? 130 : 250, period: 2.4 });
+    if (s.ri && g.level === 0 && !g.done && !s.setT && !SK.dragging(g) && u.x === L.rise && t - s.nextT > 0.3) { const k = ((t - s.nextT - 0.3) % 1.6) / 1.6, m = SK.easeInOut(k); SK.hand(c, SK.lerp(L.rise, L.set, m), TR_H - 30 - Math.sin(m * Math.PI) * 200, 1, 0.6 * (1 - k)); }
   },
   // the bot drags the Sun along a real arc from its rising point, over the middle, down to its setting point
   auto(g, dt, synth) {
-    const s = g.s, L = s.L, B = s._bot = s._bot || {}, t0 = 1.0, dur = 1.3; if (g.done || g.t < t0 || B.done) return;
+    const s = g.s, L = s.L, B = s._bot = s._bot || {}, dur = 1.0; if (g.done || s.setT) return; const R = B['r' + s.ri] = B['r' + s.ri] || {};
+    const t0 = s.ri ? s.nextT + 0.15 : 1.0; if (g.t < t0 || R.done) return;
     const arc = k => [SK.lerp(L.rise, L.set, k), TR_H - 30 + 10 * k - Math.sin(k * Math.PI) * (L.winter ? 130 : 230)];
-    if (!B.on) { B.on = 1; synth('down', s.sun.x, s.sun.y); return; }
-    const k = SK.clamp((g.t - t0) / dur, 0, 1), [x, y] = arc(k); synth('move', x, y); if (k >= 1) { B.done = 1; synth('up', x, y); }
+    if (!R.on) { R.on = 1; R.t = g.t; synth('down', s.sun.x, s.sun.y); return; }
+    const k = SK.clamp((g.t - R.t) / dur, 0, 1), [x, y] = arc(k); synth('move', x, y); if (k >= 1) { R.done = 1; synth('up', x, y); }
   },
 });

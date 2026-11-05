@@ -103,7 +103,7 @@
     if (pouring) { const sx = x + Math.cos(tilt) * 52 - Math.sin(tilt) * -24, sy = y + Math.sin(tilt) * 52 + Math.cos(tilt) * -24; for (let i = 0; i < 14; i++) { const q = (t * 3 + i / 14) % 1; c.fillStyle = `rgba(120,200,255,${0.9 - q * 0.5})`; c.beginPath(); c.arc(sx + 6 * q + Math.sin(i) * 4, sy + q * 60, 2.6, 0, 7); c.fill(); } }
   }
   MG.add({
-    id: 'feed', stage: 'life', cmd: 'FEED!', time: 6, mood: 'bright', winText: 'Fed!', failText: 'Hungry!',
+    id: 'feed', stage: 'life', cmd: 'FEED!', time: 6, mood: 'bright', winText: 'Alive!', failText: 'Hungry!',
     card: { title: 'What is alive?', kind: 'Biology', ref: 'Characteristics of living things',
       text: 'Living things need food and water. They use them to grow, to move, to repair themselves and to make more of their kind. A puppy eats food. A plant takes in water through its roots and makes its own food from sunlight. A mushroom soaks up food from the soil or wood it grows on, and needs water too.\n\nA rock and a toy robot are not alive. They do not eat, grow or have babies, so food does nothing for them. A campfire grows and gives off heat, but it is not alive either. A seed is alive even while it waits: give it water and it sprouts.',
       note: 'Living things take in food and water, grow, and make more living things. Non-living things do not.' },

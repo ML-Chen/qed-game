@@ -43,7 +43,7 @@
     if (n > 0) { drawMol(c, kind, x - 12, y - 2, 0.75); drawMol(c, kind, x + 12, y - 2, 0.75); drawMol(c, kind, x, y - 14, 0.85); }
   }
   MG.add({
-    id: 'balance_eq', stage: 'reactions', cmd: 'BALANCE!', time: 6, mood: 'night', winText: 'Balanced!', failText: 'Lopsided!',
+    id: 'balance_eq', stage: 'reactions', cmd: 'BALANCE!', time: 6, mood: 'night', winText: 'Mass conserved!', failText: 'Lopsided!',
     card: { title: 'Atoms are never lost', kind: 'Chemistry', ref: 'Balancing chemical equations (conservation of mass)',
       text: 'When methane burns, its atoms join up with oxygen in new ways and make carbon dioxide and water. No atom is made or destroyed. Every atom on the left must turn up on the right.\n\nYou can only add whole molecules, so you change how many of each molecule there are. One methane needs two oxygen molecules, and it makes one carbon dioxide and two waters. Those counts are the numbers written in front: CH₄ + 2O₂ → CO₂ + 2H₂O. Because every atom is still there, the mass on both sides is the same too.',
       note: 'In a reaction, atoms rearrange but none are lost, so a balanced equation has the same atoms on both sides.' },

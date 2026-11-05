@@ -2,7 +2,7 @@
 // the ground into the warm air: being heavier, it slides underneath like a snowplough and shoves the warm air up, the
 // rising damp air builds a towering storm cloud, and rain pours on the town. Lift the cold air over the top instead and
 // it sinks straight back down with a thud (heavy air does not float on light air).
-// Level 2: the town is further away, so the cold air has a longer push.
+// A second cold front then comes from the other side. Level 2: three fronts, and the town is further away.
 const PO_G = 520, PO_L = [{ f0: 120, xt: 236 }, { f0: 120, xt: 250 }, { f0: 104, xt: 290 }];
 function poPaint(o) {
   B5.vgrad(o, 0, 0, 360, PO_G, ['#6f8cb8', '#a8b8cc', '#e8d6b0', '#f4c890']);
@@ -20,16 +20,17 @@ function poWedge(c, f, lift) {
   c.quadraticCurveTo(f - 18, G - 92, f - 90, G - 116); c.quadraticCurveTo(f - 160, G - 136, -20, G - 150); c.closePath();
 }
 MG.add({
-  id: 'plough', stage: 'earth', cmd: 'PLOUGH!', time: 5, mood: 'storm', winText: 'Storm!', failText: 'Thud!',
+  id: 'plough', stage: 'earth', cmd: 'PLOUGH!', time: 6, mood: 'storm', winText: 'Cold front!', failText: 'Thud!',
   card: { title: 'Cold fronts make storms', kind: 'Earth science', ref: 'Cold front and frontal lifting',
     text: 'Cold air is denser than warm air, so it is heavier for its size. When a mass of cold air moves into warm air, it does not climb over. It slides along the ground underneath and pushes the warm air up, like a snowplough. This moving edge is called a cold front.\n\nAs the warm, damp air rises, it cools. Its water vapour turns into tiny droplets, which build a tall cloud. If the air is lifted fast, the cloud grows into a thunderstorm with heavy rain.',
     note: 'Heavy cold air pushes under warm air and lifts it, and rising damp air makes storm clouds.' },
   init(g) {
     const s = g.s, L = PO_L[Math.min(2, g.level)]; s.L = L; s.f = L.f0; s.lift = 0; s.push = L.f0; s.drop = 0; s.dropV = 0; s.stormT = 0; s.grab = null;
+    s.dirs = g.level >= 2 ? [1, -1, 1] : [1, -1]; s.k = 0; s.resetT = 0; // each front comes from a new side
   },
-  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.drop) return; if (x < s.f + 40 && y > PO_G - 190 - s.lift && y < PO_G + 40) { s.grab = { dx: s.f - x, y0: y }; g.sfx('wind'); } },
+  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.drop || s.stormT) return; x = s.dirs[s.k] < 0 ? 360 - x : x; if (x < s.f + 40 && y > PO_G - 190 - s.lift && y < PO_G + 40) { s.grab = { dx: s.f - x, y0: y }; g.sfx('wind'); } },
   move(g, x, y) {
-    const s = g.s, G = s.grab; if (!G || g.done) return;
+    const s = g.s, G = s.grab; if (!G || g.done) return; x = s.dirs[s.k] < 0 ? 360 - x : x;
     s.f = SK.clamp(Math.max(s.f, x + G.dx), s.L.f0, 350);
     s.lift = SK.clamp((PO_G - 150) - y, 0, 220); // a finger well above the wedge lifts the cold air off the ground
   },
@@ -37,15 +38,17 @@ MG.add({
   update(g, dt) {
     const s = g.s, L = s.L;
     if (s.drop) { s.dropV += 1400 * dt; s.lift = Math.max(0, s.lift - s.dropV * dt); if (!s.lift && !s.thud) { s.thud = g.t; g.sfx('thud'); g.sfx('laugh'); g.shake(6, 0.35); g.burst(s.f - 40, PO_G - 10, ['#bfe4ff', '#ffffff', '#8ac0ec'], 16, 160); g.fail(); } return; }
-    if (g.done) return;
+    if (s.stormT && !g.done && g.t - s.stormT > 1.1) { s.k++; s.f = s.push = L.f0; s.lift = 0; s.stormT = 0; s.resetT = g.t; g.sfx('wind'); }
+    if (g.done || s.stormT) return;
     // lifted over the warm air: the heavy air will not stay up there, and drops
     if (s.lift > 40 && s.f > L.f0 + 30) { s.drop = g.t; s.grab = null; s.dropV = 0; g.sfx('whoosh'); return; }
     if (!s.lift) s.push = Math.max(s.push, s.f);
     if (!s.grab && s.lift) s.lift = Math.max(0, s.lift - 400 * dt); // let go up high over its own side: it settles back
-    if (!s.lift && s.f >= L.xt && !s.stormT) { s.stormT = g.t; s.grab = null; g.sfx('thunder'); g.sfx('rain'); g.shake(4, 0.3); g.win(); }
+    if (!s.lift && s.f >= L.xt && !s.stormT) { s.stormT = g.t; s.grab = null; g.sfx('thunder'); g.sfx('rain'); g.shake(4, 0.3); if (s.k >= s.dirs.length - 1) g.win(); }
   },
   draw(g, c) {
     const s = g.s, L = s.L, t = g.t, f = s.f, p = SK.clamp((s.push - L.f0) / (L.xt - L.f0), 0, 1), storm = s.stormT ? Math.min(1, (t - s.stormT) * 2) : 0;
+    c.save(); if (s.dirs[s.k] < 0) { c.translate(360, 0); c.scale(-1, 1); } // the second front comes from the right
     c.drawImage(g.bake('plough_bg', poPaint), 0, 0, 360, 640);
     c.fillStyle = `rgba(40,40,70,${0.3 * p + 0.2 * storm})`; c.fillRect(0, 0, 360, 640);
     // the warm, damp air: an orange haze over the town, pushed up into a rising column at the cold air's nose
@@ -56,7 +59,7 @@ MG.add({
       c.fillStyle = '#ffb070'; c.beginPath(); c.arc(x, y, 6 + q * 4, 0, 7); c.fill(); c.strokeStyle = '#ff8a40'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y + 10); c.lineTo(x, y - 6); c.lineTo(x - 4, y - 2); c.moveTo(x, y - 6); c.lineTo(x + 4, y - 2); c.stroke(); }
     c.restore();
     // the cloud above the nose grows into a tall thunderhead as the warm air is lifted
-    const ch = 0.2 + p * 0.8, cx = Math.min(s.push + 40, 300), top = 300 - 150 * ch;
+    const ch = 0.2 + p * 0.8, cx = Math.min(s.push + 30, 268), top = 300 - 150 * ch;
     c.save(); c.translate(cx, top + 6); c.scale(1.9, 0.55); P.cloud(c, 0, 0, 0.55 * ch + 0.1, '#f4f2f6', '#aeb0c8', SK.clamp((ch - 0.5) * 3, 0, 1)); c.restore(); // the anvil top
     for (let i = 3; i >= 0; i--) { const k = i / 3, y = 300 - k * (300 - top - 20); if (i && k > ch + 0.1) continue; P.cloud(c, cx + Math.sin(i * 2.1) * 8, y, 0.5 + 0.28 * ch - i * 0.05, i < 1 ? '#b8bace' : '#eeecf4', i < 1 ? '#5a5a7a' : '#a8a4c0', 0.96); }
     if (storm) { c.save(); c.globalAlpha = storm; c.beginPath(); c.rect(cx - 110, 320, 220, PO_G - 320); c.clip(); P.rain(c, 360, 640, t, 90, 'rgba(210,225,255,0.7)', -0.12); c.restore();
@@ -74,6 +77,9 @@ MG.add({
     SK.animal(c, 'penguin', px, PO_G - lift - 112 + 18 * SK.clamp((px - (f - 160)) / 160, -1, 1) * 0 , 0.62, { t, noShadow: true, pose: won ? 'cheer' : lost ? 'sad' : s.grab ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     if (!s.grab && !g.done) SK.glow(c, g, f - 30, PO_G - 50, 40);
     SK.demo(g, c, 'drag', [L.f0 - 30, PO_G - 40], [L.xt - 20, PO_G - 40]);
+    c.restore();
+    if (s.resetT && t - s.resetT < 0.35) { c.fillStyle = `rgba(20,20,40,${0.6 * (1 - (t - s.resetT) / 0.35)})`; c.fillRect(0, 0, 360, 640); }
   },
-  auto(g, dt, synth) { const L = g.s.L; SK.bot.drag(g, synth, 'push', 1.0, [L.f0 - 30, PO_G - 40], [L.xt - 10, PO_G - 36], 0.9); },
+  auto(g, dt, synth) { const s = g.s, L = s.L, m = x => s.dirs[s.k] < 0 ? 360 - x : x; if (s.stormT) return;
+    SK.bot.drag(g, synth, 'push' + s.k, s.k ? s.resetT + 0.2 : 1.0, [m(L.f0 - 30), PO_G - 40], [m(L.xt - 10), PO_G - 36], 0.7); },
 });

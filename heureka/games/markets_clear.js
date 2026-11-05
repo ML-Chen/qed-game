@@ -2,15 +2,13 @@
 // the tag: a higher price brings more apples to the stall (it pays to grow and pick them) but sends buyers away; a lower
 // price brings buyers but fewer apples. Let go when every apple sits above a buyer: they all trade and the curves draw
 // themselves crossing at the tag. Too low: buyers wait empty-handed (a shortage). Too high: apples rot (a surplus).
-// Level 1: the right price is off-centre. Level 2: more buyers keep arriving, so the right price creeps up.
+// Each new market day brings a different crowd (more buyers: the price must rise). Level 2: three days, the last with fewer buyers.
 const COLS = 6, CX = i => 42 + i * 40, COUNTER = 330, QUEUE = 474, TRACK = { x: 312, y0: 178, y1: 566 };
 const KINDS = ['frog', 'duck', 'penguin', 'rabbit', 'bird', 'turtle'];
 // each buyer's top price (willingness to pay) and each apple's cost to bring (0 = slider bottom, 1 = top)
-const LV = [
-  { w: [0.94, 0.82, 0.7, 0.58, 0.32, 0.2], c: [0.06, 0.18, 0.3, 0.42, 0.68, 0.8] },
-  { w: [0.96, 0.88, 0.8, 0.72, 0.64, 0.4], c: [0.1, 0.22, 0.36, 0.52, 0.6, 0.86] },
-  { w: [0.9, 0.78, 0.62, 0.5, 0.38, 0.2], c: [0.08, 0.2, 0.34, 0.5, 0.58, 0.74], grow: 0.16 }, // demand rises by `grow` over the first 2.2 s
-];
+const C = [0.06, 0.18, 0.3, 0.42, 0.74, 0.86]; // each apple's cost to bring
+const BASE = { w: [0.94, 0.82, 0.7, 0.58, 0.32, 0.2], c: C }, MORE = { w: [1, 1, 1, 0.88, 0.62, 0.5], c: C }, FEWER = { w: [0.69, 0.57, 0.45, 0.33, 0.07, 0], c: C };
+const LV = [[BASE, MORE], [MORE, BASE], [BASE, MORE, FEWER]]; // market days: each new day more (or fewer) buyers come
 const pOfY = y => SK.clamp((TRACK.y1 - y) / (TRACK.y1 - TRACK.y0), 0, 1), yOfP = p => TRACK.y1 - p * (TRACK.y1 - TRACK.y0);
 function paintMarket(o) {
   const sky = o.createLinearGradient(0, 0, 0, 420); sky.addColorStop(0, '#e8a0c0'); sky.addColorStop(0.55, '#f8c8d8'); sky.addColorStop(1, '#fff0e8'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
@@ -44,17 +42,16 @@ function priceTag(c, x, y, p, hot) { // a paper tag on the pole holding a little
   c.restore();
 }
 MG.add({
-  id: 'clearstall', stage: 'markets', cmd: 'CLEAR STALL!', time: 6, mood: 'desert', winText: 'All sold!', failText: 'Not cleared!', hold: 1.8,
+  id: 'clearstall', stage: 'markets', cmd: 'CLEAR STALL!', time: 6, mood: 'desert', winText: 'Equilibrium!', failText: 'Not cleared!', hold: 1.8,
   card: { title: 'The price that clears the market', kind: 'Economics', ref: 'Supply and demand: equilibrium',
     text: 'At a low price, lots of buyers want apples, but growers bring few, because picking them hardly pays. Buyers are left waiting. That is a shortage.\n\nAt a high price, growers bring lots of apples, but most buyers walk away. Apples are left to rot. That is a surplus.\n\nIn between is one price where the number of apples buyers want matches the number growers bring. Every apple sells and nobody waits. Economists call it the equilibrium price. When more buyers arrive, that price rises.',
     note: 'A market clears at the price where buyers want as much as sellers bring.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level), V = LV[L];
-    s.V = V; s.p = g.rand() < 0.5 ? 0.08 : 0.92; if (L === 0) s.p = 0.08; s.moved = 0; s.held = false; s.doneP = null; s.res = null;
+    const s = g.s, L = Math.min(2, g.level);
+    s.days = LV[L]; s.day = 0; s.V = s.days[0]; s.p = g.rand() < 0.5 ? 0.08 : 0.92; if (L === 0) s.p = 0.08; s.moved = 0; s.held = false; s.doneP = null; s.res = null;
     s.vis = { a: [0, 0, 0, 0, 0, 0], b: [1, 1, 1, 1, 1, 1] }; // smooth in/out of apples and buyers
   },
-  grow(g) { const V = g.s.V; return V.grow ? V.grow * SK.easeInOut(g.t / 2.2) : 0; },
-  counts(g, p) { const s = g.s, gw = this.grow(g); const b = s.V.w.map(w => w + gw >= p), a = s.V.c.map(c => c <= p); return { a, b, na: a.filter(Boolean).length, nb: b.filter(Boolean).length }; },
+  counts(g, p) { const s = g.s; const b = s.V.w.map(w => w >= p), a = s.V.c.map(c => c <= p); return { a, b, na: a.filter(Boolean).length, nb: b.filter(Boolean).length }; },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.res) return; if (Math.abs(x - TRACK.x) < 60 && y > TRACK.y0 - 50 && y < TRACK.y1 + 50) { s.held = true; s.lastY = y; s.p = pOfY(y); g.sfx('click'); } },
   move(g, x, y) { const s = g.s; if (!s.held || s.res) return; s.moved += Math.abs(y - s.lastY); s.lastY = y; const np = pOfY(y); if (Math.round(np * 12) !== Math.round(s.p * 12)) g.sfx('tap'); s.p = np; },
   up(g) {
@@ -65,7 +62,9 @@ MG.add({
   update(g, dt) {
     const s = g.s, k = s.res || this.counts(g, s.p);
     for (let i = 0; i < COLS; i++) { s.vis.a[i] += ((k.a[i] ? 1 : 0) - s.vis.a[i]) * Math.min(1, dt * 8); s.vis.b[i] += ((k.b[i] ? 1 : 0) - s.vis.b[i]) * Math.min(1, dt * 6); }
-    if (s.res && !g.done && g.t > s.res.t + 0.55) { if (s.res.ok) { g.win(); g.sfx('cheer'); g.burst(150, 400, ['#ff6a6a', '#ffe27a', '#fff6ea'], 22, 200); } else { g.fail(); g.sfx(s.res.na < s.res.nb ? 'fail' : 'buzz'); } }
+    if (s.res && s.res.ok && s.day < s.days.length - 1 && g.t > s.res.t + 1.1) { // the next market day: new apples, and a different crowd
+      s.day++; s.V = s.days[s.day]; s.res = null; s.moved = 0; s.vis.a = s.vis.a.map(() => 0); s.vis.b = s.vis.b.map(() => 0); s.dayT = g.t; g.sfx('bell'); return; }
+    if (s.res && !g.done && g.t > s.res.t + 0.55 && !(s.res.ok && s.day < s.days.length - 1)) { if (s.res.ok) { g.win(); g.sfx('cheer'); g.burst(150, 400, ['#ff6a6a', '#ffe27a', '#fff6ea'], 22, 200); } else { g.fail(); g.sfx(s.res.na < s.res.nb ? 'fail' : 'buzz'); } }
   },
   draw(g, c) {
     const s = g.s, t = g.t, won = g.result === 'win', lost = g.result === 'fail', R = s.res;
@@ -99,17 +98,17 @@ MG.add({
     if (!R) SK.glow(c, g, TRACK.x + 2, ty, 34);
     priceTag(c, TRACK.x + 4, ty, s.p, s.held);
     // on a win, the buyers' and growers' curves draw themselves and cross at the tag
-    if (won) { const q = SK.clamp((t - g.doneAt) * 2, 0, 1); c.save(); c.lineWidth = 5; c.lineCap = 'round';
+    if (R && R.ok) { const q = SK.clamp((t - R.t - 0.3) * 2, 0, 1); c.save(); c.lineWidth = 5; c.lineCap = 'round';
       c.strokeStyle = '#3a78d8'; c.beginPath(); c.moveTo(TRACK.x - 60, ty - 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty - 60, ty + 40, q)); c.stroke();
       c.strokeStyle = '#e8403a'; c.beginPath(); c.moveTo(TRACK.x - 60, ty + 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty + 60, ty - 40, q)); c.stroke(); c.restore(); }
     // guidance: slide the tag up from the bottom
     SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(0.5)], { delay: 0.8, period: 2 });
   },
   auto(g, dt, synth) {
-    const s = g.s; if (s.res) return; const L = Math.min(2, g.level), t0 = L >= 2 ? 2.3 : 1.0;
+    const s = g.s; if (s.res) return; const t0 = s.day ? s.dayT + 0.6 : 1.0;
     // the bot aims at the middle of the band where apples and buyers match (at the time it lets go)
     let lo = null, hi = null; for (let p = 0; p <= 1.0001; p += 0.01) { const k = this.counts(g, p); if (k.na === k.nb) { if (lo == null) lo = p; hi = p; } }
-    if (!s._b8a) s._b8a = yOfP(s.p); const target = yOfP(((lo ?? 0.5) + (hi ?? 0.5)) / 2);
-    SK.bot.drag(g, synth, 'slide', t0, [TRACK.x + 4, s._b8a], [TRACK.x + 4, target], 0.6);
+    if (s._b8d !== s.day) { s._b8d = s.day; s._b8a = yOfP(s.p); } const target = yOfP(((lo ?? 0.5) + (hi ?? 0.5)) / 2);
+    SK.bot.drag(g, synth, 'slide' + s.day, t0, [TRACK.x + 4, s._b8a], [TRACK.x + 4, target], 0.5);
   },
 });

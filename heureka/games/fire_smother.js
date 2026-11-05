@@ -122,7 +122,7 @@
         const m = s.mallow; c.fillStyle = P.mix('#fff6ea', '#2a1a1a', m); c.strokeStyle = P.mix('#d8c8b0', '#100808', m); c.lineWidth = 2; c.beginPath(); c.roundRect(mx - 9, my - 12, 18, 20, 6); c.fill(); c.stroke();
         if (m > 0.5) B3.smoke(c, mx, my - 12, t, m, '60,50,60', 4, 50); }
       // guidance
-      if (!A && !s.out && !s.fan) SK.glow(c, g, SIDES[2].x, SIDES[2].y, 32);
+      const nx = [SIDES[2], SIDES[1], SIDES[0]].find(sd => !s.used[sd.id]); if (!A && !s.out && !s.fan && nx) SK.glow(c, g, nx.x, nx.y, 32);
       if (false && !A) SK.glow(c, g, SIDES[0].x, SIDES[0].y, 32, '#ffe27a', { level: 2 });
       if (s.path && s.path.length > 1) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.6)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.path[0].x, s.path[0].y); for (const p of s.path) c.lineTo(p.x, p.y); c.stroke(); c.restore(); }
       SK.demo(g, c, 'swipe', [148, 432], [212, 512]);
