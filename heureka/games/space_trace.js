@@ -54,7 +54,7 @@ function trGlobe(c, x, y, r, th, t) {
   c.restore();
 }
 MG.add({
-  id: 'trace', stage: 'space', cmd: 'TRACE!', time: 6.5, mood: 'bright', winText: 'Earth spins!', failText: 'Huh?',
+  id: 'trace', stage: 'space', cmd: 'MOVE THE SUN EAST TO WEST!', time: 6.5, mood: 'bright', winText: 'Earth spins!', failText: 'Huh?',
   card: { title: "The Sun's path", kind: 'Astronomy', ref: 'Apparent motion of the Sun',
     text: 'Every morning the Sun rises on one side of the sky, the east. It climbs highest around noon and sets on the other side, the west. It never goes straight up and falls back. At night the Moon and the stars cross the sky the same way.\n\nThe Sun is not really moving across the sky. The Earth spins once a day, and as we turn, the Sun, the Moon and the stars seem to sweep across from east to west.\n\nIn winter the path is lower and shorter, so days are short and noon shadows are long.',
     note: 'The Sun rises in the east, is highest at noon and sets in the west, because the Earth spins. So does the Moon.' },

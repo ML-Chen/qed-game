@@ -52,7 +52,7 @@ function brNodes(s, t = 0) {
   return { B, T };
 }
 MG.add({
-  id: 'brace', stage: 'build', cmd: 'BRACE!', time: 5, mood: 'desert', winText: 'Triangles!', failText: 'Folded!',
+  id: 'brace', stage: 'build', cmd: 'DRAW A DIAGONAL IN EACH SQUARE!', time: 5, mood: 'desert', winText: 'Triangles!', failText: 'Folded!',
   card: { title: 'Triangles hold their shape', kind: 'Engineering', ref: 'Trusses and triangulation',
     text: 'A square frame with pins at its corners can lean over like a pushed bookshelf. Its sides stay the same length, but the corners can change their angles, so the square folds into a flat diamond.\n\nA triangle cannot do that. Once its three sides are fixed, its corners are fixed too. A diagonal splits a square into two triangles, so the frame stays square.\n\nThat is why bridges, cranes, roofs and bike frames are full of triangles. A frame built from triangles is called a truss.',
     note: 'A triangle cannot change shape without changing a side, so diagonal braces stop frames from folding.' },

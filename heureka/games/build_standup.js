@@ -43,14 +43,14 @@ function suPlank(c, x0, x1, r, sagAt, hi) {
   if (hi) { c.save(); c.strokeStyle = 'rgba(255,240,170,0.9)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.beginPath(); pts.forEach((p, i) => { const q = P2(x0, p); i ? c.lineTo(...q) : c.moveTo(...q); }); c.closePath(); c.stroke(); c.restore(); }
 }
 MG.add({
-  id: 'standup', stage: 'build', cmd: 'STAND IT UP!', time: 6, mood: 'desert', winText: 'Beam depth!', failText: 'Wet feet!',
+  id: 'standup', stage: 'build', cmd: 'TURN EACH PLANK ON ITS EDGE!', time: 6, mood: 'desert', winText: 'Beam depth!', failText: 'Wet feet!',
   card: { title: 'Stand the plank on its edge', kind: 'Engineering', ref: 'Beam stiffness (second moment of area)',
     text: 'A plank lying flat bends easily under a weight. Turn the same plank onto its edge and it hardly bends at all.\n\nHow much a beam resists bending depends on its depth, its height in the direction it is pushed. Stiffness grows with the depth multiplied by itself three times. So a plank four times deeper than it is thick is about sixteen times stiffer on its edge.\n\nThat is why floor joists and roof beams stand tall and thin, and why steel beams are shaped like a tall letter I.',
     note: 'A beam is much stiffer when it is deep in the direction of the load, so planks and joists go on their edge.' },
   init(g) {
     const s = g.s, L = SU_LV[Math.min(2, g.level)], n = L.n, span = (SU_X1 - SU_X0) / n; s.L = L; s.span = span;
     const starts = [0, 0.22, 0.08, 0.3]; s.pl = []; for (let k = 0; k < n; k++) s.pl.push({ x0: SU_X0 + k * span, x1: SU_X0 + (k + 1) * span, r: starts[k], up: 0 });
-    s.bx = 24; s.walkT = 0; s.wet = 0; s.grab = null;
+    s.bx = 24; s.walkT = 0; s.testT = 0; s.wet = 0; s.grab = null;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; const q = s.pl.find(q => x > q.x0 - 14 && x < q.x1 + 6 && y > SU_TOP - 100 && y < SU_TOP + 80); if (q) { s.grab = { q, y0: y, r0: q.r }; g.sfx('rustle'); } },
   move(g, x, y) { const s = g.s, G = s.grab; if (!G || g.done) return; const r = SK.clamp(G.r0 + (G.y0 - y) / 95 * Math.PI / 2, 0, Math.PI / 2); if (r >= Math.PI / 2 - 0.02 && G.q.r < Math.PI / 2 - 0.02) { g.sfx('thud'); G.q.up = g.t; } G.q.r = r; },
@@ -58,7 +58,11 @@ MG.add({
   update(g, dt) {
     const s = g.s, L = s.L;
     // the beaver sets off on its own, or as soon as every plank stands on its edge
-    if (!s.walkT) { const all = s.pl.every(q => q.r > 1.3) && !s.grab; if (all || (!B5.patient() && g.t > SK.clamp(g.dur * 0.32, 2.2, 4.2))) { s.walkT = g.t; g.sfx('stretch'); } return; }
+    if (!s.walkT) {
+      // first the beaver tests the first plank: one step on, it bows down toward the water, and the beaver hops back
+      const T = g.t, x1 = SU_X0 + s.span * 0.36; s.bx = T < 0.3 ? 24 : T < 0.8 ? SK.lerp(24, x1, SK.easeInOut((T - 0.3) / 0.5)) : T < 1.3 ? x1 : T < 1.7 ? SK.lerp(x1, 24, SK.easeInOut((T - 1.3) / 0.4)) : 24;
+      if (T >= 0.8 && !s.testT) { s.testT = T; g.sfx(s.pl[0].r < 0.8 ? 'stretch' : 'thud'); }
+      const all = s.pl.every(q => q.r > 1.3) && !s.grab; if (T > 1.7 && (all || (!B5.patient() && T > SK.clamp(g.dur * 0.32, 2.6, 4.4)))) { s.walkT = T; g.sfx('stretch'); } return; }
     if (s.wet || g.done) return;
     s.bx += 92 * dt;
     const q = s.pl.find(q => s.bx >= q.x0 && s.bx < q.x1);
@@ -73,7 +77,7 @@ MG.add({
     // the planks: the one under the beaver sags by the beam formula
     const SY = new Map();
     for (const q of s.pl) {
-      const on = s.walkT && s.bx >= q.x0 && s.bx < q.x1, a = on ? (s.bx - q.x0) / s.span : -1, mid = on ? suSag(q, a, L.load) : 0;
+      const on = s.bx >= q.x0 && s.bx < q.x1, a = on ? (s.bx - q.x0) / s.span : -1, mid = on ? suSag(q, a, L.load) : 0;
       const sagAt = x => { if (!on) return 0; const u = (x - q.x0) / s.span; return mid * Math.sin(Math.PI * u) * (u < a ? u / Math.max(a, 0.05) * 0.4 + 0.6 : (1 - u) / Math.max(1 - a, 0.05) * 0.4 + 0.6); };
       suPlank(c, q.x0, q.x1, q.r, sagAt, !s.walkT && q.r < 1.3 && !g.done);
       SY.set(q, on ? mid : 0);
@@ -81,7 +85,7 @@ MG.add({
     // the beaver carrying its heavy log
     const won = g.result === 'win', lost = g.result === 'fail', qn = s.pl.find(q => s.bx >= q.x0 && s.bx < q.x1);
     const by = SU_TOP - (qn ? 5 - SY.get(qn) - Math.max(0, Math.sin(qn.r) * (SU_W - SU_H) / 2) : 4) + (s.wet ? Math.min(14, (t - s.wet) * 40) : 0);
-    SK.animal(c, 'beaver', s.bx, by, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : s.walkT ? 'carry' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy',
+    SK.animal(c, 'beaver', s.bx, by, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : s.walkT ? 'carry' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : !s.walkT && s.bx > 30 && s.pl[0].r < 0.8 ? 'wow' : 'happy',
       hold: won ? null : o => { o.fillStyle = '#a06a3a'; o.strokeStyle = '#4a2a18'; o.lineWidth = 2; o.beginPath(); o.roundRect(-34, -9, 68, 18, 8); o.fill(); o.stroke(); o.fillStyle = '#e8c08a'; o.beginPath(); o.ellipse(34, 0, 5, 9, 0, 0, 7); o.fill(); o.stroke(); } });
     if (s.wet) { c.fillStyle = 'rgba(122,208,224,0.85)'; c.fillRect(s.bx - 30, SU_WATER - 2, 60, 6); }
     const q0 = s.pl.find(q => q.r < 1.3); if (q0) SK.demo(g, c, 'drag', [q0.x0 + 24, SU_TOP + 12], [q0.x0 + 24, SU_TOP - 80]);

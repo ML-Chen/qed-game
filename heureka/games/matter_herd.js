@@ -5,7 +5,11 @@
 // particles and a shorter broom; level 2: more again.
 (() => {
   const BOX = { l: 22, r: 338, t: 196, b: 520 }, MID = 180, PR = 9;
-  const LV = [{ n: 8, h: 280 }, { n: 10, h: 244 }, { n: 12, h: 220 }];
+  const LV = [{ n: 8, h: 280 }, { n: 10, h: 250 }, { n: 11, h: 236 }];
+  function warm(k) { // blue when slow, through purple, to red when fast
+    const h = ((215 + 150 * k) % 360) / 360, l = 0.55, sat = 0.75, q = l + sat - l * sat, p = 2 * l - q, f = tt => { tt = (tt % 1 + 1) % 1; return tt < 1 / 6 ? p + (q - p) * 6 * tt : tt < 0.5 ? q : tt < 2 / 3 ? p + (q - p) * (2 / 3 - tt) * 6 : p; };
+    return '#' + [f(h + 1 / 3), f(h), f(h - 1 / 3)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
+  }
   function paintBox(o) {
     const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#f2c89a'); bg.addColorStop(1, '#e89a7a'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
     const rnd = P.rng(12); for (let i = 0; i < 26; i++) { o.fillStyle = 'rgba(255,240,220,0.35)'; o.beginPath(); o.arc(rnd() * 360, rnd() * 640, 6 + rnd() * 18, 0, 7); o.fill(); }
@@ -49,14 +53,14 @@
         }
       }
       s.prev = b ? b.slice() : null;
-      if (s.open && !s.spread && s.ps.filter(p => p.x > MID).length >= s.ps.length * 0.45) { s.spread = g.t; g.sfx('pop'); } // they have spread out by themselves
+      if (s.open && !s.spread && g.t > 2.1 && s.ps.filter(p => p.x > MID).length >= s.ps.length * 0.45) { s.spread = g.t; g.sfx('pop'); } // they have spread out by themselves
       if (s.spread && s.broom && !s.shutT && s.ps.every(p => p.x + PR * 0.5 < MID)) { s.shutT = g.t; g.sfx('thud'); g.sfx('cheer'); g.win(); }
     },
     draw(g, c) {
       const s = g.s, t = g.t;
       c.drawImage(g.bake('herd_box', paintBox), 0, 0, 360, 640);
       // the particles, warmer coloured when faster
-      for (const p of s.ps) { const sp = Math.hypot(p.vx, p.vy), k = SK.clamp((sp - 120) / 300, 0, 1); SK.ball(c, p.x, p.y, PR, P.mix('#4a8ae8', '#f2503a', k), { lw: 1.5 }); }
+      for (const p of s.ps) { const sp = Math.hypot(p.vx, p.vy), k = SK.clamp((sp - 120) / 260, 0, 1); SK.ball(c, p.x, p.y, PR, warm(k), { lw: 1.5 }); }
       // the door sliding in its slot
       const doorB = BOX.t + (BOX.b - BOX.t) * s.door; c.fillStyle = '#8a5a3a'; c.fillRect(MID - 5, BOX.t - 40, 10, doorB - BOX.t + 40); c.fillStyle = '#c88a5a'; c.fillRect(MID - 5, BOX.t - 40, 3, doorB - BOX.t + 40);
       // the broom
@@ -65,9 +69,12 @@
         c.strokeStyle = '#7a4a2a'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(bx + 6, by); c.lineTo(bx + 46, by - 16); c.stroke(); }
       // the ant watches from the bench
       const won = g.result === 'win', lost = g.result === 'fail', frantic = !!s.broom;
-      SK.animal(c, 'ant', 300, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : frantic ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : frantic ? 'wow' : 'happy', facing: -1 });
-      if (!s.broom && s.spread) SK.glow(c, g, 300, 358, 36);
-      if (s.open && !s.spread) { c.save(); c.globalAlpha = 0.8; c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(262, 556, 50, 10, 4); c.fill(); c.stroke(); c.restore(); }
+      SK.animal(c, 'ant', 56, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : frantic ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : frantic ? 'wow' : 'happy', facing: -1 });
+      if (!s.broom) { // the broom, lying on the bench until you pick it up (dim until the gas has spread)
+        c.save(); c.globalAlpha = s.spread ? 1 : 0.55; c.translate(268, 584); c.rotate(-0.12); c.strokeStyle = '#d89a5a'; c.lineWidth = 8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-70, 6); c.lineTo(10, 0); c.stroke();
+        c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(8, -14, 70, 26, 6); c.fill(); c.stroke(); c.strokeStyle = 'rgba(138,106,42,0.6)'; for (let xx = 14; xx < 76; xx += 6) { c.beginPath(); c.moveTo(xx, -12); c.lineTo(xx + 3, 10); c.stroke(); } c.restore();
+        if (s.spread) SK.glow(c, g, 300, 584, 40, '#ffe27a', { level: 2 });
+      }
       const far = s.ps.reduce((a, p) => (p.x > (a ? a.x : MID) ? p : a), null), fy = far ? SK.clamp(far.y, BOX.t + 40, BOX.b - 40) : 358;
       SK.demo(g, c, 'drag', [Math.min(BOX.r - 10, (far ? far.x : 300) + 34), fy], [MID - 20, fy], { period: 2, delay: (s.spread || 0) + 0.2, never: !s.spread || !far });
     },

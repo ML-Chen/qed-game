@@ -20,7 +20,7 @@ function paintFactory(o) {
 }
 function cup(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = '#fff6ea'; c.strokeStyle = '#8a5a6a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-8, -16); c.lineTo(8, -16); c.lineTo(6, 0); c.lineTo(-6, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#e8566a'; c.fillRect(-7, -11, 14, 4); c.restore(); }
 MG.add({
-  id: 'makelots', stage: 'markets', cmd: 'MAKE LOTS!', time: 6, mood: 'desert', winText: 'Scale!', failText: 'Too costly!', hold: 1.7,
+  id: 'makelots', stage: 'markets', cmd: 'MAKE CUPS TILL EACH IS CHEAP!', time: 6, mood: 'desert', winText: 'Scale!', failText: 'Too costly!', hold: 1.7,
   card: { title: 'Bigger batches, cheaper cups', kind: 'Economics', ref: 'Economies of scale',
     text: 'The big machine costs the same whether it makes one cup or a hundred. That is a fixed cost. Make more cups and that cost is shared out over all of them, so each cup costs less. That is called an economy of scale.\n\nBut a factory has a limit. Push far past it and workers crowd each other, machines break down, and each extra cup costs more again. The cheapest cups come from making a lot, but not more than the factory can handle.',
     note: 'Making more spreads the fixed costs, so each unit costs less, up to a point.' },

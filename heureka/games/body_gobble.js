@@ -41,7 +41,8 @@ function rbc(c, r, t, badge) {
   const rg = c.createRadialGradient(0, 0, 3, 0, 0, 22); rg.addColorStop(0, '#c8323a'); rg.addColorStop(0.45, '#e8505a'); rg.addColorStop(0.8, '#d83a44'); rg.addColorStop(1, '#a82a34');
   c.fillStyle = rg; c.strokeStyle = '#8a1a24'; c.lineWidth = 2; c.beginPath(); c.arc(0, 0, 22, 0, 7); c.fill(); c.stroke();
   c.restore();
-  if (badge > 0) { c.save(); c.globalAlpha = Math.min(1, badge * 2); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3aa860'; c.lineWidth = 3; c.beginPath(); c.arc(r.x + 16, r.y - 20, 11, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#3aa860'; c.beginPath(); c.moveTo(r.x + 10, r.y - 20); c.lineTo(r.x + 15, r.y - 15); c.lineTo(r.x + 22, r.y - 25); c.stroke(); c.restore(); }
+  if (badge > 0) { c.save(); c.globalAlpha = Math.min(1, badge * 2); c.fillStyle = '#2a1424'; c.beginPath(); c.arc(r.x - 6, r.y - 3, 2.6, 0, 7); c.arc(r.x + 6, r.y - 3, 2.6, 0, 7); c.fill(); c.strokeStyle = '#2a1424'; c.lineWidth = 2; c.beginPath(); c.arc(r.x, r.y + 2, 6, 0.2, Math.PI - 0.2); c.stroke();
+    c.strokeStyle = '#e8505a'; c.lineWidth = 5; c.lineCap = 'round'; const wv = Math.sin(r.ph + badge * 20) * 0.5; c.beginPath(); c.moveTo(r.x + 18, r.y - 4); c.lineTo(r.x + 18 + Math.cos(-1.2 + wv) * 14, r.y - 4 + Math.sin(-1.2 + wv) * 14); c.stroke(); c.restore(); } // a friendly wave: 'I'm one of you'
 }
 const nearWall = b => Math.min(b.x - AR.l, AR.r - b.x, b.y - AR.t, AR.b - b.y) < 40;
 

@@ -2,11 +2,11 @@
 // the flames go out at once because the lid cuts off the air. Then twist the stove knob to off so the oil stops
 // heating. Both, for every burning pan. The cup of water by the sink is a trap: tip it into the oil and the water sinks,
 // boils into steam at once and throws burning oil up in a cartoon whoosh (the penguin's eyebrows smoke, unhurt).
-// Level 0: one pan; level 1: two; level 2: three.
+// Level 0: two pans; level 1: three; level 2: three, and a pan left burning for 4 s sets the hood alight.
 (() => {
   const KY = 566, CUP = { x: 318, y: 342 };
-  const LAY = [[[180, 448]], [[108, 448], [252, 448]], [[86, 462], [274, 462], [180, 400]]];
-  const HOOK = [[[96, 214]], [[70, 214], [150, 214]], [[56, 214], [126, 214], [196, 214]]];
+  const LAY = [[[108, 448], [252, 448]], [[86, 462], [274, 462], [180, 400]], [[86, 462], [274, 462], [180, 400]]];
+  const HOOK = [[[70, 214], [150, 214]], [[56, 214], [126, 214], [196, 214]], [[56, 214], [126, 214], [196, 214]]];
   function paintBg(o) {
     const wall = o.createLinearGradient(0, 0, 0, 400); wall.addColorStop(0, '#5a8aa8'); wall.addColorStop(1, '#9ac0d0'); o.fillStyle = wall; o.fillRect(0, 0, 360, 640);
     o.strokeStyle = 'rgba(255,255,255,0.18)'; o.lineWidth = 1.5; for (let y = 130; y < 380; y += 26) { o.beginPath(); o.moveTo(0, y); o.lineTo(360, y); o.stroke(); } for (let x = 0; x < 360; x += 26) { o.beginPath(); o.moveTo(x, 130); o.lineTo(x, 380); o.stroke(); }
@@ -73,6 +73,7 @@
       const s = g.s;
       for (const o of [...s.lids, s.cup]) if (o.back && !SK.dragging(g)) { o.x += (o.hx - o.x) * Math.min(1, dt * 12); o.y += (o.hy - o.y) * Math.min(1, dt * 12); if (SK.dist(o.x, o.y, o.hx, o.hy) < 1) o.back = false; }
       for (const p of s.pans) { if (p.lid && p.off) p.cool = Math.min(1, (p.cool || 0) + dt * 2); }
+      if (g.level >= 2 && !s.flare && !g.done) { const p = s.pans.find(p => !p.lid); if (p && g.t > 4.2) { s.flare = { t: g.t, p }; g.sfx('fire'); g.sfx('whoosh'); } }
       if (s.flare && !g.done && g.t - s.flare.t > 0.9) { g.sfx('laugh'); g.fail(); }
       if (!g.done && !s.flare && s.pans.every(p => p.lid && p.off)) { g.win(); g.sfx('cheer'); }
     },

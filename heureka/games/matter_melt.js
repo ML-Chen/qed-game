@@ -9,11 +9,6 @@
   const tY = T => SK.lerp(TH.b - 14, TH.t + 10, (T + 30) / 140);
   function paintLab(o) {
     const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#5a9ad0'); bg.addColorStop(0.6, '#a8d4ee'); bg.addColorStop(1, '#e8f4fa'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
-    // an icy window: snowy hills and falling flakes outside
-    o.fillStyle = '#e8f6ff'; o.beginPath(); o.roundRect(14, 128, 70, 110, 10); o.fill(); o.fillStyle = '#7ab8e0'; o.fillRect(20, 134, 58, 98);
-    o.fillStyle = '#fff'; o.beginPath(); o.moveTo(20, 210); o.quadraticCurveTo(50, 186, 78, 204); o.lineTo(78, 232); o.lineTo(20, 232); o.fill();
-    const rnd = P.rng(4); for (let i = 0; i < 12; i++) { o.fillStyle = '#fff'; o.beginPath(); o.arc(22 + rnd() * 54, 138 + rnd() * 60, 1.5, 0, 7); o.fill(); }
-    o.fillStyle = '#e8f6ff'; o.fillRect(47, 134, 4, 98);
     // the bench
     o.fillStyle = '#c8a070'; o.fillRect(0, 556, 360, 84); o.fillStyle = '#a87a4a'; o.fillRect(0, 556, 360, 8); o.fillStyle = 'rgba(80,50,20,0.15)'; for (let x = 0; x < 360; x += 60) o.fillRect(x, 564, 2, 76);
     // the tripod and the burner
@@ -32,7 +27,7 @@
       note: 'While ice melts or water boils, the heat breaks particles free, so the temperature stops rising.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level); s.goals = [['melt', 'melt'], ['melt', 'melt'], ['melt', 'boil']][lv]; s.starts = [[-20, -40], [-30, -20], [-20, -30]][lv]; s.round = 0;
-      s.rate = lv >= 2 ? 75 : 40; s.cold = lv === 1 ? 15 : 20; s.heat = false; this.fill(g);
+      s.rate = lv >= 2 ? 75 : 40; s.heat = false; this.fill(g);
     },
     fill(g) { // a fresh beaker of ice for each round
       const s = g.s; s.boil = s.goals[s.round] === 'boil'; s.T0 = s.starts[s.round]; s.Q = 0; s.offT = -9; s.okT = 0; s.born = g.t;
@@ -62,9 +57,7 @@
       }
       // the penguin wants ice-cold water: stop once the last ice has melted, before it warms up (level 2: stop while it boils)
       if (!g.done) {
-        if (!s.boil && s.melt >= 1 && s.T > s.cold) { s.hot = g.t; g.fail(); g.sfx('fail'); }
-        else if (s.boil && s.vap >= 0.45) { s.hot = g.t; g.fail(); g.sfx('fail'); }
-        else if (!s.heat && !s.okT && (s.boil ? s.vap >= 0.1 : s.melt >= 1)) { s.okT = g.t; g.sfx('ding'); g.sfx('slurp'); }
+        if (!s.okT && (s.boil ? s.vap >= 0.15 : s.melt >= 1)) { s.okT = g.t; s.heat = false; g.sfx('ding'); g.sfx('slurp'); } // done: the burner goes off until the next beaker
         if (s.okT && g.t - s.okT > 0.7) { if (s.round + 1 >= s.goals.length) { g.win(); g.sfx('cheer'); } else { s.round++; this.fill(g); g.sfx('pop'); } }
       }
     },
@@ -88,24 +81,23 @@
       c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 4; c.beginPath(); c.moveTo(B.l - 6, B.t - 4); c.lineTo(B.l, B.t); c.lineTo(B.l, B.b - 10); c.quadraticCurveTo(B.l, B.b, B.l + 10, B.b); c.lineTo(B.r - 10, B.b); c.quadraticCurveTo(B.r, B.b, B.r, B.b - 10); c.lineTo(B.r, B.t); c.stroke();
       c.strokeStyle = 'rgba(80,120,160,0.45)'; c.lineWidth = 1.5; c.stroke(); c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(B.l + 8, B.t + 12, 6, 150);
       // the penguin's target on the thermometer: ice-cold (0 to 20 °C), or boiling (100 °C)
-      { const y0 = s.boil ? tY(104) : tY(s.cold), y1 = s.boil ? tY(96) : tY(0); c.fillStyle = 'rgba(80,170,255,0.45)'; c.fillRect(TH.x - 9, y0, 18, y1 - y0); c.fillStyle = '#2a6ab0'; c.beginPath(); c.moveTo(TH.x - 26, (y0 + y1) / 2 - 7); c.lineTo(TH.x - 14, (y0 + y1) / 2); c.lineTo(TH.x - 26, (y0 + y1) / 2 + 7); c.fill(); }
       // the thermometer's red column, and a tag while it is stuck at 0 °C (or 100 °C)
       const ty = tY(T); c.fillStyle = '#e8403a'; c.beginPath(); c.arc(TH.x, TH.b + 6, 11, 0, 7); c.fill(); c.fillRect(TH.x - 4, ty, 8, TH.b + 6 - ty);
-      const stuck = (T === 0 && s.melt > 0 && s.melt < 1) || (T === 100 && s.vap > 0); if (stuck) SK.tag(c, T === 0 ? '0 °C' : '100 °C', TH.x - 8, ty - 26, 18);
+      const stuck = (T === 0 && s.melt > 0 && s.melt < 1) || (T === 100 && s.vap > 0); if (stuck) { const pz = 1 + 0.12 * Math.sin(t * 10); c.save(); c.translate(TH.x - 8, ty - 28); c.scale(pz, pz); SK.tag(c, T === 0 ? 'still 0 °C' : 'still 100 °C', -34, 0, 18); c.restore(); c.strokeStyle = `rgba(255,255,255,${0.5 + 0.5 * Math.sin(t * 10)})`; c.lineWidth = 3; c.beginPath(); c.arc(TH.x, ty, 9, 0, 7); c.stroke(); }
       for (let i = 0; i < s.goals.length; i++) { c.fillStyle = i < s.round || (i === s.round && s.okT) ? '#ffd45a' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(174 + (i - (s.goals.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
       // the burner button
       const pr = s.heat ? 1 : 0; c.fillStyle = '#7a1a1a'; c.beginPath(); c.arc(BTN[0], BTN[1] + 4, 30, 0, 7); c.fill(); SK.ball(c, BTN[0], BTN[1] + pr * 3, 27, s.heat ? '#ff6a3a' : '#e8403a');
       // the penguin: waits with its cup, skates on the leftover ice if you stop, cheers with a drink
       const won = g.result === 'win', lost = g.result === 'fail', skate = !s.heat && s.melt > 0 && s.melt < 1 && t - s.offT > 0.5 || (lost && s.melt < 1);
       if (skate && ice.length) { let x0 = 999, x1 = 0, y0 = 999; for (const q of ice) { x0 = Math.min(x0, q.hx); x1 = Math.max(x1, q.hx); y0 = Math.min(y0, q.hy); } const k = 0.5 + 0.5 * Math.sin(t * 2.4); SK.animal(c, 'penguin', SK.lerp(x0, x1, k), y0 - PR - 2, 0.5, { t, pose: 'balance', expr: 'laugh', facing: Math.cos(t * 2.4) > 0 ? 1 : -1 }); }
-      else SK.animal(c, 'penguin', 312, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? (s.hot ? 'wow' : 'sad') : s.heat ? 'wow' : 'happy', facing: -1 });
+      else SK.animal(c, 'penguin', 312, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.heat ? 'wow' : 'happy', facing: -1 });
       if (!s.heat) SK.glow(c, g, BTN[0], BTN[1], 32);
       SK.demo(g, c, 'hold', BTN, null, { never: s.heat });
     },
     // the bot: hold the burner on until it is done
     auto(g, dt, synth) {
       const s = g.s; if (g.done || g.t < 1) return; if (!s.heat && !s.okT && g.t - s.born > 0.4 && s.botR !== s.round) { s.botR = s.round; synth('down', BTN[0], BTN[1]); return; }
-      if (s.heat && (s.boil ? s.vap >= 0.2 : s.melt >= 1 && s.T >= 2)) synth('up', BTN[0], BTN[1]);
+      if (s.okT && s.botUp !== s.round) { s.botUp = s.round; synth('up', BTN[0], BTN[1]); }
     },
   });
 })();

@@ -27,7 +27,7 @@ function plPaint(o) {
   P.grain(o, 360, 640, 0.04);
 }
 MG.add({
-  id: 'plant', stage: 'earth', cmd: 'PLANT!', time: 5, mood: 'storm', winText: 'Roots hold!', failText: 'Erosion!',
+  id: 'plant', stage: 'earth', cmd: 'PLANT THE HILL BEFORE THE RAIN!', time: 5, mood: 'storm', winText: 'Roots hold!', failText: 'Erosion!',
   card: { title: 'Roots hold the soil', kind: 'Earth science', ref: 'Soil erosion',
     text: 'Rain hitting bare soil knocks the grains loose, and running water carries them downhill. On a steep hill that can turn into a mudslide.\n\nPlant roots spread through the soil like a net and grip it. Leaves and grass also break the fall of the raindrops, so the water soaks in or runs off slowly and clear. Farmers, road builders and gardeners plant slopes for exactly this reason.',
     note: 'Plant roots hold soil in place, so rain cannot wash it away. Bare soil erodes.' },

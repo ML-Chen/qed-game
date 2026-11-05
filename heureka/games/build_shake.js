@@ -36,7 +36,7 @@ function shGroups(s) {
   return out;
 }
 MG.add({
-  id: 'shake', stage: 'build', cmd: 'QUAKE-PROOF IT!', time: 6, mood: 'desert', winText: 'Wide base!', failText: 'Toppled!',
+  id: 'shake', stage: 'build', cmd: 'BUILD A QUAKE-PROOF TOWER!', time: 6, mood: 'desert', winText: 'Wide base!', failText: 'Toppled!',
   card: { title: 'Wide towers stand up to shaking', kind: 'Engineering', ref: 'Earthquake design (base width and bracing)',
     text: 'When the ground shakes sideways, it jerks the bottom of a tower one way while the top lags behind. A tall, thin tower then leans so far that its weight moves past the edge of its base, and it tips over.\n\nA tower with a wide base can lean much further before that happens, so it wobbles and stands. Diagonal braces help too, because they stop the frame from bending.\n\nEngineers in earthquake zones give buildings wide, strong bases, cross braces and light tops.',
     note: 'A wide base keeps a tower\'s weight over its feet when the ground shakes, so it does not tip.' },

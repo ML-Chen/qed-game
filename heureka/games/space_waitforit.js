@@ -31,7 +31,7 @@ function wfMoon(c, x, y, r, age) {
   c.strokeStyle = 'rgba(255,255,240,0.25)'; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
 }
 MG.add({
-  id: 'waitforit', stage: 'space', cmd: 'WAIT FOR IT!', time: 6, mood: 'night', winText: 'Full Moon!', failText: 'Bonk!',
+  id: 'waitforit', stage: 'space', cmd: 'LET GO ON THE FULL MOON!', time: 6, mood: 'night', winText: 'Full Moon!', failText: 'Bonk!',
   card: { title: 'The Moon\'s phases', kind: 'Astronomy', ref: 'Lunar phases',
     text: 'The Moon makes no light of its own. The Sun always lights half of it, and as the Moon travels around the Earth we see different amounts of that sunlit half.\n\nNight by night the bright part grows from a thin crescent to a half Moon to a full, round Moon. Then it shrinks again, from the other side, back to nothing. One whole cycle takes about 29 and a half days, roughly a month.\n\nAt full Moon, the Moon is on the far side of the Earth from the Sun, so we see all of its lit face.',
     note: 'The Moon\'s shape changes night by night because we see different amounts of its sunlit half. The cycle takes about a month.' },

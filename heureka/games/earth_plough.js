@@ -20,7 +20,7 @@ function poWedge(c, f, lift) {
   c.quadraticCurveTo(f - 18, G - 92, f - 90, G - 116); c.quadraticCurveTo(f - 160, G - 136, -20, G - 150); c.closePath();
 }
 MG.add({
-  id: 'plough', stage: 'earth', cmd: 'PLOUGH!', time: 6, mood: 'storm', winText: 'Cold front!', failText: 'Thud!',
+  id: 'plough', stage: 'earth', cmd: 'PUSH COLD AIR UNDER WARM AIR!', time: 6, mood: 'storm', winText: 'Cold front!', failText: 'Thud!',
   card: { title: 'Cold fronts make storms', kind: 'Earth science', ref: 'Cold front and frontal lifting',
     text: 'Cold air is denser than warm air, so it is heavier for its size. When a mass of cold air moves into warm air, it does not climb over. It slides along the ground underneath and pushes the warm air up, like a snowplough. This moving edge is called a cold front.\n\nAs the warm, damp air rises, it cools. Its water vapour turns into tiny droplets, which build a tall cloud. If the air is lifted fast, the cloud grows into a thunderstorm with heavy rain.',
     note: 'Heavy cold air pushes under warm air and lifts it, and rising damp air makes storm clouds.' },

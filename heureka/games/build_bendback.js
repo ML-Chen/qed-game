@@ -24,7 +24,7 @@ function bbArm(a) { // the free end: straight up from the bend, then a little ho
   for (const [x, y] of loc) pts.push([P0[0] + x * ca - y * sa, P0[1] + x * sa + y * ca]); return pts;
 }
 MG.add({
-  id: 'bendback', stage: 'build', cmd: 'BEND BACK!', time: 5, mood: 'desert', winText: 'Fatigue!', failText: 'Still bent!',
+  id: 'bendback', stage: 'build', cmd: 'BEND THE CLIP BACK AND FORTH!', time: 5, mood: 'desert', winText: 'Fatigue!', failText: 'Still bent!',
   card: { title: 'Small bends break metal', kind: 'Engineering', ref: 'Metal fatigue',
     text: 'One hard pull will not snap a paperclip. It just bends or straightens. But bend it back and forth a few times and it breaks.\n\nEach bend makes tiny cracks in the metal at the bend. Bending it back opens and closes them, and every time they grow a little, until the wire is cracked right through. The bend also gets warm, from the work done on the metal. This is called metal fatigue.\n\nEngineers design aircraft wings, bridges and bike frames so the shaking they feel every day never grows cracks like these.',
     note: 'Many small back-and-forth bends grow cracks that break metal, even when one big pull would not. That is fatigue.' },

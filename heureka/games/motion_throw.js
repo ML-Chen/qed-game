@@ -29,7 +29,7 @@
     for (let i = 0; i < 9; i++) { const th = 0.4 + i * 0.7, r = surf(th); const x = C.x + Math.cos(th) * r, y = C.y + Math.sin(th) * r; o.save(); o.translate(x, y); o.rotate(th + Math.PI / 2); o.fillStyle = '#2f6a3a'; o.beginPath(); o.moveTo(-5, 1); o.lineTo(0, -13); o.lineTo(5, 1); o.fill(); o.restore(); }
   }
   MG.add({
-    id: 'throw', stage: 'motion', cmd: 'THROW!', time: 7.5, mood: 'night', winText: 'Orbit!', failText: 'Crash!',
+    id: 'throw', stage: 'motion', cmd: 'THROW IT INTO ORBIT!', time: 7.5, mood: 'night', winText: 'Orbit!', failText: 'Crash!',
     card: { title: 'An orbit is falling all the way round', kind: 'Physics', ref: 'Orbits and gravity',
       text: 'The planet\'s gravity pulls the ball toward its centre the whole time it flies.\n\nThrow it slowly and it falls to the ground nearby. Throw it faster and it lands farther round, because the ground curves away beneath it as it falls. At just the right speed, the ground curves away as fast as the ball falls, so it never lands. It falls all the way round and comes back. That path is an orbit.\n\nThrow it much faster and gravity cannot bend its path enough, so it flies off into space. The Moon and every satellite stay up this way.',
       note: 'A thing in orbit is falling the whole time, but it moves sideways fast enough to keep missing the ground.' },

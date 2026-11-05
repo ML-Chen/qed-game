@@ -96,7 +96,7 @@
       c.drawImage(g.bake('split_lab', paintLab), 0, 0, 360, 640);
       // the beam, the needle and the two pans
       const [l, r] = ends(s.a), [bx, by] = bowlAt(s);
-      c.strokeStyle = '#ffe27a'; c.lineWidth = 3; c.beginPath(); c.lineWidth = 5; c.moveTo(PIV[0], PIV[1]); c.lineTo(PIV[0] - Math.sin(s.a) * 116, PIV[1] + Math.cos(s.a) * 116); c.stroke();
+      c.strokeStyle = '#ff5a4a'; c.lineCap = 'round'; c.beginPath(); c.lineWidth = 6; c.moveTo(PIV[0], PIV[1]); c.lineTo(PIV[0] - Math.sin(s.a) * 116, PIV[1] + Math.cos(s.a) * 116); c.stroke();
       c.strokeStyle = '#6a4210'; c.lineWidth = 9; c.lineCap = 'round'; c.beginPath(); c.moveTo(l[0], l[1]); c.lineTo(r[0], r[1]); c.stroke(); c.strokeStyle = '#f2cc6a'; c.lineWidth = 5; c.stroke();
       SK.ball(c, PIV[0], PIV[1], 8, '#e0b04a');
       // the brass weight on the right pan

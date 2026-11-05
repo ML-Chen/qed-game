@@ -40,7 +40,7 @@ function snowball(c, x, y, r, rot, nCoins) {
   c.restore();
 }
 MG.add({
-  id: 'rollsnow', stage: 'money', cmd: 'ROLL!', time: 5, mood: 'bright', winText: 'Compounding!', failText: 'Missed!', hold: 1.6,
+  id: 'rollsnow', stage: 'money', cmd: 'HOLD TO GROW, STOP IN THE RING!', time: 5, mood: 'bright', winText: 'Compounding!', failText: 'Missed!', hold: 1.6,
   card: { title: 'Interest on interest', kind: 'Money', ref: 'Compound interest',
     text: 'Money in a savings account earns interest: the bank adds a little extra, a share of what is already there. If you leave that interest in, next time you earn interest on it too.\n\nSo the snowball grows faster as it gets bigger. A big ball picks up more snow with every roll than a small one. That is compound interest.\n\nTake the interest out to spend it each time, and the ball stays small the whole way down. A higher rate makes a steeper hill, and the ball grows even faster.',
     note: 'Leave the interest in and it earns interest too, so savings grow faster and faster.' },

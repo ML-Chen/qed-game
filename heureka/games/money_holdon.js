@@ -33,7 +33,7 @@ function cart(c, x, y, ang, t, rider, holding) {
   c.restore();
 }
 MG.add({
-  id: 'holdon', stage: 'money', cmd: 'HOLD ON!', time: 6, mood: 'bright', winText: 'Stay invested!', failText: 'Sold low!', hold: 1.7,
+  id: 'holdon', stage: 'money', cmd: 'HOLD ON THROUGH THE CRASH!', time: 6, mood: 'bright', winText: 'Stay invested!', failText: 'Sold low!', hold: 1.7,
   card: { title: 'Don\'t jump off in a crash', kind: 'Money', ref: 'Staying invested',
     text: 'Prices in the stock market go up and down. Sometimes they fall fast. That is called a crash, and it is scary to watch.\n\nIf you sell at the bottom, you lock in the loss: you get out at the lowest price and miss the climb back. Over long stretches, broad stock markets have recovered from past crashes, though it has sometimes taken many years, even decades in a few countries, and nothing guarantees it.\n\nPeople who stay invested through the dip are still on board when prices rise again. This is general information, not financial advice.',
     note: 'Selling in a crash turns a dip on paper into a real loss.' },

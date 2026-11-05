@@ -56,7 +56,7 @@ function crab(c, x, y, k, t) { // pops up out of the sand, waving its claws
 }
 function newPuck(g) { const s = g.s, [x, y] = s.L.pucks[s.n]; s.p = { x, y, vx: 0, vy: 0, r: PR }; s.moving = false; s.trail = []; s.born = g.t; s.flicked = false; }
 MG.add({
-  id: 'slide', stage: 'motion', cmd: 'SLIDE!', time: 6, mood: 'sea', winText: 'Inertia!', failText: 'Friction!',
+  id: 'slide', stage: 'motion', cmd: 'SLIDE 3 PUCKS IN!', time: 6, mood: 'sea', winText: 'Inertia!', failText: 'Friction!',
   card: { title: 'Things keep moving', kind: 'Physics', ref: "Newton's first law",
     text: 'On ice, almost nothing rubs against the puck, so it keeps sliding at the same speed in a straight line. On sand, the grains rub against it and stop it almost at once. That rubbing is called friction.\n\nA moving thing keeps moving in a straight line, at the same speed, until a push, a pull or a rub changes that. A thing at rest stays at rest the same way. This is called inertia.',
     note: 'Things keep going until a force stops them. This is Newton\'s first law of motion.' },
@@ -98,6 +98,9 @@ MG.add({
   draw(g, c) {
     const s = g.s, p = s.p, t = g.t;
     c.drawImage(g.bake('slide_rink' + Math.min(2, g.level), o => paintRink(o, s.L)), 0, 0, 360, 640);
+    // the two surfaces, named (the owner: label what the idea needs)
+    for (const [sx, sy, w, h] of s.L.sand) SK.tag(c, 'Sand', sx + w / 2, sy + h / 2, 18);
+    SK.tag(c, 'Ice', g.level >= 2 ? 180 : 262, 452, 18, '#1e4a6a', 'rgba(255,255,255,0.75)');
     // pucks already in the net
     for (const [x, y] of s.goals) { c.fillStyle = '#2a2430'; c.beginPath(); c.arc(x, y, PR - 2, 0, 7); c.fill(); }
     // pucks still to come, waiting by the boards (the count to go)

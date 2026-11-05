@@ -38,7 +38,7 @@ function paintPicnic(o) {
   o.save(); o.translate(180, 480); o.scale(1, 0.5); o.rotate(0.06); for (let i = -6; i < 6; i++) for (let j = -6; j < 6; j++) { o.fillStyle = (i + j) % 2 ? '#e8566a' : '#fff4e8'; o.fillRect(i * 34, j * 34, 34, 34); } o.restore();
 }
 MG.add({
-  id: 'tradefruit', stage: 'markets', cmd: 'TRADE!', time: 6, mood: 'desert', winText: 'Win-win!', failText: 'Too many!', hold: 1.6,
+  id: 'tradefruit', stage: 'markets', cmd: 'TRADE FOR WHAT YOU WANT!', time: 6, mood: 'desert', winText: 'Win-win!', failText: 'Too many!', hold: 1.6,
   card: { title: 'A trade helps both sides', kind: 'Economics', ref: 'Voluntary exchange',
     text: 'You have apples and want other fruit. Each friend has a fruit you want and wants an apple. Swap one for one, and each of you ends up with something you wanted more than what you gave. Nobody lost, and both sides are better off.\n\nA trade only happens when each side wants what the other has. Sometimes it takes a chain of swaps to get there. Money makes this easier: you sell an apple for coins and buy a pear from anyone.',
     note: 'When both sides choose to trade, both can end up better off.' },

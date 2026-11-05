@@ -894,18 +894,33 @@ function speech(c, text, x, y, k) {
   lines.forEach((ln, i) => P.label(c, ln, x, top + 13 + lh / 2 + i * lh, size, '#3a1640', 'center', 800)); c.restore();
 }
 function easeOut(k) { return 1 - Math.pow(1 - k, 3) + Math.sin(k * Math.PI) * 0.15; }
+// banner(c, text, y, size, pop, opts): the shouted lettering. Up to 15 characters it is one line at `size`, as always; a
+// longer command (Heurēka!: the owner asked for commands that are not enigmatic, e.g. "Slide all 3 pucks in!") wraps onto
+// two or three lines of at most about 16 characters and shrinks to fit the 360 px screen.
+function bannerLines(text) { // balanced: the split into 2 (or 3) lines whose longest line is shortest
+  if (text.length <= 15) return [text]; const w = text.split(' '), n = w.length, J = (a, b) => w.slice(a, b).join(' ');
+  let best = [text], bl = text.length;
+  for (let i = 1; i < n; i++) { const L = [J(0, i), J(i, n)], m = Math.max(...L.map(l => l.length)); if (m < bl) { bl = m; best = L; } }
+  if (bl > 16) for (let i = 1; i < n; i++) for (let k = i + 1; k < n; k++) { const L = [J(0, i), J(i, k), J(k, n)], m = Math.max(...L.map(l => l.length)); if (m < bl) { bl = m; best = L; } }
+  return best;
+}
+function banner(c, text, y, size, pop, opts) {
+  const lines = bannerLines(String(text)); if (lines.length === 1) return P.command(c, lines[0], 180, y, size, pop, opts);
+  const L = Math.max(...lines.map(l => l.length)), sz = Math.max(24, Math.min(size, 40, 330 / (0.6 * L))), dy = sz * 1.08;
+  lines.forEach((l, i) => P.command(c, l, 180, y + (i - (lines.length - 1) / 2) * dy + (lines.length - 1) * dy * 0.35, sz, pop, opts));
+}
 // command banner, input hint and the fuse timer over a running microgame
 function drawPlayOverlay(c, g, t) {
   const d = g.def, a = g.t; drawStepCue(c, g, t);
   if (a < 1.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > 1.0 ? 1 - (a - 1.0) / 0.25 : 1;
-    c.save(); c.globalAlpha = Math.max(0, fade); P.command(c, d.cmd, 180, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
+    c.save(); c.globalAlpha = Math.max(0, fade); banner(c, d.cmd, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
   // fuse (hidden when the timer is off)
   const frac = Math.max(0, 1 - g.fuse() / g.dur), x0 = 20, x1 = 340, y = 622;
   if (timerOn()) { c.save(); c.fillStyle = 'rgba(40,20,50,0.35)'; roundRect(c, x0, y - 6, x1 - x0, 12, 6); c.fill();
   const fx = x0 + (x1 - x0) * frac; const gr = c.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#ff8a4a'); c.fillStyle = gr; if (frac > 0) { roundRect(c, x0, y - 6, Math.max(12, fx - x0), 12, 6); c.fill(); }
   if (!g.done && frac > 0) { for (let i = 0; i < 4; i++) { c.fillStyle = ['#fff6c0', '#ffd45a', '#ff8a4a', '#fff'][i]; c.beginPath(); c.arc(fx + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8, 2 + Math.random() * 2, 0, 7); c.fill(); } }
   c.restore(); }
-  if (g.done && g.t - g.doneAt < holdOf(g)) { const q = (g.t - g.doneAt) / holdOf(g); c.save(); c.globalAlpha = Math.min(1, q * 4) * (q > 0.8 ? (1 - q) * 5 : 1); P.command(c, g.result === 'win' ? (d.winText || 'Yes!') : (d.failText || 'Oops!'), 180, 92, 50, 0.8 + Math.min(0.2, q), { fill2: g.result === 'win' ? '#ffcf5a' : '#c8b8ff' }); c.restore(); }
+  if (g.done && g.t - g.doneAt < holdOf(g)) { const q = (g.t - g.doneAt) / holdOf(g); c.save(); c.globalAlpha = Math.min(1, q * 4) * (q > 0.8 ? (1 - q) * 5 : 1); banner(c, g.result === 'win' ? (d.winText || 'Yes!') : (d.failText || 'Oops!'), 92, 50, 0.8 + Math.min(0.2, q), { fill2: g.result === 'win' ? '#ffcf5a' : '#c8b8ff' }); c.restore(); }
 }
 
 // ---------------- main loop ----------------

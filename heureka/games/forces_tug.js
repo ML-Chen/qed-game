@@ -43,7 +43,7 @@
     c.restore(); c.restore();
   }
   MG.add({
-    id: 'tug', stage: 'forces', cmd: 'TUG!', time: 5, mood: 'night', winText: 'Net force!', failText: 'Yanked!',
+    id: 'tug', stage: 'forces', cmd: 'TAP FAST TO PULL THE SLED!', time: 5, mood: 'night', winText: 'Net force!', failText: 'Yanked!',
     card: { title: 'The bigger total pull wins', kind: 'Physics', ref: 'Net force',
       text: 'Two pulls act on the sled: the rabbit pulls left and the fox pulls right. The arrows show how hard each one pulls.\n\nWhat matters is the leftover after the two pulls cancel out. That leftover is called the net force. When the pulls are equal, the leftover is zero and the sled\'s speed does not change.\n\nWhen the rabbit pulls harder, the leftover points left, and the sled speeds up to the left. On ice almost nothing else pushes on the sled, so once it moves it keeps moving until a pull slows it.',
       note: 'A thing speeds up in the direction of the total of all the pushes and pulls on it, called the net force.' },

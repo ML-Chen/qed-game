@@ -33,7 +33,7 @@ function bug(c, b, t, s = 1) {
 function inDish(x, y, m = 14) { return SK.dist(x, y, DC[0], DC[1]) < DR - m; }
 
 MG.add({
-  id: 'medicine_treat', stage: 'medicine', cmd: 'TREAT!', time: 6, mood: 'party', winText: 'Selection!', failText: 'Resistance!',
+  id: 'medicine_treat', stage: 'medicine', cmd: 'TREAT!', time: 6, mood: 'party', winText: 'Natural selection!', failText: 'Resistance!',
   card: { title: 'Drugs pick the survivors', kind: 'Medicine', ref: 'Antibiotic resistance and natural selection',
     text: 'An antibiotic kills the bacteria it can attack. In a big crowd of bacteria, a few may already carry a gene that protects them, like armour. The drug did not give them that armour; they had it before.\n\nEach dose kills unprotected bacteria and leaves the armoured ones, which then multiply. Over many rounds, the armoured kind takes over. This is natural selection.\n\nHere, white blood cells catch the few survivors, which works only while there are few of them. Using antibiotics only when they are needed slows the spread of resistance.',
     note: 'Antibiotics do not teach bacteria to resist. They kill the others, so the resistant ones that were already there take over.' },
@@ -55,6 +55,8 @@ MG.add({
     const s = g.s, L = s.L;
     const age = g.t - s.drug, wave = age < 0.5 ? age / 0.5 * DR : DR, active = age < 1.0;
     // the drug wave: plain bacteria it reaches mostly pop; a few lucky ones survive each dose
+    // the wave reaches an armoured one: it bounces off with a tink
+    if (active) for (const b of s.bugs) if (b.arm && b.hit !== s.doses && SK.dist(b.x, b.y, DC[0], DC[1]) < wave) { b.hit = s.doses; b.tink = g.t; g.sfx('click'); }
     if (active) for (const b of s.bugs) if (!b.arm && !b.dead && b.hit !== s.doses && SK.dist(b.x, b.y, DC[0], DC[1]) < wave) { b.hit = s.doses; if (g.rand() < [0.7, 0.72, 0.74][L]) { b.dead = true; s.pops.push({ x: b.x, y: b.y, t: g.t }); } }
     if (s.bugs.some(b => b.dead)) { if (g.rand() < 0.5) g.sfx('pop'); s.bugs = s.bugs.filter(b => !b.dead); }
     // growth: each bacterium splits after a while (the armoured ones grow a little slower); none grow while the drug is in
@@ -89,7 +91,8 @@ MG.add({
     const age = t - s.drug;
     // the drug wave
     if (age < 1.2) { const r = age < 0.5 ? age / 0.5 * DR : DR, a = age < 1.0 ? 0.35 : 0.35 * (1.2 - age) / 0.2; c.save(); c.beginPath(); c.arc(DC[0], DC[1], DR, 0, 7); c.clip(); c.fillStyle = `rgba(255,110,180,${a})`; c.beginPath(); c.arc(DC[0], DC[1], r, 0, 7); c.fill(); c.strokeStyle = `rgba(255,190,230,${a * 2})`; c.lineWidth = 4; c.stroke(); c.restore(); }
-    for (const b of s.bugs) bug(c, b, t);
+    for (const b of s.bugs) if (!b.arm) bug(c, b, t);
+    for (const b of s.bugs) if (b.arm) { bug(c, b, t, 1.55); if (b.tink != null && t - b.tink < 0.45) { const k = (t - b.tink) / 0.45; c.strokeStyle = `rgba(255,255,255,${1 - k})`; c.lineWidth = 3; c.beginPath(); c.arc(b.x, b.y, 20 + k * 14, 0, 7); c.stroke(); c.strokeStyle = `rgba(255,220,90,${1 - k})`; c.lineWidth = 2.5; for (let j = 0; j < 4; j++) { const a = j * 1.57 + 0.6; c.beginPath(); c.moveTo(b.x + Math.cos(a) * (24 + k * 10), b.y + Math.sin(a) * (24 + k * 10)); c.lineTo(b.x + Math.cos(a) * (32 + k * 12), b.y + Math.sin(a) * (32 + k * 12)); c.stroke(); } } }
     for (const p of s.pops) { const k = (t - p.t) / 0.4; if (k > 1) continue; c.strokeStyle = `rgba(200,255,160,${1 - k})`; c.lineWidth = 2; c.beginPath(); c.arc(p.x, p.y, 6 + k * 12, 0, 7); c.stroke(); }
     if (s.pops.length > 80) s.pops.splice(0, s.pops.length - 80);
     // white blood cells

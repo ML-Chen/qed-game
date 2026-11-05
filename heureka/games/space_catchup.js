@@ -47,7 +47,7 @@ function cuCapsule(c, x, y, a, flame, t) { // a: heading (radians), flame: >0 ex
   c.restore();
 }
 MG.add({
-  id: 'catchup', stage: 'space', cmd: 'CATCH UP!', time: 6, mood: 'night', winText: 'Lower, faster!', failText: 'Left behind!',
+  id: 'catchup', stage: 'space', cmd: 'BRAKE TO CATCH THE STATION!', time: 6, mood: 'night', winText: 'Lower, faster!', failText: 'Left behind!',
   card: { title: 'Slow down to catch up', kind: 'Astronomy', ref: 'Orbital mechanics (phasing)',
     text: 'In orbit, a lower path is a faster lap. Closer to the Earth, gravity pulls harder, so a spacecraft must move faster to keep falling around it, and the circle it travels is shorter.\n\nSo to catch a space station ahead of you, you brake. The capsule drops into a lower orbit, gains on the station every lap, then boosts back up beside it. Push forward instead and you rise into a higher, slower orbit and fall further behind.\n\nReal crews plan their trips to the space station this way.',
     note: 'A lower orbit is faster, so to catch something ahead of you in orbit, you brake and drop lower.' },

@@ -4,9 +4,9 @@
 // the cells recognise it and fire Y-shaped antibodies at once; it falls apart. Skip the poster and the germ arrives to a
 // squad that has never seen it: it multiplies while they yawn. 2 / 3 / 3 germs, each with its own face; level 2: the
 // last germ changes its face after you show its poster, so a new poster (an updated vaccine) is needed.
-const BOARD = { x: 112, y: 286, w: 132, h: 96 }, TRAY = [180, 560], DOOR = [318, 176], MEET = [196, 432];
+const BOARD = { x: 40, y: 228, w: 170, h: 124 }, TRAY = [282, 552], DOOR = [314, 178], MEET = [226, 420];
 const KINDS = [{ col: '#ff5a6a', spk: 10, sh: 'round' }, { col: '#5a9aff', spk: 6, sh: 'square' }, { col: '#6ad050', spk: 5, sh: 'star' }, { col: '#ffb030', spk: 14, sh: 'round' }];
-const CELLS = [[64, 452], [116, 470], [168, 454]];
+const CELLS = [[60, 440], [126, 466], [188, 486]];
 
 function paintNode(o) {
   const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#ffe2d0'); bg.addColorStop(1, '#f0b8b0'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
@@ -18,11 +18,11 @@ function paintNode(o) {
   // the path the germ walks
   o.strokeStyle = 'rgba(255,255,255,0.5)'; o.lineWidth = 16; o.lineCap = 'round'; o.setLineDash([2, 22]); o.beginPath(); o.moveTo(DOOR[0], DOOR[1] + 30); o.quadraticCurveTo(300, 380, MEET[0] + 30, MEET[1]); o.stroke(); o.setLineDash([]);
   // the notice board on its post
-  o.fillStyle = '#8a5a3a'; o.fillRect(BOARD.x + BOARD.w / 2 - 5, BOARD.y + BOARD.h, 10, 60);
+  o.fillStyle = '#8a5a3a'; o.fillRect(BOARD.x + BOARD.w / 2 - 5, BOARD.y + BOARD.h, 10, 40);
   o.fillStyle = '#c8945a'; o.strokeStyle = '#6a4024'; o.lineWidth = 4; o.beginPath(); o.roundRect(BOARD.x, BOARD.y, BOARD.w, BOARD.h, 8); o.fill(); o.stroke();
   o.fillStyle = '#e0b07a'; o.beginPath(); o.roundRect(BOARD.x + 8, BOARD.y + 8, BOARD.w - 16, BOARD.h - 16, 4); o.fill();
   // the tray
-  o.fillStyle = 'rgba(120,60,60,0.25)'; o.beginPath(); o.roundRect(TRAY[0] - 60, TRAY[1] - 34, 120, 70, 16); o.fill();
+  o.fillStyle = 'rgba(120,60,60,0.25)'; o.beginPath(); o.roundRect(TRAY[0] - 62, TRAY[1] - 60, 124, 120, 18); o.fill();
 }
 function germ(c, x, y, r, K, t, mood = 'happy') {
   c.save(); c.translate(x, y); c.rotate(Math.sin(t * 2) * 0.15);
@@ -46,10 +46,10 @@ function poster(c, x, y, K, t, s = 1) {
 }
 function cell(c, x, y, t, i, awake, badge, K) {
   const bob = Math.sin(t * 2 + i) * 2;
-  c.fillStyle = '#fbf8ff'; c.strokeStyle = '#8a7ab0'; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y + bob, 24, 0, 7); c.fill(); c.stroke();
-  c.fillStyle = 'rgba(154,106,208,0.7)'; c.beginPath(); c.arc(x + 4, y - 4 + bob, 10, 0, 7); c.fill();
-  for (const e of [-1, 1]) { if (awake) { c.fillStyle = '#2a1424'; c.beginPath(); c.arc(x + e * 8, y + 6 + bob, 3, 0, 7); c.fill(); } else { c.strokeStyle = '#2a1424'; c.lineWidth = 2; c.beginPath(); c.arc(x + e * 8, y + 5 + bob, 3.5, 0.2, Math.PI - 0.2); c.stroke(); } }
-  if (badge) { c.save(); c.fillStyle = '#fff6e0'; c.strokeStyle = '#d8a040'; c.lineWidth = 2; c.beginPath(); c.arc(x + 16, y + 14 + bob, 9, 0, 7); c.fill(); c.stroke(); germ(c, x + 16, y + 14 + bob, 5, K, 0); c.restore(); }
+  c.fillStyle = '#fbf8ff'; c.strokeStyle = '#8a7ab0'; c.lineWidth = 2.5; c.beginPath(); c.arc(x, y + bob, 32, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = 'rgba(154,106,208,0.7)'; c.beginPath(); c.arc(x + 5, y - 6 + bob, 13, 0, 7); c.fill();
+  for (const e of [-1, 1]) { if (awake) { c.fillStyle = '#2a1424'; c.beginPath(); c.arc(x + e * 11, y + 8 + bob, 4, 0, 7); c.fill(); } else { c.strokeStyle = '#2a1424'; c.lineWidth = 2.5; c.beginPath(); c.arc(x + e * 11, y + 7 + bob, 4.5, 0.2, Math.PI - 0.2); c.stroke(); } }
+  if (badge) { c.save(); c.fillStyle = '#fff6e0'; c.strokeStyle = '#d8a040'; c.lineWidth = 2; c.beginPath(); c.arc(x + 22, y + 18 + bob, 12, 0, 7); c.fill(); c.stroke(); germ(c, x + 22, y + 18 + bob, 7, K, 0); c.restore(); }
 }
 
 MG.add({
@@ -59,7 +59,7 @@ MG.add({
     note: 'A vaccine teaches the immune system a germ\'s shape ahead of time, so the real germ is stopped quickly.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), f = 1 + (g.speed - 1) * 0.35;
-    s.L = L; s.f = f; s.rounds = [2, 3, 3][L]; s.walk = [2.7, 2.3, 1.9][L] / f;
+    s.L = L; s.f = f; s.rounds = [2, 3, 3][L]; s.walk = [3.3, 2.5, 1.9][L] / f;
     const order = [0, 1, 2, 3]; for (let i = 3; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
     s.order = order; s.learned = []; s.fails = 0; s.mutated = false;
     startRound(g, 0, 0.5);
@@ -93,22 +93,22 @@ MG.add({
     // the germ on its way (or bursting, or multiplying)
     if (R) {
       const q = SK.easeInOut(R.k), x = SK.lerp(DOOR[0], MEET[0] + 30, q) + Math.sin(q * 3) * 20 * (1 - q), y = SK.lerp(DOOR[1] + 10, MEET[1], q) - Math.abs(Math.sin(t * 8)) * 4;
-      if (R.beat) { const k = Math.min(1, (t - R.met) / 0.6); c.globalAlpha = 1 - k; germ(c, x, y, 22 * (1 - k * 0.5), K, t, 'sad'); c.globalAlpha = 1;
-        for (let i = 0; i < 6; i++) { const a = i * 1.05; const kk = Math.min(1, (t - R.met) * 4); const ax = SK.lerp(CELLS[i % 3][0], x + Math.cos(a) * 18, kk), ay = SK.lerp(CELLS[i % 3][1], y + Math.sin(a) * 18, kk); c.strokeStyle = '#ffd25a'; c.lineWidth = 3; c.lineCap = 'round'; c.save(); c.translate(ax, ay); c.rotate(a + Math.PI / 2); c.beginPath(); c.moveTo(0, 6); c.lineTo(0, 0); c.lineTo(-5, -6); c.moveTo(0, 0); c.lineTo(5, -6); c.stroke(); c.restore(); } }
-      else if (R.spread) { const k = Math.min(1, (t - R.spread) / 1.2); for (let i = 0; i < 1 + Math.floor(k * 7); i++) germ(c, x + Math.cos(i * 2.1) * i * 9, y + Math.sin(i * 1.7) * i * 7, 16, K, t + i); }
-      else germ(c, x, y, 22, K, t);
+      if (R.beat) { const k = Math.min(1, (t - R.met) / 0.6); c.globalAlpha = 1 - k; germ(c, x, y, 30 * (1 - k * 0.5), K, t, 'sad'); c.globalAlpha = 1;
+        for (let i = 0; i < 6; i++) { const a = i * 1.05; const kk = Math.min(1, (t - R.met) * 4); const ax = SK.lerp(CELLS[i % 3][0], x + Math.cos(a) * 18, kk), ay = SK.lerp(CELLS[i % 3][1], y + Math.sin(a) * 18, kk); c.strokeStyle = '#ffd25a'; c.lineWidth = 4.5; c.lineCap = 'round'; c.save(); c.translate(ax, ay); c.rotate(a + Math.PI / 2); c.beginPath(); c.moveTo(0, 9); c.lineTo(0, 0); c.lineTo(-7, -9); c.moveTo(0, 0); c.lineTo(7, -9); c.stroke(); c.restore(); } }
+      else if (R.spread) { const k = Math.min(1, (t - R.spread) / 1.2); for (let i = 0; i < 1 + Math.floor(k * 7); i++) germ(c, x + Math.cos(i * 2.1) * i * 12, y + Math.sin(i * 1.7) * i * 9, 22, K, t + i); }
+      else germ(c, x, y, 30, K, t);
       if (R.mut && t - R.mut < 0.6) { c.strokeStyle = `rgba(255,255,255,${1 - (t - R.mut) / 0.6})`; c.lineWidth = 4; c.beginPath(); c.arc(x, y, 30 + (t - R.mut) * 60, 0, 7); c.stroke(); }
     }
     // the squad of immune cells (awake once they've learned the face that's coming)
     const awake = R && s.learned.includes(R.kind);
     for (const [i, [x, y]] of CELLS.entries()) cell(c, x, y, t, i, awake || won, s.learned.length > 0, KINDS[s.learned[Math.min(i, s.learned.length - 1)] ?? 0]);
-    if (R && R.spread) { const k = (t * 1.2) % 1; c.fillStyle = `rgba(42,20,36,${1 - k})`; c.font = '900 20px Nunito, system-ui, sans-serif'; c.fillText('z', 40 + k * 14, 410 - k * 24); }
-    if (s.learn >= 0 && t - s.learn < 0.9) { const k = (t - s.learn) / 0.9; c.fillStyle = `rgba(255,230,90,${1 - k})`; c.beginPath(); c.arc(116, 414 - k * 16, 9, 0, 7); c.fill(); }
+    if (R && R.spread) { const k = (t * 1.2) % 1; c.fillStyle = `rgba(42,20,36,${1 - k})`; c.font = '900 20px Nunito, system-ui, sans-serif'; c.fillText('z', 50 + k * 14, 398 - k * 24); }
+    if (s.learn >= 0 && t - s.learn < 0.9) { const k = (t - s.learn) / 0.9; c.fillStyle = `rgba(255,230,90,${1 - k})`; c.beginPath(); c.arc(126, 410 - k * 20, 11, 0, 7); c.fill(); }
     // the poster: in the tray (glowing), being dragged, or pinned on the board
     const p = s.post;
-    if (p && !p.on) { SK.glow(c, g, TRAY[0], TRAY[1], 42); c.save(); c.setLineDash([8, 6]); c.strokeStyle = `rgba(255,250,200,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.roundRect(BOARD.x + 26, BOARD.y + 6, 80, 84, 6); c.stroke(); c.restore(); }
-    if (p) poster(c, p.x, p.y, KINDS[p.kind], t, p.drag ? 1.1 : 1);
-    SK.animal(c, 'duck', 300, 618, 0.65, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
+    if (p && !p.on) { SK.glow(c, g, TRAY[0], TRAY[1], 42); c.save(); c.setLineDash([8, 6]); c.strokeStyle = `rgba(255,250,200,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.roundRect(BOARD.x + BOARD.w / 2 - 50, BOARD.y + 6, 100, 112, 6); c.stroke(); c.restore(); }
+    if (p) poster(c, p.x, p.y, KINDS[p.kind], t, p.drag ? 1.4 : 1.3);
+    SK.animal(c, 'duck', 40, 620, 0.65, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (p && !p.on) SK.demo(g, c, 'drag', [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2]);
   },
   // the bot: put each poster on the board as soon as it appears

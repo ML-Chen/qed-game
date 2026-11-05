@@ -34,7 +34,7 @@
     c.strokeStyle = 'rgba(40,30,20,0.35)'; c.beginPath(); c.moveTo(-r * 0.3, -r * 0.1); c.lineTo(r * 0.1, r * 0.2); c.stroke(); c.restore();
   }
   MG.add({
-    id: 'lift', stage: 'forces', cmd: 'LIFT!', time: 7, mood: 'desert', winText: 'Lever!', failText: 'Too heavy!',
+    id: 'lift', stage: 'forces', cmd: 'MOVE THE PIVOT TO LIFT ROCKS!', time: 7, mood: 'desert', winText: 'Lever!', failText: 'Too heavy!',
     card: { title: 'A lever trades distance for force', kind: 'Physics', ref: 'Levers',
       text: 'A plank on a barrel is a lever. The barrel is the pivot, the point it turns on.\n\nThe little frog can lift a heavy rock if the frog is far from the pivot and the rock is close to it. The frog\'s weight times its distance from the pivot has to beat the rock\'s weight times the rock\'s distance.\n\nThere is a price. With the pivot close to the rock, the frog\'s end goes down a long way while the rock\'s end goes up only a little. A heavier rock needs the pivot closer, so it rises less.',
       note: 'With a lever, a small push over a long distance can lift a heavy load a short distance.' },

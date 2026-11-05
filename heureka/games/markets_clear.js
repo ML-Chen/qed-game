@@ -42,7 +42,7 @@ function priceTag(c, x, y, p, hot) { // a paper tag on the pole holding a little
   c.restore();
 }
 MG.add({
-  id: 'clearstall', stage: 'markets', cmd: 'CLEAR STALL!', time: 6, mood: 'desert', winText: 'Equilibrium!', failText: 'Not cleared!', hold: 1.8,
+  id: 'clearstall', stage: 'markets', cmd: 'SET A PRICE THAT SELLS OUT!', time: 6, mood: 'desert', winText: 'Equilibrium!', failText: 'Not cleared!', hold: 1.8,
   card: { title: 'The price that clears the market', kind: 'Economics', ref: 'Supply and demand: equilibrium',
     text: 'At a low price, lots of buyers want apples, but growers bring few, because picking them hardly pays. Buyers are left waiting. That is a shortage.\n\nAt a high price, growers bring lots of apples, but most buyers walk away. Apples are left to rot. That is a surplus.\n\nIn between is one price where the number of apples buyers want matches the number growers bring. Every apple sells and nobody waits. Economists call it the equilibrium price. When more buyers arrive, that price rises.',
     note: 'A market clears at the price where buyers want as much as sellers bring.' },

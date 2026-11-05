@@ -26,7 +26,7 @@ function custBall(c, x, y, r, col, sad) {
   c.strokeStyle = '#2a1424'; c.lineWidth = 1.3; c.beginPath(); if (sad) c.arc(x, y + r * 0.55, r * 0.3, 1.15 * Math.PI, 1.85 * Math.PI); else c.arc(x, y + r * 0.15, r * 0.3, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
 }
 MG.add({
-  id: 'plugchurn', stage: 'startups', cmd: 'PLUG!', time: 5, mood: 'party', winText: 'Retention!', failText: 'Churn!', hold: 1.5,
+  id: 'plugchurn', stage: 'startups', cmd: 'PLUG THE LEAKS TO GROW!', time: 5, mood: 'party', winText: 'Retention!', failText: 'Churn!', hold: 1.5,
   card: { title: 'Plug the leaks first', kind: 'Startups', ref: 'Churn and retention',
     text: 'A company\'s customers are like water in a bucket. New customers pour in at the top. Customers who stop using the product leak out of the holes. Losing customers this way is called churn.\n\nIf the holes stay open, pouring faster barely helps: more water just sprays out. Plug the holes and every new customer stays, so the bucket fills.\n\nKeeping the customers you have is called retention. Startups watch it closely, because growth only adds up when customers stay.',
     note: 'Growth only adds up if customers stay: plug the leaks before pouring faster.' },

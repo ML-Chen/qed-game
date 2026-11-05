@@ -43,7 +43,7 @@ function cart(c, x, y, items, t) {
   c.restore();
 }
 MG.add({
-  id: 'stayabove', stage: 'money', cmd: 'STAY ABOVE!', time: 6, mood: 'bright', winText: 'No fee!', failText: 'Overdraft!', hold: 1.7,
+  id: 'stayabove', stage: 'money', cmd: 'BUY 4 THINGS, NO OVERDRAFT!', time: 6, mood: 'bright', winText: 'No fee!', failText: 'Overdraft!', hold: 1.7,
   card: { title: 'Don\'t spend money that\'s already promised', kind: 'Money', ref: 'Overdraft fees',
     text: 'Your bank account is the tank. Each thing you buy takes money out, and so does a bill that is still being paid. The phone bill drains slowly, but that money is already spoken for.\n\nIf you spend more than the account holds, it goes below zero. That is an overdraft. Many banks then charge a fee, often around 25 to 35 dollars in the United States, sometimes once for each payment.\n\nBefore you buy, check what is left after the bills you know are coming.',
     note: 'Count the bills still waiting before you spend, so your account never goes below zero.' },

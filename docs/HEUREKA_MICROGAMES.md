@@ -10,12 +10,12 @@ Build: `python3 src/build.py --app heureka` (writes `dist/heureka.html`), or `HM
 
 ## What a Heurēka! microgame is (the owner's rules)
 A microgame is a 3–6 second WarioWare moment, never a question. The full format is in `docs/science/README.md` and each `docs/science/CURRICULUM_*.md` file gives every game as one row: Command | Concept | Scene | Action | What happens | Funny fail | Level 2 | Host.
-- **One shouted verb** (`cmd`): ALL CAPS, ends in "!", at most 15 characters, unique across the app (`grep -h "cmd: '" heureka/games/*.js`).
+- **A clear shouted command** (`cmd`) that says what to do and the goal, never an enigma (the owner): ALL CAPS, ends in "!", up to about 30 characters ("SLIDE 3 PUCKS IN!", "CARRY MAIL TO THE DATABASE!"), unique across the app (`grep -h "cmd: '" heureka/games/*.js`). Longer than 15 characters, the engine wraps it onto 2–3 balanced lines.
 - **Several actions, not one**: the player does the action 2–4 times, each a little different (three pucks, three leaks), or one action that needs real precision or timing. Nothing is won by one effortless move.
 - **One action toward a goal that is obvious from the first frame**: flick, drag, hold and release, tap at the right moment, trace, mash, tilt, swipe. No text prompt is needed to know what to do.
 - **The concept happens on screen as the result.** Success works *because of* the concept: the puck reaches the net because nothing rubs on it on the ice.
 - **A vivid, funny fail that also shows the concept** (the puck stops dead in the sand and a crab pops out).
-- **No questions, no "predict, then watch", no multiple choice, no numbers to compute, no formulas, and at most three words to read during play.** Choosing between objects is fine only as part of doing the goal (grabbing the heavy ball because the light one bounced off).
+- **No questions, no "predict, then watch", no multiple choice or hidden right answer, no numbers to compute, no formulas.** Label the important objects with their real names ("Server", "Database", "Investor", "Nucleus") so the scene explains itself; labels name things, the command says what to do, the card explains. Choosing between objects is fine only as part of doing the goal (grabbing the heavy ball because the light one bounced off).
 - **Act on the real thing, not symbols.** Atoms are balls you can see, money is coins and pies, code is a short real Python panel whose current line glows while you act it out.
 - **Clear to a young newcomer**: the first frame, the command and the ghost hand must be enough.
 - **Level 2** (`g.level`) makes the same action harder or adds one twist (the curriculum's Level 2 column); level 1 sits between.

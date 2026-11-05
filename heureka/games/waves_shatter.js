@@ -57,7 +57,7 @@
   }
   const BREAK = 0.66, next = s => s.gl.find(q => !q.broken);
   MG.add({
-    id: 'shatter', stage: 'waves', cmd: 'SHATTER!', time: 7.5, mood: 'party', winText: 'Resonance!', failText: 'Out of breath!',
+    id: 'shatter', stage: 'waves', cmd: 'TUNE THE NOTE TO BREAK GLASS!', time: 7.5, mood: 'party', winText: 'Resonance!', failText: 'Out of breath!',
     card: { title: 'Every thing has its own note', kind: 'Physics', ref: 'Resonance',
       text: 'Tap a glass and it rings with one note. That is its own note, or natural frequency: how many times a second it wobbles by itself. A bigger glass has a lower note.\n\nA sound is the air pushing back and forth. When the owl sings exactly a glass\'s own note, every push arrives just as that glass is already moving that way. Each push adds a little more, so the wobble grows until the glass breaks. This is called resonance.\n\nA note that is a little off pushes at the wrong moments. Some pushes help and some cancel out, so the glass only trembles.',
       note: 'Pushing something at its own natural rhythm makes it shake more and more. This is resonance.' },

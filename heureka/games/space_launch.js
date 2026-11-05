@@ -25,7 +25,7 @@ function laPaint(o) {
   o.fillStyle = '#f4f0f8'; o.beginPath(); o.moveTo(x - 17, y - LA_TOP + 20); o.lineTo(x - 8, y - LA_TOP + 6); o.lineTo(x + 8, y - LA_TOP + 6); o.lineTo(x + 17, y - LA_TOP + 20); o.lineTo(x + 6, y - LA_TOP + 16); o.lineTo(x, y - LA_TOP + 22); o.lineTo(x - 6, y - LA_TOP + 16); o.closePath(); o.fill();
 }
 MG.add({
-  id: 'launch', stage: 'space', cmd: 'LAUNCH!', time: 6, mood: 'night', winText: 'Orbit!', failText: 'Fell down!',
+  id: 'launch', stage: 'space', cmd: 'FIRE CANNONBALLS INTO ORBIT!', time: 6, mood: 'night', winText: 'Orbit!', failText: 'Fell down!',
   card: { title: 'An orbit is falling around', kind: 'Astronomy', ref: "Newton's cannon",
     text: 'Everything thrown sideways falls toward the ground. Throw it faster and it lands further away.\n\nOn a round planet, the ground curves away beneath a fast ball. Throw it fast enough and the ground curves away as fast as the ball falls, so it falls all the way round and never lands. That is an orbit.\n\nToo slow and it falls back down. Much too fast and it escapes into space. The Moon and every satellite are falling around the Earth like this, all the time.',
     note: 'An orbit is falling all the way round a planet without ever hitting the ground.' },

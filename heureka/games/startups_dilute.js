@@ -28,7 +28,7 @@ function wedge(c, x, y, r, a0, da, col) { // a loose slice of pie, apex at (x, y
   c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, a0, a0 + da); c.closePath(); c.stroke();
 }
 MG.add({
-  id: 'dilute', stage: 'startups', cmd: 'DILUTE!', time: 5, mood: 'party', winText: 'Dilution!', failText: 'Oven broke!', hold: 2.1,
+  id: 'dilute', stage: 'startups', cmd: 'ADD EACH INVESTOR'S SLICE!', time: 5, mood: 'party', winText: 'Dilution!', failText: 'Oven broke!', hold: 2.1,
   card: { title: 'A thinner slice of a bigger pie', kind: 'Startups', ref: 'Dilution',
     text: 'The pie is the company, and each slice is the share one owner holds. Each time an investor buys in, the company makes new shares for them. Every old slice becomes a smaller part of the whole. That is called dilution.\n\nThe investor\'s cash makes the company worth more, so the pie gets bigger. Right after a fair deal, a founder\'s thinner slice is worth about what the old slice was. The cash is meant to help the whole pie grow, and then the thinner slice can be worth much more.',
     note: 'Selling a slice to an investor makes your share smaller, but the cash can make the whole company bigger.' },
