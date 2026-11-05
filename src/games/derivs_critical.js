@@ -30,7 +30,10 @@ const xp = (p, id) => p === 1 ? M.vr('x', id) : M.sup(M.vr('x'), M.num(p), id);
 const plain = T => M.row(...T.map(([c, p], i) => M.row(i ? M.op(c < 0 ? '-' : '+') : (c < 0 ? M.op('-') : null), Math.abs(c) === 1 && p ? null : M.num(Math.abs(c)), p ? xp(p) : null)));
 const fval = (T, x) => T.reduce((s, [c, p]) => s + c * Math.pow(x, p), 0);
 const dval = (T, x) => T.reduce((s, [c, p]) => s + (p ? c * p * Math.pow(x, p - 1) : 0), 0);
-function fitAsk(g) { const A = g.s.mk.ask; if (!A || A.fit) return; A.fit = 1; for (const ch of A.list) { const w = M.lay(ch.node, 34).w; ch.s = w > ch.w - 12 ? 34 * (ch.w - 12) / w : 34; M.lay(ch.node, ch.s); } }
+function fitAsk(g) { // tray tiles grow to fit an expression (f′(x) = 2x − 6) at a readable size, and are re-spaced
+  const A = g.s.mk.ask; if (!A || A.fit) return; A.fit = 1; const gap = 8, ws = A.list.map(ch => M.lay(ch.node, 26).w + 22), tws = ws.map(w => Math.max(74, w));
+  const tot = tws.reduce((p, q) => p + q, 0) + gap * (tws.length - 1), k = Math.min(1, 344 / tot); let x = 180 - tot * k / 2;
+  A.list.forEach((ch, i) => { ch.w = tws[i] * k; ch.x = x + ch.w / 2; x += ch.w + gap * k; ch.s = Math.min(34, 26 * k * (ch.w - 14) / Math.max(1, (ws[i] - 22) * k) ); ch.s = Math.min(ch.s, 34 * (ch.w - 14) / M.lay(ch.node, 34).w); M.lay(ch.node, ch.s); }); }
 
 // ---------------- the scene: an alpine morning ----------------
 function scene(c, W, H) {
@@ -68,7 +71,7 @@ MG.add({
     S.marks = []; S.walk = null;
     S.topS = Math.min(34, 34 * 244 / M.lay(S.top, 34).w);
     // the working line's size: its widest forms (the first copy, and f′(x) = ... = 0) fit the width
-    { const fp = () => M.row(M.vr('f′'), M.paren(M.vr('x')), M.op('=')), w = Math.max(M.lay(M.row(fp(), plain(S.terms.map(([c, p]) => [p >= 2 ? c * p : c, p])), M.gap(60)), 40).w, M.lay(M.row(fp(), plain(S.dT), M.op('='), M.num(0)), 40).w); S.ws = Math.min(40, 40 * 330 / w); }
+    { const fp = () => M.row(M.vr('f′'), M.paren(M.vr('x')), M.op('=')), w = Math.max(M.lay(M.row(fp(), plain(S.terms.map(([c, p]) => [p >= 2 ? c * p : c, p])), M.gap(60)), 40).w, M.lay(M.row(fp(), plain(S.dT), M.op('='), M.num(0)), 40).w); S.ws = Math.min(40, 40 * 314 / w); }
     const relay = () => { M.place(g, 'top', S.top, 206, L1Y, S.topS, { col: INK }); M.place(g, 'tok', S.tok, 44, L1Y - 8, 40, { col: '#4a2410' }); if (S.work) M.place(g, 'work', S.work, 180, L2Y, S.ws, { col: INK }); };
     S.relay = relay; relay(); M.inert(g, ['eq1', 'eq2', 'fp', 'zero', 'pm']);
     M.zone(g, 'ridge', { x: 180, y: (GT + RUL) / 2, w: GX1 - GX0, h: RUL - GT + 20 });

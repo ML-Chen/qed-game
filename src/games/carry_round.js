@@ -1,4 +1,4 @@
-// carry_round.js — ROUND! Round numbers to the nearest ten by flicking balls off a hill.
+// carry_round.js — ROUND OFF! Round numbers to the nearest ten by flicking balls off a hill.
 // A grassy hill in a city park stands on a number line from one ten to the next (40 to 50); its top is exactly halfway
 // (45). Balls with numbers on them rest on the slope above their places. The player flicks each ball (a short drag)
 // toward the nearer ten: it rolls down to that ten. Flicking a ball the wrong way (dropping it on the farther ten) only
@@ -14,7 +14,7 @@ const vx = (S, v) => X0 + (v - S.lo) / 10 * (X1 - X0);
 const hy = (S, v) => BASE - HILL * (1 - Math.cos(2 * Math.PI * (v - S.lo) / 10)) / 2; // the hill's surface; top at lo + 5
 
 MG.add({
-  id: 'carry_round', stage: 'carry', cmd: 'ROUND!', hint: 'swipe', time: 8, mood: 'bright', winText: 'Rounded!', hold: 1.4,
+  id: 'carry_round', stage: 'carry', cmd: 'ROUND OFF!', hint: 'swipe', time: 8, mood: 'bright', winText: 'Rounded!', hold: 1.4,
   card: {
     title: 'Rounding to the nearest ten', ref: 'Grade 3', kind: 'Place value',
     text: 'Rounding a number to the nearest ten means finding the multiple of ten that is closest to it. The multiples of ten are 10, 20, 30, 40, 50 and so on.\n\n47 lies between 40 and 50. It is 7 away from 40 but only 3 away from 50, so 47 rounds to 50. We write 47 ≈ 50, where ≈ means "is about". In the same way, 42 rounds to 40.\n\nYou only need the ones digit. If it is 0, 1, 2, 3 or 4, round down to the ten below. If it is 5, 6, 7, 8 or 9, round up to the ten above. A number ending in 5, like 45, is exactly halfway, and the rule is to round it up, to 50.\n\nThe hill shows this: its top is at 45, so each ball rolls down to the nearer ten.',

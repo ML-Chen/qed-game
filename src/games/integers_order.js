@@ -1,4 +1,4 @@
-// integers_order.js — ORDER OF OPS! Work out 3 + 4 × 2 in the right order by tapping the operation to do next.
+// integers_order.js — PEMDAS! Work out 3 + 4 × 2 in the right order by tapping the operation to do next.
 // Order: brackets, then exponents, then × and ÷ left to right, then + and − left to right. Any order that gives the same
 // answer is allowed: in 2 + 3 − 1 the − may go first, since 2 + (3 − 1) is the same; in 5 − 3 + 1 the + may not.
 // Tapping an operation that has to wait (the + first) only wobbles.
@@ -62,7 +62,7 @@ function node(it, g) {
   if (!n) C.set(it, n = M.sup(null, M.num(it.e, it.id))); n.base = node(it.b, g); return n;
 }
 MG.add({
-  id: 'integers_order', stage: 'integers', cmd: 'ORDER OF OPS!', hint: 'tap', time: 9, mood: 'bright', winText: 'In order!', hold: 1.4,
+  id: 'integers_order', stage: 'integers', cmd: 'PEMDAS!', hint: 'tap', time: 9, mood: 'bright', winText: 'In order!', hold: 1.4,
   card: {
     title: 'Order of operations', ref: 'Grades 6–7', kind: 'Arithmetic',
     text: 'An operation is something you do to numbers, such as adding or multiplying. When an expression has several operations, everyone agrees to do them in the same order, so everyone gets the same answer.\n\nThe order is: first work out what is inside brackets. Then work out exponents, such as 3² = 3 × 3. Then multiply and divide, from left to right. Last, add and subtract, from left to right.\n\nFor example, 3 + 4 × 2: multiply first, 4 × 2 = 8, then add, 3 + 8 = 11. If you added first you would get 14, which is wrong.\n\nIf you want the adding done first, write brackets: (3 + 4) × 2 = 14.',

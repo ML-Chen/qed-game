@@ -8,7 +8,7 @@
 // the plane; a tap on 6 · (−1) writes "= −6" and that lands as the answer. Level 2: one of the numbers is negative, so
 // the sign flips twice. Medium mode: every tap opens the tray when the working reaches the computation.
 const M = MK, PANEL = 'glass', INK = SCN.ink(PANEL), ICOL = '#6a2ac0', NOTE = '#7a3ad0', GOLD = '#ffe08a', HOT = '#f07a10'; // HOT: a highlight that reads on the light glass panel
-const OX = 180, OY = 452, U = 68, HX = 304, HY = 606, NY = 316; // the complex plane: origin and one unit in px; the owl
+const OX = 180, OY = 468, U = 86, HX = 318, HY = 612, NY = 316; // the complex plane: origin and one unit in px; the owl
 function pick(g) {
   const L = g.level, r = k => Math.floor(g.rand() * k);
   if (L === 0) return null;
@@ -91,17 +91,17 @@ MG.add({
           M.at(g, [[0.3 * T, g => { gather(g); build(g); }], [0.55 * T, g => M.sparkle(g, 'cm', { n: 8 })]]); } });
         // tap i²: on the plane the point 1 turns a quarter turn ("1 · i = i"); the tray asks what one more turn gives;
         // the point turns again to −1 ("i · i = −1"), and that −1 lifts off the plane and takes the place of i²
-        if (S.is === 'sq') out.push({ tap: 'isq', busy: 0.1, askAt: 1.45 * T, after: 2.05 * T, ask: { v: -1, wrong: [1, 2, M.row(M.num(2), M.vr('i'))] },
-          then(g) { M.show(g, 1.45 * T); S.point = true; hop(g, 'think'); M.circle(g, 'isq', { dur: 0.45 * T, col: '#c8a8ff' }); M.light(g, N.i0, { col: HOT });
-            S.turns = [{ t0: g.t + 0.2 * T, d: 0.6 * T }]; M.at(g, [[0.2 * T, g => g.sfx('whoosh')], [0.8 * T, g => { g.sfx('tap'); hop(g); S.atI = g.t; }]]);
-            M.note(g, { node: M.row(M.num(1), M.op('·'), M.vr('i'), M.op('='), M.vr('i')), at: [OX + 66, OY - U - 36], s: 26, col: GOLD, pill: true, delay: 0.8 * T, write: 0.3 * T, hold: 0.8 * T, fade: 0.25 * T }); },
-          resolve(g) { M.show(g, 2.05 * T); S.turns.push({ t0: g.t, d: 0.6 * T }); g.sfx('whoosh'); M.unlight(g, N.i0); M.light(g, N.two, { col: HOT });
+        if (S.is === 'sq') out.push({ tap: 'isq', busy: 0.1, askAt: 1.95 * T, after: 2.35 * T, ask: { v: -1, wrong: [1, 2, M.row(M.num(2), M.vr('i'))] },
+          then(g) { M.show(g, 1.95 * T); S.point = true; hop(g, 'think'); M.circle(g, 'isq', { dur: 0.45 * T, col: '#c8a8ff' }); M.light(g, N.i0, { col: HOT });
+            S.turns = [{ t0: g.t + 0.2 * T, d: 0.65 * T }]; M.at(g, [[0.2 * T, g => g.sfx('whoosh')], [0.85 * T, g => { g.sfx('tap'); hop(g); S.atI = g.t; }]]);
+            M.note(g, { node: M.row(M.num(1), M.op('·'), M.vr('i'), M.op('='), M.vr('i')), at: [OX + 86, OY - U - 24], s: 30, col: GOLD, pill: true, delay: 0.9 * T, write: 0.3 * T, hold: 0.8, fade: 0.25 * T }); },
+          resolve(g) { M.show(g, 2.35 * T); S.turns.push({ t0: g.t, d: 0.65 * T }); g.sfx('whoosh'); M.unlight(g, N.i0); M.light(g, N.two, { col: HOT });
             M.at(g, [
-              [0.6 * T, g => { g.sfx('ding'); hop(g, 'wow'); S.minusAt = g.t;
-                M.note(g, { node: M.row(M.vr('i'), M.op('·'), M.vr('i'), M.op('='), M.num(-1)), at: [OX - U - 4, OY + 50], s: 26, col: GOLD, pill: true, write: 0.3 * T, hold: 0.85 * T, fade: 0.25 * T }); }],
-              [1.15 * T, g => { // the −1 lifts off the plane and replaces i²
+              [0.65 * T, g => { g.sfx('ding'); hop(g, 'wow'); S.minusAt = g.t;
+                M.note(g, { node: M.row(M.vr('i'), M.op('·'), M.vr('i'), M.op('='), M.num(-1)), at: [OX - U + 4, OY + 60], s: 30, col: GOLD, pill: true, delay: 0.05 * T, write: 0.3 * T, hold: 0.8 + 0.1 * T, fade: 0.25 * T }); }],
+              [1.85 * T, g => { // the −1 lifts off the plane and replaces i²
                 fadeAll(g, N.isq, 0.3 * T); M.unlight(g, N.two);
-                M.fly(g, { node: M.num(-1, null, { col: '#3a1640' }), from: [OX - U - 6, OY + 18], to: 'isq', dur: 0.45 * T, arc: -50, s0: 24, s1: SZ,
+                M.fly(g, { node: M.num(-1, null, { col: GOLD }), from: [OX - U - 12, OY + 24], to: 'isq', dur: 0.45 * T, arc: -50, s0: 26, s1: SZ,
                   then(g) { S.is = 'neg'; S.flown = true; N.neg.pop = g.t; build(g); M.sparkle(g, S.co ? 'negp' : 'neg', { n: 12, cols: ['#c8a8ff', '#fff', GOLD] }); g.sfx('sparkle'); hop(g, 'laugh'); S.point = false; } }); }],
             ]); } });
         // tap (a · b): "a · b = ab" writes itself under the expression, and ab flies up into its place
@@ -128,7 +128,7 @@ MG.add({
     // the complex plane: real axis across, imaginary axis up
     const tn = S.turns || [], es = [0, 1].map(i => tn[i] ? M.easeIO((t - tn[i].t0) / tn[i].d) : 0), [e1, e2] = es, turn = (e1 + e2) / 2, ang = Math.PI * turn;
     c.save(); c.strokeStyle = 'rgba(220,210,255,0.22)'; c.lineWidth = 1;
-    for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(OX + k * U, OY - U * 1.25); c.lineTo(OX + k * U, OY + U * 1.25); c.stroke(); }
+    for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(OX + k * U, OY - U * 1.25); c.lineTo(OX + k * U, OY + U * 1.25); c.stroke(); }
     c.strokeStyle = 'rgba(235,228,255,0.85)'; c.lineWidth = 2.5; c.lineCap = 'round';
     c.beginPath(); c.moveTo(OX - U * 1.55, OY); c.lineTo(OX + U * 1.55, OY); c.moveTo(OX, OY + U * 1.3); c.lineTo(OX, OY - U * 1.3); c.stroke();
     c.fillStyle = 'rgba(235,228,255,0.85)';
@@ -137,20 +137,20 @@ MG.add({
     c.setLineDash([4, 6]); c.strokeStyle = 'rgba(200,190,255,0.35)'; c.lineWidth = 1.5; c.beginPath(); c.arc(OX, OY, U, 0, 7); c.stroke(); c.setLineDash([]);
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = 'rgba(10,6,30,0.9)'; c.shadowBlur = 5;
     const atI = e1 >= 0.98 && e2 <= 0.05, atM = e2 >= 0.98, at1 = !tn.length || e1 < 0.02;
-    const lab = (txt, x, y, on, varf) => { c.font = varf ? M.VARF(on ? 25 : 20) : M.NUMF(on ? 25 : 20, 700); c.fillStyle = on ? GOLD : '#efe8ff'; c.fillText(txt, x, y); };
-    lab('1', OX + U + 8, OY + 18, at1 && tn.length > 0);
-    if (!S.flown) lab('−1', OX - U - 10, OY + 19, atM); else { c.globalAlpha = 0.55; lab('−1', OX - U - 10, OY + 19, false); c.globalAlpha = 1; }
-    lab('i', OX - 14, OY - U - 14, atI, true); lab('−i', OX + 18, OY + U + 10, false, true);
+    const lab = (txt, x, y, on, varf) => { c.font = varf ? M.VARF(on ? 30 : 24) : M.NUMF(on ? 30 : 24, 700); c.fillStyle = on ? GOLD : '#efe8ff'; c.fillText(txt, x, y); };
+    lab('1', OX + U + 10, OY + 22, at1 && tn.length > 0);
+    if (!S.flown) lab('−1', OX - U - 12, OY + 24, atM); else { c.globalAlpha = 0.55; lab('−1', OX - U - 12, OY + 24, false); c.globalAlpha = 1; }
+    lab('i', OX - 16, OY - U - 14, atI, true); lab('−i', OX + 22, OY + U + 14, false, true);
     c.shadowBlur = 0;
     // the trail of the turn, with a "× i" written on each quarter as it is turned
     if (tn.length) {
       c.strokeStyle = GOLD; c.lineWidth = 4; c.shadowColor = '#ffd04a'; c.shadowBlur = 10; c.beginPath(); c.arc(OX, OY, U, 0, -ang, true); c.stroke(); c.shadowBlur = 0;
-      es.forEach((e, q) => { if (e <= 0.15) return; const a = -(q + 0.5) * Math.PI / 2, lb = M.row(M.op('×'), M.vr('i')), m = M.lay(lb, 22), x = OX + Math.cos(a) * (U + 26), y = OY + Math.sin(a) * (U + 22);
-        c.save(); c.globalAlpha = M.clamp((e - 0.15) / 0.4, 0, 1); c.shadowColor = 'rgba(10,6,30,0.9)'; c.shadowBlur = 5; M.draw(c, lb, x - m.w / 2, y + 8, 22, { col: '#ffe9a8' }); c.restore(); });
+      es.forEach((e, q) => { if (e <= 0.15) return; const a = -(q + 0.5) * Math.PI / 2, lb = M.row(M.op('×'), M.vr('i')), m = M.lay(lb, 28), x = OX + Math.cos(a) * U * 0.56, y = OY + Math.sin(a) * U * 0.56;
+        c.save(); c.globalAlpha = M.clamp((e - 0.15) / 0.4, 0, 1); c.shadowColor = 'rgba(10,6,30,0.9)'; c.shadowBlur = 5; M.draw(c, lb, x - m.w / 2, y + 10, 28, { col: '#ffe9a8' }); c.restore(); });
     }
     const px = OX + Math.cos(-ang) * U, py = OY + Math.sin(-ang) * U, glow = 0.5 + 0.5 * Math.sin(t * 4);
     const gr = c.createRadialGradient(px, py, 0, px, py, 22); gr.addColorStop(0, `rgba(255,236,150,${0.5 + glow * 0.3})`); gr.addColorStop(1, 'rgba(255,236,150,0)'); c.fillStyle = gr; c.fillRect(px - 22, py - 22, 44, 44);
-    c.fillStyle = '#fff3c0'; c.strokeStyle = '#a8641a'; c.lineWidth = 2; c.beginPath(); c.arc(px, py, 7, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = '#fff3c0'; c.strokeStyle = '#a8641a'; c.lineWidth = 2; c.beginPath(); c.arc(px, py, 9, 0, 7); c.fill(); c.stroke();
     for (const t0 of [S.atI, S.minusAt]) if (t0 != null && t - t0 < 0.5) { const k = (t - t0) / 0.5; c.strokeStyle = `rgba(255,224,138,${1 - k})`; c.lineWidth = 3; c.beginPath(); c.arc(px, py, 8 + k * 30, 0, 7); c.stroke(); }
     c.restore();
     // the owl points at the panel while the work is shown, and hops when a step lands
