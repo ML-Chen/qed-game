@@ -11,6 +11,7 @@ Build: `python3 src/build.py --app heureka` (writes `dist/heureka.html`), or `HM
 ## What a Heurēka! microgame is (the owner's rules)
 A microgame is a 3–6 second WarioWare moment, never a question. The full format is in `docs/science/README.md` and each `docs/science/CURRICULUM_*.md` file gives every game as one row: Command | Concept | Scene | Action | What happens | Funny fail | Level 2 | Host.
 - **One shouted verb** (`cmd`): ALL CAPS, ends in "!", at most 15 characters, unique across the app (`grep -h "cmd: '" heureka/games/*.js`).
+- **Several actions, not one**: the player does the action 2–4 times, each a little different (three pucks, three leaks), or one action that needs real precision or timing. Nothing is won by one effortless move.
 - **One action toward a goal that is obvious from the first frame**: flick, drag, hold and release, tap at the right moment, trace, mash, tilt, swipe. No text prompt is needed to know what to do.
 - **The concept happens on screen as the result.** Success works *because of* the concept: the puck reaches the net because nothing rubs on it on the ice.
 - **A vivid, funny fail that also shows the concept** (the puck stops dead in the sand and a crab pops out).
@@ -37,7 +38,7 @@ MG.add({
 - `g.sfx(name)`: tap pop whoosh swoosh splash drip bubble chime sparkle ding boing thud coin sweep rustle crunch munch slurp drum bell clap cheer laugh rumble wind rain thunder wave fire magic stretch snap click fail wrong grow shrink, plus animal calls (ribbit tweet buzz quack moo baa roar honk meow).
 - `g.burst(x, y, colours, n, speed)`, `g.float(text, x, y)`, `g.shake(a, t)`; `g.bake(key, (o, W, H) => ...)` paints a static background once (2x resolution).
 - **Deterministic (for the rewind scrubber):** draw every random number that affects play with `g.rand()` (never `Math.random()` outside `draw`), keep all state in `g.s`, never read the wall clock (use `g.t`), and read the pointer only from the handler arguments. The suite's rewind test replays the game from its recorded input and checks it matches.
-- Guidance: at level 0, `SK.demo(g, c, kind, from, to)` (call it last in `draw`) loops a ghost hand doing the action until the player first touches; `SK.glow(c, g, x, y, r)` marks the thing to act on at levels 0 and 1. Call `SK.touched(g)` in `down` (the drag and hold helpers do it for you).
+- Guidance (the owner: "for every level, gesture to what you're supposed to do if the player is stuck"): call `SK.demo(g, c, kind, from, to)` last in `draw`, every frame, at every level, pointed at the NEXT thing to do in the current state. The kit decides when it shows: at level 0 from the start until the first touch, and at every level whenever the player hasn't touched for 2–2.8 s. The engine records the last touch in `g.lastIn`. `SK.glow(c, g, x, y, r)` marks the thing to act on at levels 0 and 1. Call `SK.touched(g)` in `down` (the drag and hold helpers do it for you).
 - The command banner and win text are drawn at y ≈ 92 for the first 1.25 s; the fuse runs along y = 622; pause and rewind buttons sit at the top right (288–336, 24). Keep important art out of those strips.
 
 ## SK, the scene kit (`heureka/kit.js`)

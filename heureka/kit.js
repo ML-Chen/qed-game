@@ -22,12 +22,21 @@ const SK = (() => {
     c.restore();
     if (press > 0.5) { c.save(); c.globalAlpha *= alpha * (press - 0.5) * 2; c.strokeStyle = '#ffd45a'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 14 + press * 6, 0, TAU); c.stroke(); c.restore(); }
   }
-  // demo(g, c, kind, a, b, o): at guidance level 0, until the player first touches the screen (g.s.touched), a ghost hand
-  // loops the action: kind 'tap' at a, 'drag' or 'swipe' from a to b, 'hold' at a (presses and stays down for o.hold s).
-  // Call it last in draw. o: { delay: seconds before it starts (default 0.9, after the command), period, level }.
+  // demo(g, c, kind, a, b, o): a ghost hand loops the action: kind 'tap' at a, 'drag' or 'swipe' from a to b, 'hold' at a.
+  // When it shows (the owner: "for every level, gesture to what you're supposed to do if the player is stuck"):
+  // - level 0: from o.delay (0.9 s, after the command) until the player first touches the screen;
+  // - every level: whenever the player has not touched the screen for SK.IDLE seconds (2.0 at level 0, 2.4 at 1, 2.8
+  //   at 2), counted from the start or from their last touch, and it hides again as soon as they touch.
+  // Call it last in draw, every frame, with the NEXT thing to do (it must follow the game's state).
+  // o: { delay, period, never: true to turn it off for this frame }.
   function demo(g, c, kind, a, b, o = {}) {
-    const lv = o.level ?? 0; if (g.level > lv || g.s.touched || g.done) return;
-    const t0 = o.delay ?? 0.9; if (g.t < t0) return;
+    if (g.done || o.never || (g.ptr && g.ptr.down)) return;
+    const idle = g.t - (g.lastIn ?? 0), wait = [2.0, 2.4, 2.8][Math.min(2, g.level)];
+    let t0;
+    if (g.level === 0 && !g.s.touched) t0 = o.delay ?? 0.9;
+    else if (idle >= wait) t0 = (g.lastIn ?? 0) + wait;
+    else return;
+    if (g.t < t0) return;
     const per = o.period ?? (kind === 'hold' ? 2.2 : kind === 'tap' ? 1.1 : 1.8), k = ((g.t - t0) % per) / per;
     const fadeIn = clamp((g.t - t0) * 4, 0, 1);
     if (kind === 'tap') { const p = k < 0.3 ? 0 : k < 0.45 ? (k - 0.3) / 0.15 : k < 0.6 ? 1 - (k - 0.45) / 0.15 : 0; hand(c, a[0], a[1] + 10 * (1 - p), p, 0.9 * fadeIn); return; }

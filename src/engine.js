@@ -384,7 +384,7 @@ function input(type, x, y, vx, vy) {
     if (run.paused) { pauseInput(type, x, y); return; }
     if (run.phase === 'intro' && type === 'down' && run.pt > 0.6 && !hit(x, y, 336, 24, 52, 52)) { between(); return; }
     if (run.phase === 'between' && type === 'down' && run.checkin && !run.checkin.choice) { for (const b of CHECKIN) if (hit(x, y, CHECKIN_BOX.x, b.y, CHECKIN_BOX.w + 8, CHECKIN_BOX.h + 6)) { press('ck:' + b.id); checkIn(b.id); return; } return; }
-    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; if (stepInput(g, type)) return; g.rec.ev.push({ k: g.rec.dts.length, type, a: [x, y, vx, vy] }); const nr = g._norec; g._norec = false; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } g._norec = nr; return; }
+    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; if (stepInput(g, type)) return; g.rec.ev.push({ k: g.rec.dts.length, type, a: [x, y, vx, vy] }); g.lastIn = g.t; const nr = g._norec; g._norec = false; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } g._norec = nr; return; }
     if (run.phase === 'over' && type === 'down') { if (hit(x, y, 180, 548, 220, 56)) { press('again'); A.sfx('pop'); setTimeout(() => startRun(run.stage.id, run.only), 140); } else if (hit(x, y, 180, 612, 160, 40)) { press('home'); A.sfx('click'); setTimeout(() => goStages(), 120); } }
     return;
   }
@@ -490,6 +490,7 @@ function simEvents(S) { // apply the input recorded after S.n updates
     if (e.type === 'timeout') { if (!g.done) { if (S.def.winOnTimeout) g.win(); else g.fail(); } continue; }
     if (e.type === 'fail') { g.fail(); continue; }
     const [x, y] = e.a; if (e.type === 'down') Object.assign(g.ptr, { down: true, x, y, sx: x, sy: y }); else if (e.type === 'move') Object.assign(g.ptr, { x, y }); else if (e.type === 'up') g.ptr.down = false;
+    g.lastIn = g.t; // when the player last touched (Heurēka!'s ghost hand comes back when the player stops)
     if (!g.done && S.def[e.type]) { try { S.def[e.type](g, ...e.a); } catch (err) { console.error(S.def.id, 'rewind', e.type, err); } } }
 }
 function simStep(S, track) {

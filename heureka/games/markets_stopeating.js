@@ -3,7 +3,7 @@
 // buy and eat the next slice. Stop while the next heart is still bigger than the coin, then wait: the rabbit pats its
 // tummy, happy. Eat a slice whose heart is smaller than its coin and the rabbit's tummy swells and it groans; stop too
 // early and it is still hungry. Level 2: the price changes halfway through the meal.
-const ROW = i => 124 + i * 40, HEARTY = 318, COINY = 372, SLICEY = 440, N = 6, RC = 15;
+const ROW = i => 112 + i * 44, HEARTY = 318, COINY = 372, SLICEY = 440, N = 6, RC = 16;
 function heart(c, x, y, r, col = '#ff5a8a') { c.save(); c.translate(x, y); const s = r / 10; c.scale(s, s); c.fillStyle = col; c.strokeStyle = '#a81a4a'; c.lineWidth = 2 / s; c.beginPath(); c.moveTo(0, 9); c.bezierCurveTo(-16, -2, -10, -15, 0, -6); c.bezierCurveTo(10, -15, 16, -2, 0, 9); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.ellipse(-5, -6, 3, 2, -0.6, 0, 7); c.fill(); c.restore(); }
 function slice(c, x, y, s = 1, rot = 0) {
   c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s);
@@ -33,10 +33,10 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
     // hearts shrink slice by slice; where they cross the coin varies (never too close to call)
-    const start = 1.75 + g.rand() * 0.35, step = 0.22 + g.rand() * 0.1;
+    const start = 1.45 + g.rand() * 0.15, step = 0.17 + g.rand() * 0.07;
     s.h = Array.from({ length: N }, (_, i) => Math.max(0.25, start - i * step));
-    s.coin = [1, 0.92, 1][L]; s.coin2 = L >= 2 ? (g.rand() < 0.5 ? 0.62 : 1.35) : null; s.change = 2; s.changed = 0;
-    const fix = () => { for (let i = 0; i < N; i++) { const c0 = this.price(g, i); if (Math.abs(s.h[i] - c0) < 0.12) s.h[i] = s.h[i] > c0 ? c0 + 0.12 : c0 - 0.12; } };
+    s.coin = [1, 0.92, 1][L]; s.coin2 = L >= 2 ? (g.rand() < 0.5 ? 0.72 : 1.22) : null; s.change = 2; s.changed = 0;
+    const fix = () => { for (let i = 0; i < N; i++) { const c0 = this.price(g, i); if (Math.abs(s.h[i] - c0) < 0.1) s.h[i] = s.h[i] > c0 ? c0 + 0.1 : c0 - 0.1; } };
     s.eaten = 0; s.lastTap = 0; s.idle = [2.2, 1.7, 1.4][L]; s.fly = null; s.end = 0; fix();
   },
   price(g, i) { const s = g.s; return s.coin2 != null && i >= s.change ? s.coin2 : s.coin; }, // the price of slice i (level 2: changes after two)
@@ -57,8 +57,8 @@ MG.add({
     // each slice's heart and its coin
     for (let i = s.eaten; i < N; i++) {
       const x = ROW(i), next = i === s.eaten, pr = this.price(g, i), pop = s.changed && i >= s.change ? 1 + 0.25 * Math.max(0, 1 - (t - s.changed) * 3) : 1;
-      if (next && !g.done) { c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.roundRect(x - 20, HEARTY - 32, 40, COINY - HEARTY + 56, 14); c.fill(); }
-      heart(c, x, HEARTY, 14 * s.h[i]);
+      if (next && !g.done) { c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.roundRect(x - 22, HEARTY - 30, 44, COINY - HEARTY + 54, 14); c.fill(); }
+      heart(c, x, HEARTY, RC * s.h[i] / 1.2); // a heart as wide as the coin is worth exactly the price
       if (s.changed || s.coin2 == null || i < s.change) B8.coin(c, x, COINY, RC * pr * pop); else B8.coin(c, x, COINY, RC * s.coin);
       slice(c, x, SLICEY, 0.95);
     }
