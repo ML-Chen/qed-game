@@ -126,10 +126,18 @@ MG.add({
     c.fillStyle = s.S.blanket; c.strokeStyle = P.shade(s.S.blanket, -0.4); c.lineWidth = 3; c.beginPath(); c.moveTo(152, 492); c.quadraticCurveTo(250, 470, 352, 488); c.lineTo(352, 546); c.lineTo(152, 546); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = 'rgba(255,255,255,0.25)'; c.fillRect(152, 500, 200, 6);
     if (red) N4.dizzy(c, 266, 396, 30, t, 3);
-    // the kidneys' output: drops falling from the bed into a bag
-    c.fillStyle = 'rgba(240,230,170,0.7)'; c.strokeStyle = '#a0a070'; c.lineWidth = 2; c.beginPath(); c.roundRect(178, 566, 40, 40, 8); c.fill(); c.stroke();
-    for (const t0 of s.dOut) { const k = (t - t0) / 0.45; c.fillStyle = '#f0e090'; c.beginPath(); c.ellipse(198, 548 + k * 24, 2.5, 4, 0, 0, 7); c.fill(); }
-    SK.tag(c, 'Kidneys', 258, 590, 18);
+    // the kidneys, in a zoom bubble from the patient's back: two beans whose tubes drip out the medicine they clear
+    { const kx = 206, ky = 580, R = 36; c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 2.5; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(kx + 20, ky - 30); c.lineTo(248, 520); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#1a2a3a'; c.strokeStyle = '#e8eef8'; c.lineWidth = 3; c.beginPath(); c.arc(kx, ky, R, 0, 7); c.fill(); c.stroke();
+      c.save(); c.beginPath(); c.arc(kx, ky, R - 2, 0, 7); c.clip();
+      for (const sd of [-1, 1]) { const x = kx + sd * 14, y = ky - 8;
+        c.strokeStyle = '#e8a0b0'; c.lineWidth = 3; c.beginPath(); c.moveTo(x - sd * 5, y + 4); c.quadraticCurveTo(x - sd * 6, y + 18, kx + sd * 3, y + 26); c.stroke(); // the tube from each kidney
+        c.save(); c.translate(x, y); c.scale(sd, 1); c.fillStyle = '#b8304a'; c.strokeStyle = '#6a1424'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(-2, -14); c.bezierCurveTo(10, -16, 12, 14, 0, 14); c.bezierCurveTo(-8, 14, -9, 6, -4, 2); c.bezierCurveTo(-8, -2, -9, -12, -2, -14); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = 'rgba(255,200,210,0.45)'; c.beginPath(); c.ellipse(3, -6, 3, 5, 0.3, 0, 7); c.fill(); c.restore(); }
+      for (const t0 of s.dOut) { const k = (t - t0) / 0.45; c.fillStyle = '#ffd070'; c.beginPath(); c.ellipse(kx, ky + 20 + k * 20, 2.5, 4, 0, 0, 7); c.fill(); }
+      c.restore(); }
+    SK.tag(c, 'Kidneys', 290, 590, 18);
     // which way to slide: an arrow on the roller toward the setting that settles in the band
     const head = s.r / s.k, need = s.phase === 'drip' && !g.done ? (head < s.lo + 0.01 ? 1 : head > s.hi - 0.01 ? -1 : 0) : 0;
     if (need && !SK.dragging(g)) N4.bigArrow(c, TR.x + 46, SD.rY(s.r), need, need > 0 ? '#8affc0' : '#ffb08a', 0.9, t);
