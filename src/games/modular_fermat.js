@@ -16,13 +16,14 @@
 // Medium mode: p − 1, the remainder of the exponent, 1¹⁶ and the final residue are picked from the tray; the wrong
 // tiles are real mistakes (dividing by p instead of p − 1, 81 itself, 3 · 4 instead of 3⁴).
 const M = MK;
-const INK = '#f4fff4', GOLD = '#ffd86a', PAD = '#6ac46a', PADD = '#3a8a44', Y1 = 208, YK = 260, Y2 = 322, YN = 366, RC = 480, RR = 96, HX = 52, HY = 612;
+const INK = '#f4fff4', GOLD = '#ffd86a', PAD = '#6ac46a', PADD = '#3a8a44', Y1 = 208, YK = 260, Y2 = 322, YN = 366, RC = 492, RR = 96, HX = 52, HY = 612;
 const pw = (a, k, p) => { let v = 1; for (let i = 0; i < k; i++) v = v * a % p; return v; };
 
 function pick(g) {
   const L = g.level, r = k => Math.floor(g.rand() * k), one = a => a[r(a.length)];
-  const p = L === 0 ? 5 : L === 1 ? 7 : one([11, 13]), a = L === 0 ? one([2, 3]) : L === 1 ? one([2, 3, 5]) : one([2, 3]);
-  const q = L === 0 ? 3 + r(4) : L === 1 ? 5 + r(12) : 3 + r(6), rr = L === 0 ? 2 + r(2) : L === 1 ? 2 + r(3) : 2 + r(3);
+  // the base is a primitive root of p, so the frog visits every pad once and is home exactly after p − 1 hops
+  const p = L === 0 ? 5 : L === 1 ? 7 : one([11, 13]), a = L === 0 ? one([2, 3]) : L === 1 ? one([3, 5]) : 2;
+  const q = L === 0 ? 3 + r(4) : L === 1 ? 5 + r(12) : 3 + r(6), rr = L === 0 ? 2 + r(2) : L === 1 ? (a === 5 ? 2 + r(2) : 2 + r(3)) : 2 + r(3);
   const N = (p - 1) * q + rr;
   return { p, a, q, r: rr, N, big: Math.pow(a, rr), ans: pw(a, rr, p) };
 }
@@ -33,7 +34,7 @@ MG.add({
     title: "Fermat's little theorem", ref: 'Number theory', kind: 'Number theory',
     text: 'If p is a prime and a is not a multiple of p, then a to the power p − 1 leaves remainder 1 when divided by p. Mathematicians write a^(p−1) ≡ 1 (mod p).\n\nThat makes huge powers easy. For 3¹⁰⁰ mod 7: here p − 1 = 6, so 3⁶ ≡ 1. Write 100 = 6 · 16 + 4. Then 3¹⁰⁰ = (3⁶)¹⁶ · 3⁴, and every 3⁶ is worth 1, so only 3⁴ = 81 is left. 81 = 7 · 11 + 4, so the answer is 4.\n\nYou can watch it on a ring of 7 lily pads: hopping to "3 times the pad number, mod 7" brings the frog home after 6 hops.',
     note: 'For a prime p, a^(p−1) ≡ 1 (mod p). Divide the exponent by p − 1 and keep only the remainder.',
-    ask: 'What is 2¹⁰ mod 11? What is 3²² mod 5?',
+    ask: 'What is 2²³ mod 11? What is 3²² mod 5?',
   },
 
   init(g) {
@@ -44,78 +45,96 @@ MG.add({
     M.inert(g, ['mod', 'eq1', 'keq', 'kb', 'kv', 'eq2', 'dot2']);
     S.frog = 1; S.lit = {}; S.trail = [];
     const hop = e => { g.s.mk.lastMove = g.t; S.face = e; S.faceT = g.t; };
-    // the frog hops from pad to pad: count hops, multiplying by a each time (mod p), starting at pad 1
-    const hops = (g, count, step, each) => { let cur = 1;
-      for (let k = 1; k <= count; k++) M.at(g, [[k * step - step * 0.85, g => { const to = cur * a % p; S.hopA = { from: cur, to, t0: g.t, dur: step * 0.8 }; cur = to; }],
-        [k * step - step * 0.05, g => { S.frog = S.hopA.to; S.lit[S.frog] = g.t; S.trail.push({ to: S.frog, t: g.t }); g.sfx('tap', { pitch: 0.9 + k * 0.06 }); if (each) each(g, k, S.frog); }]]); };
-    const step1 = Math.min(0.2, 1.0 / (p - 1)) * T;
+    // The frog hops from pad to pad, starting on pad 1: each hop multiplies by a (mod p). Hops are slow (about 0.38 s at
+    // level 0) and each arc is labelled "× a"; on landing, the pad gets a small tag a^k and each(g, k, pad) runs.
+    const HOP = (p > 7 ? 0.42 : 0.54) * T, AIR = (p > 7 ? 0.3 : 0.36) * T; // a hop through the air, then a short rest on the pad
+    const hops = (g, count, each) => { let cur = 1; S.frog = 1;
+      for (let k = 1; k <= count; k++) M.at(g, [[(k - 1) * HOP + 0.01, g => { const to = cur * a % p; S.hopA = { from: cur, to, t0: g.t, dur: AIR }; cur = to; g.sfx('swoosh', { pitch: 1.4 }); }],
+        [(k - 1) * HOP + AIR + 0.01, g => { S.frog = S.hopA.to; S.lit[S.frog] = g.t; if (!S.tags[S.frog]) S.tags[S.frog] = { k, t: g.t }; else S.tags[S.frog].t = g.t; g.sfx('tap', { pitch: 0.9 + k * 0.06 }); if (each) each(g, k, S.frog); }]]);
+      return count * HOP; };
+    S.tags = {};
+    S.padBox = k => { const an = -Math.PI / 2 + 2 * Math.PI * k / p; return [180 + Math.cos(an) * RR, RC + Math.sin(an) * RR * 0.92]; };
+    // the key line a^k ≡ v: written when the frog first lands, then its power and value roll on at every landing
+    const keyAt = (g, k, v, x) => { if (!S.key) { S.kk = M.num(k, 'kk'); S.kv = M.num(v, 'kv'); S.key = M.row(M.sup(M.num(a, 'kb'), S.kk), M.op('≡', 'keq'), S.kv); S.key.id = 'key';
+        M.place(g, 'key', S.key, x, YK, 32, { col: GOLD }); M.writeIn(g, S.key, { dur: 0.25 * T }); return; }
+      M.roll(g, S.kk, k, { dur: 0.22 * T }); M.roll(g, S.kv, v, { dur: 0.22 * T }); M.place(g, 'key', S.key, x, YK, 32, { col: GOLD }); M.indicate(g, S.key, { sc: 1.12, dur: 0.3 * T, col: '#fff' }); };
 
-    // ---- 1. p − 1, and the frog's round trip ----
+    // ---- 1. p − 1, and the frog's round trip: p − 1 hops bring it home ----
+    const hopsT = (p - 1) * HOP - (HOP - AIR), after1 = 0.4 * T + hopsT + 1.0 * T;
     const fermat = {
-      busy: 0.1, askAt: 0.5 * T, after: (p - 1) * step1 + 0.35 * T, ask: { v: p - 1, wrong: [p, p + 1, p - 2] },
-      then(g) { S.st = 1; S.point = true; hop('think'); M.show(g, 0.5 * T); g.sfx('swoosh');
-        M.circle(g, 'p', { col: GOLD, dur: 0.45 * T });
+      busy: 0.1, askAt: 0.7 * T, after: after1, ask: { v: p - 1, wrong: [p, p + 1, p - 2] },
+      then(g) { S.st = 1; S.point = true; hop('think'); M.show(g, 0.7 * T); g.sfx('swoosh');
+        M.circle(g, 'p', { col: GOLD, dur: 0.6 * T });
         S.n1v = M.num(p - 1, null, { alpha: 0 }); S.n1 = M.row(M.num(p), M.op('-'), M.num(1), M.op('='), S.n1v);
-        const b = M.box(g, 'p'); M.place(g, 'n1', S.n1, M.clamp(b.x, 80, 290), YK, 26, { col: GOLD }); M.writeIn(g, S.n1, { dur: 0.3 * T, delay: 0.1 * T }); },
-      resolve(g) { const dur = (p - 1) * step1 + 0.35 * T; M.show(g, dur); S.n1v.alpha = 1; M.writeIn(g, S.n1v, { dur: 0.14 * T }); g.sfx('ding');
-        M.at(g, [[0.25 * T, g => { M.tween(g, S.n1, { alpha: 0 }, 0.15 * T);
-            S.kk = M.num(0, 'kk'); S.kv = M.num(1, 'kv'); S.key = M.row(M.sup(M.num(a, 'kb'), S.kk), M.op('≡', 'keq'), S.kv); S.key.id = 'key';
-            M.place(g, 'key', S.key, 180, YK, 32, { col: GOLD }); hop('wow'); }],
-          [0.42 * T, g => { delete g.s.mk.ex.n1; }]]);
-        M.at(g, [[0.25 * T, g => hops(g, p - 1, step1, (g, k, to) => { M.roll(g, S.kk, k, { dur: step1 * 0.6 }); M.roll(g, S.kv, to, { dur: step1 * 0.6 }); M.place(g, 'key', S.key, 180, YK, 32, { col: GOLD }); })]]);
-        M.at(g, [[0.25 * T + (p - 1) * step1, g => { M.indicate(g, S.key, { sc: 1.15, dur: 0.35 * T, col: '#fff' }); M.sparkle(g, 'key', { n: 14 }); g.sfx('coin'); hop('laugh'); S.home = g.t; S.point = false; }]]); },
+        M.place(g, 'n1', S.n1, 92, YK, 28, { col: GOLD }); M.writeIn(g, S.n1, { dur: 0.45 * T, delay: 0.15 * T }); },
+      resolve(g) { M.show(g, after1); S.n1v.alpha = 1; M.writeIn(g, S.n1v, { dur: 0.22 * T }); M.indicate(g, S.n1v, { delay: 0.2 * T, dur: 0.4 * T, col: '#fff' }); g.sfx('ding');
+        // the frog hops p − 1 times; the key line writes each power as the frog lands
+        M.at(g, [[0.4 * T, g => { hop('wow'); hops(g, p - 1, (g, k, to) => keyAt(g, k, to, 262)); }]]);
+        // back on pad 1: pad 1 and the key a^(p−1) ≡ 1 pulse together and the frog celebrates
+        M.at(g, [[0.4 * T + hopsT + 0.02, g => { S.home = g.t; M.indicate(g, S.key, { sc: 1.3, dur: 0.45 * T, col: '#fff' }); M.indicate(g, S.key, { sc: 1.2, dur: 0.4 * T, delay: 0.45 * T, col: '#fff' }); M.sparkle(g, 'key', { n: 14 }); M.sparkle(g, S.padBox(1), { n: 14, delay: 0.1 * T }); g.sfx('coin'); hop('laugh'); }],
+          [0.4 * T + hopsT + 0.75 * T, g => { M.tween(g, S.n1, { alpha: 0 }, 0.2 * T); }],
+          [after1 - 0.02, g => { delete g.s.mk.ex.n1; M.place(g, 'key', S.key, 180, YK, 32, { col: GOLD }); S.point = false; }]]); },
     };
-    // ---- 2. divide the exponent by p − 1 ----
+    // ---- 2. divide the exponent by p − 1: N = (p − 1) · q + r, and what it means ----
+    const after2 = 2.95 * T;
     const divide = {
-      busy: 0.1, askAt: 0.6 * T, after: 1.0 * T, ask: { v: r, wrong: [q, N % p, p - 1, r + 1] },
-      then(g) { S.st = 2; S.point = true; hop('think'); M.show(g, 0.6 * T); g.sfx('swoosh');
-        M.circle(g, 'e', { col: GOLD, dur: 0.45 * T }); M.circle(g, 'kk', { col: GOLD, dur: 0.45 * T, delay: 0.05 * T });
+      busy: 0.1, askAt: 1.0 * T, after: after2, ask: { v: r, wrong: [q, N % p, p - 1, r + 1] },
+      then(g) { S.st = 2; S.point = true; hop('think'); M.show(g, 1.0 * T); g.sfx('swoosh');
+        M.circle(g, 'e', { col: GOLD, dur: 0.6 * T }); M.circle(g, 'kk', { col: GOLD, dur: 0.6 * T, delay: 0.1 * T });
         S.nr = M.num(r, 'nr', { alpha: 0 }); S.n2 = M.row(M.num(N), M.op('='), M.num(p - 1), M.op('·'), M.num(q, 'nq'), M.op('+'), S.nr);
-        M.place(g, 'n2', S.n2, 180, Y2, 30, { col: GOLD }); M.writeIn(g, S.n2, { dur: 0.4 * T, delay: 0.12 * T }); },
-      resolve(g) { M.show(g, 1.0 * T); S.nr.alpha = 1; M.writeIn(g, S.nr, { dur: 0.15 * T }); g.sfx('ding');
-        M.at(g, [[0.32 * T, g => { const bq = { ...M.box(g, 'nq') }, br = { ...M.box(g, 'nr') }; M.tween(g, S.n2, { alpha: 0 }, 0.2 * T);
-            // the working line: ≡ (a^(p−1))^q · a^r
+        M.place(g, 'n2', S.n2, 180, YN, 28, { col: GOLD }); M.writeIn(g, S.n2, { dur: 0.75 * T, delay: 0.2 * T }); },
+      resolve(g) { M.show(g, after2); S.nr.alpha = 1; M.writeIn(g, S.nr, { dur: 0.2 * T }); M.indicate(g, S.nr, { delay: 0.2 * T, dur: 0.4 * T, col: '#fff' }); g.sfx('ding');
+        M.at(g, [[0.8 * T, g => { // the working line: ≡ (a^(p−1))^□ · a^□, its two exponents still empty
             S.bq = M.num(q, 'bq', { alpha: 0 }); S.sr = M.num(r, 'sr', { alpha: 0 }); S.inner = M.sup(M.num(a), M.num(p - 1));
             S.bigN = M.sup(M.paren(S.inner), S.bq, 'big'); S.smallN = M.sup(M.num(a), S.sr, 'small'); S.dot = M.op('·', 'dot2');
-            S.line2 = M.row(M.op('≡', 'eq2'), S.bigN, S.dot, S.smallN); S.relay2(); M.writeIn(g, S.line2, { dur: 0.35 * T });
-            M.fly(g, { node: M.num(q, null, { col: GOLD }), from: [bq.x, bq.y], to: 'bq', dur: 0.36 * T, delay: 0.1 * T, arc: -40, s0: 30, s1: 26, then(g) { S.bq.alpha = 1; S.bq.pop = g.t; g.sfx('pop'); } });
-            M.fly(g, { node: M.num(r, null, { col: GOLD }), from: [br.x, br.y], to: 'sr', dur: 0.36 * T, delay: 0.18 * T, arc: -40, s0: 30, s1: 26, then(g) { S.sr.alpha = 1; S.sr.pop = g.t; g.sfx('pop'); hop('wow'); } }); }],
-          [0.75 * T, g => { delete g.s.mk.ex.n2; S.point = false; }]]); },
+            S.line2 = M.row(M.op('≡', 'eq2'), S.bigN, S.dot, S.smallN); S.relay2(); M.writeIn(g, S.line2, { dur: 0.4 * T }); hop('wow'); }],
+          // q flies up to become (a^(p−1))^q ...
+          [1.25 * T, g => { const b = { ...M.box(g, 'nq') }; M.circle(g, 'nq', { col: '#fff', dur: 0.4 * T });
+            M.fly(g, { node: M.num(q, null, { col: GOLD }), from: [b.x, b.y], to: 'bq', dur: 0.45 * T, arc: -30, s0: 28, s1: 26, then(g) { S.bq.alpha = 1; S.bq.pop = g.t; M.circle(g, 'big', { col: GOLD, dur: 0.45 * T }); g.sfx('pop'); } }); }],
+          // ... a beat, then r flies up to become a^r
+          [2.0 * T, g => { const b = { ...M.box(g, 'nr') }; M.circle(g, 'nr', { col: '#fff', dur: 0.4 * T });
+            M.fly(g, { node: M.num(r, null, { col: GOLD }), from: [b.x, b.y], to: 'sr', dur: 0.45 * T, arc: -30, s0: 28, s1: 26, then(g) { S.sr.alpha = 1; S.sr.pop = g.t; M.circle(g, 'small', { col: GOLD, dur: 0.45 * T }); g.sfx('pop'); hop('laugh'); } }); }],
+          [2.6 * T, g => M.tween(g, S.n2, { alpha: 0 }, 0.25 * T)],
+          [after2 - 0.02, g => { delete g.s.mk.ex.n2; S.point = false; }]]); },
     };
     S.relay2 = () => M.place(g, 'l2', S.line2, 180, Y2, 40, { col: INK });
     // when both parts are simplified, the residue flies up into the answer slot
-    const finish = g => { if (!(S.done3 && S.done4)) return;
-      M.at(g, [[0.05 * T, g => { M.fly(g, { node: M.num(ans, null, { col: GOLD }), from: 'res', to: 'ans', dur: 0.36 * T, arc: -50, s0: 40, s1: 40,
+    const FIN = 0.7 * T;
+    const finish = g => { if (!(S.done3 && S.done4)) return; M.show(g, FIN);
+      M.at(g, [[0.05 * T, g => { M.fly(g, { node: M.num(ans, null, { col: GOLD }), from: 'res', to: 'ans', dur: 0.45 * T, arc: -50, s0: 40, s1: 40,
         then(g) { S.slot.fill = M.num(ans, 'ansv', { col: GOLD }); M.place(g, 'l1', S.line1, 180, Y1, 40, { col: INK }); S.slot.fill.pop = g.t; M.sparkle(g, 'ansv', { n: 16 }); g.sfx('coin'); hop('laugh'); } }); }]]); };
-    // ---- 3. (a^(p−1))^q ≡ 1^q = 1 ----
+    // ---- 3. (a^(p−1))^q: first a^(p−1) becomes 1, then 1^q = 1, then it melts away ----
+    const ask3 = 2.05 * T, after3 = 1.5 * T;
     const one = {
-      busy: 0.1, askAt: 0.62 * T, after: 0.75 * T, ask: { v: 1, wrong: [q, 0, a] },
-      then(g) { S.done3 = true; S.point = true; hop('think'); M.show(g, 0.62 * T); g.sfx('swoosh');
-        M.circle(g, S.inner, { col: GOLD, dur: 0.4 * T }); M.indicate(g, 'key', { sc: 1.15, dur: 0.4 * T, col: '#fff' });
-        M.at(g, [[0.22 * T, g => { const kb = { ...M.box(g, 'kv') }; M.tween(g, S.inner.base, { alpha: 0 }, 0.12 * T, { delay: 0.18 * T }); M.tween(g, S.inner.exp, { alpha: 0 }, 0.12 * T, { delay: 0.18 * T });
-          M.fly(g, { node: M.num(1, null, { col: GOLD }), from: [kb.x, kb.y], to: S.inner.base.id || 'big', dur: 0.3 * T, arc: -30, s0: 32, s1: 40,
-            then(g) { S.one1 = M.num(1, null, { _born: -1, col: GOLD, pop: g.t }); S.bigN.base = M.paren(S.one1); S.relay2(); g.sfx('pop');
-              S.n3v = M.num(1, null, { alpha: 0 }); S.n3 = M.row(M.sup(M.num(1), M.num(q)), M.op('='), S.n3v); const b = M.box(g, 'big'); M.place(g, 'n3', S.n3, M.clamp(b.x, 70, 290), YN, 26, { col: GOLD }); M.writeIn(g, S.n3, { dur: 0.22 * T }); } }); }]]);
-        S.inner.base.id = 'inb'; },
-      resolve(g) { M.show(g, 0.75 * T); S.n3v.alpha = 1; M.writeIn(g, S.n3v, { dur: 0.12 * T }); g.sfx('ding');
-        M.at(g, [[0.2 * T, g => { // the block melts away: (1)^q · becomes nothing
-            for (const n of [S.bigN.base, S.one1, S.bq, S.dot]) M.tween(g, n, { alpha: 0 }, 0.2 * T); M.tween(g, S.n3, { alpha: 0 }, 0.2 * T, { delay: 0.1 * T }); S.melt = g.t; }],
-          [0.45 * T, g => { S.line2.items = S.line2.items.filter(n => n !== S.bigN && n !== S.dot); S.relay2(); delete g.s.mk.ex.n3; hop('laugh'); S.point = false; finish(g); }]]); },
+      busy: 0.1, askAt: ask3, after: after3, ask: { v: 1, wrong: [q, 0, a] },
+      then(g) { S.done3 = true; S.point = true; hop('think'); M.show(g, ask3); g.sfx('swoosh');
+        S.inner.base.id = 'inb'; M.circle(g, S.inner, { col: GOLD, dur: 0.6 * T }); M.indicate(g, 'key', { sc: 1.25, dur: 0.5 * T, col: '#fff' }); M.light(g, 'key', { col: '#fff', delay: 0.1 * T });
+        M.at(g, [[0.55 * T, g => { const kb = { ...M.box(g, 'kv') };
+          M.tween(g, S.inner.base, { alpha: 0 }, 0.15 * T, { delay: 0.35 * T }); M.tween(g, S.inner.exp, { alpha: 0 }, 0.15 * T, { delay: 0.35 * T });
+          M.fly(g, { node: M.num(1, null, { col: GOLD }), from: [kb.x, kb.y], to: 'inb', dur: 0.5 * T, arc: -30, s0: 32, s1: 40,
+            then(g) { S.one1 = M.num(1, null, { _born: -1, col: GOLD, pop: g.t }); S.bigN.base = M.paren(S.one1); S.relay2(); g.sfx('pop'); M.sparkle(g, S.one1, { n: 8 }); M.unlight(g, 'key'); } }); }],
+          // hold, then 1^q = writes itself
+          [1.75 * T, g => { S.n3v = M.num(1, null, { alpha: 0 }); S.n3 = M.row(M.sup(M.num(1), M.num(q)), M.op('='), S.n3v); const b = M.box(g, 'big'); M.place(g, 'n3', S.n3, M.clamp(b.x, 70, 290), YN, 28, { col: GOLD }); M.writeIn(g, S.n3, { dur: 0.3 * T }); hop('think'); }]]); },
+      resolve(g) { M.show(g, after3); S.n3v.alpha = 1; M.writeIn(g, S.n3v, { dur: 0.2 * T }); M.indicate(g, S.n3v, { delay: 0.2 * T, dur: 0.4 * T, col: '#fff' }); g.sfx('ding');
+        M.at(g, [[1.0 * T, g => { // the block melts away: (1)^q · becomes nothing
+            for (const n of [S.bigN.base, S.one1, S.bq, S.dot]) M.tween(g, n, { alpha: 0 }, 0.3 * T); M.tween(g, S.n3, { alpha: 0 }, 0.3 * T); S.melt = g.t; }],
+          [after3 - 0.05, g => { S.line2.items = S.line2.items.filter(n => n !== S.bigN && n !== S.dot); S.relay2(); delete g.s.mk.ex.n3; hop('laugh'); S.point = false; finish(g); }]]); },
     };
-    // ---- 4. a^r: hop it out and reduce ----
-    const step4 = Math.min(0.2, 0.8 / r) * T, ask4 = 0.15 * T + r * step4 + 0.12 * T;
+    // ---- 4. a^r: the frog hops r times, then a^r = big = p · k + residue, and a^r rolls over to the residue ----
+    const ask4 = 0.35 * T + r * HOP + 0.8 * T - (HOP - AIR), after4 = 1.15 * T;
     const last = {
-      busy: 0.1, askAt: ask4, after: 0.7 * T, ask: { v: ans, wrong: [big, a * r % p, (ans + 1) % p, big % (p - 1)] },
+      busy: 0.1, askAt: ask4, after: after4, ask: { v: ans, wrong: [big, a * r % p, (ans + 1) % p, big % (p - 1)] },
       then(g) { S.done4 = true; S.point = true; hop('think'); M.show(g, ask4); g.sfx('swoosh');
-        M.circle(g, 'small', { col: GOLD, dur: 0.4 * T }); S.frog = 1;
-        const k = Math.floor(big / p); S.n4v = M.num(ans, null, { alpha: 0 });
-        S.n4 = M.row(M.sup(M.num(a), M.num(r)), M.op('='), M.num(big), ...(big >= p ? [M.op('='), M.num(p), M.op('·'), M.num(k), M.op('+'), S.n4v] : []));
-        const b = M.box(g, 'small'); const m = M.lay(S.n4, 26); M.place(g, 'n4', S.n4, M.clamp(b.x, m.w / 2 + 10, 350 - m.w / 2), YN, 26, { col: GOLD }); M.writeIn(g, S.n4, { dur: 0.5 * T, delay: 0.1 * T });
-        M.at(g, [[0.15 * T, g => hops(g, r, step4)]]); },
-      resolve(g) { M.show(g, 0.7 * T); S.n4v.alpha = 1; M.writeIn(g, S.n4v, { dur: 0.12 * T }); g.sfx('ding'); S.lit[ans] = g.t;
-        M.at(g, [[0.2 * T, g => { // a^r rolls over to the residue
-            S.res = M.num(big, 'res', { _born: -1 }); S.line2.items[S.line2.items.indexOf(S.smallN)] = S.res; S.relay2(); M.roll(g, S.res, ans, { dur: 0.28 * T }); S.res.col = GOLD; M.tween(g, S.n4, { alpha: 0 }, 0.2 * T, { delay: 0.15 * T }); hop('wow'); }],
-          [0.5 * T, g => { delete g.s.mk.ex.n4; S.point = false; finish(g); }]]); },
+        M.circle(g, 'small', { col: GOLD, dur: 0.6 * T });
+        M.at(g, [[0.35 * T, g => { hop('wow'); hops(g, r); }],
+          [0.35 * T + r * HOP - (HOP - AIR) + 0.1 * T, g => { const k = Math.floor(big / p); S.n4v = M.num(ans, null, { alpha: 0 });
+            S.n4 = M.row(M.sup(M.num(a), M.num(r)), M.op('='), M.num(big), ...(big >= p ? [M.op('='), M.num(p), M.op('·'), M.num(k), M.op('+'), S.n4v] : []));
+            const b = M.box(g, 'small'), m = M.lay(S.n4, 28); M.place(g, 'n4', S.n4, M.clamp(b.x, m.w / 2 + 10, 350 - m.w / 2), YN, 28, { col: GOLD }); M.writeIn(g, S.n4, { dur: 0.65 * T }); hop('think'); }]]); },
+      resolve(g) { M.show(g, after4); if (S.n4v) { S.n4v.alpha = 1; M.writeIn(g, S.n4v, { dur: 0.2 * T }); M.indicate(g, S.n4v, { delay: 0.2 * T, dur: 0.4 * T, col: '#fff' }); } g.sfx('ding'); S.lit[ans] = g.t;
+        M.at(g, [[0.8 * T, g => { // a^r rolls over to the residue
+            S.res = M.num(big, 'res', { _born: -1 }); S.line2.items[S.line2.items.indexOf(S.smallN)] = S.res; S.relay2(); M.roll(g, S.res, ans, { dur: 0.35 * T }); S.res.col = GOLD; hop('wow'); }],
+          [0.95 * T, g => M.tween(g, S.n4, { alpha: 0 }, 0.18 * T)],
+          [after4 - 0.03, g => { delete g.s.mk.ex.n4; S.point = false; finish(g); }]]); },
     };
     M.play(g, {
       moves(g) {
@@ -138,21 +157,28 @@ MG.add({
     // the ring of lily pads, one per residue, with a faint trail of the hops
     const pos = k => { const an = -Math.PI / 2 + 2 * Math.PI * k / p; return [180 + Math.cos(an) * RR, RC + Math.sin(an) * RR * 0.92]; }, pr = p > 7 ? 19 : 24;
     S.trail = S.trail.filter(h => t - h.t < 1.2);
-    for (let k = 0; k < p; k++) { const [x, y] = pos(k), lit = S.lit[k] != null ? Math.max(0, 1 - (t - S.lit[k]) / 1.2) : 0, home = k === 1 && S.home != null ? Math.max(0, 1 - (t - S.home) / 1.5) : 0;
+    for (let k = 0; k < p; k++) { const [x, y] = pos(k), lit = S.lit[k] != null ? Math.max(0, 1 - (t - S.lit[k]) / 1.2) : 0, home = k === 1 && S.home != null && t - S.home < 1.4 ? 0.6 + 0.4 * Math.sin((t - S.home) * 9) : 0;
       c.save(); c.fillStyle = 'rgba(0,30,30,0.35)'; c.beginPath(); c.ellipse(x + 2, y + 4, pr, pr * 0.8, 0, 0, 7); c.fill();
       const gr = c.createRadialGradient(x - pr * 0.3, y - pr * 0.3, 2, x, y, pr); gr.addColorStop(0, P.mix('#9ae08a', '#ffe680', Math.max(lit, home))); gr.addColorStop(1, P.mix(PAD, '#e8b830', Math.max(lit, home) * 0.8)); c.fillStyle = gr;
       const a0 = 0.9 + k * 0.7; c.beginPath(); c.moveTo(x + Math.cos(a0 + 0.22) * pr * 0.55, y + Math.sin(a0 + 0.22) * pr * 0.55); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.closePath(); c.fill(); c.strokeStyle = PADD; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.stroke();
       c.font = M.NUMF(pr > 20 ? 22 : 19, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#163a1a'; c.fillText(String(k), x, y + 1); c.restore(); }
+    // the tags a^k beside the pads the frog has landed on
+    for (const [res, tg] of Object.entries(S.tags)) { const [x, y] = pos(+res), an = Math.atan2((y - RC) / 0.92, x - 180), d = pr + 18, tx = x + Math.cos(an) * d, ty = y + Math.sin(an) * d * 0.92, fresh = Math.max(0, 1 - (t - tg.t) / 0.8);
+      c.save(); c.globalAlpha = Math.min(1, (t - tg.t) / 0.15) * (0.75 + 0.25 * fresh); c.textBaseline = 'middle'; c.shadowColor = 'rgba(0,0,0,0.7)'; c.shadowBlur = 4; c.fillStyle = P.mix('#ffe9a8', '#ffffff', fresh);
+      const bs = 20 * (1 + fresh * 0.25); c.font = M.NUMF(bs, 700); const bw = c.measureText(String(S.a)).width; c.font = M.NUMF(bs * 0.66, 700); const ew = c.measureText(String(tg.k)).width;
+      c.textAlign = 'left'; c.font = M.NUMF(bs, 700); c.fillText(String(S.a), tx - (bw + ew) / 2, ty + 1); c.font = M.NUMF(bs * 0.66, 700); c.fillText(String(tg.k), tx - (bw + ew) / 2 + bw + 1, ty - bs * 0.32); c.restore(); }
     // the frog on its pad (or mid-hop)
     let fx, fy, air = 0; { const H = S.hopA; if (H && t < H.t0 + H.dur) { const k = M.easeIO(M.clamp((t - H.t0) / H.dur, 0, 1)), [x0, y0] = pos(H.from), [x1, y1] = pos(H.to); fx = M.lerp(x0, x1, k); fy = M.lerp(y0, y1, k) - Math.sin(k * Math.PI) * 34; air = Math.sin(k * Math.PI);
-        c.save(); c.strokeStyle = 'rgba(255,240,170,0.6)'; c.setLineDash([4, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - 50, x1, y1); c.stroke(); c.restore(); }
+        c.save(); c.strokeStyle = 'rgba(255,240,170,0.6)'; c.setLineDash([4, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - 50, x1, y1); c.stroke(); c.restore();
+        c.save(); c.globalAlpha = Math.min(1, k * 4) * Math.min(1, (1 - k) * 6 + 0.3); c.font = M.NUMF(20, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 5; c.fillStyle = GOLD;
+        c.fillText('× ' + S.a, (x0 + x1) / 2, (y0 + y1) / 2 - 38); c.restore(); }
       else { [fx, fy] = pos(S.frog); } }
     const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', sad = S.splash != null && t - S.splash < 0.6;
     const expr = won ? 'laugh' : lost || sad ? 'sad' : S.faceT != null && t - S.faceT < 0.7 ? S.face : 'happy';
-    const pose = won ? 'cheer' : air > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
+    const pose = won || (S.home != null && t - S.home < 0.9 && air === 0) ? 'cheer' : air > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
     if (typeof ANI !== 'undefined') ANI.draw(c, 'frog', fx, fy + 8, 0.62, { t, pose, expr, noShadow: air > 0.1 }); else SCN.host(g, c, 'frog', fx, fy, 0.62);
     // a soft dark band behind the math so it reads over the water
-    c.save(); c.fillStyle = 'rgba(10,30,40,0.35)'; c.beginPath(); c.roundRect(18, Y1 - 46, 324, (S.line2 || S.mk.ex.n2 ? Y2 + 22 : YK + 24) - (Y1 - 46), 18); c.fill(); c.restore();
+    c.save(); c.fillStyle = 'rgba(10,30,40,0.35)'; c.beginPath(); c.roundRect(18, Y1 - 46, 324, (S.mk.ex.n2 || S.mk.ex.n3 || S.mk.ex.n4 ? YN + 16 : S.line2 ? Y2 + 22 : YK + 24) - (Y1 - 46), 18); c.fill(); c.restore();
     M.drawEx(g, c, 'l1'); for (const k of ['key', 'n1', 'n2', 'l2', 'n3', 'n4']) M.drawEx(g, c, k);
     M.drawUI(g, c);
   },
