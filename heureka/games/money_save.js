@@ -2,7 +2,7 @@
 // the sidewalk one at a time, and each time the fox's candy cart rolls up to grab it. Drag every coin into the jar: the
 // little coins pile up to the line and the bike rolls out to the rabbit. Let the cart grab one and the rabbit gets a
 // lollipop while the bike stays in the window. Level 2: one small treat is allowed, but the line is higher.
-const FLOOR = 566, JAR = { x: 286, y0: 400, y1: 598, w: 104 }, CR = 15;
+const FLOOR = 566, JAR = { x: 284, y0: 478, y1: 600, w: 104 }, CR = 15;
 const NEED = [5, 6, 6], TOTAL_TREATS = [0, 0, 1], REACH = [2.9, 2.2, 1.7]; // coins to the line; lollipops allowed; seconds for the cart to reach a coin
 // where the k-th saved coin settles inside the jar: rows of three, slightly jumbled (fixed, so it never changes on rewind)
 function slot(k) { const row = Math.floor(k / 3), col = k % 3, jit = [[-2, 1], [3, -2], [-1, 2], [2, 1], [-3, -1], [1, 2], [2, -2], [-2, 0], [0, 1]][k % 9]; return { x: JAR.x + (col - 1) * 31 + jit[0] + (row % 2 ? 8 : 0) * (col === 2 ? -1 : 1) * 0.5, y: JAR.y1 - 12 - row * 15 + jit[1], tilt: (jit[0] - jit[1]) * 0.04 }; }
@@ -61,7 +61,7 @@ MG.add({
   init(g) {
     const s = g.s, L = Math.min(2, g.level);
     s.need = NEED[L]; s.treats = TOTAL_TREATS[L]; s.reach = REACH[L];
-    s.saved = 0; s.eaten = 0; s.coin = null; s.next = 0.9; s.k = 0; s.cartX = -40; s.fall = []; s.wonT = 0; s.lolly = 0; s.lollyFly = null; s.happy = 0;
+    s.saved = 0; s.eaten = 0; s.coin = null; s.next = 0.9; s.k = 0; s.cartX = 100; s.fall = []; s.wonT = 0; s.lolly = 0; s.lollyFly = null; s.happy = 0;
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); const k = s.coin; if (!k || g.done || k.inJar || k.gone) return;
@@ -78,20 +78,20 @@ MG.add({
   update(g, dt) {
     const s = g.s, k = s.coin;
     // a new coin pops out once the last one is settled
-    if (!k && !g.done && g.t >= s.next) { s.coin = { x: 70 + g.rand() * 70, y: 470, vx: 0, vy: 0, r: CR, e: 0.35, mu: 1400, t0: g.t, spin: 0, idx: s.k++ }; g.sfx('coin'); }
+    if (!k && !g.done && g.t >= s.next) { s.coin = { x: 160 + g.rand() * 32, y: 470, vx: 0, vy: 0, r: CR, e: 0.35, mu: 1400, t0: g.t, spin: 0, idx: s.k++ }; g.sfx('coin'); }
     if (k && !k.inJar && !k.gone && !k.held) {
       SK.step(k, dt, { gy: 1500, floor: FLOOR, left: 16, right: 344 }); k.spin += dt * (k.onFloor ? 0 : 14);
       if (k.onFloor) k.spin *= 0.8;
     }
     // the cart rolls toward the coin (it starts once the coin lands), and backs off when the coin is gone
     if (k && !k.inJar && !k.gone) {
-      const target = k.x - CR - 4, sp = (target + 40) / s.reach;
+      const target = k.x - CR - 4, sp = Math.max(25, target - 100) / s.reach;
       if (g.t > k.t0 + 0.35) s.cartX = Math.min(target, s.cartX + sp * dt);
       if (s.cartX >= target - 0.5 && !k.held && k.onFloor) { // grabbed!
         k.gone = true; s.eaten++; g.sfx('munch'); g.sfx('pop'); s.lollyFly = { t: g.t, x: k.x, y: k.y - 60 };
         if (s.eaten > s.treats) { s.lolly = g.t; g.fail(); g.sfx('laugh'); } else { s.happy = g.t; s.coin = null; s.next = g.t + 0.6; }
       }
-    } else s.cartX = Math.max(-60, s.cartX - 260 * dt);
+    } else if (!s.lolly) s.cartX = Math.max(100, s.cartX - 200 * dt);
     if (k && k.held && s.cartX >= k.x - 40) s.cartX = k.x - 40; // the cart can't catch a coin in your hand, but it follows
     // a coin falling into the jar settles on its slot
     for (const k of s.fall) if (!k.landed) {
@@ -103,22 +103,26 @@ MG.add({
   draw(g, c) {
     const s = g.s, t = g.t, k = s.coin, won = g.result === 'win', lost = g.result === 'fail';
     c.drawImage(g.bake('b8save_st', paintStreet), 0, 0, 360, 640);
+    const lf = s.lollyFly; let lk = lf ? SK.clamp((t - lf.t) / 0.5, 0, 1) : 0;
     // the bike: in the window, or rolling out to the rabbit after the win
     const wk = won ? SK.easeInOut((t - s.wonT - 0.15) / 1.0) : 0;
-    const bx = SK.lerp(140, 128, wk), by = SK.lerp(322, 600, wk), bs = SK.lerp(1.2, 1.05, wk);
+    const bx = SK.lerp(140, 236, wk), by = SK.lerp(322, 452, wk) - Math.sin(wk * Math.PI) * 30, bs = SK.lerp(1.2, 0.9, wk);
     if (wk > 0) { c.save(); c.globalAlpha = 1 - wk * 0.6; c.fillStyle = 'rgba(255,240,190,0.4)'; c.beginPath(); c.roundRect(30, 186, 220, 152, 8); c.fill(); c.restore(); }
     bike(c, bx, by, bs, wk * 14 + (wk ? 0 : Math.sin(t * 0.8) * 0.2));
     if (!wk) { c.save(); c.globalAlpha = 0.3 + 0.2 * Math.sin(t * 3); c.fillStyle = '#fff4c0'; for (let i = 0; i < 3; i++) { const a = t * 1.3 + i * 2.1; c.beginPath(); c.arc(140 + Math.cos(a) * 70, 250 + Math.sin(a * 1.3) * 30, 2.5, 0, 7); c.fill(); } c.restore(); }
     // the jar, its price line with a little bike, and the coins saved so far
     const ly = lineY(s.need);
+    // the rabbit, at the shop door behind the jar
+    const pose = won ? 'cheer' : lost ? 'idle' : s.happy && t - s.happy < 1 ? 'hop' : 'idle';
+    SK.animal(c, 'rabbit', 312, 446, 0.9, { t, pose, expr: won ? 'laugh' : 'happy', facing: -1,
+      hold: lf && lk >= 1 ? (h => lollipop(h, 0, -6, 1)) : null });
     B8.jarBack(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     for (let i = 0; i < s.saved; i++) { const sl = slot(i); B8.flatCoin(c, sl.x, sl.y, CR, sl.tilt); }
     for (const f of s.fall) if (!f.landed) B8.coin(c, f.x, f.y, CR, f.spin);
     B8.jarFront(c, JAR.x, JAR.y0, JAR.y1, JAR.w);
     const full = s.saved >= s.need;
     c.save(); c.strokeStyle = full ? '#5ad07a' : '#e8403a'; c.lineWidth = 4; c.setLineDash([9, 6]); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 4, ly); c.lineTo(JAR.x + JAR.w / 2 + 4, ly); c.stroke(); c.restore();
-    c.save(); c.fillStyle = full ? '#5ad07a' : '#e8403a'; c.beginPath(); c.roundRect(JAR.x - JAR.w / 2 - 50, ly - 17, 46, 34, 8); c.fill(); c.beginPath(); c.moveTo(JAR.x - JAR.w / 2 - 6, ly - 8); c.lineTo(JAR.x - JAR.w / 2 + 2, ly); c.lineTo(JAR.x - JAR.w / 2 - 6, ly + 8); c.fill(); c.restore();
-    bike(c, JAR.x - JAR.w / 2 - 27, ly + 12, 0.38, 0);
+    c.save(); c.globalAlpha = 0.9; bike(c, JAR.x + 22, ly - 3, 0.36, 0); c.restore();
     // the fox pushing the candy cart
     const cx = s.cartX, moving = k && !k.inJar && !k.gone && cx < k.x - CR - 6;
     if (cx > -150) { SK.animal(c, 'fox', cx - 118, FLOOR + 28, 0.8, { t, pose: moving ? 'walk' : s.lolly ? 'cheer' : 'idle', expr: s.lolly ? 'laugh' : 'happy' }); cart(c, cx, FLOOR + 26, t, moving); }
@@ -129,12 +133,7 @@ MG.add({
       if (!k.held) SK.glow(c, g, k.x, k.y, 24);
     }
     // a lollipop flies from the cart to the rabbit
-    const lf = s.lollyFly; let lk = lf ? SK.clamp((t - lf.t) / 0.5, 0, 1) : 0;
-    if (lf && lk < 1) lollipop(c, SK.lerp(lf.x, 200, lk), SK.lerp(lf.y, 520, lk) - Math.sin(lk * Math.PI) * 60, 1.1);
-    // the rabbit, between the street and the jar
-    const pose = won ? 'cheer' : lost ? 'idle' : s.happy && t - s.happy < 1 ? 'hop' : 'idle';
-    SK.animal(c, 'rabbit', 202, 604, 0.95, { t, pose, expr: won ? 'laugh' : lost ? 'happy' : 'happy', facing: wk > 0.5 ? -1 : 1,
-      hold: lf && lk >= 1 ? (h => lollipop(h, 0, -6, 1)) : null });
+    if (lf && lk < 1) lollipop(c, SK.lerp(lf.x, 316, lk), SK.lerp(lf.y, 400, lk) - Math.sin(lk * Math.PI) * 60, 1.1);
     // guidance: drag the coin into the jar
     if (k && !k.inJar && !k.gone && k.onFloor) SK.demo(g, c, 'drag', [k.x, k.y], [JAR.x, JAR.y0 - 20], { arc: 60, delay: 0.6 });
   },

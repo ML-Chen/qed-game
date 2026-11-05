@@ -65,7 +65,7 @@
     c.restore();
   }
   MG.add({
-    id: 'knock', stage: 'energy', cmd: 'KNOCK DOWN!', time: 5, mood: 'night', winText: 'Crash!', failText: 'Still up!',
+    id: 'energy_knock', stage: 'energy', cmd: 'KNOCK DOWN!', time: 5, mood: 'night', winText: 'Crash!', failText: 'Still up!',
     card: { title: 'Heavy and fast hits hard', kind: 'Physics', ref: 'Kinetic energy and momentum',
       text: 'A ball rolling down the ramp speeds up, because gravity keeps pulling it. The higher you let it go, the faster it is at the bottom.\n\nA moving ball carries energy. At the same speed, a heavier ball carries more energy than a light one, and a faster ball carries more than a slower one. The bowling ball has plenty, so it sends the blocks flying. The ping-pong ball is so light that it only taps the tower and bounces off.',
       note: 'Heavier and faster things carry more energy, so they hit harder.' },

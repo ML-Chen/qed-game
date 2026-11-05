@@ -44,9 +44,9 @@ MG.add({
     const s = g.s, all = s.spots.every(p => p.at);
     // the clouds roll in on their own; once every patch is planted they hurry up
     if (!s.rainT) { const arrive = SK.clamp(g.dur * 0.5, 3.2, 6.5); s.ck = Math.min(1, s.ck + dt * (all ? 2.2 : B5.patient() ? 0 : 1 / arrive)); if (s.ck >= 1) { s.rainT = g.t; g.sfx('rain'); g.sfx('thunder');
-      for (const p of s.spots) if (!p.at) s.mud.push({ x: p.x, v: 20, r: 9 }); } }
+      for (const p of s.spots) if (!p.at) s.mud.push({ x: p.x, v: 20, r: 13 }); } }
     if (!s.rainT || g.done) return;
-    for (const m of s.mud) { m.v = Math.min(300, m.v + 420 * dt); m.x += m.v * dt; m.r = Math.min(20, m.r + dt * 8);
+    for (const m of s.mud) { m.v = Math.min(300, m.v + 420 * dt); m.x += m.v * dt; m.r = Math.min(24, m.r + dt * 10);
       if (m.x >= PL_DOOR && !s.splat) { s.splat = g.t; g.sfx('splash'); g.sfx('laugh'); g.shake(4, 0.3); g.burst(PL_DOOR + 8, PL_BOT - 14, ['#6a4424', '#8a5a30', '#4a2e18'], 22, 220); g.fail(); } }
     if (!s.mud.length && g.t - s.rainT > 1.3) { g.win(); g.sfx('cheer'); }
   },
@@ -74,10 +74,13 @@ MG.add({
       B5.bush(c, p.x, p.y + 4, 1.0, k, '#4f9a48');
     }
     // sliding mud
-    for (const m of s.mud) { if (s.splat && m.x >= PL_DOOR) continue; const y = Math.min(plY(m.x), PL_BOT) - m.r * 0.5;
-      c.fillStyle = '#5e3a20'; c.beginPath(); c.ellipse(m.x, y, m.r * 1.3, m.r * 0.7, Math.atan2(plY(m.x + 5) - plY(m.x - 5), 10), 0, 7); c.fill();
-      c.fillStyle = '#8a5a30'; c.beginPath(); c.ellipse(m.x - m.r * 0.3, y - m.r * 0.25, m.r * 0.5, m.r * 0.25, 0, 0, 7); c.fill();
-      c.strokeStyle = 'rgba(94,58,32,0.6)'; c.lineWidth = 5; c.beginPath(); for (let d = 0; d < 50; d += 5) c.lineTo(m.x - d, plY(m.x - d) - 1); c.stroke(); }
+    for (const m of s.mud) { if (s.splat && m.x >= PL_DOOR) continue; const y = Math.min(plY(m.x), PL_BOT), a = Math.atan2(plY(m.x + 5) - plY(m.x - 5), 10), R = m.r;
+      c.strokeStyle = 'rgba(122,80,48,0.75)'; c.lineWidth = R * 0.7; c.lineCap = 'round'; c.beginPath(); for (let d = 0; d < 70; d += 5) c.lineTo(m.x - d, plY(m.x - d) - R * 0.25); c.stroke();
+      c.save(); c.translate(m.x, y - R * 0.45); c.rotate(a);
+      c.fillStyle = '#7a5030'; c.strokeStyle = '#3a2414'; c.lineWidth = 2; c.beginPath(); c.moveTo(-R * 1.8, R * 0.45); c.quadraticCurveTo(-R * 0.6, -R * 1.1, R * 0.7, -R * 0.6); c.quadraticCurveTo(R * 1.5, -R * 0.2, R * 1.2, R * 0.45); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = 'rgba(220,170,110,0.65)'; c.beginPath(); c.ellipse(-R * 0.2, -R * 0.45, R * 0.5, R * 0.16, -0.3, 0, 7); c.fill();
+      c.fillStyle = '#5e3a20'; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(R * (0.9 + i * 0.35), -R * (0.7 + 0.3 * Math.sin(t * 9 + i * 2)), R * 0.14, 0, 7); c.fill(); }
+      c.restore(); }
     // water running down the hill and past the house: clear where the soil holds, brown behind mud
     if (rain) { c.save(); c.globalAlpha = rain; c.lineCap = 'round'; c.lineWidth = 3;
       for (let i = 0; i < 14; i++) { const q = ((t * 0.9 + i / 14) % 1), x = q * 380 - 10, y = Math.min(plY(x), PL_BOT) + (x > PL_X1 ? 8 : 0) - 2;
