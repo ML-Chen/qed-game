@@ -47,7 +47,7 @@
   }
   function newRound(g) { const s = g.s; s.d = s.plan[s.r]; s.dots = 0; s.pos = 0; s.ph = 'set'; s.k = -1; s.sub = 0; s.step = ''; s.hop = null; s.endT = 0; s.res = ''; s.born = g.t; }
   MG.add({
-    id: 'repeat', stage: 'programs', cmd: 'HOP THE BIRD INTO ITS NEST!', time: 9, mood: 'bright', winText: 'Home!', failText: 'Wrong count!',
+    id: 'repeat', stage: 'programs', cmd: 'HOP THE BIRD INTO ITS NEST!', time: 11, mood: 'bright', winText: 'Home!', failText: 'Wrong count!',
     card: { title: 'Loops repeat steps', kind: 'Computer science', ref: 'Loops (for, repeat)',
       text: 'Instead of writing hop() five times, a program can say "repeat this five times". That is a loop.\n\nIn Python it looks like for _ in range(5): with the steps to repeat written underneath. Each time round the loop, the computer runs those steps once more, then counts one repeat done.\n\nThe computer never guesses. Ask for too few repeats and the job stops early. Ask for too many and it keeps going past where you meant to stop.',
       note: 'A loop runs the same steps again and again, exactly as many times as you tell it.' },

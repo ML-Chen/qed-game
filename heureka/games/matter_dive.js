@@ -107,7 +107,7 @@
       for (const b of s.bubbles) { c.strokeStyle = `rgba(255,255,255,${Math.min(0.8, b.life)})`; c.lineWidth = 1.5; c.beginPath(); c.arc(b.x, b.y, b.r, 0, 7); c.stroke(); }
       sub(c, g, s, t);
       // which way to go: an arrow beside the sub toward the band
-      if (!done && !g.done && !s.grabT) { const dy = target(s) - s.y; if (Math.abs(dy) > s.band) { const d = Math.sign(dy), p = 0.5 + 0.5 * Math.sin(t * 6), ax = SX + 2, ay = s.y + d * (44 + 6 * p);
+      if (!done && !g.done && !s.grabT) { const dy = target(s) - s.y; if (Math.abs(dy) > s.band) { const d = Math.sign(dy), p = 0.5 + 0.5 * Math.sin(t * 6), ax = SX - 26, ay = s.y + d * (44 + 6 * p);
         c.save(); c.fillStyle = '#ffe27a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(ax, ay + d * 18); c.lineTo(ax - 13, ay); c.lineTo(ax - 5, ay); c.lineTo(ax - 5, ay - d * 14); c.lineTo(ax + 5, ay - d * 14); c.lineTo(ax + 5, ay); c.lineTo(ax + 13, ay); c.closePath(); c.fill(); c.stroke(); c.restore(); } }
       // the tank lever
       c.save(); c.fillStyle = 'rgba(20,30,50,0.72)'; c.beginPath(); c.roundRect(LV.x - 26, LV.t - 44, 52, LV.b - LV.t + 96, 18); c.fill();
@@ -118,8 +118,8 @@
       c.restore();
       SK.tag(c, 'Air', LV.x, LV.t - 24, 18); SK.tag(c, 'Water', LV.x, LV.b + 33, 18);
       if (s.notch) SK.tag(c, 'Hover', LV.x - 66, levY(s.f0), 18, '#eaffea', 'rgba(30,110,60,0.85)');
-      SK.tag(c, 'Tank', SX + 42, s.y - 40, 18);
-      if (!won) SK.tag(c, 'Pearl ' + Math.min(s.round + 1, s.depths.length) + ' / ' + s.depths.length, 84, 140, 18);
+      SK.tag(c, 'Tank', SX + 30, s.y + 50, 18);
+      if (!won) SK.tag(c, 'Pearl ' + Math.min(s.round + 1, s.depths.length) + ' / ' + s.depths.length, 80, 212, 18);
       // guidance: drag the lever to the setting that carries the sub to the band and stops it there
       if (!done && !g.done) { const w = want(g); SK.grab(c, g, LV.x, hy, 24); if (Math.abs(w - s.lev) > 0.06) SK.arrow(c, g, LV.x, hy, LV.x, levY(w), { from: 26, to: 0 });
         SK.demo(g, c, 'drag', [LV.x, hy], [LV.x, levY(w)]); }
