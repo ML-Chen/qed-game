@@ -12,6 +12,7 @@
 //      and the goat trots there; its plank swings level (slope 0) and a flag is planted on the peak or in the valley.
 // Level 0: x² − 2hx + c (one root, a valley). Level 1: x³ − 3a²x (a peak and a valley). Level 2: q·x³ − 3qa²x + c.
 // Medium mode: f′(x) and the roots come from the tray.
+const BIG = 1.6, grow = b => b ? { sc: BIG, dx: (BIG - 1) * b.w / 2 + 2, dy: -(BIG - 1) * b.h * 0.35 } : { sc: BIG };
 const M = MK, INK = '#2a2440', GOLD = '#ffb21f', BLUE = '#2a7ab0', RED = '#d8454a';
 const L1Y = 216, L2Y = 278, GX0 = 34, GX1 = 326, GT = 352, GB = 516, RUL = 540;
 function pick(g) {
@@ -44,7 +45,7 @@ function scene(c, W, H) {
 }
 
 MG.add({
-  id: 'critical', stage: 'derivs', cmd: 'CRITICAL POINT!', hint: 'drag', time: 9, mood: 'bright', winText: 'Level ground!', hold: 1.7,
+  id: 'critical', stage: 'derivs', cmd: 'CRITICAL POINT!', hint: 'drag', time: 9, mood: 'bright', winText: 'Slope 0!', hold: 1.7,
   card: {
     title: 'Critical points', ref: 'Grade 12 and up', kind: 'Calculus',
     text: 'The derivative f′(x) is the slope of the graph of f at x. At the top of a hill or the bottom of a valley the graph is flat for a moment, so the slope there is 0. Those places are called critical points.\n\nTo find them, work out f′(x), set it equal to 0 and solve for x.\n\nFor example, f(x) = x³ − 3x has f′(x) = 3x² − 3. Setting 3x² − 3 = 0 gives x² = 1, so x = −1 or x = 1. The graph has a peak at x = −1 and a valley at x = 1.\n\nA tangent line touching the graph at a critical point lies perfectly level.',
@@ -67,7 +68,7 @@ MG.add({
     S.marks = []; S.walk = null;
     S.topS = Math.min(34, 34 * 244 / M.lay(S.top, 34).w);
     // the working line's size: its widest forms (the first copy, and f′(x) = ... = 0) fit the width
-    { const fp = () => M.row(M.vr('f′'), M.paren(M.vr('x')), M.op('=')), w = Math.max(M.lay(M.row(fp(), plain(S.terms)), 40).w, M.lay(M.row(fp(), plain(S.dT), M.op('='), M.num(0)), 40).w); S.ws = Math.min(40, 40 * 316 / w); }
+    { const fp = () => M.row(M.vr('f′'), M.paren(M.vr('x')), M.op('=')), w = Math.max(M.lay(M.row(fp(), plain(S.terms.map(([c, p]) => [p >= 2 ? c * p : c, p])), M.gap(60)), 40).w, M.lay(M.row(fp(), plain(S.dT), M.op('='), M.num(0)), 40).w); S.ws = Math.min(40, 40 * 330 / w); }
     const relay = () => { M.place(g, 'top', S.top, 206, L1Y, S.topS, { col: INK }); M.place(g, 'tok', S.tok, 44, L1Y - 8, 40, { col: '#4a2410' }); if (S.work) M.place(g, 'work', S.work, 180, L2Y, S.ws, { col: INK }); };
     S.relay = relay; relay(); M.inert(g, ['eq1', 'eq2', 'fp', 'zero', 'pm']);
     M.zone(g, 'ridge', { x: 180, y: (GT + RUL) / 2, w: GX1 - GX0, h: RUL - GT + 20 });
@@ -75,23 +76,47 @@ MG.add({
     const react = (g, e) => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
 
     // the working line's terms: { sg, cf, pw } per term, re-synced as the work goes on
-    const wterm = ([c, p], i) => { const Q = { c, p, i, sg: i ? M.op(c < 0 ? '-' : '+', 'ws' + i) : null, cf: Math.abs(c) === 1 && p ? null : M.num(Math.abs(c), 'wc' + i), pw: p ? xp(p, 'wp' + i) : null };
-      Q.row = M.row(); Q.row.id = 'w' + i; Q.sync = () => { Q.row.items = [Q.sg, Q.cf, Q.pw].filter(Boolean); }; Q.sync(); return Q; };
-    // differentiate one term of the working line in place
+    const wterm = ([c, p], i) => { const Q = { c, p, i, sg: i ? M.op(c < 0 ? '-' : '+', 'ws' + i) : null, cf: Math.abs(c) === 1 && p ? null : M.num(Math.abs(c), 'wc' + i), pw: p ? xp(p, 'wp' + i) : null }; if (Q.pw && Q.pw.exp) Q.pw.exp.id = 'we' + i;
+      Q.row = M.row(); Q.row.id = 'w' + i; Q.sync = () => { Q.row.items = [Q.sg, Q.cf, Q.pw, Q.room].filter(Boolean); }; Q.sync(); return Q; };
+    // differentiate one term of the working line in place; returns how long its working lasts (in units of T)
+    const NOTE = '#c8660a';
     function dTerm(g, Q) {
       const { c, p } = Q;
-      if (p === 0) { M.strike(g, Q.row, { dur: 0.2 * T }); M.tween(g, Q.row, { alpha: 0, sc: 0.6 }, 0.2 * T, { delay: 0.25 * T }); g.sfx('tap');
-        M.at(g, [[0.5 * T, g => { hideAll(Q.row); S.WQ.splice(S.WQ.indexOf(Q), 1); S.syncW(); relay(); }]]); return; }
-      if (p === 1) { M.circle(g, Q.pw, { dur: 0.3 * T, pad: 4 }); M.tween(g, Q.pw, { alpha: 0, sc: 0.4, dy: -10 }, 0.25 * T, { delay: 0.15 * T }); g.sfx('tap');
-        M.at(g, [[0.42 * T, g => { hideAll(Q.pw); Q.pw = null; Q.sync(); relay(); }]]); return; }
-      const ex = Q.pw.exp, from = { ...M.box(g, Q.pw.id) }, eb = M.box(g, ex.id || '') || from, c2 = Math.abs(c) * p;
+      if (p === 0) { // a constant: "3 → 0", then it is crossed out and leaves
+        M.circle(g, Q.row, { dur: 0.45 * T, col: GOLD, pad: 4 });
+        M.note(g, { node: M.row(M.num(Math.abs(c)), M.op('→'), M.num(0)), at: Q.row, off: [0, 48], s: 26, col: NOTE, write: 0.3 * T, hold: 0.75 * T, fade: 0.25 * T, pill: 'rgba(255,250,235,0.9)' });
+        M.strike(g, Q.row, { delay: 0.45 * T, dur: 0.3 * T }); g.sfx('tap');
+        M.tween(g, Q.row, { alpha: 0, sc: 0.6 }, 0.3 * T, { delay: 0.95 * T });
+        M.at(g, [[1.3 * T, g => { hideAll(Q.row); S.WQ.splice(S.WQ.indexOf(Q), 1); S.syncW(); relay(); }]]); return 1.2; }
+      if (p === 1) { // a lone x: "x → 1", and the x melts away, leaving its number
+        M.circle(g, Q.pw, { dur: 0.45 * T, pad: 4, col: GOLD });
+        M.note(g, { node: M.row(M.vr('x'), M.op('→'), M.num(1)), at: Q.pw, off: [0, 48], s: 26, col: NOTE, write: 0.3 * T, hold: 0.7 * T, fade: 0.25 * T, pill: 'rgba(255,250,235,0.9)' });
+        M.tween(g, Q.pw, { alpha: 0, sc: 0.4, dy: -10 }, 0.35 * T, { delay: 0.75 * T }); g.sfx('tap');
+        M.at(g, [[1.15 * T, g => { hideAll(Q.pw); Q.pw = null; Q.sync(); relay(); }]]); return 1.1; }
+      // a power: the exponent comes down to multiply, then the exponent goes down by one
+      const ex = Q.pw.exp, c2 = Math.abs(c) * p;
       if (!Q.cf) { Q.cf = M.num(c2, 'wc' + Q.i, { alpha: 0 }); Q.sync(); relay(); Q.fresh = true; }
-      M.light(g, ex, { col: GOLD });
-      M.fly(g, { node: M.num(p, null, { col: GOLD }), from: [from.x + from.w * 0.3, from.y - from.h * 0.3], to: Q.cf.id, dur: 0.32 * T, arc: -40, s0: 26, s1: S.ws, col: GOLD,
-        then(g) { if (Q.fresh) { Q.cf.alpha = 1; Q.cf.pop = g.t; } else { M.roll(g, Q.cf, c2, { dur: 0.26 * T }); M.note(g, { node: M.row(M.num(p), M.op('×'), M.num(Math.abs(c))), at: Q.cf.id, off: [0, -44], s: 22, col: GOLD, write: 0.2 * T, hold: 0.25 * T, fade: 0.15 * T }); }
-          M.sparkle(g, Q.cf.id, { n: 6 }); g.sfx('ding'); } });
-      M.roll(g, ex, p - 1, { delay: 0.35 * T, dur: 0.25 * T }); M.unlight(g, ex, { delay: 0.6 * T });
-      if (p - 1 === 1) { M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.15 * T, { delay: 0.62 * T }); M.at(g, [[0.8 * T, g => { hideAll(ex); Q.pw = M.vr('x', 'wp' + Q.i); Q.pw.id = Q.pw.id; Q.sync(); relay(); }]]); }
+      M.light(g, ex, { col: GOLD }); M.circle(g, ex, { dur: 0.4 * T, pad: 3, col: GOLD });
+      M.at(g, [[0.35 * T, g => { const from = { ...M.box(g, Q.pw.id) };
+        M.fly(g, { node: M.num(p, null, { col: GOLD }), from: [from.x + from.w * 0.3, from.y - from.h * 0.3], to: Q.cf.id, dur: 0.45 * T, arc: -40, s0: 26, s1: S.ws, col: GOLD,
+          then(g) { if (Q.fresh) { Q.cf.alpha = 1; Q.cf.pop = g.t; }
+            else { M.roll(g, Q.cf, c2, { dur: 0.35 * T }); M.note(g, { node: M.row(M.num(p), M.op('×'), M.num(Math.abs(c)), M.op('='), M.num(c2)), at: Q.cf.id, off: [0, 50], s: 26, col: NOTE, write: 0.3 * T, hold: 0.8 * T, fade: 0.25 * T, pill: 'rgba(255,250,235,0.9)' }); }
+            M.sparkle(g, Q.cf.id, { n: 6 }); g.sfx('ding'); } }); }]]);
+      // the exponent grows so the work on it is easy to see; a "− 1" writes itself and flies in, the exponent reads
+      // "2 − 1", then the − 1 slides into the 2 and it rolls down to 1 like an odometer (as in REVERSE POWER!)
+      M.at(g, [
+        [0.75 * T, g => { Q.room = M.gap(44); Q.sync(); relay(); }], // the terms after it slide aside to make room
+        [0.9 * T, g => { M.tween(g, ex, { ...grow(M.box(g, ex.id)) }, 0.25 * T); }],
+        [0.95 * T, g => { M.note(g, { node: M.row(M.op('-'), M.num(1)), at: ex, off: [44, 4], s: 30, col: NOTE, write: 0.3 * T, hold: 0.2 * T, fly: 0.25 * T, to: ex, toOff: [44, 0], s1: 28, arc: 10,
+          then(g) { Object.assign(ex, { sc: 1, dx: 0, dy: 0 }); const mi = M.op('-', 'em' + Q.i, { col: NOTE, _born: -1 }), one = M.num(1, 'eo' + Q.i, { col: NOTE, _born: -1, pop: g.t });
+            Q.pw.exp = M.row(ex, mi, one); Q.pw.exp.id = 'er' + Q.i; relay(); Object.assign(Q.pw.exp, grow(M.box(g, 'er' + Q.i))); relay(); M.sparkle(g, one, { n: 6 }); g.sfx('tap'); } }); }],
+        [2.0 * T, g => { const row = Q.pw.exp, bo = M.box(g, ex.id); for (const q of row.items.slice(1)) { const b = M.box(g, q.id); if (b && bo) M.tween(g, q, { dx: bo.x - b.x, alpha: 0, sc: 0.5 }, 0.3 * T); }
+          M.roll(g, ex, p - 1, { delay: 0.12 * T, dur: 0.35 * T }); M.sparkle(g, ex, { n: 8, delay: 0.4 * T }); M.at(g, [[0.4 * T, g => g.sfx('ding')]]); }],
+        [2.6 * T, g => { M.tween(g, Q.pw.exp, { sc: 1, dx: 0, dy: 0 }, 0.25 * T); M.unlight(g, ex, { dur: 0.3 * T }); }],
+        [2.9 * T, g => { Q.pw.exp = ex; Q.room = null; Q.sync(); relay(); }],
+      ]);
+      if (p - 1 === 1) { M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.25 * T, { delay: 3.0 * T }); M.at(g, [[3.3 * T, g => { hideAll(ex); Q.pw = M.vr('x', 'wp' + Q.i); Q.sync(); relay(); }]]); }
+      return 3.1;
     }
     S.syncW = () => { S.wR.items = S.WQ.map(q => q.row); };
     const dAsk = () => ({ v: plain(S.dT), wrong: [plain(S.dT.map(([c, p], i) => [i ? -c : c, p])),
@@ -100,62 +125,68 @@ MG.add({
     const rootAsk = () => S.m === 1 ? { v: R, wrong: [K * R, -R, R * R + 1] } : { v: M.txt('±' + R), wrong: [M.num(R), M.txt('±' + 3 * R), M.txt('±' + R * R)] };
     M.play(g, {
       moves(g) {
-        // 1. differentiate
-        if (!S.work) return [{ drag: 'tok', to: ['fx', ...idsIn(S.top)], area: [GX0, L1Y - 40, GX1, L1Y + 30], busy: 0.1, askAt: 0.75 * T, after: 1.5 * T, ask: dAsk(),
-          then(g) { M.show(g, 0.75 * T); S.point = true; react(g, 'think');
+        // 1. differentiate: the d/dx flies down, a copy of f writes itself as f′(x) = ..., then each term is worked in turn
+        if (!S.work) return [{ drag: 'tok', to: ['fx', ...idsIn(S.top)], area: [GX0, L1Y - 40, GX1, L1Y + 30], busy: 0.1, askAt: 1.15 * T, after: 0, ask: dAsk(),
+          then(g) { M.show(g, 1.15 * T); S.point = true; react(g, 'think');
             S.WQ = S.terms.map(wterm); S.wR = M.row(); S.wR.id = 'fd'; S.syncW(); S.fp = M.row(M.vr('f′'), M.paren(M.vr('x'))); S.fp.id = 'fp'; S.eq2 = M.op('=', 'eq2');
-            S.work = M.row(S.fp, S.eq2, S.wR); relay(); M.writeIn(g, S.work, { delay: 0.25 * T, dur: 0.45 * T }); S.work.alpha = 1;
-            M.fly(g, { node: M.ddx(), from: 'tok', to: 'fp', dur: 0.32 * T, arc: -50, s0: 40, s1: 30, col: GOLD, then(g) { g.sfx('pop'); } });
-            M.circle(g, 'fx', { dur: 0.5 * T, col: GOLD }); g.sfx('swoosh'); },
-          resolve(g) { M.show(g, 1.5 * T); const list = S.WQ.slice(); list.forEach((Q, k) => M.at(g, [[k * 0.45 * T, g => { dTerm(g, Q); react(g, k % 2 ? 'happy' : 'wow'); }]]));
-            M.at(g, [[1.4 * T, g => { M.indicate(g, S.wR, { dur: 0.3 * T, sc: 1.08 }); S.point = false; }]]); } }];
-        // 2. set f′(x) = 0: "= 0" writes itself, the f′(x) fades, and the constant hops over the = (its sign flips)
+            S.work = M.row(S.fp, S.eq2, S.wR); relay(); M.writeIn(g, S.work, { delay: 0.4 * T, dur: 0.7 * T }); S.work.alpha = 1;
+            M.fly(g, { node: M.ddx(), from: 'tok', to: 'fp', dur: 0.45 * T, arc: -50, s0: 40, s1: 30, col: GOLD, then(g) { g.sfx('pop'); } });
+            M.circle(g, 'fx', { dur: 0.7 * T, col: GOLD }); g.sfx('swoosh'); },
+          resolve(g) { let t0 = 0; for (const Q of S.WQ.slice()) { const k = t0; M.at(g, [[k * T, g => { react(g, 'wow'); dTerm(g, Q); }]]); t0 += Q.p >= 2 ? 3.1 : Q.p === 1 ? 1.1 : 1.2; }
+            M.show(g, (t0 + 0.6) * T);
+            M.at(g, [[(t0 + 0.1) * T, g => { M.indicate(g, S.wR, { dur: 0.45 * T, sc: 1.08 }); S.point = false; }]]); } }];
+        // 2. set f′(x) = 0: "= 0" writes itself, the f′(x) fades, and the number term hops over the = (its sign flips)
         if (!S.zeroed) return [{ tap: ['fd', 'fp', ...idsIn(S.wR)], busy: 0.1,
-          then(g) { S.zeroed = true; M.show(g, 1.55 * T); S.point = true; react(g, 'think'); const [Q0, Q1] = S.WQ;
+          then(g) { S.zeroed = true; M.show(g, 3.2 * T); S.point = true; react(g, 'think'); const [Q0, Q1] = S.WQ;
             S.zero = M.num(0, 'zero', { _born: -1 }); S.eq3 = M.op('=', 'eq3', { _born: -1 }); S.rhs = M.row(S.zero);
-            S.work.items = [S.fp, S.eq2, S.wR, S.eq3, S.rhs]; relay(); M.writeIn(g, M.node(g, 'eq3')); M.writeIn(g, S.zero, { delay: 0.12 * T, dur: 0.25 * T }); g.sfx('tap');
+            S.work.items = [S.fp, S.eq2, S.wR, S.eq3, S.rhs]; relay(); M.writeIn(g, S.eq3, { dur: 0.3 * T }); M.writeIn(g, S.zero, { delay: 0.25 * T, dur: 0.35 * T }); g.sfx('tap');
+            M.indicate(g, S.zero, { delay: 0.6 * T, dur: 0.5 * T, col: GOLD });
             M.at(g, [
-              [0.45 * T, g => { M.tween(g, S.fp, { alpha: 0 }, 0.18 * T); M.tween(g, S.eq2, { alpha: 0 }, 0.18 * T); for (const q of kids(S.fp)) M.tween(g, q, { alpha: 0 }, 0.18 * T); }],
-              [0.65 * T, g => { hideAll(S.fp); hideAll(S.eq2); S.work.items = [S.wR, S.eq3, S.rhs]; relay(); }],
-              [0.95 * T, g => { M.tween(g, Q1.row, { dy: 30 }, 0.12 * T); M.circle(g, Q1.row, { dur: 0.25 * T }); }],
-              [1.1 * T, g => { // the constant, lifted, hops over the = and its sign flips
-                const b = { ...M.box(g, Q1.row.id) }, v = -Q1.c; hideAll(Q1.row); Q1.row.dy = 0; M.tween(g, S.zero, { alpha: 0 }, 0.1 * T);
-                S.WQ = [Q0]; S.syncW(); S.cst = M.num(v, 'cst', { alpha: 0 }); S.rhs.items = [S.cst]; relay(); g.sfx('swoosh'); react(g, 'wow');
-                M.fly(g, { node: M.row(M.op('-'), M.num(Math.abs(Q1.c))), from: [b.x, b.y + 30], to: 'cst', dur: 0.36 * T, arc: 26, s0: S.ws, s1: S.ws,
-                  then(g) { S.cst.alpha = 1; S.cst.pop = g.t; S.cst.hl = 1; S.cst.hlc = GOLD; M.unlight(g, S.cst, { delay: 0.2 * T }); M.sparkle(g, 'cst', { n: 8 }); g.sfx('pop'); react(g, 'happy'); } }); }],
-              [1.5 * T, g => { S.point = false; }],
+              [1.0 * T, g => { for (const q of [S.fp, S.eq2, ...kids(S.fp)]) M.tween(g, q, { alpha: 0 }, 0.35 * T); }],
+              [1.4 * T, g => { hideAll(S.fp); hideAll(S.eq2); S.work.items = [S.wR, S.eq3, S.rhs]; relay(); }],
+              [1.8 * T, g => { M.tween(g, Q1.row, { dy: -24 }, 0.3 * T); M.circle(g, Q1.row, { dur: 0.5 * T, col: GOLD }); M.light(g, Q1.row, { col: GOLD }); }],
+              [2.2 * T, g => { // the number term, lifted, hops over the = and its sign flips: − becomes +
+                const b = { ...M.box(g, Q1.row.id) }, v = -Q1.c; hideAll(Q1.row); Q1.row.dy = 0; M.tween(g, S.zero, { alpha: 0 }, 0.15 * T);
+                S.WQ = [Q0]; S.syncW(); S.cst = M.num(-v, 'cst', { alpha: 0 }); S.rhs.items = [S.cst]; relay(); g.sfx('swoosh'); react(g, 'wow');
+                M.fly(g, { node: M.row(M.op('-'), M.num(v)), from: [b.x, b.y - 24], to: 'cst', dur: 0.55 * T, arc: -70, s0: S.ws, s1: S.ws, col: GOLD,
+                  then(g) { S.cst.alpha = 1; S.cst.hl = 1; S.cst.hlc = GOLD; M.roll(g, S.cst, v, { delay: 0.1 * T, dur: 0.35 * T }); M.unlight(g, S.cst, { delay: 0.5 * T }); M.sparkle(g, 'cst', { n: 8, delay: 0.3 * T }); g.sfx('pop'); react(g, 'happy'); } }); }],
+              [3.1 * T, g => { S.point = false; }],
             ]); } }];
         // 3. tap the leading number to divide both sides by it (and, for x², take the square root)
-        if (!S.solved) return [{ tap: ['wc0', 'w0', 'fd', 'cst', ...idsIn(S.wR)], busy: 0.1, askAt: 0.5 * T, after: (S.m === 2 ? 1.3 : 0.75) * T, ask: rootAsk(),
-          then(g) { S.solved = true; M.show(g, 0.5 * T); S.point = true; react(g, 'think'); const Q0 = S.WQ[0];
-            M.circle(g, Q0.cf, { col: '#2a9ad8', dur: 0.3 * T }); M.note(g, { node: M.row(M.op('÷'), M.num(K)), at: 'work', off: [0, 40], s: 30, col: '#1a5a9a', write: 0.18 * T, hold: 0.5 * T, fade: 0.2 * T });
-            M.strike(g, Q0.cf, { delay: 0.2 * T, dur: 0.15 * T, col: BLUE }); g.sfx('tap'); },
-          resolve(g) { const Q0 = S.WQ[0], two = S.m === 2; M.show(g, (two ? 1.3 : 0.75) * T); react(g, 'happy');
-            M.tween(g, Q0.cf, { alpha: 0, sc: 0.4 }, 0.15 * T); M.roll(g, S.cst, Math.pow(R, m), { dur: 0.28 * T }); g.sfx('ding');
-            M.at(g, [[0.25 * T, g => { hideAll(Q0.cf); Q0.cf = null; Q0.sync(); relay(); M.sparkle(g, 'cst'); }]]);
-            if (!two) { M.at(g, [[0.5 * T, g => { S.cst.id = 'r0'; S.chips = [S.cst]; M.indicate(g, S.cst, { dur: 0.3 * T, col: GOLD }); S.point = false; }]]); return; }
+        if (!S.solved) return [{ tap: ['wc0', 'w0', 'fd', 'cst', ...idsIn(S.wR)], busy: 0.1, askAt: 1.3 * T, after: (S.m === 2 ? 3.0 : 1.5) * T, ask: rootAsk(),
+          then(g) { S.solved = true; M.show(g, 1.3 * T); S.point = true; react(g, 'think'); const Q0 = S.WQ[0];
+            M.circle(g, Q0.cf, { col: '#2a9ad8', dur: 0.5 * T });
+            for (const at of [Q0.row, 'cst']) M.note(g, { node: M.row(M.op('÷'), M.num(K)), at, off: [0, 44], s: 28, col: '#1a5a9a', write: 0.35 * T, hold: 0.5 * T, fade: 0.25 * T, delay: 0.2 * T, pill: 'rgba(255,250,235,0.9)' });
+            M.strike(g, Q0.cf, { delay: 0.75 * T, dur: 0.3 * T, col: BLUE }); g.sfx('tap'); },
+          resolve(g) { const Q0 = S.WQ[0], two = S.m === 2; M.show(g, (two ? 3.0 : 1.5) * T); react(g, 'happy');
+            M.tween(g, Q0.cf, { alpha: 0, sc: 0.4 }, 0.25 * T); M.roll(g, S.cst, Math.pow(R, m), { delay: 0.15 * T, dur: 0.4 * T }); g.sfx('ding');
+            M.note(g, { node: M.row(M.num(K * Math.pow(R, m)), M.op('÷'), M.num(K), M.op('='), M.num(Math.pow(R, m))), at: 'cst', off: [0, 50], s: 24, col: '#1a5a9a', write: 0.3 * T, hold: 0.8 * T, fade: 0.25 * T, pill: 'rgba(255,250,235,0.9)' });
+            M.at(g, [[0.4 * T, g => { hideAll(Q0.cf); Q0.cf = null; Q0.sync(); relay(); M.sparkle(g, 'cst'); }]]);
+            if (!two) { M.at(g, [[1.3 * T, g => { S.cst.id = 'r0'; S.chips = [S.cst]; relay(); M.indicate(g, S.cst, { dur: 0.4 * T, col: GOLD }); S.point = false; }]]); return; }
             // a √ of both sides: x² = a² becomes x = ±a, which splits into its two roots
             M.at(g, [
-              [0.4 * T, g => { M.note(g, { node: M.txt('√'), at: 'work', off: [0, 40], s: 32, col: '#1a5a9a', write: 0.15 * T, hold: 0.3 * T, fade: 0.15 * T }); M.circle(g, [Q0.row.id, 'cst'], { col: '#2a9ad8', dur: 0.35 * T });
-                const ex = Q0.pw.exp; M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.18 * T, { delay: 0.12 * T }); M.roll(g, S.cst, '±' + R, { delay: 0.12 * T, dur: 0.28 * T }); }],
-              [0.68 * T, g => { Q0.pw = M.vr('x', 'wp0'); Q0.sync(); relay(); g.sfx('ding'); react(g, 'wow'); }],
-              [0.9 * T, g => { // ±a splits into −a and a
+              [1.4 * T, g => { M.circle(g, [Q0.row.id, 'cst'], { col: '#2a9ad8', dur: 0.5 * T });
+                M.note(g, { node: M.row(M.txt('√'), M.num(R * R), M.op('='), M.txt('±' + R)), at: 'cst', off: [0, 46], s: 26, col: '#1a5a9a', write: 0.35 * T, hold: 0.8 * T, fade: 0.25 * T, pill: 'rgba(255,250,235,0.9)' });
+                const ex = Q0.pw.exp; M.tween(g, ex, { alpha: 0, sc: 0.4 }, 0.3 * T, { delay: 0.5 * T }); M.roll(g, S.cst, '±' + R, { delay: 0.55 * T, dur: 0.4 * T }); }],
+              [2.1 * T, g => { Q0.pw = M.vr('x', 'wp0'); Q0.sync(); relay(); g.sfx('ding'); react(g, 'wow'); }],
+              [2.4 * T, g => { // ±a splits into −a and a
                 const b = { ...M.box(g, 'cst') }; hideAll(S.cst); S.chips = [M.num(-R, 'r0', { alpha: 0 }), M.num(R, 'r1', { alpha: 0 })];
                 S.rhs.items = [S.chips[0], M.op(',', 'cm', { _born: -1 }), S.chips[1]]; relay(); M.inert(g, ['cm']); g.sfx('pop');
-                for (const ch of S.chips) M.fly(g, { node: M.num(+ch.v.replace('−', '-')), from: [b.x, b.y], to: ch.id, dur: 0.25 * T, arc: -20, s0: S.ws, s1: S.ws, col: INK, then(g) { ch.alpha = 1; ch.pop = g.t; M.sparkle(g, ch.id, { n: 5 }); } }); }],
-              [1.25 * T, g => { S.point = false; }],
+                for (const ch of S.chips) M.fly(g, { node: M.num(+ch.v.replace('−', '-')), from: [b.x, b.y], to: ch.id, dur: 0.4 * T, arc: -24, s0: S.ws, s1: S.ws, col: INK, then(g) { ch.alpha = 1; ch.pop = g.t; M.sparkle(g, ch.id, { n: 5 }); } }); }],
+              [2.9 * T, g => { S.point = false; }],
             ]); } }];
-        // 3. drop each root onto the ridge: the goat trots there and its plank lies level
+        // 4. drop each root onto the ridge: it lands on the ruler, a line rises to the curve, the goat trots there and its plank lies level
         return S.chips.filter(ch => !ch.used).map(ch => ({ drag: ch.id, to: 'ridge', area: [GX0 - 10, GT - 20, GX1 + 10, RUL + 30], busy: 0.1,
-          then(g) { ch.used = true; M.show(g, 1.35 * T); S.point = true; react(g, 'think'); M.inert(g, [ch.id]); const r = +ch.v.replace('−', '-');
-            M.circle(g, ch, { dur: 0.3 * T, col: GOLD }); ch.col = '#8a4a10';
+          then(g) { ch.used = true; M.show(g, 3.1 * T); S.point = true; react(g, 'think'); M.inert(g, [ch.id]); const r = +ch.v.replace('−', '-');
+            M.circle(g, ch, { dur: 0.45 * T, col: GOLD }); ch.col = '#8a4a10';
             const b = M.box(g, ch.id); g.sfx('swoosh');
-            M.fly(g, { node: M.num(r), from: [b.x, b.y], to: [S.X(r), RUL + 16], dur: 0.4 * T, arc: -50, s0: S.ws, s1: 18, col: '#7a3a10',
-              then(g) { const mk = { x: r, t0: g.t, max: dval(S.terms, r - 0.01) > 0 }; S.marks.push(mk); g.sfx('pop'); } });
+            M.fly(g, { node: M.num(r), from: [b.x, b.y], to: [S.X(r), RUL + 23], dur: 0.6 * T, arc: -50, s0: S.ws, s1: 18, col: '#7a3a10', delay: 0.2 * T,
+              then(g) { const mk = { x: r, t0: g.t, rise: 0.5 * T, max: dval(S.terms, r - 0.01) > 0 }; S.marks.push(mk); g.sfx('pop'); } });
             M.at(g, [
-              [0.6 * T, g => { const from = S.goatX(g.t); S.walk = { from, to: r, t0: g.t, dur: 0.55 * T }; react(g, 'wow'); g.sfx('tweet'); }],
-              [1.15 * T, g => { S.marks[S.marks.length - 1].flagAt = g.t; S.lastFlat = g.t; g.sfx('ding'); react(g, 'laugh'); g.burst(S.X(r), S.Y(fval(S.terms, r)), [GOLD, '#fff', '#9ae07a'], 14, 140); }],
-              [1.3 * T, g => { S.point = false; }],
+              [1.3 * T, g => { const from = S.goatX(g.t); S.walk = { from, to: r, t0: g.t, dur: 0.9 * T }; react(g, 'wow'); g.sfx('tweet'); }],
+              [2.2 * T, g => { const mk = S.marks[S.marks.length - 1]; mk.flagAt = g.t; S.lastFlat = g.t; g.sfx('ding'); react(g, 'laugh'); const px = S.X(r), py = S.Y(fval(S.terms, r)); g.burst(px, py, [GOLD, '#fff', '#9ae07a'], 14, 140);
+                M.note(g, { node: M.row(M.txt('slope'), M.op('='), M.num(0)), at: [px, py], off: [0, mk.max ? 44 : -60], s: 24, col: '#7a4a10', write: 0.3 * T, hold: 0.6 * T, fade: 0.2 * T, pill: 'rgba(255,250,235,0.92)' }); }],
+              [3.0 * T, g => { S.point = false; }],
             ]); } }));
       },
       area(g) { return !S.work ? ['tok', 'fx'] : !S.zeroed ? ['fd'] : !S.solved ? ['wc0'] : S.chips.filter(ch => !ch.used).map(ch => ch.id).concat('ridge'); },
@@ -179,11 +210,14 @@ MG.add({
     c.strokeStyle = 'rgba(255,255,230,0.45)'; c.lineWidth = 1.2; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y - 2) : c.moveTo(x, y - 2)); c.stroke(); c.restore();
     // the ruler of x values along the foot of the ridge
     c.save(); c.fillStyle = '#c89858'; c.fillRect(GX0 - 6, RUL, GX1 - GX0 + 12, 12); c.fillStyle = '#e8c088'; c.fillRect(GX0 - 6, RUL, GX1 - GX0 + 12, 3);
-    c.font = M.NUMF(12, 700); c.textAlign = 'center'; c.fillStyle = '#5a3a18'; c.strokeStyle = '#5a3a18'; c.lineWidth = 1.5;
-    for (let x = Math.ceil(S.xr[0]); x <= S.xr[1]; x++) { const px = S.X(x); c.beginPath(); c.moveTo(px, RUL); c.lineTo(px, RUL + 5); c.stroke(); c.fillStyle = '#fff6e0'; c.fillText(String(x).replace('-', '−'), px, RUL + 24); }
+    c.font = M.NUMF(18, 700); c.textAlign = 'center'; c.strokeStyle = '#5a3a18'; c.lineWidth = 1.5; c.lineJoin = 'round';
+    const span = S.xr[1] - S.xr[0], px1 = (GX1 - GX0 - 28) / span, stp = px1 >= 34 ? 1 : px1 >= 17 ? 2 : 3, lit = new Set(S.marks.map(m => m.x));
+    for (let x = Math.ceil(S.xr[0]); x <= S.xr[1]; x++) { const px = S.X(x); c.strokeStyle = '#5a3a18'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(px, RUL); c.lineTo(px, RUL + 6); c.stroke();
+      if (x % stp && !lit.has(x)) continue; if (lit.has(x) === false && [...lit].some(v => Math.abs(v - x) * px1 < 26)) continue;
+      const s0 = String(x).replace('-', '−'); c.lineWidth = 4; c.strokeStyle = 'rgba(40,24,10,0.85)'; c.strokeText(s0, px, RUL + 30); c.fillStyle = lit.has(x) ? '#ffd45a' : '#fff6e0'; c.fillText(s0, px, RUL + 30); }
     c.restore();
     // critical points: a dashed line rises from the ruler to the curve, then a flag is planted (red on a peak, blue in a valley)
-    for (const mk of S.marks) { const px = S.X(mk.x), py = S.Y(fval(S.terms, mk.x)), k = M.ease((t - mk.t0) / 0.3);
+    for (const mk of S.marks) { const px = S.X(mk.x), py = S.Y(fval(S.terms, mk.x)), k = M.ease((t - mk.t0) / (mk.rise || 0.3));
       c.save(); c.setLineDash([6, 5]); c.strokeStyle = '#fff6d0'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(px, RUL); c.lineTo(px, M.lerp(RUL, py, k)); c.stroke(); c.setLineDash([]);
       c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(px, RUL + 2, 5, 0, 7); c.fill();
       if (mk.flagAt != null) { const f = M.ease((t - mk.flagAt) / 0.3), wv = Math.sin(t * 6) * 2, up = mk.max ? -1 : 1, top = py - 34 * f;
