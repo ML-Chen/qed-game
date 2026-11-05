@@ -57,7 +57,7 @@ function drawWork(g, c) {
   const by = Math.max(gb[0].y + gb[0].h / 2, gb[1].y + gb[1].h / 2) + 6, ly = by + 16 + LS * 0.62;
   const ws = X.lab.map(l => M.lay(l.node, LS).w), wp = M.lay(X.plus, LS).w, tot = ws[0] + wp + ws[1], x0 = U.x - tot / 2;
   const merged = [x0 + ws[0] / 2, x0 + ws[0] + wp + ws[1] / 2];
-  const ba = X.braceT != null ? M.clamp((g.t - X.braceT) / 0.25, 0, 1) * (X.outT != null ? 1 - M.clamp((g.t - X.outT) / 0.2, 0, 1) : 1) : 0;
+  const T = M.pace(g), ba = X.braceT != null ? M.clamp((g.t - X.braceT) / (0.25 * T), 0, 1) * (X.outT != null ? 1 - M.clamp((g.t - X.outT) / (0.2 * T), 0, 1) : 1) : 0;
   if (ba > 0) { c.save(); c.globalAlpha *= ba; c.strokeStyle = CNT; c.lineWidth = 3; c.lineCap = 'round'; c.shadowColor = CNT; c.shadowBlur = 6;
     if (mk < 1) for (const b of gb) { c.globalAlpha = ba * (1 - mk); brace(c, b.x - b.w / 2 + 2, b.x + b.w / 2 - 2, by, 7); }
     if (mk > 0) { c.globalAlpha = ba * mk; brace(c, U.x - U.w / 2 + 2, U.x + U.w / 2 - 2, by, 7); } c.restore(); }

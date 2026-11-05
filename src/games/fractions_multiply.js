@@ -146,7 +146,7 @@ MG.add({
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
-    const S = g.s, t = g.t;
+    const S = g.s, t = g.t, T = M.pace(g);
     c.drawImage(g.bake('fractions_multiply_farm', farm), 0, 0, W, H);
     // drifting seed fluff in the low sun, and a swallow's shadow
     for (let i = 0; i < 12; i++) { const x = (i * 67 + t * (8 + i % 4 * 3)) % 380 - 10, y = 120 + (i * 97) % 440 + Math.sin(t + i) * 10; c.fillStyle = `rgba(255,245,210,${0.4 + 0.3 * Math.sin(t * 2 + i)})`; c.beginPath(); c.arc(x, y, 1.6, 0, 7); c.fill(); }
@@ -162,19 +162,19 @@ MG.add({
     for (let i = 0; i < S.a1; i++) for (let j = 0; j < S.a2; j++) { const x0 = PX + i * cw, y0 = PY + j * rh, x1 = Math.min(x0 + cw, PX + PS * kB(j)), y1 = Math.min(y0 + rh, PY + PS * kA(i)); if (x1 <= x0 || y1 <= y0) continue;
       c.fillStyle = BOTH; c.fillRect(x0, y0, x1 - x0, y1 - y0); stripes(x0, y0, x1 - x0, y1 - y0, 'rgba(20,80,20,0.35)', true); stripes(x0, y0, x1 - x0, y1 - y0, 'rgba(20,80,20,0.35)', false); }
     // the green patch glows while it is counted
-    if (S.countAt != null && !g.done) { const k = Math.min(1, (t - S.countAt) / 0.2); c.save(); c.globalAlpha = k * (0.6 + 0.3 * Math.sin(t * 6)); c.strokeStyle = '#eaffb0'; c.shadowColor = '#eaffb0'; c.shadowBlur = 14; c.lineWidth = 4; c.strokeRect(PX, PY, S.a1 * cw, S.a2 * rh); c.restore(); }
+    if (S.countAt != null && !g.done) { const k = Math.min(1, (t - S.countAt) / (0.2 * T)); c.save(); c.globalAlpha = k * (0.6 + 0.3 * Math.sin(t * 6)); c.strokeStyle = '#eaffb0'; c.shadowColor = '#eaffb0'; c.shadowBlur = 14; c.lineWidth = 4; c.strokeRect(PX, PY, S.a1 * cw, S.a2 * rh); c.restore(); }
     // furrows (cuts) plough across
     c.save(); c.strokeStyle = '#5a3a1a'; c.lineWidth = 3; c.lineCap = 'round';
     S.cutV.forEach((o, k) => { if (o.k <= 0) return; const x = PX + (k + 1) * cw; c.beginPath(); c.moveTo(x, PY); c.lineTo(x, PY + PS * o.k); c.stroke(); });
     S.cutH.forEach((o, k) => { if (o.k <= 0) return; const y = PY + (k + 1) * rh; c.beginPath(); c.moveTo(PX, y); c.lineTo(PX + PS * o.k, y); c.stroke(); });
     c.strokeStyle = '#4a2a10'; c.lineWidth = 3; c.strokeRect(PX, PY, PS, PS); c.restore();
     // the whole plot is outlined when the answer's bottom is written (3 × 4 pieces in all)
-    if (S.whole != null && t - S.whole < 0.9) { const k = (t - S.whole) / 0.9; c.save(); c.globalAlpha = Math.sin(k * Math.PI); c.strokeStyle = '#fff6c0'; c.shadowColor = '#ffd23a'; c.shadowBlur = 14; c.lineWidth = 4; c.strokeRect(PX - 4, PY - 4, PS + 8, PS + 8); c.restore(); }
+    if (S.whole != null && t - S.whole < 0.9 * T) { const k = (t - S.whole) / (0.9 * T); c.save(); c.globalAlpha = Math.sin(k * Math.PI); c.strokeStyle = '#fff6c0'; c.shadowColor = '#ffd23a'; c.shadowBlur = 14; c.lineWidth = 4; c.strokeRect(PX - 4, PY - 4, PS + 8, PS + 8); c.restore(); }
     // the counts on the green pieces
-    for (const q of S.counts) { const k = M.clamp((t - q.t0) / 0.2, 0, 1), x = PX + (q.i + 0.5) * cw, y = PY + (q.j + 0.5) * rh, fs = Math.min(24, Math.min(cw, rh) * 0.6) * (1 + Math.sin(k * Math.PI) * 0.4);
+    for (const q of S.counts) { const k = M.clamp((t - q.t0) / (0.2 * T), 0, 1), x = PX + (q.i + 0.5) * cw, y = PY + (q.j + 0.5) * rh, fs = Math.min(24, Math.min(cw, rh) * 0.6) * (1 + Math.sin(k * Math.PI) * 0.4);
       c.save(); c.globalAlpha = k; c.font = M.NUMF(fs, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 3.5; c.strokeStyle = '#1e5a1e'; c.strokeText(String(q.n), x, y + 1); c.fillStyle = '#ffffff'; c.fillText(String(q.n), x, y + 1); c.restore(); }
     // labels: the first fraction over its columns, the second beside its rows
-    const lab = (key, node, x, y, col, t0) => { if (t0 == null) return; if (!g.s.mk.ex[key]) { M.place(g, key, node, x, y, 30, { col }); M.writeIn(g, node, { dur: 0.25 }); } const bb = M.box(g, key); if (bb) { c.save(); c.fillStyle = 'rgba(255,248,225,0.82)'; c.beginPath(); c.roundRect(bb.x - bb.w / 2 - 6, bb.y - bb.h / 2 - 4, bb.w + 12, bb.h + 8, 10); c.fill(); c.restore(); } M.drawEx(g, c, key); };
+    const lab = (key, node, x, y, col, t0) => { if (t0 == null) return; if (!g.s.mk.ex[key]) { M.place(g, key, node, x, y, 30, { col }); M.writeIn(g, node, { dur: 0.25 * T }); } const bb = M.box(g, key); if (bb) { c.save(); c.fillStyle = 'rgba(255,248,225,0.82)'; c.beginPath(); c.roundRect(bb.x - bb.w / 2 - 6, bb.y - bb.h / 2 - 4, bb.w + 12, bb.h + 8, 10); c.fill(); c.restore(); } M.drawEx(g, c, key); };
     if (S.lab1 != null) { const w = S.a1 * cw, by = PY + PS + 8; c.save(); c.strokeStyle = SUNI; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(PX + 2, by); c.lineTo(PX + 2, by + 6); c.lineTo(PX + w - 2, by + 6); c.lineTo(PX + w - 2, by); c.stroke(); c.restore();
       lab('labA', M.frac(M.num(S.a1), M.num(S.b1), 'labA'), PX + w / 2, by + 34, SUNI, S.lab1); }
     if (S.lab2 != null) { const h = S.a2 * rh; c.save(); c.strokeStyle = CORNI; c.lineWidth = 2.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(PX - 6, PY + 2); c.lineTo(PX - 12, PY + 2); c.lineTo(PX - 12, PY + h - 2); c.lineTo(PX - 6, PY + h - 2); c.stroke(); c.restore();

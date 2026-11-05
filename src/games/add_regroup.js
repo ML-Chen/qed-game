@@ -283,7 +283,7 @@ function drawGuide(g, c) {
 function drawSwipe(g, c) {
   const S = g.s, K = S.mk, P0 = K.press;
   if (P0 && /^col/.test(P0.id)) { const x = colX(S.n, +P0.id.slice(3)); c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(255,240,180,0.75)'; c.lineWidth = 8; c.beginPath(); c.moveTo(x, P0.y0); c.lineTo(x, Math.max(P0.y0, P0.y)); c.stroke(); c.restore(); }
-  const q = S.swipe; if (q) { const k = (g.t - q.t0) / 0.25; if (k >= 0 && k < 1) { const x = colX(S.n, q.j), y0 = Y_CARRY - 20, y1 = Y_ANS - 10, y = lerp(y0, y1, ease(k));
+  const q = S.swipe; if (q) { const k = (g.t - q.t0) / (0.25 * M.pace(g)); if (k >= 0 && k < 1) { const x = colX(S.n, q.j), y0 = Y_CARRY - 20, y1 = Y_ANS - 10, y = lerp(y0, y1, ease(k));
     c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createLinearGradient(0, y0, 0, y); gr.addColorStop(0, 'rgba(255,220,120,0)'); gr.addColorStop(1, `rgba(255,230,150,${0.7 * (1 - k)})`); c.fillStyle = gr; rr(c, x - 26, y0, 52, Math.max(1, y - y0), 26); c.fill(); c.restore(); } }
 }
 

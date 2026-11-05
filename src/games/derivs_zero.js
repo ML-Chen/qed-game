@@ -85,7 +85,7 @@ function flourish(g) {
   // lifts off and drops in front, "3 × 4 = 12" writes itself by the pad, and the term turns into its derivative
   const T = g.done ? 0.5 : M.pace(g), live = S.terms.map((q, i) => i).filter(i => !S.terms[i].isC), STEP = 0.78 * T;
   const work = live.filter(i => !(g.mode === 'medium' && S.terms[i].n === 1)), after = 0.1 * T + work.length * STEP;
-  if (!g.done) { M.show(g, after + 0.4); S.point = true; }
+  if (!g.done) { M.show(g, after + 0.4 * T); S.point = true; }
   work.forEach((i, k) => {
     const q = S.terms[i], p = S.pos[i], t0 = 0.1 * T + k * STEP, b = { x: p.x, y: p.y - 4, w: p.w - 18, h: 36 };
     M.circle(g, b, { delay: t0, dur: 0.4 * T, col: '#ffd46a' });
@@ -102,7 +102,7 @@ function flourish(g) {
     M.later(g, after, g => {
       S.askI = li; S.askAt = g.t;
       M.openAsk(g, { ask: { v: b, wrong: [M.row(M.num(b), M.vr('x')), 0, -b, b + (b > 0 ? 1 : -1), 1] }, after: 0.05,
-        resolve(g) { S.askI = null; q.d = true; q.dAt = g.t; g.sfx('coin'); M.show(g, 0.4); gather(g); } });
+        resolve(g) { S.askI = null; q.d = true; q.dAt = g.t; g.sfx('coin'); M.show(g, 0.4 * T); gather(g); } });
       S.mk.busyT = 1e9;
     });
   } else M.later(g, after, gather);
@@ -117,7 +117,7 @@ function gather(g) {
   const ws = nodes.map(n => M.lay(n, sz).w), we = M.lay(eq, sz).w, tot = we + ws.reduce((p, q) => p + q, 0) + gap * live.length;
   let x = 180 - tot / 2; S.eqPos = { x: x + we / 2 }; x += we + gap;
   live.forEach((i, k) => { S.terms[i].final = { x: x + ws[k] / 2, node: nodes[k] }; x += ws[k] + gap; });
-  S.point = false; M.later(g, 0.34, g => { S.answered = true; }, true);
+  S.point = false; M.later(g, 0.34 * M.pace(g), g => { S.answered = true; }, true);
 }
 
 MG.add({
@@ -293,7 +293,7 @@ function termOffset(g, q) {
   return [q.dx, q.dy, 0];
 }
 function drawPads(g, c, S) {
-  const t = g.t, sink = S.gatherAt != null ? ease((t - S.gatherAt) / 0.35) : 0, fade = S.flourishAt != null ? ease((t - S.flourishAt) / 0.3) : 0;
+  const t = g.t, T = M.pace(g), sink = S.gatherAt != null ? ease((t - S.gatherAt) / (0.35 * T)) : 0, fade = S.flourishAt != null ? ease((t - S.flourishAt) / (0.3 * T)) : 0;
   // the "=" that leads the answer
   if (S.eqPos) { c.save(); c.globalAlpha = sink; const n = M.row(M.op('=')), m = M.lay(n, S.finSz); c.shadowColor = 'rgba(255,200,120,0.9)'; c.shadowBlur = 12; M.draw(c, n, S.eqPos.x - m.w / 2, 392 + 12, S.finSz, { col: INKL }); c.restore(); }
   S.terms.forEach((q, i) => {
@@ -318,7 +318,7 @@ function drawPads(g, c, S) {
     if (!q.isC && Math.hypot(ox, oy) > 3) { const x0 = gx, y0 = gy + 10 + bob, x1 = gx + ox, y1 = gy + oy + bob, d = Math.hypot(ox, oy);
       c.strokeStyle = '#2c5a3e'; c.lineCap = 'round'; c.lineWidth = Math.max(3, 9 - d * 0.08); c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + oy * 0.2, (y0 + y1) / 2 - ox * 0.2, x1, y1 + 4); c.stroke();
       c.strokeStyle = 'rgba(160,230,150,0.5)'; c.lineWidth = 2; c.stroke(); }
-    const asked = S.askI === i, dK = q.d ? clamp((t - q.dAt) / 0.22, 0, 1) : 0;
+    const asked = S.askI === i, dK = q.d ? clamp((t - q.dAt) / (0.22 * T), 0, 1) : 0;
     const sz = fin ? lerp(S.sz, S.finSz, sink) : S.sz;
     const bad = (q.boingAt != null && t - q.boingAt < 0.5) || (q.wobAt != null && t - q.wobAt < 0.3);
     const col = bad ? '#ff9aa0' : q.d ? '#fff0b0' : INKL;

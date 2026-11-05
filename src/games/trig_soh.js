@@ -79,7 +79,7 @@ MG.add({
         // 1. name the sides from the angle
         if (!S.named) out.push({ tap: 'ang', busy: 0.1,
           then(g) { S.named = true; M.show(g, 1.35 * T); S.point = true; hop(g, 'think'); M.circle(g, 'ang', { col: GOLD, dur: 0.45 * T }); S.angT = g.t;
-            M.arrow(g, 'ang', [S.mid('O')[0] - 8, S.mid('O')[1]], { col: OC, bend: 30, dur: 0.4 * T, delay: 0.2 * T, linger: 0.4 });
+            M.arrow(g, 'ang', [S.mid('O')[0] - 8, S.mid('O')[1]], { col: OC, bend: 30, dur: 0.4 * T, delay: 0.2 * T, linger: 0.4 * T });
             ['O', 'A', 'H'].forEach((s, i) => M.at(g, [[(0.5 + 0.3 * i) * T, g => { S.glow[s] = g.t; S.badge[s] = g.t; g.sfx('tap'); hop(g);
               for (const k of ['S', 'C', 'T']) for (const n of S.lt[k]) if (n.v === s) { n.col = COL[s]; M.indicate(g, n, { col: COL[s], dur: 0.35 * T }); } }]]));
             M.at(g, [[1.3 * T, g => { S.point = false; }]]); } });

@@ -95,8 +95,8 @@ MG.add({
                 M.fly(g, { node: M.vr('C', null, { col: '#ffe9a0' }), from: [HX, HY - 80], to: 'cc', dur: 0.36 * T, arc: -90, s0: 30, s1: 48,
                   then(g) { S.cc.alpha = 1; S.cc.pop = g.t; g.sfx('sparkle'); hop(g, 'laugh'); const bx = M.box(g, 'cc'); if (bx) g.burst(bx.x, bx.y, ['#ffe9a0', '#fff', '#9ad0ff'], 14, 150); } }); }],
               // the check: differentiate the answer and get the integrand back
-              [1.25 * T, g => { M.arrow(g, 'res', 'ig', { dur: 0.45, bend: -70, col: '#9ad0ff', label: M.frac(M.txt('d'), M.row(M.txt('d'), M.vr('x'))), ls: 40, linger: 1.6 });
-                M.indicate(g, S.res, { dur: 0.4, col: '#9ad0ff', sc: 1.12 }); M.indicate(g, S.ig, { delay: 0.4, dur: 0.5, col: '#9ad0ff', sc: 1.2 }); M.sparkle(g, 'ig', { delay: 0.45, cols: ['#9ad0ff', '#fff'] }); }],
+              [1.25 * T, g => { M.arrow(g, 'res', 'ig', { dur: 0.45 * T, bend: -70, col: '#9ad0ff', label: M.frac(M.txt('d'), M.row(M.txt('d'), M.vr('x'))), ls: 40, linger: 1.6 * T });
+                M.indicate(g, S.res, { dur: 0.4 * T, col: '#9ad0ff', sc: 1.12 }); M.indicate(g, S.ig, { delay: 0.4 * T, dur: 0.5 * T, col: '#9ad0ff', sc: 1.2 }); M.sparkle(g, 'ig', { delay: 0.45 * T, cols: ['#9ad0ff', '#fff'] }); }],
             ]); } });
         return out;
       },

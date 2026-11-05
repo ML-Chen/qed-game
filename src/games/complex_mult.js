@@ -112,7 +112,7 @@ MG.add({
     const HH = [30, 46, 16, 30];
     for (const [k, t0] of Object.entries(S.arcT || {})) {
       const q = S.prod[k], A = M.box(g, 'f' + q.i), B = M.box(g, 's' + q.j); if (!A || !B) continue;
-      const e = M.ease((g.t - t0) / 0.25), y0 = Math.min(A.y - A.h / 2, B.y - B.h / 2) - 4, x0 = A.x + (q.j - 0.5) * 6, x1 = B.x + (q.i - 0.5) * 6;
+      const e = M.ease((g.t - t0) / (0.25 * M.pace(g))), y0 = Math.min(A.y - A.h / 2, B.y - B.h / 2) - 4, x0 = A.x + (q.j - 0.5) * 6, x1 = B.x + (q.i - 0.5) * 6;
       c.save(); c.strokeStyle = COLS[k]; c.globalAlpha = 0.8; c.lineWidth = 3.5; c.lineCap = 'round';
       c.beginPath(); for (let u = 0; u <= e + 1e-6; u += 0.05) { const x = M.lerp(x0, x1, u), y = y0 - Math.sin(u * Math.PI) * HH[k]; u ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); c.restore();
     }

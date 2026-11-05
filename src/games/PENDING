@@ -1,4 +1,3 @@
 # Microgames still being written or reviewed: the build leaves these out. Remove a line once that file has passed review and the tests.
 integrals_parts.js
-series_taylor.js
 limits_squeeze.js

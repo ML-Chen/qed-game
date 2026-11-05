@@ -95,7 +95,7 @@ MG.add({
             M.writeIn(g, eN, { dur: 0.22 * T }); M.indicate(g, eN, { delay: 0.2 * T, dur: 0.3 * T, col: M.GOOD });
             for (const q of [...leaves(eN), t.circ]) M.tween(g, q, { alpha: 0 }, 0.15 * T, { delay: 0.35 * T });
             M.at(g, [[0.5 * T, g => { t.q.fill = null; t.q.hide = true; S.label(i, M.row(t.inv, t.eq, t.ansN)); M.tween(g, t.neg, { alpha: 1 }, 0.25 * T, { delay: 0.1 * T });
-              M.tween(g, t.ansN, { dy: -24 }, 0.32, { yoyo: true }); M.tween(g, t.inv, { dy: 12 }, 0.32, { yoyo: true }); /* they swap places on arcs, one over and one under */ M.indicate(g, t.ansN, { delay: 0.2 * T, dur: 0.35 * T, sc: 1.2 }); t.hopAt = g.t; g.sfx('pop'); }]]); },
+              M.tween(g, t.ansN, { dy: -24 }, 0.32 * T, { yoyo: true }); M.tween(g, t.inv, { dy: 12 }, 0.32 * T, { yoyo: true }); /* they swap places on arcs, one over and one under */ M.indicate(g, t.ansN, { delay: 0.2 * T, dur: 0.35 * T, sc: 1.2 }); t.hopAt = g.t; g.sfx('pop'); }]]); },
         }).filter(Boolean);
       },
       area(g) { const t = S.T.find(q => !q.done); return t ? ['k_' + t.ans] : null; },

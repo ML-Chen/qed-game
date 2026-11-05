@@ -71,7 +71,7 @@ MG.add({
     const cancel = { busy: 0.15, then(g) { S.st = 2; M.show(g, 1.05 * T); react(g, 'think'); S.point = true; g.sfx('sweep');
       // the matching factors are circled and joined by an arrow, crossed out, and the rest closes up
       M.circle(g, 'f1', { col: CUT, dur: 0.45 * T }); M.circle(g, 'den', { col: CUT, dur: 0.45 * T });
-      M.arrow(g, 'f1', 'den', { col: CUT, bend: 34, dur: 0.3 * T, linger: 0.2 });
+      M.arrow(g, 'f1', 'den', { col: CUT, bend: 34, dur: 0.3 * T, linger: 0.5 * T });
       M.strike(g, S.f1, { delay: 0.3 * T, dur: 0.2 * T, col: CUT }); M.strike(g, S.den, { delay: 0.42 * T, dur: 0.2 * T, col: CUT });
       M.at(g, [[0.32 * T, g => g.sfx('swoosh')], [0.7 * T, g => { M.tween(g, S.f1, { alpha: 0, sc: 0.7 }, 0.16 * T); M.tween(g, S.den, { alpha: 0, sc: 0.7 }, 0.16 * T); }],
         [0.88 * T, g => { hideAll(S.f1); hideAll(S.den); S.main.items = [S.rest]; build(g); g.sfx('pop'); react(g); M.sparkle(g, 'rest', { n: 10, cols: ['#ffb070', '#fff'] }); }],

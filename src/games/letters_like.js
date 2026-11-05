@@ -222,7 +222,7 @@ function catchLike(g, a) {
   // the running sum, right above the basket: 3x + (−2x) = x
   if (prev != null) {
     const add = q.c < 0 ? M.paren(termNode(q.c, q.v)) : termNode(q.c, q.v);
-    S.bubble = { node: med ? M.row(M.op('+'), add) : M.row(termNode(prev, q.v), M.op('+'), add, M.op('='), totalNode(S.total, q.v)), t0: t }; S.bubble.node.write = { t0: t, dur: 0.3 };
+    S.bubble = { node: med ? M.row(M.op('+'), add) : M.row(termNode(prev, q.v), M.op('+'), add, M.op('='), totalNode(S.total, q.v)), t0: t }; S.bubble.node.write = { t0: t, dur: 0.3 * S.T };
   }
   S.totalPop = t;
   if (S.caught.length === S.likes.length) finishCatch(g);
@@ -235,11 +235,11 @@ function sumNode(S, ans) { // 3x − 2x + x = 2x
 function finishCatch(g) {
   const S = g.s, K = S.mk, t = g.t, T = S.T; S.done = t;
   if (g.mode === 'medium') {
-    K.busyT = 1e9; S.bubble = { node: sumNode(S, false), t0: t + 0.2, final: true };
+    K.busyT = 1e9; S.bubble = { node: sumNode(S, false), t0: t + 0.2 * T, final: true };
     const others = S.terms.filter(q => !q.like).map(q => q.c), abs = S.likes.reduce((p, q) => p + Math.abs(q.c), 0);
-    M.later(g, 0.35, g => M.openAsk(g, { ask: { v: S.sum, wrong: [abs, S.sum + others[others.length - 1], S.likes.length, -S.sum, S.sum + 1] }, after: combineLen(T),
+    M.later(g, 0.35 * T, g => M.openAsk(g, { ask: { v: S.sum, wrong: [abs, S.sum + others[others.length - 1], S.likes.length, -S.sum, S.sum + 1] }, after: combineLen(T),
       resolve(g) { S.answered = g.t; S.bubble = { node: sumNode(S, true), t0: g.t, final: true }; S.totalPop = g.t; g.sfx('sparkle'); combine(g); } }));
-  } else { S.answered = t; S.bubble = { node: sumNode(S, true), t0: t + 0.2, final: true }; S.bubble.node.write = { t0: t + 0.2, dur: 0.35 * T }; M.show(g, 0.5 * T); M.at(g, [[0.5 * T, combine]]); }
+  } else { S.answered = t; S.bubble = { node: sumNode(S, true), t0: t + 0.2 * T, final: true }; S.bubble.node.write = { t0: t + 0.2 * T, dur: 0.35 * T }; M.show(g, 0.5 * T); M.at(g, [[0.5 * T, combine]]); }
 }
 // the combining, acted out on the sign: the like terms slide together, then become one term that flies up from the basket
 const combineLen = T => 1.75 * T;

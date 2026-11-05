@@ -122,10 +122,10 @@ MG.add({
       const write = (g, list) => list.forEach((q, i) => M.writeIn(g, q, { dur: 0.2 * T, delay: i * 0.08 * T }));
       M.at(g, [
         [0, g => { M.circle(g, ['s1', 'gp'], { col: CF, dur: 0.45 * T }); // f′ times each term of g
-          M.arrow(g, top('s1'), top('wg1'), { bend: 26, dur: 0.26 * T, col: CF, linger: 0.2 }); M.arrow(g, top('s1'), top('wg2'), { bend: 34, dur: 0.26 * T, delay: 0.12 * T, col: CF, linger: 0.16 }); g.sfx('swoosh'); }],
+          M.arrow(g, top('s1'), top('wg1'), { bend: 26, dur: 0.26 * T, col: CF, linger: 0.5 * T }); M.arrow(g, top('s1'), top('wg2'), { bend: 34, dur: 0.26 * T, delay: 0.12 * T, col: CF, linger: 0.5 * T }); g.sfx('swoosh'); }],
         [0.42 * T, g => out(g, [S.s1, S.d1, S.gp])],
         [0.56 * T, g => { [S.s1, S.d1, S.gp].forEach(hideAll); S.top.items = [t1, plus, t2, S.mn, S.fw, S.d2, S.s2]; relay(); write(g, [t1, plus, t2]); g.sfx('pop'); react(g); }],
-        [0.8 * T, g => { M.circle(g, ['fw', 's2'], { col: CG, dur: 0.4 * T }); M.arrow(g, top('fw'), top('s2'), { bend: 26, dur: 0.24 * T, col: CG, linger: 0.16 }); }],
+        [0.8 * T, g => { M.circle(g, ['fw', 's2'], { col: CG, dur: 0.4 * T }); M.arrow(g, top('fw'), top('s2'), { bend: 26, dur: 0.24 * T, col: CG, linger: 0.5 * T }); }],
         [1.12 * T, g => out(g, [S.fw, S.d2, S.s2])],
         [1.26 * T, g => { [S.fw, S.d2, S.s2].forEach(hideAll); S.top.items = [t1, plus, t2, S.mn, t3]; relay(); write(g, [t3]); g.sfx('pop'); react(g); }],
         [1.5 * T, g => { // the like terms light up and a note combines them

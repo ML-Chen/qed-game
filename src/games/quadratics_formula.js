@@ -142,7 +142,7 @@ MG.add({
             then(g) { S.pmDone = true; M.show(g, 1.0 * T); M.tween(g, g.s.mk.ex.keys.node, { alpha: 0 }, 0.3 * T); S.point = true; hop(g, 'think'); M.circle(g, 'pm', { col: NEW, dur: 0.4 * T }); M.indicate(g, 'pm', { dur: 0.4 * T, sc: 1.4, col: NEW });
               M.at(g, [[0.3 * T, g => { S.nt = true; for (const q of [X.mn, X.B1, X.d2, X.dA2, X.A2]) gone(q); fit(); X.NT.pop = g.t; X.DN.pop = g.t; g.sfx('tap'); }],
                 [0.6 * T, g => { S.split = true; X.pm.v = '+'; X.pm.pop = g.t; fit(); const f1 = M.node(g, 'f1'), f2 = M.node(g, 'f2'); born(f2); M.writeIn(g, f2, { dur: 0.35 * T });
-                  if (f1) f1.bar = { t0: g.t + 0.3, dur: 0.15 }; if (f2) f2.bar = { t0: g.t, dur: 0.3 * T }; g.sfx('swoosh'); hop(g); }]]); },
+                  if (f1) f1.bar = { t0: g.t + 0.3 * T, dur: 0.15 * T }; if (f2) f2.bar = { t0: g.t, dur: 0.3 * T }; g.sfx('swoosh'); hop(g); }]]); },
             resolve(g) { M.show(g, 1.65 * T);
               // each top adds up: the root slides into the first number, which rolls over to the sum
               const sum = [[X.NT, X.pm, X.RT, nb + Q.rt], [X.NT2, X.mi, X.RT2, nb - Q.rt]];
@@ -150,7 +150,7 @@ MG.add({
                 M.roll(g, n0, v, { delay: 0.1 * T, dur: 0.3 * T }); g.sfx('ding'); }]]));
               // then each fraction divides down to an answer
               // then each fraction divides: "10 ÷ 2 = 5" writes itself under it, and the fraction collapses into the answer
-              M.at(g, [[0.5 * T, g => { for (const q of [X.pm, X.RT, X.mi, X.RT2]) q.alpha = 0; S.summed = true; fit(); for (const id of ['f1', 'f2']) { const f = M.node(g, id); if (f) f.bar = { t0: g.t + 0.28, dur: 0.15 }; }
+              M.at(g, [[0.5 * T, g => { for (const q of [X.pm, X.RT, X.mi, X.RT2]) q.alpha = 0; S.summed = true; fit(); for (const id of ['f1', 'f2']) { const f = M.node(g, id); if (f) f.bar = { t0: g.t + 0.28 * T, dur: 0.15 * T }; }
                   [['f1', nb + Q.rt, Q.hi], ['f2', nb - Q.rt, Q.lo]].forEach(([id, top, v], i) => M.note(g, { node: M.row(M.num(top), M.op('÷'), M.num(dn), M.op('='), M.num(v)), at: id, off: [0, S.z * 1.25], s: 20, col: NEW, delay: i * 0.1 * T, write: 0.3 * T, hold: 0.3 * T, fade: 0.2 * T })); g.sfx('swoosh'); }],
                 [1.1 * T, g => { S.q1 = X.A5; S.q2 = X.A6; X.A5._born = g.t; X.A6._born = g.t; fit(); g.sfx('ding'); }],
                 [1.45 * T, g => { M.sparkle(g, 'A5', { n: 10, cols: [NEW, '#fff'] }); M.sparkle(g, 'A6', { n: 10, cols: [NEW, '#fff'] }); g.sfx('chime'); hop(g, 'laugh'); S.point = false; const b = M.box(g, 'form'); if (b) g.burst(b.x, b.y, [NEW, '#fff', '#ffb0a0'], 16, 150); }]]); } }];

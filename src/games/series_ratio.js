@@ -103,7 +103,7 @@ MG.add({
             for (const q of [one, mul]) { const bq = M.box(g, q.id || ''); if (bq && bc) M.tween(g, q, { dx: bc.x - bq.x, alpha: 0, sc: 0.6 }, 0.22 * T); else M.tween(g, q, { alpha: 0 }, 0.22 * T); }
             M.at(g, [[0.25 * T, g => { S.work.items = it.filter(q => q !== one && q !== mul); S.cst.id = 'res'; S.cst.col = S.L < 1 ? '#1a8a4a' : '#c0302a'; S.placeW(); S.cst.pop = g.t; g.sfx('ding'); swing(g, S.L, 0.3 * T); S.samp = null; }],
               [0.55 * T, g => { S.verdict = g.t; g.sfx(S.L < 1 ? 'coin' : 'boing'); hop(g, 'laugh');
-                M.note(g, { node: M.row(pt ? M.frac(M.num(1), M.num(b)) : M.num(b), M.op(S.L < 1 ? '<' : '>'), M.num(1)), at: [GC.x, GC.y - 52], s: 28, col: S.L < 1 ? '#8af0a0' : '#ff9a8a', write: 0.2 * T, hold: 0.9, fade: 0.3, pill: true });
+                M.note(g, { node: M.row(pt ? M.frac(M.num(1), M.num(b)) : M.num(b), M.op(S.L < 1 ? '<' : '>'), M.num(1)), at: [GC.x, GC.y - 52], s: 28, col: S.L < 1 ? '#8af0a0' : '#ff9a8a', write: 0.2 * T, hold: 0.9 * T, fade: 0.3 * T, pill: true });
                 M.sparkle(g, [GC.x + (S.L < 1 ? -70 : 70), GC.y + 30], { n: 14, cols: S.L < 1 ? ['#8af0a0', '#fff'] : ['#ff9a8a', '#fff'] }); }],
               [1.05 * T, g => { S.point = false; }]]); M.show(g, 1.1 * T); } });
         return out;
@@ -129,7 +129,7 @@ MG.add({
     c.save(); c.lineWidth = 18; c.lineCap = 'butt';
     c.strokeStyle = '#2f9a5a'; c.beginPath(); c.arc(GC.x, GC.y, GR, ang(0), ang(1)); c.stroke();
     c.strokeStyle = '#c84a3a'; c.beginPath(); c.arc(GC.x, GC.y, GR, ang(1), ang(VMAX)); c.stroke();
-    const vk = S.verdict != null ? Math.min(1, (t - S.verdict) / 0.3) : 0;
+    const vk = S.verdict != null ? Math.min(1, (t - S.verdict) / (0.3 * M.pace(g))) : 0;
     if (vk > 0) { c.strokeStyle = S.L < 1 ? '#8af0a0' : '#ff9a8a'; c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 6); c.shadowColor = c.strokeStyle; c.shadowBlur = 18; c.beginPath(); c.arc(GC.x, GC.y, GR, S.L < 1 ? ang(0) : ang(1), S.L < 1 ? ang(1) : ang(VMAX)); c.stroke(); c.globalAlpha = 1; c.shadowBlur = 0; }
     c.fillStyle = '#eef2ff'; c.font = M.NUMF(18); c.textAlign = 'center'; c.textBaseline = 'middle';
     for (let v = 0; v <= 3; v++) { const a = ang(v); c.fillText(String(v), GC.x + Math.cos(a) * (GR - 26), GC.y + Math.sin(a) * (GR - 26) + 2);

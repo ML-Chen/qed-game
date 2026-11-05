@@ -86,7 +86,7 @@ MG.add({
         if (S.dt && S.db && !S.tapped) out.push({ tap: ['fr', ...idsIn(S.fr)], busy: 0.1, ask: { v: valNode(a, c), wrong: [valNode(cs, ds), valNode(c, a), M.num(0), M.num(1)] }, askAt: cancelT, after: tail,
           then(g) { S.tapped = true; M.show(g, cancelT); react(g, 'think'); S.point = true; const t0 = S.TQ[0], b0 = S.BQ[0];
             // the same power on top and bottom: circled together, crossed out, and they leave the bare numbers behind
-            M.circle(g, [t0.pw.id, b0.pw.id], { col: GOLD, dur: 0.5 * T }); M.arrow(g, t0.pw.id, b0.pw.id, { col: GOLD, bend: -30, dur: 0.3 * T, linger: 0.2 });
+            M.circle(g, [t0.pw.id, b0.pw.id], { col: GOLD, dur: 0.5 * T }); M.arrow(g, t0.pw.id, b0.pw.id, { col: GOLD, bend: -30, dur: 0.3 * T, linger: 0.5 * T });
             M.strike(g, t0.pw, { delay: 0.35 * T, dur: 0.2 * T }); M.strike(g, b0.pw, { delay: 0.45 * T, dur: 0.2 * T });
             M.at(g, [[0.38 * T, g => g.sfx('swoosh')], [0.72 * T, g => { M.tween(g, t0.pw, { alpha: 0, sc: 0.6 }, 0.14 * T); M.tween(g, b0.pw, { alpha: 0, sc: 0.6 }, 0.14 * T); }],
               [0.88 * T, g => { hideAll(t0.pw); hideAll(b0.pw); for (const q of [t0, b0]) { if (!q.co) q.co = M.num(1, q.row.id + 'c', { _born: g.t }); q.pw = null; q.sync(); } build(g); g.sfx('pop'); react(g); M.light(g, t0.co, { col: GOLD }); M.light(g, b0.co, { col: GOLD }); }]]); },

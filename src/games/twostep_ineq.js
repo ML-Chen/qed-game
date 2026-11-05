@@ -111,7 +111,7 @@ MG.add({
         S.kDone = true; S.point = true; hop('wow'); M.show(g, 0.95 * T); g.sfx('swoosh');
         M.circle(g, ['pm', 'kk'], { dur: 0.4 * T, col: GOLD });
         M.at(g, [
-          [0.22 * T, g => { S.L = [S.co, S.xv]; S.R = [S.rc, S.pm, S.kk]; relay(); for (const q of [S.pm, S.kk]) M.tween(g, q, { dy: -46 }, 0.32, { yoyo: true }); g.sfx('whoosh'); }],
+          [0.22 * T, g => { S.L = [S.co, S.xv]; S.R = [S.rc, S.pm, S.kk]; relay(); for (const q of [S.pm, S.kk]) M.tween(g, q, { dy: -46 }, 0.32 * T, { yoyo: true }); g.sfx('whoosh'); }],
           [0.38 * T, g => { S.pm.v = k < 0 ? '+' : '−'; S.pm.pop = g.t; S.pm.col = '#c8401a'; S.kk.col = '#c8401a'; g.sfx('tap'); }],
           [0.6 * T, g => { const rb = M.unionBox([M.box(g, 'rc'), M.box(g, 'kk')]); hop('think');
             S.q1 = M.num(g.mode === 'medium' ? '?' : S.mid, 'q1', { alpha: 0 }); S.note = M.row(M.num(c), M.op(k < 0 ? '+' : '−'), M.num(Math.abs(k)), M.op('='), S.q1);

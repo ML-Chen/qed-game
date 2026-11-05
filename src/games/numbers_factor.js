@@ -59,7 +59,7 @@ MG.add({
   update(g, dt) {
     const S = g.s; M.update(g, dt);
     S.nodes.forEach((q, i) => M.zone(g, 'n' + i, box(q)));
-    S.slash = S.slash.filter(s => g.t - s.t0 < 0.35);
+    S.slash = S.slash.filter(s => g.t - s.t0 < 0.35 * M.pace(g));
     // after a timeout the rest of the tree chops itself, one log at a time, so the player sees the answer
     if (g.done && g.result === 'fail') { if (S.pending) { S.pending = false; S.nodes.forEach(q => q.pending = false); } if (S.splitting != null) { finishSplit(g, S.splitting, true); } if (g.t - g.doneAt > 0.35 && g.t - (S.autoChopAt ?? -9) > 0.22) { const i = S.nodes.findIndex(q => !q.prime && !q.chopped && !q.hidden); if (i >= 0) { S.autoChopAt = g.t; split(g, i, true); } else if (!S.revealAt) reveal(g); } }
   },
@@ -300,7 +300,7 @@ function drawNote(g, c, S) {
 }
 function drawSlash(g, c, S) {
   for (const s of S.slash) {
-    const k = (g.t - s.t0) / 0.35, a = 1 - k;
+    const k = (g.t - s.t0) / (0.35 * M.pace(g)), a = 1 - k;
     c.save(); c.globalAlpha = a; c.lineCap = 'round';
     if (s.prime) { c.strokeStyle = '#fff6c0'; c.lineWidth = 4; for (const d of [-1, 1]) { c.beginPath(); c.moveTo(s.x, s.y - R0 - 6); c.lineTo(s.x + d * (14 + k * 16), s.y - R0 - 22 - k * 10); c.stroke(); } }
     else { c.shadowColor = '#fff'; c.shadowBlur = 12; c.strokeStyle = '#ffffff'; c.lineWidth = 6 * (1 - k * 0.6); c.beginPath(); c.moveTo(s.x + 6, s.y - R0 - 30); c.quadraticCurveTo(s.x - 3, s.y, s.x - 6, s.y + R0 + 30); c.stroke(); }

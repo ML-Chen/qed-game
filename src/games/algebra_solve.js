@@ -231,7 +231,7 @@ function launch(S, side, it, g) {
   const h = S.helpers[side === 'L' ? 0 : 1];
   if (it.kind === 'balloon') { const [ax, ay] = toWorld(S, side, it.anchor ?? it.x, -2); S.fl.push({ kind: 'balloon', x0: ax, y0: ay - it.y, t0: g.t, float: true, col: it.col, seed: it.seed }); g.sfx('whoosh'); return; }
   const [wx, wy] = toWorld(S, side, it.x, it.y);
-  S.fl.push({ kind: it.kind, x0: wx, y0: wy, x1: h.x + h.f * 4, y1: h.y - 34, t0: g.t, dur: 0.42, col: it.col, seed: it.seed, helper: h, rot: (it.seed - 0.5) * 8 });
+  S.fl.push({ kind: it.kind, x0: wx, y0: wy, x1: h.x + h.f * 4, y1: h.y - 34, t0: g.t, dur: 0.42 * M.pace(g), col: it.col, seed: it.seed, helper: h, rot: (it.seed - 0.5) * 8 });
 }
 
 MG.add({
@@ -292,7 +292,7 @@ MG.add({
         S.nC.id = 'r'; S.nR = S.nC; if (S.rDiv) S.quot.n = S.nR; else S.right = S.nR;
         S.relay(); burst(g, 'r', 14); g.sfx('coin'); act(g, [1]);
         // the dashed outlines (fish already taken away) pop; fish and balloons that were added settle in
-        let i = 0; for (const it of S.pans.R.items) { if (it.st === 'ghost') { it.popAt = Math.max(g.t + 0.02 + i * 0.03, (it.ghostAt || 0) + 0.1); i++; } else if (it.st === 'tag') { it.st = 'on'; it.settle = g.t + i * 0.03; i++; } }
+        let i = 0; for (const it of S.pans.R.items) { if (it.st === 'ghost') { it.popAt = Math.max(g.t + (0.02 + i * 0.03) * T, (it.ghostAt || 0) + 0.1 * T); i++; } else if (it.st === 'tag') { it.st = 'on'; it.settle = g.t + i * 0.03 * T; i++; } }
         if (S.divided) groupPan(S, 'R', a); else layoutPan(S, 'R');
         S.om += 0.2; }]]);
     };
@@ -316,13 +316,13 @@ MG.add({
                 M.at(g, [[0.31 * T, g => { const be = M.box(g, 'eq'); if (be) g.burst(be.x, be.y - 70, ['#ffe08a', '#fff'], 8, 90); }],
                   [0.62 * T, g => { // the term lands on the right side
                     S.dOp.alpha = 1; S.dK.alpha = 1; S.dOp.pop = g.t; S.dK.pop = g.t; burst(g, 'dk', 14); g.sfx('snap'); act(g, [0, 1]);
-                    const L = S.pans.L, R = S.pans.R, step = Math.min(0.05, 0.4 / ak);
-                    L.items.filter(it => it.kind === (k > 0 ? 'fish' : 'balloon')).slice(-ak).forEach((it, i) => { it.leaveAt = g.t + 0.02 + i * step; });
+                    const L = S.pans.L, R = S.pans.R, step = Math.min(0.05, 0.4 / ak) * T;
+                    L.items.filter(it => it.kind === (k > 0 ? 'fish' : 'balloon')).slice(-ak).forEach((it, i) => { it.leaveAt = g.t + 0.02 * T + i * step; });
                     if (k > 0) {
                       const on = R.items.filter(it => it.kind === 'fish' && it.st === 'on'), take = Math.min(ak, on.length);
-                      on.slice(on.length - take).reverse().forEach((it, i) => { it.st = 'ghost'; it.ghostAt = g.t + 0.02 + i * step; });
-                      for (let i = take; i < ak; i++) R.items.push(mkItem('balloon', 'tag', { born: g.t + 0.1 + (i - take) * 0.04 }));
-                    } else for (let i = 0; i < ak; i++) R.items.push(mkItem('fish', 'tag', { born: g.t + 0.05 + i * 0.04 }));
+                      on.slice(on.length - take).reverse().forEach((it, i) => { it.st = 'ghost'; it.ghostAt = g.t + 0.02 * T + i * step; });
+                      for (let i = take; i < ak; i++) R.items.push(mkItem('balloon', 'tag', { born: g.t + (0.1 + (i - take) * 0.04) * T }));
+                    } else for (let i = 0; i < ak; i++) R.items.push(mkItem('fish', 'tag', { born: g.t + (0.05 + i * 0.04) * T }));
                     layoutPan(S, 'L'); layoutPan(S, 'R');
                     for (const it of R.items) if (it.st === 'tag' && !it.placed) { it.placed = true; it.x = it.tx; it.y = it.kind === 'balloon' ? it.ty - 30 : it.ty - 90; }
                     S.om += 0.1; }]]);
@@ -377,8 +377,8 @@ MG.add({
                 [0.5 * T, g => {
                   S.solved = true; S.nR.col = RIGHT; S.nR.pop = g.t; burst(g, 'ans', 18); g.sfx('magic'); act(g, [0, 1]);
                   // every group but the first leaves each pan, then the kept group slides to the middle; the last crate opens
-                  for (const side of ['L', 'R']) { let i = 0; for (const it of S.pans[side].items) if (it.grp > 0 && it.leaveAt == null && it.popAt == null) { it.leaveAt = g.t + 0.02 + i * 0.03; i++; } }
-                  S.regroupAt = g.t + 0.3; S.revealAt = g.t + 0.05;
+                  for (const side of ['L', 'R']) { let i = 0; for (const it of S.pans[side].items) if (it.grp > 0 && it.leaveAt == null && it.popAt == null) { it.leaveAt = g.t + (0.02 + i * 0.03) * T; i++; } }
+                  S.regroupAt = g.t + 0.3 * T; S.revealAt = g.t + 0.05 * T;
                   const b0 = S.pans.L.items.find(it => it.kind === 'box' && it.grp === 0); if (b0) { const [wx, wy] = toWorld(S, 'L', b0.x, b0.y); g.burst(wx, wy, ['#ffe08a', '#fff', '#9af0b0'], 16, 140); }
                   S.om += 0.2; }]]);
             },
@@ -411,7 +411,7 @@ MG.add({
     const S = g.s; M.update(g, dt);
     // the kit records every wrong move in missAt / missInfo; act it out here in case the kit does not call onMiss itself
     const MKs = g.s.mk; if (MKs.missAt > 0 && MKs.missAt !== S.missSeen && MKs.missInfo && MKs.opts && MKs.opts.onMiss) MKs.opts.onMiss(g, MKs.missInfo);
-    for (const sl of S.slides) { const k = M.ease((g.t - sl.t0) / 0.2); sl.n.dx = sl.dx * (1 - k); sl.n.dy = sl.dy * (1 - k); if (k >= 1) sl.done = true; }
+    for (const sl of S.slides) { const k = M.ease((g.t - sl.t0) / (0.2 * M.pace(g))); sl.n.dx = sl.dx * (1 - k); sl.n.dy = sl.dy * (1 - k); if (k >= 1) sl.done = true; }
     S.slides = S.slides.filter(s => !s.done);
     if (S.classic && g.t - S.classic > 1.0) { S.classic = 0; S.thT = 0; S.fade = null; S.wrongDen = null; }
     S.om += (-70 * (S.th - S.thT) - 7 * S.om) * dt; S.th += S.om * dt; // the seesaw is a damped spring toward its target angle
@@ -435,7 +435,7 @@ MG.add({
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
-    const S = g.s, t = g.t, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', mk = g.s.mk;
+    const S = g.s, t = g.t, T = M.pace(g), won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', mk = g.s.mk;
     c.drawImage(g.bake('algebra_bluehour', blueHour), 0, 0, W, H);
     aurora(c, t);
     // a penguin belly-slides across the far ice now and then
@@ -460,7 +460,7 @@ MG.add({
       c.fillStyle = tg; c.fillRect(cx - PANW / 2 - 3, -4, PANW + 6, 4); c.strokeStyle = '#4a6a90'; c.lineWidth = 1.2; c.strokeRect(cx - PANW / 2 - 3, -4, PANW + 6, 4);
       c.fillStyle = '#4a6a90'; c.fillRect(cx - PANW / 2 - 4, -11, 3, 9); c.fillRect(cx + PANW / 2 + 1, -11, 3, 9);
       if ((pan.groups || 1) > 1) {
-        const n = pan.groups, gw = PANW / n, k = M.ease((t - pan.groupAt) / 0.2);
+        const n = pan.groups, gw = PANW / n, k = M.ease((t - pan.groupAt) / (0.2 * T));
         for (let i = 0; i < n; i++) {
           const gx = cx - PANW / 2 + i * gw + 2, kept = i === 0, gr = c.createLinearGradient(0, -62, 0, -4);
           gr.addColorStop(0, kept ? `rgba(255,224,120,${0.05 * k})` : `rgba(180,220,255,${0.04 * k})`); gr.addColorStop(1, kept ? `rgba(255,214,90,${0.38 * k})` : `rgba(160,210,255,${0.26 * k})`);
@@ -468,14 +468,14 @@ MG.add({
           c.strokeStyle = kept ? `rgba(255,224,120,${0.9 * k})` : `rgba(210,236,255,${0.6 * k})`; c.lineWidth = 1.6; c.setLineDash([5, 4]); c.stroke(); c.setLineDash([]);
         }
       }
-      const reveal = Math.max(0, (t - S.revealAt) / 0.3);
+      const reveal = Math.max(0, (t - S.revealAt) / (0.3 * T));
       for (const it of pan.items) {
         if (it.kind === 'balloon' || t < it.born) continue;
         const ghost = it.st === 'ghost' && it.flown, gk = it.popAt != null ? 1 - M.clamp((t - it.popAt + 0.05) / 0.05, 0, 1) : 1;
         c.save(); c.translate(cx + it.x, it.y); c.globalAlpha *= gk * M.clamp((t - it.born) / 0.1, 0, 1) * (S.fade && S.fade.has(it) ? 0.22 : 1);
         if (it.kind === 'box') { if (ghost) c.globalAlpha *= 0.25; const own = S.solved && it.grp === 0 && t >= S.revealAt; c.rotate(Math.sin(t * 2 + it.seed * 7) * 0.025); crate(c, S.boxS, own ? reveal : 0, own ? S.p.x : null); }
         else {
-          if (it.settle != null && t > it.settle && t - it.settle < 0.25) c.translate(0, -Math.sin((t - it.settle) / 0.25 * Math.PI) * 5);
+          if (it.settle != null && t > it.settle && t - it.settle < 0.25 * T) c.translate(0, -Math.sin((t - it.settle) / (0.25 * T) * Math.PI) * 5);
           if (it.st === 'tag') { c.shadowColor = '#ffd45a'; c.shadowBlur = 8; }
           c.rotate((it.seed - 0.5) * 0.3); if (it.seed > 0.5) c.scale(-1, 1); fish(c, 0.72, it.col, ghost);
         }
@@ -508,7 +508,7 @@ MG.add({
     c.save(); c.translate(0, offL); M.drawEx(g, c, 'L'); M.drawEx(g, c, 'nL'); c.restore();
     c.save(); c.translate(0, offR); M.drawEx(g, c, 'R'); c.restore();
     if (S.wrongDen) { const w = S.wrongDen, k = M.ease((t - w.t0) / 0.2); c.save(); c.globalAlpha = k * M.clamp((1.0 - (t - w.t0)) / 0.2, 0, 1); c.font = MK.NUMF(30); c.textAlign = 'center'; c.fillStyle = MK.BAD; c.strokeStyle = '#fff'; c.lineWidth = 4; c.strokeText('÷ ' + w.v, w.x, w.y + offR + (1 - k) * -20); c.fillText('÷ ' + w.v, w.x, w.y + offR + (1 - k) * -20); c.restore(); }
-    if (S.check) { const k = M.ease((t - S.winAt) / 0.25); c.save(); c.globalAlpha = k; c.fillStyle = 'rgba(10,20,50,0.45)'; const b = mk.ex.CHK; rr(c, 180 - 120, 204, 240, 42, 21); c.fill(); M.drawEx(g, c, 'CHK'); c.restore(); }
+    if (S.check) { const k = M.ease((t - S.winAt) / (0.25 * T)); c.save(); c.globalAlpha = k; c.fillStyle = 'rgba(10,20,50,0.45)'; const b = mk.ex.CHK; rr(c, 180 - 120, 204, 240, 42, 21); c.fill(); M.drawEx(g, c, 'CHK'); c.restore(); }
     // helper penguins on the snow: they catch the fish and cheer every move
     S.helpers.forEach(h => {
       const munch = t - h.munchAt >= 0 && t - h.munchAt < 0.3, cheer = t - h.actAt >= 0 && t - h.actAt < 0.45;
