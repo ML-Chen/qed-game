@@ -11,7 +11,7 @@
 // Medium mode: the swipe writes the column's sum ("1 + 4 + 3") in its pocket and opens the tray to pick the total.
 const M = MK;
 const SEED_INK = '#4a2408', LEAF_INK = '#183e1a', ANS_INK = '#fff2d0', EXP_INK = '#3a1c0c', CARC = '#ff7a3a';
-const Y_CARRY = 224, Y_TOP = 294, Y_BOT = 356, Y_LINE = 384, Y_ANS = 484, CH_Y0 = 436, CH_Y1 = 522, SZ = 44, NS = 36, Y_NOTE = Y_LINE + 42; // NS: the working note's size
+const Y_CARRY = 224, Y_TOP = 294, Y_BOT = 356, Y_LINE = 384, Y_ANS = 502, CH_Y0 = 454, CH_Y1 = 540, SZ = 44, NS = 44, Y_NOTE = Y_LINE + 51; // NS: the working note's size, the same as the column digits so it reads on a phone
 const clamp = M.clamp, lerp = M.lerp, ease = M.ease, easeIO = M.easeIO;
 
 // ---------------- the problem ----------------
@@ -334,7 +334,7 @@ MG.add({
     K.moveT = g.t + 5;
   },
   draw(g, c) {
-    const S = g.s, t = g.t, n = S.n, K = S.mk; c.drawImage(g.bake('add_anthill_v4_' + n, (o, w, h) => antHill(o, w, h, n)), 0, 0, W, H);
+    const S = g.s, t = g.t, n = S.n, K = S.mk; c.drawImage(g.bake('add_anthill_v5_' + n, (o, w, h) => antHill(o, w, h, n)), 0, 0, W, H);
     const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', missing = S.miss && !S.miss.ask && !won && t - S.miss.t < 1.2;
     // mushroom glow and fireflies
     c.save(); c.globalCompositeOperation = 'lighter';

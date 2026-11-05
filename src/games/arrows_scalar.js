@@ -34,7 +34,7 @@ MG.add({
     S.cm = M.op(',', 'cm');
     const comp = ax => { const q = S.cp[ax];
       if (q.stage === 1) { if (!q.row) { q.row = M.row(q.kc, q.dot, q.v < 0 ? (q.par = M.paren(q.n)) : q.n); q.row.id = 'p' + ax; } return q.row; }
-      return q.n; };
+      return q.sg ? [q.sg, q.n] : q.n; }; // a gap the width of the melted "k ·" closes smoothly, so the bracket doesn't jump
     S.vecN = M.paren(M.row(comp('x'), S.cm, M.gap(4), comp('y')), 'vec');
     S.build = () => {
       S.vecN.inner = M.row(comp('x'), S.cm, M.gap(4), comp('y'));
@@ -82,7 +82,8 @@ MG.add({
         M.note(g, { node: M.row(M.op('×'), kTxt()), at: [fx, fy], s: 26, col: ax === 'x' ? XC : YC, write: 0.28 * T, hold: 0.55 * T, fade: 0.25 * T, delay: 0.1 * T });
         g.sfx('sweep');
         M.at(g, [
-          [0.45 * T, g => { q.n.id = 'r' + ax; q.stage = 2; q.row = null; S.build(); }],
+          [0.45 * T, g => { const rb = M.box(g, 'p' + ax), nb = M.box(g, ax); q.sg = M.gap(rb && nb ? Math.max(0, rb.w - nb.w) : 40); q.sg._born = -1;
+            q.n.id = 'r' + ax; q.stage = 2; q.row = null; S.build(); M.tween(g, q.sg, { w: 0 }, 0.35 * T); M.at(g, [[0.4 * T, g => { q.sg = null; S.build(); }]]); }],
           [0.95 * T, g => { M.unlight(g, q.n); const e = [S.ox + p.x * S.scale('x') * S.u, S.oy - p.y * S.scale('y') * S.u]; g.burst(e[0], e[1], [GOLD, '#fff', ax === 'x' ? XC : YC], 12, 120); g.sfx('ding'); hop(g, 'laugh');
             if (S.cp.x.done && S.cp.y.done) S.point = false; }],
         ]); } }; };
