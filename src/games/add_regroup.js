@@ -11,7 +11,7 @@
 // Medium mode: the swipe writes the column's sum ("1 + 4 + 3") in its pocket and opens the tray to pick the total.
 const M = MK;
 const SEED_INK = '#4a2408', LEAF_INK = '#183e1a', ANS_INK = '#fff2d0', EXP_INK = '#3a1c0c', CARC = '#ff7a3a';
-const Y_CARRY = 224, Y_TOP = 294, Y_BOT = 356, Y_LINE = 384, Y_ANS = 462, CH_Y0 = 414, CH_Y1 = 500, SZ = 44;
+const Y_CARRY = 224, Y_TOP = 294, Y_BOT = 356, Y_LINE = 384, Y_ANS = 484, CH_Y0 = 436, CH_Y1 = 522, SZ = 44, NS = 36, Y_NOTE = Y_LINE + 42; // NS: the working note's size
 const clamp = M.clamp, lerp = M.lerp, ease = M.ease, easeIO = M.easeIO;
 
 // ---------------- the problem ----------------
@@ -207,42 +207,63 @@ function antHill(c, W, H, n) {
 // Each column not yet added is one tall zone ('col' + j) from its carry spot down to its answer pocket. Every digit is
 // inert, so a press anywhere in the column lands on the zone: a swipe down the column (or a tap on it) adds it up.
 const colBox = (n, j) => ({ x: colX(n, j), y: (Y_CARRY - 30 + Y_ANS + 18) / 2, w: 64, h: Y_ANS + 18 - (Y_CARRY - 30) });
-// the column's sum written in its answer pocket while the medium-mode tray is open: "a + b", or "1 + a + b"
-function placeExpr(g, j, hide) {
-  const S = g.s, items = [];
-  if (S.cin[j]) items.push(M.num(1, 'ec' + j, { col: '#d0501a' }), M.op('+', 'eq' + j));
-  items.push(M.num(S.A[j], 'et' + j, { col: '#8a4a10' }), M.op('+', 'ep' + j), M.num(S.B[j], 'eb' + j, { col: '#2c6e2a' }));
-  const e = M.row(...items); e.id = 'e' + j; e.hide = hide;
-  M.place(g, 'ee' + j, e, colX(S.n, j), Y_LINE + 26, 24, { col: EXP_INK });
-  M.inert(g, ['e' + j, 'ec' + j, 'eq' + j, 'et' + j, 'ep' + j, 'eb' + j]);
-  return e;
+// The working note: the column's sum writes itself on a parchment slip right under the column, one term at a time as
+// each digit lights up ("1 + 4 + 2"), then "= 7" (or "= 15"). Every part is its own node so it can light, fly and fade.
+function placeNote(g, j) {
+  const S = g.s, cin = S.cin[j], sum = colSum(S, j), hid = { alpha: 0 }, P = id => M.op('+', id + j, { ...hid });
+  const parts = {
+    c: cin ? M.num(1, 'nc' + j, { col: '#d0501a', ...hid }) : null, pc: cin ? P('npc') : null,
+    t: M.num(S.A[j], 'nt' + j, { col: '#8a4a10', ...hid }), pb: P('npb'), b: M.num(S.B[j], 'nb' + j, { col: '#2c6e2a', ...hid }),
+    eq: M.op('=', 'neq' + j, { ...hid }), r1: sum >= 10 ? M.num(1, 'nr1' + j, { col: '#c0401a', ...hid }) : null, r0: M.num(sum % 10, 'nr0' + j, { col: '#6a2a8a', ...hid }),
+  };
+  const e = M.row(parts.c, parts.pc, parts.t, parts.pb, parts.b, parts.eq, parts.r1, parts.r0); e.id = 'e' + j;
+  const w = M.lay(e, NS).w, cx = M.clamp(colX(S.n, j), 12 + w / 2, 348 - w / 2); // right under its column, kept on screen
+  M.place(g, 'ee' + j, e, cx, Y_NOTE, NS, { col: EXP_INK });
+  M.inert(g, ['e' + j, ...Object.values(parts).filter(Boolean).map(q => q.id)]);
+  S.note = { j, parts, e }; return parts;
 }
+const reveal = (g, q, T) => { if (!q) return; q.alpha = 1; M.writeIn(g, q, { dur: 0.16 * T }); };
+// a swipe down the column: the streak runs down it, then its digits light up one after another while their terms
+// write themselves into the note (carry first, then the top digit, then the bottom digit)
 function swipeCol(g, j) {
-  const S = g.s; S.miss = null; S.swipe = { j, t0: g.t };
-  for (const id of ['t' + j, 'b' + j, 'c' + j]) { const nd = M.node(g, id); if (nd && !nd.hide) nd.pop = g.t; }
-  S.runs.push({ x: colX(S.n, j) + 24, t0: g.t }); S.heroHop = g.t; g.sfx('whoosh');
-  if (g.mode === 'medium') placeExpr(g, j, false);
+  const S = g.s, T = M.pace(g); S.miss = null; S.swipe = { j, t0: g.t };
+  S.runs.push({ x: colX(S.n, j) + 24, t0: g.t }); S.heroHop = g.t; S.point = true; g.sfx('whoosh');
+  M.show(g, 0.55 * T); const p = placeNote(g, j), lit = [];
+  if (S.cin[j]) lit.push(['c' + j, [p.c]]);
+  lit.push(['t' + j, S.cin[j] ? [p.pc, p.t] : [p.t]], ['b' + j, [p.pb, p.b]]);
+  lit.forEach(([id, qs], i) => M.at(g, [[(0.04 + i * (S.cin[j] ? 0.15 : 0.2)) * T, g => {
+    const nd = M.node(g, id); M.light(g, nd, { col: id[0] === 'c' ? '#ff5a1a' : id[0] === 't' ? '#e05a00' : '#d07a00', dur: 0.12 * T }); M.tween(g, nd, { sc: 1.28 }, 0.24 * T, { yoyo: true });
+    qs.forEach(q => reveal(g, q, T)); S.heroHop = g.t; g.sfx('tap', { pitch: 1 + i * 0.15 }); }]]));
 }
+// the sum: "= 15" writes itself, the 5 drops into the answer pocket, and the 1 lifts off and arcs over to the top of
+// the next column, where an ant catches it with a sparkle
 function addCol(g, j) {
-  const S = g.s, n = S.n, sum = colSum(S, j), K = g.s.mk;
-  const e = M.node(g, 'e' + j); if (e) e.hide = true;
-  const a = M.node(g, 'a' + j); a.v = String(sum % 10); a.hide = false; a.pop = g.t; M.relayout(g, 'aa' + j);
-  for (const id of ['t' + j, 'b' + j, 'c' + j]) { const nd = M.node(g, id); if (nd) nd.alpha = 0.62; }
-  delete K.zones['col' + j]; delete K.box['col' + j];
-  S.next = j + 1; S.cheerAt = g.t;
-  g.burst(colX(n, j), Y_ANS - 15, ['#ffd45a', '#fff2c0', '#ff9a5a'], 12, 130);
-  if (sum >= 10 && j + 1 < n) {
-    // the 1 of the ten hops (an ant carries it) from the answer row up to the top of the next column
-    S.cin[j + 1] = 1; S.carry = { j, t0: g.t, x0: colX(n, j + 1), y0: Y_ANS + 4, x1: colX(n, j + 1) + 2, y1: Y_CARRY + 16 };
-    M.later(g, 0.28, () => { const c1 = M.node(g, 'c' + (j + 1)); c1.hide = false; c1.pop = g.t; g.sfx('pop'); g.burst(colX(n, j + 1), Y_CARRY - 9, ['#ff9a5a', '#ffd45a'], 8, 90); });
-    g.sfx('ding');
-  } else g.sfx('coin');
+  const S = g.s, n = S.n, sum = colSum(S, j), K = g.s.mk, T = M.pace(g), p = S.note.parts, carry = sum >= 10 && j + 1 < n;
+  M.show(g, (carry ? 1.08 : 0.82) * T);
+  delete K.zones['col' + j]; delete K.box['col' + j]; S.next = j + 1; if (carry) S.cin[j + 1] = 1;
+  for (const q of [p.eq, p.r1, p.r0]) reveal(g, q, T * 1.3);
+  M.at(g, [[0.12 * T, g => { M.indicate(g, p.r0, { sc: 1.35, dur: 0.25 * T }); if (p.r1) M.indicate(g, p.r1, { sc: 1.35, dur: 0.25 * T }); g.sfx('ding'); S.heroHop = g.t; }],
+    [0.34 * T, g => { // the ones digit drops into the answer pocket
+      const b = M.box(g, 'nr0' + j); p.r0.alpha = 0; g.sfx('swoosh');
+      M.fly(g, { node: M.num(sum % 10), from: [b.x, b.y], to: 'a' + j, dur: 0.28 * T, arc: 18, s0: NS, s1: SZ, col: '#ffe9a8',
+        then(g) { const a = M.node(g, 'a' + j); a.v = String(sum % 10); a.hide = false; a.pop = g.t; M.relayout(g, 'aa' + j); M.sparkle(g, 'a' + j, { n: 12 });
+          g.burst(colX(n, j), Y_ANS - 15, ['#ffd45a', '#fff2c0', '#ff9a5a'], 12, 130); g.sfx(carry ? 'pop' : 'coin'); S.cheerAt = g.t;
+          for (const id of ['t' + j, 'b' + j, 'c' + j]) { const nd = M.node(g, id); if (nd) { M.unlight(g, nd, { dur: 0.2 * T }); M.tween(g, nd, { alpha: 0.62 }, 0.25 * T); } } } });
+      if (carry) { M.tween(g, p.r1, { dy: -10, sc: 1.3, hl: 1 }, 0.14 * T); S.catcher = { j: j + 1, t0: g.t }; } }],
+    [0.48 * T, g => { if (!carry) return; // the 1 lifts off and arcs over to the top of the next column
+      const b = M.box(g, 'nr1' + j); p.r1.alpha = 0; g.sfx('whoosh', { pitch: 1.3 });
+      S.carry = { j, t0: g.t, dur: 0.42 * T, x0: b.x + (p.r1.dx || 0), y0: b.y - 10, x1: colX(n, j + 1), y1: Y_CARRY - 9 }; }],
+    [0.6 * T, g => { M.tween(g, S.note.e, { alpha: 0 }, 0.2 * T); }],
+    [(carry ? 0.9 : 0.66) * T, g => { if (carry) { const c1 = M.node(g, 'c' + (j + 1)); c1.hide = false; c1.pop = g.t; M.sparkle(g, 'c' + (j + 1), { n: 14, cols: ['#ff9a5a', '#ffd45a', '#fff'] });
+      g.sfx('sparkle'); g.burst(colX(n, j + 1), Y_CARRY - 9, ['#ff9a5a', '#ffd45a'], 10, 100); S.caughtAt = g.t; } S.point = false; }],
+    [(carry ? 1.0 : 0.8) * T, g => { delete K.ex['ee' + j]; if (S.note && S.note.j === j) S.note = null; }],
+  ]);
 }
 function columnMoves(g) {
   const S = g.s, j = S.next; if (j >= S.n) return [];
-  const a = S.A[j], b = S.B[j], c = S.cin[j], sum = a + b + c, glued = +(String(a) + String(b));
+  const a = S.A[j], b = S.B[j], c = S.cin[j], sum = a + b + c, glued = +(String(a) + String(b)), T = M.pace(g);
   const wrong = c ? [sum - 1, sum + 1, sum >= 10 ? sum % 10 : glued] : [sum >= 10 ? sum % 10 : sum + 1, glued, sum - 1, sum + 1];
-  return [{ tap: 'col' + j, busy: 0.1, askAt: 0, after: 0.1, ask: { v: sum, wrong: wrong.filter(v => v >= 0 && v !== sum) }, then(g) { swipeCol(g, j); }, resolve(g) { addCol(g, j); } }];
+  return [{ tap: 'col' + j, busy: 0.1, askAt: 0.55 * T, after: (sum >= 10 && j + 1 < S.n ? 1.08 : 0.82) * T, ask: { v: sum, wrong: wrong.filter(v => v >= 0 && v !== sum) }, then(g) { swipeCol(g, j); }, resolve(g) { addCol(g, j); } }];
 }
 // the guide: the next column always glows; the ghost hand swipes down it at level 0, after a 2-second pause, or after a fail
 function drawGuide(g, c) {
@@ -276,7 +297,7 @@ MG.add({
   },
   init(g) {
     const S = g.s; M.setup(g); Object.assign(S, pick(g));
-    S.cin = Array(S.n + 1).fill(0); S.next = 0; S.miss = null; S.runs = []; S.carry = null; S.swipe = null; S.heroHop = -9; S.cheerAt = -9;
+    S.cin = Array(S.n + 1).fill(0); S.next = 0; S.miss = null; S.runs = []; S.carry = null; S.catcher = null; S.caughtAt = null; S.note = null; S.point = false; S.swipe = null; S.heroHop = -9; S.cheerAt = -9;
     const n = S.n, inert = ['plus'];
     M.place(g, 'plus', M.op('+', 'plus'), plusX(n), Y_BOT, SZ, { col: '#fff2d0' });
     for (let j = 0; j < n; j++) {
@@ -313,7 +334,7 @@ MG.add({
     K.moveT = g.t + 5;
   },
   draw(g, c) {
-    const S = g.s, t = g.t, n = S.n; c.drawImage(g.bake('add_anthill_v3_' + n, (o, w, h) => antHill(o, w, h, n)), 0, 0, W, H);
+    const S = g.s, t = g.t, n = S.n, K = S.mk; c.drawImage(g.bake('add_anthill_v4_' + n, (o, w, h) => antHill(o, w, h, n)), 0, 0, W, H);
     const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', missing = S.miss && !S.miss.ask && !won && t - S.miss.t < 1.2;
     // mushroom glow and fireflies
     c.save(); c.globalCompositeOperation = 'lighter';
@@ -344,13 +365,18 @@ MG.add({
     const pb = M.box(g, 'plus'); if (pb) { c.fillStyle = '#7a5a48'; c.beginPath(); c.ellipse(pb.x, pb.y + 2, 21, 18, 0, 0, 7); c.fill(); c.fillStyle = '#9a7a66'; c.beginPath(); c.ellipse(pb.x - 2, pb.y, 19, 16, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(pb.x - 7, pb.y - 6, 7, 4, -0.4, 0, 7); c.fill(); }
     for (let j = 0; j < n; j++) {
       const tn = M.node(g, 't' + j), bn = M.node(g, 'b' + j), tb = M.box(g, 't' + j), bb = M.box(g, 'b' + j), used = tn.alpha != null && tn.alpha < 1;
-      seed(c, tb.x + (tn.dx || 0), tb.y + (tn.dy || 0), 23, 30, { alpha: used ? 0.62 : 1, ring: tn.mark === 'bad' ? M.BAD : null });
-      leaf(c, bb.x + (bn.dx || 0), bb.y + 2 + (bn.dy || 0), 33, 19, -0.12 + j * 0.1, { alpha: used ? 0.62 : 1 });
+      const ts = tn.sc ?? 1, bs = bn.sc ?? 1; // the backings swell with their digits when the working lights them up
+      if (tn.hl > 0.01) { c.save(); c.globalCompositeOperation = 'lighter'; glow(tb.x, tb.y, 44 * ts, '#ffb04a', 0.45 * tn.hl); c.restore(); }
+      seed(c, tb.x + (tn.dx || 0), tb.y + (tn.dy || 0), 23 * ts, 30 * ts, { alpha: tn.alpha ?? 1, ring: tn.mark === 'bad' ? M.BAD : tn.hl > 0.3 ? '#ffd45a' : null });
+      if (bn.hl > 0.01) { c.save(); c.globalCompositeOperation = 'lighter'; glow(bb.x, bb.y, 46 * bs, '#ffd45a', 0.5 * bn.hl); c.restore(); }
+      leaf(c, bb.x + (bn.dx || 0), bb.y + 2 + (bn.dy || 0), 33 * bs, 19 * bs, -0.12 + j * 0.1, { alpha: bn.alpha ?? 1 });
       if (bn.mark === 'bad') { c.save(); c.strokeStyle = M.BAD; c.lineWidth = 3; c.beginPath(); c.ellipse(bb.x + (bn.dx || 0), bb.y + 2 + (bn.dy || 0), 33, 21, 0, 0, 7); c.stroke(); c.restore(); }
-      if (j > 0) { const cn = M.node(g, 'c' + j), cb = M.box(g, 'c' + j); if (!cn.hide) berry(c, cb.x, cb.y, 15, cn.pop != null ? Math.max(0, 1 - (t - cn.pop) / 0.6) : 0); }
-      const en = M.node(g, 'e' + j), eb = M.box(g, 'e' + j);
-      if (en && !en.hide && eb) { c.save(); c.fillStyle = 'rgba(30,12,4,0.35)'; rr(c, eb.x - eb.w / 2 - 8, eb.y - 14, eb.w + 16, 32, 15); c.fill(); const wg = c.createLinearGradient(0, eb.y - 17, 0, eb.y + 15); wg.addColorStop(0, '#fbeccc'); wg.addColorStop(1, '#e2c48e'); c.fillStyle = wg; rr(c, eb.x - eb.w / 2 - 8, eb.y - 17, eb.w + 16, 32, 15); c.fill(); c.strokeStyle = '#8a5a2a'; c.lineWidth = 2; c.stroke(); c.restore(); }
+      if (j > 0) { const cn = M.node(g, 'c' + j), cb = M.box(g, 'c' + j); if (!cn.hide) { c.save(); c.globalAlpha = cn.alpha ?? 1; berry(c, cb.x, cb.y, 15 * (cn.sc ?? 1), Math.max(cn.hl || 0, cn.pop != null ? Math.max(0, 1 - (t - cn.pop) / 0.6) : 0)); c.restore(); } }
     }
+    // the working note's parchment slip grows as its terms write themselves
+    if (S.note && K.ex['ee' + S.note.j]) { const q = S.note, bs = Object.values(q.parts).filter(p => p && p.alpha > 0.01).map(p => M.box(g, p.id)).filter(Boolean);
+      if (bs.length) { const u = M.unionBox(bs), a = q.e.alpha ?? 1, x0 = u.x - u.w / 2 - 11, w = u.w + 22, h = NS * 1.22, y0 = u.y - h / 2;
+        c.save(); c.globalAlpha = a; c.fillStyle = 'rgba(30,12,4,0.35)'; rr(c, x0, y0 + 4, w, h, h / 2); c.fill(); const wg = c.createLinearGradient(0, y0, 0, y0 + h); wg.addColorStop(0, '#fbeccc'); wg.addColorStop(1, '#e2c48e'); c.fillStyle = wg; rr(c, x0, y0, w, h, h / 2); c.fill(); c.strokeStyle = '#8a5a2a'; c.lineWidth = 2; c.stroke(); c.restore(); } }
     if (missing && S.miss.kk >= 1 && !S.cin[S.miss.kk]) { const x = colX(n, S.miss.kk), y = Y_CARRY - 9, p = 1 + Math.sin(t * 8) * 0.07; c.save(); c.setLineDash([4, 4]); c.strokeStyle = '#ff5a5a'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 16 * p, 0, 7); c.stroke(); c.font = M.NUMF(24); c.fillStyle = '#ff6a6a'; c.textAlign = 'center'; c.fillText('?', x, y + 8); c.restore(); }
     drawGuide(g, c); drawSwipe(g, c);
     // the problem's digits
@@ -358,15 +384,23 @@ MG.add({
     for (let j = 0; j < n; j++) { M.drawEx(g, c, 'tt' + j); M.drawEx(g, c, 'bb' + j); if (j > 0) M.drawEx(g, c, 'cc' + j); M.drawEx(g, c, 'ee' + j); M.drawEx(g, c, 'aa' + j); }
     // an ant sprints down the swiped column; an ant hops the carried 1 up to the top of the next column
     for (const r of S.runs) { const k = (t - r.t0) / 0.28; if (k < 0 || k > 1.3) continue; c.save(); c.globalAlpha = clamp((1.3 - k) / 0.3, 0, 1); pathAnt(c, [[r.x, Y_TOP - 24], [r.x, Y_ANS - 32]], Math.min(0.999, k), 0.5, t, { phase: 1 }); c.restore(); }
-    if (S.carry) { const q = S.carry, k = (t - q.t0) / 0.28; if (k >= 0 && k < 1.6) { if (k < 1) { const e = easeIO(k), x = lerp(q.x0, q.x1, e) + Math.sin(e * Math.PI) * 30, y = lerp(q.y0, q.y1, e); const h = antArt(c, x - 4, y, 0.6, { t, pose: 'carry', facing: -1 }); c.save(); berry(c, h.hx + 2, h.hy - 12, 14, 0.8); c.font = M.NUMF(26); c.textAlign = 'center'; c.fillStyle = '#fff6ea'; c.fillText('1', h.hx + 2, h.hy - 3); c.restore(); }
-      else { const kk = (k - 1) / 0.6; c.save(); c.globalAlpha = 1 - kk; antArt(c, q.x1 + 16 + kk * 40, q.y1 + 4, 0.55, { t, pose: 'cheer', expr: 'laugh' }); c.restore(); } } }
+    // a little ant waits at the top of the next column with its arms up; the carried 1 arcs up over the column, glowing,
+    // trailing sparks, and lands in its arms with a sparkle; the ant cheers and scurries off
+    if (S.catcher) { const q = S.catcher, x = colX(n, q.j) - 30, y = Y_CARRY + 14, caught = S.caughtAt != null && S.caughtAt >= q.t0, kk = caught ? (t - S.caughtAt) / 0.7 : 0, k0 = clamp((t - q.t0) / 0.15, 0, 1);
+      if (kk < 1) { c.save(); c.globalAlpha = k0 * (caught ? clamp((1 - kk) / 0.4, 0, 1) : 1); antArt(c, x - (caught ? Math.max(0, kk - 0.5) * 60 : 0), y, 0.5, { t, pose: caught ? (kk < 0.5 ? 'cheer' : 'walk') : 'carry', expr: caught ? 'laugh' : 'wow', facing: caught && kk >= 0.5 ? -1 : 1, hop: caught && kk < 0.25 ? Math.sin(kk / 0.25 * Math.PI) : 0 }); c.restore(); } }
+    if (S.carry) { const q = S.carry, k = (t - q.t0) / q.dur; if (k >= 0 && k < 1) {
+      const e = easeIO(k), cx = (q.x0 + q.x1) / 2 - 6, cy = Y_CARRY - 96, bez = (a, b, m) => (1 - e) * (1 - e) * a + 2 * (1 - e) * e * m + e * e * b;
+      const x = bez(q.x0, q.x1, cx), y = bez(q.y0, q.y1, cy), sc = 1 + Math.sin(e * Math.PI) * 0.35;
+      for (let i = 1; i <= 6; i++) { const ee = Math.max(0, e - i * 0.03), tx = (1 - ee) * (1 - ee) * q.x0 + 2 * (1 - ee) * ee * cx + ee * ee * q.x1, ty = (1 - ee) * (1 - ee) * q.y0 + 2 * (1 - ee) * ee * cy + ee * ee * q.y1;
+        c.save(); c.globalAlpha = 0.55 * (1 - i / 7); c.fillStyle = i % 2 ? '#ffd45a' : '#fff2c0'; c.beginPath(); c.arc(tx, ty, 5 - i * 0.6, 0, 7); c.fill(); c.restore(); }
+      c.save(); c.translate(x, y); c.scale(sc, sc); berry(c, 0, 0, 15, 1); c.font = M.NUMF(22); c.textAlign = 'center'; c.fillStyle = '#fff6ea'; c.fillText('1', 0, 8); c.restore(); } }
     // the foreman ant watches from the end of the answer row
     let pose = 'idle', expr = 'happy';
-    if (won) { pose = 'cheer'; expr = 'laugh'; } else if (missing) { pose = 'think'; expr = 'think'; } else if (lost) expr = 'sad'; else if (t - S.cheerAt < 0.5) { pose = 'cheer'; expr = 'wow'; }
+    if (won) { pose = 'cheer'; expr = 'laugh'; } else if (missing) { pose = 'think'; expr = 'think'; } else if (lost) expr = 'sad'; else if (t - S.cheerAt < 0.5) { pose = 'cheer'; expr = 'wow'; } else if (S.point && M.showing(g)) { pose = 'point'; expr = 'happy'; }
     const hk = (t - S.heroHop) / 0.3, hop = hk >= 0 && hk <= 1 ? Math.sin(hk * Math.PI) : 0, hx = colX(n, 0) + 54, hy = CH_Y1 - 6;
     heroAnt(c, hx, hy, 0.85, { t, pose, expr, facing: -1, hop });
     if (missing) { const k = clamp((t - S.miss.t) / 0.2, 0, 1); c.save(); c.globalAlpha = k; c.fillStyle = '#fffaf0'; c.strokeStyle = '#7a4a3a'; c.lineWidth = 2;
       c.beginPath(); c.arc(hx - 14, hy - 62, 13 * k, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.arc(hx - 8, hy - 44, 3.2, 0, 7); c.fill(); c.stroke(); c.font = M.NUMF(20); c.fillStyle = M.BAD; c.textAlign = 'center'; c.fillText('?', hx - 14, hy - 55); c.restore(); }
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });

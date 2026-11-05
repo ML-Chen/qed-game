@@ -23,13 +23,13 @@ function fadeAll(g, n, dur, delay) { const all = []; (function walk(q) { if (!q)
 function build(g) {
   const S = g.s, N = S.n; let items;
   if (S.ans != null) items = [N.ans];
-  else if (S.co && S.cs === 'sep' && S.is === 'sep') items = [N.c0, N.i0, M.gap(10), N.dotI, M.gap(10), N.c1, N.i1];
+  else if (S.co && S.cs === 'sep' && S.is === 'sep') items = [N.c0, N.i0, M.gap(10), N.dotI, M.gap(10), ...(S.co[1] < 0 ? [N.p1] : [N.c1, N.i1])];
   else {
     const C = !S.co ? null : S.cs === 'done' ? N.cv : N.cm;
     const Ip = S.is === 'sep' ? [N.i0, M.gap(10), N.dotI, M.gap(10), N.i1] : S.is === 'pair' ? [N.i0, N.i1] : S.is === 'sq' ? [N.isq] : [S.co ? N.negp : N.neg];
     items = [C, C ? (S.cs === 'done' && S.is === 'neg' ? N.mul : M.gap(6)) : null, ...Ip];
   }
-  const r = M.row(...items); if (S.co && S.cs === 'done' && S.is === 'neg' && S.ans == null) r.id = 'fin';
+  const r = M.row(...items); r._born = -1; if (S.co && S.cs === 'done' && S.is === 'neg' && S.ans == null) r.id = 'fin';
   M.place(g, 'ex', r, 180, 274, S.co ? 50 : 62, { col: INK });
 }
 
@@ -49,18 +49,21 @@ MG.add({
     const N = S.n = { i0: I('i0'), i1: I('i1'), dotI: M.op('·', 'dot') };
     N.two = M.num(2, 'two', { col: ICOL }); N.isq = M.sup(N.i0, N.two, 'isq');
     N.neg = M.num(-1, 'neg', { _born: -1 }); N.negp = M.paren(N.neg, 'negp');
-    if (S.co) { N.c0 = M.num(S.co[0], 'c0'); N.c1 = M.num(S.co[1], 'c1'); N.cv = M.num(S.cv, 'cv', { _born: -1 }); N.mul = M.op('·', 'mul'); N.ans = M.num(-S.cv, 'ans', { _born: -1 }); }
+    if (S.co) { N.c0 = M.num(S.co[0], 'c0'); N.c1 = M.num(S.co[1], 'c1'); N.cv = M.num(S.cv, 'cv', { _born: -1 }); N.mul = M.op('·', 'mul'); N.ans = M.num(-S.cv, 'ans', { _born: -1 }); N.p1 = M.paren(M.row(N.c1, N.i1)); } // a negative second factor is written in brackets: 4i · (−5i)
     build(g); M.inert(g, ['dot', 'mul', 'two']);
     M.zone(g, 'pt', { x: OX + U, y: OY, w: 30, h: 30 }); // the point on the plane: it shows the answer, it is not part of the sum
     const nMoves = S.co ? 4 : 2; g.dur *= (2.6 + 1.05 * nMoves) / 8;
     const hop = (g, e) => { S.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
     // the numbers in front gather into one product, (a · b)
-    const gather = (g, dot) => { S.cs = 'prod'; S.n.dotC = dot || M.op('·', 'dotC'); S.n.cm = M.paren(M.row(N.c0, S.n.dotC, N.c1), 'cm'); };
+    const gather = (g, dot) => { S.cs = 'prod'; S.n.dotC = dot || M.op('·', 'dotC'); S.n.cm = M.paren(M.row(N.c0, S.n.dotC, S.co[1] < 0 ? M.paren(N.c1) : N.c1), 'cm'); };
     // a note writes itself under a part, then its value flies in and takes that part's place
     const land = (g, tgt, val, fadeIds, then) => {
-      const nd = M.row(M.op('='), M.num(val)); g.sfx('tap');
-      M.note(g, { node: nd, at: tgt, off: [0, 50], s: 34, col: NOTE, write: 0.3 * T, hold: 0.25 * T, fly: 0.32 * T, to: tgt, s1: S.co ? 50 : 62, arc: 18, then });
-      for (const q of fadeIds) fadeAll(g, q, 0.3 * T, 0.55 * T);
+      const nd = M.row(M.op('='), M.num(val)), b0 = { ...M.box(g, tgt) }, sz = S.co ? 50 : 62; g.sfx('tap');
+      M.note(g, { node: nd, at: tgt, off: [0, 50], s: 34, col: NOTE, write: 0.3 * T, hold: 0.22 * T, fade: 0.2 * T });
+      for (const q of fadeIds) fadeAll(g, q, 0.3 * T, 0.5 * T);
+      M.at(g, [[0.52 * T, g => { const m = M.lay(nd, 34), vw = M.lay(M.num(val), 34).w; // only the value lifts off the note and lands
+        M.fly(g, { node: M.num(val, null, { col: NOTE }), from: [b0.x + m.w / 2 - vw / 2, b0.y + 50], to: [b0.x, b0.y], dur: 0.32 * T, arc: -30, s0: 34, s1: sz }); }],
+        [0.86 * T, then]]);
     };
     M.play(g, {
       moves(g) {

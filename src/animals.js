@@ -199,20 +199,18 @@ const ANI = (() => {
     carry: { hold: [0, -72] }, // the load balances on the shell's apex; the legs stay down
     layers: [
       { id: 'body', box: [-40, -70, 74, 74], paint(o, C) {
-        bl(o, q => { q.beginPath(); q.moveTo(-24, -14); q.quadraticCurveTo(-33, -14, -36, -8); q.quadraticCurveTo(-30, -8, -24, -9); q.closePath(); }, C.b, -30, -11, 5, { rim: false, lw: 1.5 });
         bl(o, E(-12, -5, 6.2, 5.6), C.b, -12, -5, 6); bl(o, E(12, -5, 6.2, 5.6), C.b, 12, -5, 6);
         bl(o, q => { q.beginPath(); q.roundRect ? q.roundRect(-28, -20, 56, 11, 5.5) : q.rect(-28, -20, 56, 11); }, C.plastron, 0, -15, 20, { rim: false, lw: 1.6 });
         o.strokeStyle = rgba(shade(C.plastron, -0.4), 0.5); o.lineWidth = 1; o.beginPath(); for (const x of [-14, 0, 14]) { o.moveTo(x, -19); o.lineTo(x, -10); } o.stroke();
         shellPaint(o, C.shell, 0, -30.4, 31.2);
       } },
       { id: 'head', head: true, box: [14, -38, 34, 32], paint(o, C) {
-        bl(o, E(25, -16, 7, 5.5, -0.5), C.b, 25, -16, 6, { rim: false });
-        bl(o, E(33, -24.5, 10.6, 10), C.b, 33, -24.5, 10.5, { gloss: true });
-        blush(o, 27.5, -20.5, 2.3); blush(o, 39, -20.5, 2.1);
+        bl(o, E(31, -23.5, 10.6, 10), C.b, 31, -23.5, 10.5, { gloss: true });
+        blush(o, 25.5, -19.5, 2.3); blush(o, 37, -19.5, 2.1);
       } }],
-    face: { l: [29.5, -26.5], r: [37, -26.5], er: 3.2, mouth: [33.5, -20.2], mw: 2.6, style: 'smile' },
-    arms: { type: 'arm', sh: [[-19, -12], [19, -12]], len: 10, w: 7, hand: 3.9 },
-    chin: [32, -16],
+    face: { l: [27.5, -25.5], r: [35, -25.5], er: 3.2, mouth: [31.5, -19.2], mw: 2.6, style: 'smile' },
+    arms: { type: 'arm', sh: [[-22, -16], [21, -16]], len: 7, w: 6.4, hand: 0 }, // short front flippers: with the two feet the turtle has four limbs
+    chin: [30, -15],
   };
   K.octopus = {
     col: '#f27aa2', shadow: 28, cx: 0, top: -69, carryW: 24,

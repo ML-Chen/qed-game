@@ -175,7 +175,7 @@ MG.add({
     const S = g.s; M.setup(g); const pr = pick(g); S.top = pr.top; S.q = pr.q;
     S.ans = num10(S.top) * S.q; const nTop = S.top.length, nAns = digits(S.ans).length, ncols = Math.max(nTop, nAns) + 1;
     const L2 = nTop > 2;
-    S.G = { s: L2 ? 42 : 46, r: L2 ? 22 : 25, cs: 22, cw: L2 ? 50 : 54, yC: 212, yT: 262, yB: 324, yL: 357, yR: 406, yTag: 458 };
+    S.G = { s: L2 ? 42 : 46, r: L2 ? 22 : 25, cs: 22, cw: L2 ? 50 : 54, ns: L2 ? 23 : 25, yC: 212, yT: 262, yB: 324, yL: 357, yR: 406, yTag: 458 };
     const G = S.G; G.x0 = 180 + (ncols - 1) * G.cw / 2; G.ncols = ncols;
     const colX = c => G.x0 - c * G.cw; S.colX = colX;
     // each token gets an ink that suits its cookie: chocolate on chip cookies, plum on sugar cookies, white on blueberries
@@ -192,37 +192,73 @@ MG.add({
     g.dur *= (2.6 + 1.05 * nTop) / 8;
     S.i = 0; S.carry = 0; S.host = { hopAt: -9, sadAt: -9 }; S.carriers = []; S.tag = null; S.final = digits(S.ans).map((_, c) => 'r' + c);
 
-    const node = id => M.node(g, id);
+    const node = id => M.node(g, id), mk = S.mk, NS = G.ns;
+    M.inert(g, ['nv0', 'nv1', 'nc', 'nrow']);
     const burstAt = (id, cols = ['#ffd45a', '#7ad0ff', '#fff']) => { const b = M.box(g, id); if (b) g.burst(b.x, b.y, cols, 10, 120); };
     const hot = (ids, on) => ids.forEach(id => { const n = node(id); if (n) { n.col = on ? HOT : undefined; if (on) n.pop = g.t; } });
-    const reveal = (id, v) => { const n = node(id); if (!n) return; n.v = String(v); n.hide = false; n.alpha = 1; n.pop = g.t; n.dropAt = g.t; S.put(id); burstAt(id, ['#ffd45a', '#fff']); };
+    const reveal = (id, v) => { const n = node(id); if (!n) return; n.v = String(v); n.hide = false; n.alpha = 1; n.pop = g.t; S.put(id); burstAt(id, ['#ffd45a', '#fff']); };
+    const host = (face, hop = true) => { S.host.face = face; S.host.faceT = g.t; if (hop) S.host.hopAt = g.t; };
     // an ant runs from a to b holding a digit over its head; then() runs when it arrives
     const runAnt = (v, col, a, b, dur, then) => S.carriers.push({ v, col, x0: a.x, y0: a.y, x1: b.x, y1: b.y, t0: g.t, dur, then });
+    // the carried tens digit: lifted off the note, then carried up and over to sit small above the next column
+    const liftCarry = (v, from, to, T, then) => {
+      const up = 0.16 * T, over = 0.42 * T, lx = from.x, ly = from.y - 26;
+      M.anim(g, { dur: up + over, draw(c, g, k, tt) {
+        let x, y, r;
+        if (tt < up) { const e = M.ease(tt / up); x = lx; y = M.lerp(from.y, ly, e); r = M.lerp(9, 13, e); }
+        else { const u = M.easeIO((tt - up) / over), cxp = (lx + to.x) / 2 + 10, cyp = Math.min(ly, to.y) - 90; x = (1 - u) * (1 - u) * lx + 2 * (1 - u) * u * cxp + u * u * to.x; y = (1 - u) * (1 - u) * ly + 2 * (1 - u) * u * cyp + u * u * to.y; r = M.lerp(13, G.cs * 0.62, u) * (1 + Math.sin(u * Math.PI) * 0.35);
+          // a dotted trail behind it
+          c.save(); c.fillStyle = 'rgba(122,208,255,0.7)'; for (let j = 1; j <= 5; j++) { const w = Math.max(0, u - j * 0.05), q = (1 - w); const px = q * q * lx + 2 * q * w * cxp + w * w * to.x, py = q * q * ly + 2 * q * w * cyp + w * w * to.y; c.globalAlpha = 0.5 - j * 0.08; c.beginPath(); c.arc(px, py, 3.2 - j * 0.4, 0, 7); c.fill(); } c.restore(); }
+        c.shadowColor = 'rgba(122,208,255,0.9)'; c.shadowBlur = 14; cookie(c, { x, y, w: 10, h: 10 }, 'blue', g.t, { r }); c.shadowBlur = 0;
+        c.font = M.NUMF(r * 1.25, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff'; c.fillText(String(v), x, y + 1);
+      } });
+      M.at(g, [[up + over, then]]);
+    };
 
     const colMove = (i) => {
-      const d = S.top[i], c = S.carry, p = S.q * d, v = p + c, last = i === S.top.length - 1;
+      const d = S.top[i], c = S.carry, p = S.q * d, v = p + c, last = i === S.top.length - 1, T = M.pace(g), vd = String(v).split('');
+      const askAt = (c ? 0.82 : 0.42) * T, after = (vd.length > 1 ? 1.08 : 0.78) * T;
       return {
-        busy: 0.1, askAt: 0, after: 0.1,
+        busy: 0.1, askAt, after,
         ask: { v, wrong: c ? [p, (d + c) * S.q, v + 10, v + 1] : [S.q + d, Number(`${S.q}${d}`), p + 1, p - 1] },
         then(g) {
-          S.i = i + 1; S.host.hopAt = g.t; g.sfx('swoosh');
-          hot(S.top.map((_, k) => 't' + k), false); hot(['t' + i, 'b0'], true);
+          S.i = i + 1; host('wow'); S.point = true; g.sfx('swoosh'); M.show(g, askAt); S.colAt = g.t; S.colI = i;
+          hot(['t' + i, 'b0'], true); M.circle(g, ['t' + i, 'b0'], { dur: 0.5 * T, col: '#ffb21f', pad: 4 });
           const a = M.box(g, 'b0'), b = M.box(g, 't' + i);
-          if (a && b) runAnt(S.q, HOT, a, { x: b.x + 2, y: b.y + G.r * 0.9 }, 0.2, () => {});
-          S.tag = { i, d, c, v: null, t0: g.t };
-          if (c) { const cn = node('c' + i), cb = M.box(g, 'c' + i); if (cn) cn.used = g.t;
-            if (cb) M.fly(g, { node: M.num(c, null, { col: CARRYC }), from: [cb.x, cb.y], to: [colX(i), G.yTag - 24], dur: 0.2, arc: 30, s0: G.cs, s1: 20 }); }
+          if (a && b) runAnt(S.q, HOT, a, { x: b.x + 2, y: b.y + G.r * 0.9 }, 0.22 * T, () => {});
+          // the working note under the column: "4 × 3 = 12", or "6 × 3 = 18, + 4 = 22" when a carry is waiting
+          const A = M.row(M.num(S.q), M.op('×'), M.num(d), M.op('='), ...(c ? [M.num(p)] : [])), B = c ? M.row(M.op(','), M.gap(4), M.op('+'), M.num(c, 'nc'), M.op('=')) : null;
+          const V = M.row(...vd.map((ch, j) => M.num(ch, 'nv' + (vd.length - 1 - j), { col: ANS })));
+          for (const q of [B, V]) if (q) q.hide = true;
+          S.note = M.row(A, B, V); S.noteA = A; S.noteB = B; S.noteV = V; S.noteI = i; S.noteKey = 'note' + i;
+          const w = M.lay(S.note, NS).w; M.place(g, S.noteKey, S.note, clamp(colX(i) - w / 2, 18, 342 - w), G.yTag + NS * 0.36, NS, { col: M.INK, left: true });
+          M.writeIn(g, A, { dur: (c ? 0.32 : 0.26) * T, delay: 0.08 * T });
+          if (c) M.at(g, [
+            // the carried digit lights up and is added in
+            [0.36 * T, g => { const cn = node('c' + i); M.indicate(g, cn, { dur: 0.32 * T, sc: 1.5, col: '#ffffff' }); host('think'); g.sfx('tap'); }],
+            [0.48 * T, g => { const cn = node('c' + i), cb = M.box(g, 'c' + i); B.hide = false; B.alpha = 0; M.relayout(g, S.noteKey); const nb = M.box(g, 'nc');
+              M.fly(g, { node: M.num(c, null, { col: CARRYC }), from: [cb.x, cb.y], to: [nb.x, nb.y], dur: 0.26 * T, arc: 30, s0: G.cs, s1: NS,
+                then(g) { B.alpha = 1; M.writeIn(g, B, { dur: 0.16 * T }); M.indicate(g, 'nc', { dur: 0.25 * T, col: '#7ad0ff' }); } });
+              cn.used = g.t; }],
+          ]);
+          S.noteVItems = V.items; S.note.id = 'nrow';
+          if (g.mode === 'medium') M.at(g, [[Math.max(0.01, askAt - 0.04), g => { V.items = [M.num('?', null, { col: M.MID })]; V.hide = false; M.relayout(g, S.noteKey); M.writeIn(g, V, { dur: 0.12 }); }]]);
         },
         resolve(g) {
-          S.tag.v = v; S.tag.vAt = g.t; g.sfx('coin');
-          if (last) { digits(v).forEach((dd, k) => reveal('r' + (i + k), dd)); S.carry = 0; return; }
-          reveal('r' + i, v % 10); S.carry = Math.floor(v / 10);
-          if (S.carry) {
-            const cn = node('c' + (i + 1)); cn.v = String(S.carry); cn.hide = false; cn.alpha = 0; S.put('c' + (i + 1));
-            const cb = M.box(g, 'c' + (i + 1));
-            runAnt(S.carry, CARRYC, { x: colX(i) + 14, y: G.yTag - 6 }, cb, 0.28, g => { cn.alpha = 1; cn.pop = g.t; burstAt('c' + (i + 1), ['#7ad0ff', '#fff']); g.sfx('pop'); });
-            g.sfx('tweet');
-          }
+          M.show(g, after); const V0 = S.noteV; V0.items = S.noteVItems; V0.hide = false; M.relayout(g, S.noteKey);
+          M.writeIn(g, V0, { dur: 0.16 * T }); M.indicate(g, V0, { delay: 0.12 * T, dur: 0.26 * T, sc: 1.3 }); g.sfx('coin'); host('laugh', false);
+          const nKey = S.noteKey, nRow = S.note;
+          // the ones digit drops into the answer row
+          M.at(g, [[0.2 * T, g => { const b = M.box(g, 'nv0'); M.tween(g, 'nv0', { alpha: 0.25 }, 0.12 * T);
+            M.fly(g, { node: M.num(v % 10, null, { col: ANS }), from: [b.x, b.y], to: 'r' + i, dur: 0.26 * T, arc: -34, s0: NS, s1: G.s, then(g) { reveal('r' + i, v % 10); g.sfx('pop'); host('happy'); } }); }]]);
+          if (vd.length > 1) M.at(g, [[0.42 * T, g => { const b = M.box(g, 'nv1'); M.tween(g, 'nv1', { alpha: 0.25 }, 0.12 * T); const tens = Math.floor(v / 10);
+            if (last) M.fly(g, { node: M.num(tens, null, { col: ANS }), from: [b.x, b.y], to: 'r' + (i + 1), dur: 0.3 * T, arc: -34, s0: NS, s1: G.s, then(g) { reveal('r' + (i + 1), tens); g.sfx('pop'); host('laugh'); } });
+            else { const id = 'c' + (i + 1), cn = node(id), to = { x: S.pos[id][0], y: S.pos[id][1] - G.cs * 0.3 };
+              host('wow'); g.sfx('tweet');
+              liftCarry(tens, b, to, T, g => { cn.v = String(tens); cn.hide = false; cn.alpha = 1; cn.pop = g.t; S.put(id); burstAt(id, ['#7ad0ff', '#fff', '#ffd45a']); M.sparkle(g, id, { n: 8, cols: ['#7ad0ff', '#fff'] }); g.sfx('pop'); host('laugh'); }); } }]]);
+          if (!last) S.carry = Math.floor(v / 10); else S.carry = 0;
+          M.at(g, [[after - 0.26 * T, g => { M.tween(g, nRow, { alpha: 0 }, 0.22 * T); hot(['t' + i, 'b0'], false); if (last) S.point = false; }],
+            [after - 0.02, g => { if (mk.ex[nKey] && mk.ex[nKey].node === nRow) delete mk.ex[nKey]; }]]);
         },
       };
     };
@@ -272,7 +308,8 @@ MG.add({
     }
     // the host ant at the corner of the blanket
     const H0 = S.host, hk = (t - H0.hopAt) / 0.3, hop = hk >= 0 && hk <= 1 ? Math.sin(hk * Math.PI) : 0, cheer = won ? Math.abs(Math.sin((t - g.doneAt) * 8)) : 0, sad = lost || t - H0.sadAt < 0.8;
-    ant(c, 62, 540 - hop * 14 - cheer * 14, 1.5, { t, pose: won ? 'cheer' : sad ? 'sad' : hop > 0 ? 'hop' : 'idle', expr: won ? 'laugh' : sad ? 'sad' : hop > 0 ? 'wow' : 'happy', facing: 1 });
+    const face = won ? 'laugh' : sad ? 'sad' : H0.faceT != null && t - H0.faceT < 0.7 ? H0.face : hop > 0 ? 'wow' : 'happy';
+    ant(c, 62, 540 - hop * 16 - cheer * 14, 1.5, { t, pose: won ? 'cheer' : sad ? 'sad' : hop > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle', expr: face, facing: 1 });
 
     // ---- the multiplication, on cookies ----
     const pk = n => { if (!n || n.pop == null) return 1; const k = clamp((t - n.pop) / 0.35, 0, 1); return 1 + Math.sin(k * Math.PI) * 0.22; };
@@ -280,16 +317,18 @@ MG.add({
     // dropped digits fall into place
     for (const id of Object.keys(g.s.mk.ex)) { const n = node(id); if (n && n.dropAt != null) n.dy = -22 * (1 - M.ease((t - n.dropAt) / 0.16)); }
     // a soft glow along the column being worked
-    if (S.tag && !S.tag.bad && t - S.tag.t0 < 0.6) { const x = colX(S.tag.i), a = 1 - (t - S.tag.t0) / 0.6; c.save(); c.globalAlpha = a * 0.5; const gr = c.createLinearGradient(x - G.cw / 2, 0, x + G.cw / 2, 0); gr.addColorStop(0, 'rgba(255,230,150,0)'); gr.addColorStop(0.5, 'rgba(255,230,150,1)'); gr.addColorStop(1, 'rgba(255,230,150,0)'); c.fillStyle = gr; c.fillRect(x - G.cw / 2, G.yT - 40, G.cw, G.yR - G.yT + 70); c.restore(); }
-    S.top.forEach((_, i) => { const n = node('t' + i); cookie(c, box('t' + i), n.mark === 'bad' ? 'bad' : 'chip', t, { r: R0, sc: pk(n), seed: i, dy: n.dy || 0 }); });
+    if (S.colAt != null && t - S.colAt < 0.9) { const x = colX(S.colI), a = Math.min(1, (t - S.colAt) / 0.15, (0.9 - (t - S.colAt)) / 0.3); c.save(); c.globalAlpha = a * 0.5; const gr = c.createLinearGradient(x - G.cw / 2, 0, x + G.cw / 2, 0); gr.addColorStop(0, 'rgba(255,230,150,0)'); gr.addColorStop(0.5, 'rgba(255,230,150,1)'); gr.addColorStop(1, 'rgba(255,230,150,0)'); c.fillStyle = gr; c.fillRect(x - G.cw / 2, G.yT - 40, G.cw, G.yR - G.yT + 70); c.restore(); }
+    S.top.forEach((_, i) => { const n = node('t' + i); cookie(c, box('t' + i), n.mark === 'bad' ? 'bad' : 'chip', t, { r: R0, sc: pk(n) * (n.sc ?? 1), seed: i, dy: n.dy || 0 }); });
     { const n = node('b0'), b = box('b0'); if (press && press.dragging && press.id === 'b0') { c.save(); c.setLineDash([4, 4]); c.strokeStyle = 'rgba(120,70,40,0.6)'; c.lineWidth = 2; c.beginPath(); c.arc(b.x, b.y, R0, 0, 7); c.stroke(); c.restore(); } else cookie(c, b, n.mark === 'bad' ? 'bad' : 'chip', t, { r: R0, sc: pk(n), seed: 5 }); }
     for (let col = 0; col < G.ncols - 1; col++) { const id = 'r' + col, n = node(id), b = box(id); if (!b) continue;
       if (n.hide) { if (col <= S.top.length) { c.save(); c.setLineDash([3, 5]); c.strokeStyle = 'rgba(150,100,70,0.35)'; c.lineWidth = 2; c.beginPath(); c.arc(b.x, b.y, R0 * 0.8, 0, 7); c.stroke(); c.restore(); } }
       else cookie(c, b, n.mark === 'good' ? 'pink' : 'sugar', t, { r: R0 * 0.92, sc: pk(n), dy: n.dy || 0 }); }
     // carries: blueberries (dimmed once they have been added)
     for (let col = 1; col < S.top.length; col++) { const n = node('c' + col), b = box('c' + col); if (!n || !b) continue;
-      if (n.hide || n.alpha < 0.3) { if (!n.hide) { c.save(); c.setLineDash([3, 3]); c.strokeStyle = 'rgba(42,122,176,0.8)'; c.lineWidth = 2; c.beginPath(); c.arc(b.x, b.y, G.cs * 0.62, 0, 7); c.stroke(); c.restore(); } continue; }
-      n.alpha = n.used != null ? Math.max(0.45, 1 - (t - n.used) * 3) : 1; c.save(); c.globalAlpha = n.alpha; cookie(c, b, 'blue', t, { r: G.cs * 0.62, sc: pk(n) }); c.restore(); }
+      if (n.hide) continue;
+      // once it has been added in, the carried digit is used up: it fades away
+      n.alpha = n.used != null ? Math.max(0, 1 - (t - n.used) / (0.4 * M.pace(g))) : 1; if (n.alpha <= 0) continue;
+      c.save(); c.globalAlpha = n.alpha; if (n.hl > 0.01) { c.shadowColor = '#bfe8ff'; c.shadowBlur = 18 * n.hl; } cookie(c, b, 'blue', t, { r: G.cs * 0.62, sc: pk(n) * (n.sc ?? 1) }); c.restore(); }
     { const b = box('times'); c.save(); c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); for (let i = 0; i <= 24; i++) { const a = i / 24 * Math.PI * 2, rr = R0 * 0.7 * (1 + (i % 2) * 0.12); c.lineTo(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr); } c.closePath(); c.fill(); c.restore(); }
     pretzel(c, colX(G.ncols - 1) - G.cw * 0.5, colX(0) + G.cw * 0.55, G.yL);
     for (const id of Object.keys(g.s.mk.ex)) M.drawEx(g, c, id);

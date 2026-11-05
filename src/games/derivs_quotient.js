@@ -20,6 +20,18 @@ const mono = (c, p, col) => p === 0 ? M.num(c, null, { col }) : M.row(c === 1 ? 
 
 // every id inside a node (so a tap anywhere on the top of the fraction counts)
 const idsIn = n => { const out = []; (function walk(q) { if (!q) return; if (q.id) out.push(q.id); for (const ch of [q.base, q.exp, q.n, q.d, q.inner, q.fill, ...(q.items || [])]) walk(ch); })(n); return out; };
+// MK.drawEx glides every node that moved, and a child's glide adds to its parent's (both are translations), so a
+// symbol inside a moving row would start twice as far away. drawEx2 lets the kit compute the glides on a scratch
+// canvas, removes each parent's share from its children's glides, then draws for real.
+const NULLC = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 1; return cv.getContext('2d'); })();
+function unnest(n, ax, ay, t0) {
+  if (!n) return; let gx = ax, gy = ay;
+  if (n._glide) { if (!n._glide.fixed && n._glide.t0 === t0) { n._glide.dx -= ax; n._glide.dy -= ay; } n._glide.fixed = true; gx = ax + n._glide.dx; gy = ay + n._glide.dy; }
+  for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || [])]) unnest(ch, gx, gy, t0);
+}
+function drawEx2(g, c, key) { const e = g.s.mk.ex[key]; if (!e) return; M.drawEx(g, NULLC, key); unnest(e.node, 0, 0, g.t); M.drawEx(g, c, key); }
+// a part that has faded out leaves no ghost only if every symbol inside it has alpha 0
+const hideAll = n => { if (!n) return; n.alpha = 0; for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || [])]) hideAll(ch); };
 // ---- the power rule, acted out on a slot's contents ----
 // P holds c·xᵖ (+ b) as separate nodes, so each part can roll, fly, be crossed out and glide to its new place.
 function term(pre, c, p, b, col) {
@@ -103,24 +115,28 @@ MG.add({
     });
     // 3. multiply out the top and combine like terms
     function expand(g) {
-      const N = n + m - 1, t1 = mono(n, N), plus = M.op('+'), t2 = mono(n * b, n - 1), t3 = mono(m, N), len = 1.85 * T;
+      const N = n + m - 1, t1 = mono(n, N), plus = M.op('+'), t2 = mono(n * b, n - 1), t3 = mono(m, N), len = 2.4 * T;
       M.show(g, len); react(g, 'think'); S.point = true;
       const top = id => { const q = M.box(g, id); return q ? [q.x, q.y - q.h / 2 - 2] : [180, 320]; };
+      const out = (g, list) => { for (const q of list) M.tween(g, q, { alpha: 0, sc: 0.85 }, 0.14 * T); };
+      const write = (g, list) => list.forEach((q, i) => M.writeIn(g, q, { dur: 0.2 * T, delay: i * 0.08 * T }));
       M.at(g, [
-        [0, g => { M.circle(g, ['s1', 'gp'], { col: CF, dur: 0.5 * T }); // f′ times each term of g
-          M.arrow(g, top('s1'), top('wg1'), { bend: 26, dur: 0.28 * T, col: CF, linger: 0.25 }); M.arrow(g, top('s1'), top('wg2'), { bend: 34, dur: 0.28 * T, delay: 0.14 * T, col: CF, linger: 0.2 }); g.sfx('swoosh'); }],
-        [0.5 * T, g => { S.top.items = [t1, plus, t2, S.mn, S.fw, S.d2, S.s2]; relay(); g.sfx('pop'); react(g); M.sparkle(g, 'num', { n: 6, cols: [CF, '#fff'] }); }],
-        [0.62 * T, g => { M.circle(g, ['fw', 's2'], { col: CG, dur: 0.45 * T }); M.arrow(g, top('fw'), top('s2'), { bend: 26, dur: 0.26 * T, col: CG, linger: 0.2 }); }],
-        [0.95 * T, g => { S.top.items = [t1, plus, t2, S.mn, t3]; relay(); g.sfx('pop'); react(g); }],
-        [1.08 * T, g => { // the like terms light up and a note combines them
+        [0, g => { M.circle(g, ['s1', 'gp'], { col: CF, dur: 0.45 * T }); // f′ times each term of g
+          M.arrow(g, top('s1'), top('wg1'), { bend: 26, dur: 0.26 * T, col: CF, linger: 0.2 }); M.arrow(g, top('s1'), top('wg2'), { bend: 34, dur: 0.26 * T, delay: 0.12 * T, col: CF, linger: 0.16 }); g.sfx('swoosh'); }],
+        [0.42 * T, g => out(g, [S.s1, S.d1, S.gp])],
+        [0.56 * T, g => { [S.s1, S.d1, S.gp].forEach(hideAll); S.top.items = [t1, plus, t2, S.mn, S.fw, S.d2, S.s2]; relay(); write(g, [t1, plus, t2]); g.sfx('pop'); react(g); }],
+        [0.8 * T, g => { M.circle(g, ['fw', 's2'], { col: CG, dur: 0.4 * T }); M.arrow(g, top('fw'), top('s2'), { bend: 26, dur: 0.24 * T, col: CG, linger: 0.16 }); }],
+        [1.12 * T, g => out(g, [S.fw, S.d2, S.s2])],
+        [1.26 * T, g => { [S.fw, S.d2, S.s2].forEach(hideAll); S.top.items = [t1, plus, t2, S.mn, t3]; relay(); write(g, [t3]); g.sfx('pop'); react(g); }],
+        [1.5 * T, g => { // the like terms light up and a note combines them
           for (const q of [t1, t3]) M.light(g, q, { col: '#9ad8ff', dur: 0.2 * T });
           const sum = n === m ? M.num(0) : mono(n - m, N);
-          M.note(g, { node: M.row(mono(n, N), M.op('-'), mono(m, N), M.op('='), sum), at: 'num', off: [0, -42], s: 24, col: '#9ad8ff', write: 0.3 * T, hold: 0.22 * T, fade: 0.2 * T });
-          if (n === m) { M.strike(g, t1, { delay: 0.3 * T }); M.strike(g, t3, { delay: 0.36 * T }); for (const q of [t1, t3, S.mn, plus]) M.tween(g, q, { alpha: 0 }, 0.14 * T, { delay: 0.36 * T }); } }],
-        [1.6 * T, g => { // the top settles: like terms combined (or cancelled), the rest glides into place
-          if (n === m) { for (const q of [t1, t3, S.mn, plus]) q.alpha = 0; S.top.items = [t2]; }
+          M.note(g, { node: M.row(mono(n, N), M.op('-'), mono(m, N), M.op('='), sum), at: 'num', off: [0, -40], s: 24, col: '#9ad8ff', write: 0.3 * T, hold: 0.3 * T, fade: 0.2 * T });
+          if (n === m) { M.strike(g, t1, { delay: 0.3 * T }); M.strike(g, t3, { delay: 0.36 * T }); for (const q of [t1, t3, S.mn, plus]) M.tween(g, q, { alpha: 0 }, 0.14 * T, { delay: 0.5 * T }); } }],
+        [2.1 * T, g => { // the top settles: like terms combined (or cancelled), the rest glides into place
+          if (n === m) { [t1, t3, S.mn, plus].forEach(hideAll); S.top.items = [t2]; }
           else { const r1 = mono(n - m, N); S.top.items = [r1, plus, t2]; }
-          relay(); g.sfx('chime'); react(g, 'laugh'); S.point = false; M.sparkle(g, 'num', { n: 16, cols: [CF, CG, '#fff'] }); M.indicate(g, S.top, { dur: 0.3 * T, sc: 1.1, col: '#fff' }); }],
+          relay(); g.sfx('chime'); react(g, 'laugh'); S.point = false; M.sparkle(g, 'num', { n: 14, cols: [CF, CG, '#fff'] }); M.indicate(g, S.top, { dur: 0.3 * T, sc: 1.1, col: '#fff' }); }],
       ]);
     }
   },
@@ -138,7 +154,7 @@ MG.add({
     if (typeof ANI !== 'undefined') ANI.draw(c, 'penguin', HX, HY - hopK * 24, 1.3, { t: g.t, pose, expr }); else SCN.host(g, c, 'penguin', HX, HY, 1.3);
     // colour the f and g of the problem like their slots, so the player sees which derivative goes where
     const tint = (n, col) => { if (!n) return; n.col = col; for (const ch of [n.base, n.exp, ...(n.items || [])]) tint(ch, col); }; tint(S.f, CF); tint(S.g, CG);
-    M.drawEx(g, c, 'prob'); M.drawEx(g, c, 'work');
+    drawEx2(g, c, 'prob'); drawEx2(g, c, 'work');
     M.drawUI(g, c);
   },
 });

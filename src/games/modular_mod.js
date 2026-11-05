@@ -1,12 +1,16 @@
 // modular_mod.js — MODULO! Find a mod n by walking a clock hand a steps around an n-hour clock.
-// A moonlit clock with n hours, 0 at the top. The player drags the hand clockwise (anywhere on the dial works, so one
-// long circular swipe spins it); it ticks one hour per step. Every full turn takes n away from the number in
-// "17 mod 5", which drops 17 → 12 → 7 → 2, and a ring of light is added round the dial. The hand cannot go past a:
-// after a steps it stops on the remainder and "= 2" is written. Dragging backwards walks the hand back.
+// A moonlit clock with n hours, 0 at the top. The player spins the hand clockwise (anywhere on the dial works) and lets
+// go; the hand then walks on by itself, one tick per hour (show your work). Every time it passes 0 a full turn is done:
+// 0 flashes, a ring of light is added round the dial, and a "− 5" note writes itself under "17 mod 5" and flies in, so
+// the 17 rolls down to 12, 7, 2. The hand stops after a steps, on the remainder; "17 = 3 × 5 + ?" writes itself under
+// the clock, and the hour the hand points at lifts off the dial and flies up into "= ?". A drag backwards walks it back.
 // Level 0: n = 4 or 5, two turns and a bit. Level 1: n = 5 or 6, two or three turns. Level 2: n = 6 or 7.
 // Medium mode: when the hand stops, the player picks the remainder from the tray.
 // Wrong parts: the numbers of the problem (a tap on them wobbles).
 const M = MK, CX = 180, CY = 368, R = 100, INK = '#fff4dc', GOLD = '#ffd45a', PY = 218;
+// MK.slot strokes its dashed box without beginPath, so it would also dash the symbol drawn just before it (=, ×, +).
+// An empty op starts a fresh path; the gap takes its width back.
+const clr = s => [M.op('', null), M.gap(-0.44 * s)];
 function pick(g) {
   const L = g.level, r = k => Math.floor(g.rand() * k), n = [[4, 5], [5, 6], [6, 7]][L][r(2)];
   const turns = L === 0 ? 2 : 2 + r(2), rem = 1 + r(n - 1);
@@ -16,21 +20,42 @@ const ang = (S, u) => u * 2 * Math.PI / S.n - Math.PI / 2;
 const pt = (S, u, r) => ({ x: CX + Math.cos(ang(S, u)) * r, y: CY + Math.sin(ang(S, u)) * r });
 const ptrU = (S, x, y) => ((Math.atan2(y - CY, x - CX) + Math.PI / 2) / (2 * Math.PI) * S.n + S.n) % S.n;
 function placeProb(g) { const S = g.s; M.place(g, 'prob', S.prob, 180, PY, 46, { col: INK }); const h = pt(S, S.cont, R - 52); M.zone(g, 'hand', { x: h.x, y: h.y, w: 34, h: 34 }); }
+// the hand has walked k hours: every full turn takes n away from the number in the problem (a "− 5" note writes itself
+// beside it and flies in, and the number rolls down: 17 → 12 → 7 → 2), and a ring of light is added round the dial
 function setSteps(g, k) {
-  const S = g.s; if (k === S.steps) return;
-  const before = Math.floor(S.steps / S.n), after = Math.floor(k / S.n); S.steps = k; g.sfx('click');
+  const S = g.s, T = M.pace(g); if (k === S.steps) return;
+  const before = Math.floor(S.steps / S.n), after = Math.floor(k / S.n); S.steps = k; g.sfx('tap', { p: 1 + (k % S.n) * 0.04 });
   if (after !== before) {
-    S.shown = S.a - S.n * after; const nd = M.node(g, 'a'); nd.v = String(S.shown); nd.pop = g.t; placeProb(g);
-    if (after > before) { const b = M.box(g, 'a'); M.fly(g, { node: M.row(M.op('-'), M.num(S.n)), from: [b.x, b.y], to: [b.x - 40, 160], dur: 0.45, arc: -20, s0: 30, s1: 24, col: GOLD }); g.sfx('coin'); S.turnAt = g.t; }
+    S.shown = S.a - S.n * after; const nd = M.node(g, 'a'), v = S.shown;
+    if (after > before) { S.turnAt = g.t; S.wrapAt = g.t; g.sfx('coin'); S.mk.lastMove = g.t;
+      M.note(g, { node: M.row(M.op('-'), M.num(S.n)), at: 'a', off: [0, 42], s: 26, col: GOLD, write: 0.16 * T, hold: 0.06 * T, fly: 0.2 * T, to: 'a', arc: 14, s1: 30,
+        then(g) { M.roll(g, nd, v, { dur: 0.2 * T }); placeProb(g); M.sparkle(g, 'a', { n: 6, cols: [GOLD, '#fff'] }); } }); }
+    else { M.roll(g, nd, v, { dur: 0.16 }); placeProb(g); }
   }
   if (k === S.a) land(g);
 }
+// once spun, the hand walks on by itself, one hour per tick, pausing a moment at every full turn
+const ST = 0.068, PT = 0.2;
+function walkTime(S, from) { let t = 0; for (let k = from + 1; k <= S.a; k++) t += ST + (k % S.n === 0 ? PT : 0); return t; }
+function startWalk(g) { const S = g.s, T = M.pace(g); S.walk = { next: g.t + 0.05 * T }; M.show(g, walkTime(S, S.steps) * T + 0.2 * T); }
 function land(g) {
-  const S = g.s, K = S.mk; S.landed = true; S.drag = null; S.cont = S.a; K.lastMove = g.t; g.sfx('ding');
-  const p = pt(S, S.a, R - 26); g.burst(p.x, p.y, [GOLD, '#fff', '#a8c8ff'], 14, 140);
-  const fill = g => { const sl = M.node(g, 'ans'); sl.fill = M.num(S.rem, 'r', { pop: g.t }); const nd = M.node(g, 'a'); nd.v = String(S.a); nd.pop = g.t; S.answered = true; S.ansAt = g.t; M.inert(g, ['r']); placeProb(g); };
-  if (g.mode === 'medium') { M.openAsk(g, { ask: { v: S.rem, wrong: [S.turns, S.n - S.rem, S.a - S.n, S.rem + 1] }, after: 0.05, resolve: fill }); K.busyT = 1e9; }
-  else fill(g);
+  const S = g.s, K = S.mk, T = M.pace(g); S.landed = true; S.drag = null; S.walk = null; S.cont = S.a; S.landAt = g.t; K.lastMove = g.t; g.sfx('ding');
+  const p = pt(S, S.a, R - 26); g.burst(p.x, p.y, [GOLD, '#fff', '#a8c8ff'], 14, 140); S.point = true;
+  // the working: 17 = 3 × 5 + ? writes itself under the clock (the key steps aside for it)
+  S.nslot = M.slot('nr', { w: 26, col: GOLD });
+  S.note = M.row(M.num(S.a), M.op('='), M.num(S.turns, null, { col: '#c8d0ff' }), M.op('×'), M.num(S.n), M.op('+'), clr(26), S.nslot); S.note.id = 'note';
+  M.tween(g, S.key, { alpha: 0 }, 0.2 * T); M.place(g, 'note', S.note, 180, 518, 26, { col: INK }); M.writeIn(g, S.note, { dur: 0.4 * T, delay: 0.1 * T }); M.inert(g, ['note']);
+  M.indicate(g, 'a', { delay: 0.1 * T, dur: 0.35 * T, col: GOLD });
+  const askAt = 0.6 * T; M.show(g, askAt);
+  const fill = g => { M.show(g, 1.1 * T); const rn = M.num(S.rem, 'nrv', { col: GOLD }); S.nslot.fill = rn; M.place(g, 'note', S.note, 180, 518, 26, { col: INK }); M.writeIn(g, rn, { dur: 0.16 * T }); g.sfx('coin');
+    // the remainder lifts off the dial, flies up into the "?", and the number rolls back to the problem's
+    const h = pt(S, S.a, R - 26);
+    M.fly(g, { node: M.num(S.rem, null, { col: GOLD }), from: [h.x, h.y], to: 'ans', delay: 0.18 * T, dur: 0.45 * T, arc: -70, s0: 30, s1: 46,
+      then(g) { const sl = M.node(g, 'ans'); sl.fill = M.num(S.rem, 'r', { pop: g.t, col: GOLD }); M.inert(g, ['r']); placeProb(g); M.sparkle(g, 'r', { n: 12, cols: [GOLD, '#fff', '#a8c8ff'] }); g.sfx('ding'); K.lastMove = g.t;
+        const nd = M.node(g, 'a'); M.at(g, [[0.1 * T, g => { nd.v = String(S.a); placeProb(g); M.writeIn(g, nd, { dur: 0.3 * T }); }]]); } });
+    M.at(g, [[0.75 * T, g => { S.answered = true; S.ansAt = g.t; S.point = false; M.tween(g, S.note, { alpha: 0 }, 0.3 * T); M.tween(g, S.key, { alpha: 1 }, 0.3 * T, { delay: 0.2 * T }); }]]); };
+  if (g.mode === 'medium') M.at(g, [[askAt, g => { M.openAsk(g, { ask: { v: S.rem, wrong: [S.turns, S.n - S.rem, S.a - S.n, S.rem + 1] }, after: 1.1 * T, resolve: fill }); K.busyT = 1e9; }]]);
+  else M.at(g, [[askAt, fill]]);
 }
 
 MG.add({
@@ -43,18 +68,23 @@ MG.add({
   },
   init(g) {
     const S = g.s; M.setup(g); Object.assign(S, pick(g)); S.steps = 0; S.cont = 0; S.shown = S.a; S.drag = null;
-    S.prob = M.row(M.num(S.a, 'a'), M.gap(10), M.txt('mod', 'md'), M.gap(10), M.num(S.n, 'n'), M.op('=', 'eq'), M.slot('ans'));
+    S.prob = M.row(M.num(S.a, 'a'), M.gap(10), M.txt('mod', 'md'), M.gap(10), M.num(S.n, 'n'), M.op('=', 'eq'), clr(46), M.slot('ans'));
     placeProb(g); M.inert(g, ['md', 'eq', 'ans']);
-    M.place(g, 'key', M.txt(`${S.a} mod ${S.n} = the remainder of ${S.a} ÷ ${S.n}`, 'key'), 180, 510, 15, { col: '#c8d0ff' }); M.inert(g, ['key']);
+    S.key = M.txt(`${S.a} mod ${S.n} = the remainder of ${S.a} ÷ ${S.n}`, 'key'); M.place(g, 'key', S.key, 180, 512, 15, { col: '#c8d0ff' }); M.inert(g, ['key']);
     g.dur *= (2.6 + 1.05 * (S.turns + 1)) / 8;
     M.play(g, { moves(g) { return S.answered ? [] : [{ drag: 'hand', to: 'hand' }]; }, area(g) { return 'hand'; } });
   },
-  update(g, dt) { M.update(g, dt); },
+  update(g, dt) {
+    const S = g.s, T = M.pace(g); M.update(g, dt);
+    if (S.walk && !S.landed && g.t >= S.walk.next) { const k = S.steps + 1; S.walk.next = g.t + (ST + (k % S.n === 0 ? PT : 0)) * T; S.stepAt = g.t; S.stepFrom = S.cont; setSteps(g, k); }
+    // the hand ticks: each step it swings on to the next hour with a little overshoot
+    if (S.walk && !S.landed && S.stepAt != null) { const k = M.clamp((g.t - S.stepAt) / (ST * 0.85 * T), 0, 1), e = 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2); S.cont = M.lerp(S.stepFrom, S.steps, Math.min(1.06, e)); }
+  },
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask && !K.ask.closing) { M.down(g, x, y); return; }
     const d = Math.hypot(x - CX, y - CY);
-    if (!S.landed && d < R + 36 && d > 14) { S.drag = { last: ptrU(S, x, y) }; g.sfx('tap'); return; }
+    if (!S.landed && !S.walk && d < R + 36 && d > 14) { S.drag = { last: ptrU(S, x, y) }; g.sfx('tap'); return; }
     M.down(g, x, y);
   },
   move(g, x, y) {
@@ -66,16 +96,16 @@ MG.add({
   },
   up(g, x, y) {
     const S = g.s; if (g.done) return;
-    if (S.drag) { S.drag = null; S.cont = S.steps; S.mk.moveT = g.t; placeProb(g); return; }
+    if (S.drag) { S.drag = null; S.cont = S.steps; S.mk.moveT = g.t; placeProb(g); if (!S.landed && S.steps > 0) { S.mk.lastMove = g.t; g.sfx('swoosh'); startWalk(g); } return; }
     M.up(g, x, y);
   },
   auto(g, dt, synth) {
     const S = g.s, K = S.mk; if (g.done) return;
     if (K.ask) { if (!K.ask.closing) M.auto(g, dt, synth); return; }
-    if (S.landed) return;
+    if (S.landed || S.walk) return;
     if (!S.bot) { if (g.t < 0.4) return; const p = pt(S, S.cont, R - 40); synth('down', p.x, p.y); S.bot = { u: S.cont }; return; }
-    S.bot.u = Math.min(S.a + 0.3, S.bot.u + dt * S.n * 1.8); const p = pt(S, S.bot.u, R - 40); synth('move', p.x, p.y);
-    if (S.landed || S.bot.u >= S.a + 0.3) { synth('up', p.x, p.y); S.bot = null; }
+    const goal = Math.min(S.a, 1.4); S.bot.u = Math.min(goal, S.bot.u + dt * S.n * 1.2); const p = pt(S, S.bot.u, R - 40); synth('move', p.x, p.y);
+    if (S.landed || S.bot.u >= goal) { synth('up', p.x, p.y); S.bot = null; }
   },
   draw(g, c) {
     const S = g.s, K = S.mk, t = g.t; SCN.bg(g, c, 'night');
@@ -91,7 +121,7 @@ MG.add({
     const part = S.cont - full * S.n; if (part > 0.01 && !S.landed) { c.strokeStyle = 'rgba(255,212,90,0.55)'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.arc(CX, CY, R - 8, ang(S, 0), ang(S, S.cont)); c.stroke(); }
     const here = ((Math.round(S.cont) % S.n) + S.n) % S.n;
     for (let k = 0; k < S.n; k++) {
-      const p = pt(S, k, R - 26), on = k === here, pop = S.landed && on ? 1 + Math.sin(M.clamp((t - (S.ansAt || t)) / 0.35, 0, 1) * Math.PI) * 0.4 : 1;
+      const p = pt(S, k, R - 26), on = k === here, pk = S.landed ? M.clamp((t - S.landAt) / 0.4, 0, 1) : S.stepAt != null ? M.clamp((t - S.stepAt) / 0.16, 0, 1) : 1, pop = on ? 1 + Math.sin(pk * Math.PI) * (S.landed ? 0.5 : 0.18) : 1;
       const tk = pt(S, k, R - 4); c.fillStyle = '#e8e0c0'; c.beginPath(); c.arc(tk.x, tk.y, 2.5, 0, 7); c.fill();
       c.save(); c.translate(p.x, p.y); c.scale(pop, pop); c.fillStyle = on ? GOLD : INK; c.font = M.NUMF(on ? 30 : 26); c.textAlign = 'center'; c.textBaseline = 'middle';
       if (on) { c.shadowColor = GOLD; c.shadowBlur = 12; } c.fillText(String(k), 0, 1); c.restore();
@@ -100,14 +130,18 @@ MG.add({
     const th = ang(S, S.cont), tip = R - 48; c.save(); c.translate(CX, CY); c.rotate(th);
     c.fillStyle = GOLD; c.strokeStyle = '#8a5a1a'; c.lineWidth = 2; c.beginPath(); c.moveTo(-14, -5); c.lineTo(tip - 14, -4); c.lineTo(tip - 14, -10); c.lineTo(tip + 4, 0); c.lineTo(tip - 14, 10); c.lineTo(tip - 14, 4); c.lineTo(-14, 5); c.closePath(); c.fill(); c.stroke(); c.restore();
     c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(CX, CY, 11, 0, 7); c.fill(); c.fillStyle = '#34407a'; c.beginPath(); c.arc(CX + 4, CY - 3, 9, 0, 7); c.fill();
-    M.drawEx(g, c, 'prob'); c.save(); c.globalAlpha = 0.85; M.drawEx(g, c, 'key'); c.restore();
-    SCN.host(g, c, 'owl', 302, 606, 1.2);
+    // passing 0 again: a flash of light at the top of the dial
+    if (S.wrapAt != null && t - S.wrapAt < 0.45) { const k = (t - S.wrapAt) / 0.45, p = pt(S, 0, R - 26); c.save(); c.globalAlpha = 1 - k; c.strokeStyle = GOLD; c.shadowColor = GOLD; c.shadowBlur = 14; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 16 + k * 22, 0, 7); c.stroke(); c.restore(); }
+    M.drawEx(g, c, 'prob'); c.save(); c.globalAlpha = 0.85; M.drawEx(g, c, 'key'); c.restore(); M.drawEx(g, c, 'note');
+    // the owl counts along: it hops at every full turn, and points while the working is written
+    const hopK = K.lastMove != null && t - K.lastMove < 0.35 ? Math.sin((t - K.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
+    if (typeof ANI !== 'undefined') ANI.draw(c, 'owl', 302, 606 - hopK * 22, 1.2, { t, pose: won ? 'cheer' : hopK > 0 ? 'hop' : S.point ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : S.walk ? 'wow' : 'happy', facing: -1 }); else SCN.host(g, c, 'owl', 302, 606, 1.2);
     // guidance: the hand glows, and a ghost hand sweeps clockwise round the dial
     const failed = g.done && g.result === 'fail';
-    if (!S.landed && !S.drag && !K.ask && (!g.done || failed)) {
+    if (!S.landed && !S.drag && !S.walk && !K.ask && (!g.done || failed)) {
       const h = pt(S, S.cont, R - 52); M.glowBox(c, { x: h.x, y: h.y, w: 30, h: 30 }, t, 1, true);
       if (failed || g.level === 0 || t - K.moveT > 2) { const k = ((t - K.moveT) * 0.7) % 1, p = pt(S, S.cont + k * S.n * 0.8, R - 40); M.hand(c, p.x + 4, p.y + 6, 1, k < 0.1 ? 1 : 0); }
     }
-    M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
+    M.drawAnims(g, c); M.drawAsk(g, c); M.drawFlies(g, c); M.drawFx(g, c);
   },
 });

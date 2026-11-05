@@ -14,7 +14,6 @@ decimals_round.js
 decimals_tofrac.js
 decimals_mult.js
 decimals_expand.js
-geometry_area.js
 geometry_perim.js
 geometry_tri.js
 geometry_circle.js

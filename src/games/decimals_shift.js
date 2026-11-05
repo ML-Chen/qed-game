@@ -89,7 +89,7 @@ MG.add({
     const S = g.s, Mk = S.mk, t = g.t;
     SCN.bg(g, c, 'snow');
     for (const P of S.P) SCN.panel(c, 'sign', 180, P.y + 14, 316, 154, t);
-    SCN.host(g, c, 'penguin', 292, 606, 1.3);
+    SCN.host(g, c, 'penguin', 300, 622, 1.2);
     const pr = Mk.press && Mk.press.dragging && /^pz\d/.test(Mk.press.id) ? Mk.press : null;
     for (const P of S.P) {
       const G = S.geo(P), drag = pr && +pr.id.slice(2) === P.i, hov = drag ? M.clamp(Math.round((pr.x - G.x0) / CW), 0, G.N) : null;

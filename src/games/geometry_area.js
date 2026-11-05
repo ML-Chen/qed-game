@@ -72,7 +72,7 @@ MG.add({
             M.at(g, [[0.25 * T, g => { fillRow(g, 0); cntAt(0); S.cnt = M.num(a, null, { alpha: 0 }); }],
               [0.25 * T + 0.03 * a * T, g => { S.cnt.alpha = 1; S.cnt.pop = g.t; }]]); },
           resolve(g) { M.show(g, rest);
-            const steps = []; for (let j = 1; j < b; j++) steps.push([(j - 1) * rt + 0.02, g => { fillRow(g, j); cntAt(j); M.at(g, [[0.035 * a * T, g => M.roll(g, S.cnt, a * (j + 1), { dur: 0.18 * T })]]); }]);
+            const steps = []; for (let j = 1; j < b; j++) steps.push([(j - 1) * rt + 0.02, g => { fillRow(g, j); cntAt(j); M.at(g, [[Math.min(0.035 * a * T, rt * 0.45), g => M.roll(g, S.cnt, a * (j + 1), { dur: Math.min(0.18 * T, rt * 0.5) })]]); }]);
             steps.push([(b - 1) * rt + 0.2 * T, g => { S.cnt.pop = g.t; M.sparkle(g, [S.x1 + 28, cntY(g)], { n: 8 }); g.sfx('ding'); }]);
             steps.push([(b - 1) * rt + 0.42 * T, g => { const from = { x: S.x1 + 28, y: cntY(g) }; S.cnt = null; M.tween(g, 'Wr', { alpha: 1 }, 0.25 * T);
               for (const q of S.row.items[2].items) M.tween(g, q, { alpha: 0 }, 0.2 * T);

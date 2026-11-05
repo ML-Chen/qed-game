@@ -10,6 +10,9 @@
 // Medium mode: each cut asks for what is left of the larger number (the note shows "48 = 2 × 18 + ?").
 // Wrong parts: the larger number (it cannot be cut by the smaller one the other way round).
 const M = MK, PANEL = 'sign', INK = SCN.ink(PANEL), PY = 226, BOX = [24, 270, 336, 446], NOTEY = 484, NCOL = '#5a2a0a', HX = 300, HY = 600;
+// MK.slot strokes its dashed box without beginPath, so it would also dash the symbol drawn just before it (=, ×, +).
+// An empty op starts a fresh path; the gap takes its width back.
+const clr = s => [M.op('', null), M.gap(-0.44 * s)];
 const POOL = [[[12, 8], [15, 6], [20, 8], [18, 12], [21, 9], [14, 4]], [[48, 18], [42, 30], [50, 35], [30, 18], [40, 24]], [[45, 33], [52, 36], [70, 26], [66, 42]]];
 const COLS = ['#e89a50', '#5ab0c8', '#9ac860', '#d87aa0', '#c8a0f0'];
 // the camera: the part of the slab (in tile units) that is fitted into BOX
@@ -55,7 +58,7 @@ MG.add({
             M.at(g, [...Array(cnt)].map((_, k) => [tCut + k * gapT, g => { g.sfx('crunch'); hop(g); }]));
             // the note: 48 = 2 × 18 + 12 (the remainder waits as a ? in medium mode)
             S.rem = M.slot('nr', { w: 30, col: NCOL });
-            S.note = M.row(M.num(L, 'nL'), M.op('='), M.num(cnt, 'nc'), M.op('×'), M.num(s, 'ns'), M.op('+'), S.rem); S.note.id = 'note';
+            S.note = M.row(M.num(L, 'nL'), M.op('='), M.num(cnt, 'nc'), M.op('×'), M.num(s, 'ns'), M.op('+'), clr(30), S.rem); S.note.id = 'note';
             M.at(g, [[tNote, g => { M.place(g, 'note', S.note, 180, NOTEY, 30, { col: NCOL }); M.writeIn(g, S.note, { dur: 0.36 * T }); }]]);
           },
           resolve(g) {

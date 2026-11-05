@@ -9,6 +9,31 @@
 // Level 0: small numbers. Level 1: bigger ones. Level 2: a negative input, written in brackets.
 // Medium mode: the product and the final sum open a tray when the working note reaches its "=".
 const M = MK, INK = SCN.ink('none'), IN = '#ffd27a', GO = '#8af0d0', Y1 = 246, Y2 = 344, NY = 410;
+// fresh(node): the copy of an expression that is actually placed. The kit glides every node whose box moved, wrappers
+// too, and a wrapper's glide adds to its symbols' own glides, so when a row's centre shifts its symbols would lurch twice
+// as far. So every placement gets new row/fraction/power wrappers (views) around the same symbols: only symbols glide.
+// A view passes every property through to its original (alpha, highlight, scale, ids...), so tweens and code that
+// change either one change both. Brackets and slots draw their own marks, so they keep their identity (and glide), and
+// what is inside them is shown as fresh views that ride along with the bracket.
+const STRUCT = ['items', 'base', 'exp', 'inner', 'n', 'd', 'fill', 'rows'], OWN = new Set([...STRUCT, 'k', '_pid', '_glide', '_gx', '_gy', '_m', '_born']);
+const DELEG = ['id', 'v', 'col', 'hl', 'hlc', 'sc', 'alpha', 'pop', 'strike', 'write', 'bar', 'roll', 'mark', 'dx', 'dy', 'hide', 'small', 'br', 'w'];
+const hid = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
+function view(n, deep, born) {
+  if (!n || typeof n !== 'object') return n; const c = { k: n.k };
+  for (const k of new Set([...Object.keys(n), ...DELEG])) if (!OWN.has(k)) Object.defineProperty(c, k, { get: () => n[k], set: v => { n[k] = v; }, enumerable: true, configurable: true });
+  const sub = x => deep ? view(x, true, born) : fresh(x);
+  if (n.items) c.items = n.items.map(sub); for (const k of ['base', 'exp', 'inner', 'n', 'd', 'fill']) if (n[k]) c[k] = sub(n[k]); if (n.rows) c.rows = n.rows.map(r => r.map(sub));
+  if (deep && born) c._born = -1; return c;
+}
+function walkAll(n, f) { if (!n || typeof n !== 'object') return; f(n); for (const k of ['base', 'exp', 'inner', 'n', 'd', 'fill']) walkAll(n[k], f); (n.items || []).forEach(q => walkAll(q, f)); }
+function fresh(n) {
+  if (!n || typeof n !== 'object' || /^(num|var|txt|op|gap|mat)$/.test(n.k)) return n;
+  if (n.k === 'paren' || n.k === 'slot') { const key = n.k === 'paren' ? 'inner' : 'fill';
+    if (!n._vw || n[key] !== n._vw) hid(n, '_mdl', n[key]); // first time, or the code put new contents in
+    if (n._vw) walkAll(n._vw, q => Object.defineProperty(q, 'alpha', { value: 0, writable: true, configurable: true })); // the old views leave no ghost
+    const v = view(n._mdl, true, !!n._seen); hid(n, '_vw', v); hid(n, '_seen', true); n[key] = v; return n; }
+  return view(n, false);
+}
 const hop = (g, e) => { g.s.mk.lastMove = g.t; g.s.face = e || 'wow'; g.s.faceT = g.t; };
 function host(g, c, kind, x, y, s, facing) { // the host hops on beats and points at the work while it is shown
   const S = g.s, mk = S.mk, hk = mk.lastMove != null && g.t - mk.lastMove < 0.35 ? Math.sin((g.t - mk.lastMove) / 0.35 * Math.PI) : 0;
@@ -41,7 +66,7 @@ MG.add({
     S.q = M.row(M.vr('f', 'fq'), M.paren(M.num(p.v, 'in', { col: IN }), 'pq'), M.op('=', 'q2'), M.slot('ans', { col: GO }));
     // the question line keeps a fixed left edge (centred for its longest form, f(v) = a · v ± b), so f(v) = never slides
     const wide = M.lay(M.row(M.vr('f'), M.paren(nm(p.v)), M.op('='), M.num(p.a), M.op('·'), nm(p.v), M.op(sg), M.num(p.b)), 40).w, QX = 180 - wide / 2;
-    const place = S.place = () => { M.place(g, 'def', S.def, 180, Y1, 42, { col: INK }); M.place(g, 'q', S.q, QX, Y2, 40, { col: INK, left: true }); };
+    const place = S.place = () => { M.place(g, 'def', fresh(S.def), 180, Y1, 42, { col: INK }); M.place(g, 'q', fresh(S.q), QX, Y2, 40, { col: INK, left: true }); };
     place(); M.inert(g, ['fd', 'xf', 'pf', 'q1', 'pm', 'fq', 'pq', 'q2', 'w1', 'w2']);
     g.dur *= (2.6 + 1.05 * 3) / 8;
     S.sgn = M.op(sg, 'pm2'); S.tail = M.num(p.b, 'cb2'); // the same nodes all the way down, so they glide as the line shrinks
@@ -63,11 +88,11 @@ MG.add({
             // the input lifts out of f( ) and drops into the x's place: the x gives way to it
             [0.68 * T, g => { const from = { ...vIn() }; M.unlight(g, 'xt'); M.tween(g, S.sx, { sc: 1.4, hl: 1 }, 0.15 * T, { yoyo: true });
               M.fly(g, { node: nm(p.v, null, { col: IN }), from: [from.x, from.y], to: 'sx', dur: 0.32 * T, arc: -46, s0: 40, s1: 44,
-                then(g) { S.pr.items[2] = S.v2; place(); S.v2.pop = g.t; M.sparkle(g, S.v2, { n: 8, cols: [IN, '#fff'] }); g.sfx('pop'); hop(g); } }); }],
+                then(g) { S.sx.alpha = 0; S.pr.items[2] = S.v2; place(); S.v2.pop = g.t; M.sparkle(g, S.v2, { n: 8, cols: [IN, '#fff'] }); g.sfx('pop'); hop(g); } }); }],
           ]); } }];
         // 2. multiply first: the product is worked out in a note under it and collapses into its value
         if (!S.tp) return [{ tap: 'pr', busy: 0.1, askAt: 0.6 * T, after: 0.9 * T, ask: { v: p.pv, wrong: [p.a + p.v, -p.pv, p.pv + p.a] },
-          then(g) { S.tp = 1; M.show(g, 0.6 * T); S.point = true; hop(g, 'think'); M.circle(g, 'pr', { col: IN, dur: 0.5 * T }); M.light(g, S.pr, { col: IN });
+          then(g) { S.tp = 1; M.show(g, 0.6 * T); S.point = true; hop(g, 'think'); M.circle(g, 'pr', { col: IN, dur: 0.5 * T }); M.light(g, 'pr', { col: IN });
             const b = M.box(g, 'pr'); S.r1 = M.num(p.pv, 'w1', { col: GO }); work(g, [M.num(p.a), M.op('·'), nm(p.v)], S.r1, b ? b.x : 180, T); },
           resolve(g) { M.show(g, 0.9 * T); S.r1.alpha = 1; M.writeIn(g, S.r1, { dur: 0.22 * T }); M.indicate(g, S.r1, { delay: 0.18 * T, dur: 0.3 * T, col: GO }); g.sfx('ding');
             M.at(g, [[0.45 * T, g => { const from = { ...M.box(g, 'w1') }; S.pv = M.num(p.pv, 'pv', { col: GO, alpha: 0 }); const rs = M.row(S.pv, S.sgn, S.tail); rs.id = 'rs'; S.q.items[3] = rs; place(); g.sfx('coin');
