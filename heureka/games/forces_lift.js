@@ -107,7 +107,13 @@
       // guidance: glow on the barrel; at level 0 the ghost hand slides it into the range that works
       if (s.phase === 'aim' && !g.done) { const wt = win(s.ks[s.ri]), tx = (wt.lo + wt.hi) / 2; SK.grab(c, g, px, py, 36); SK.target(c, g, tx, py, 34, { w: wt.hi - wt.lo + BR * 2, h: BR * 2 + 12 }); SK.arrow(c, g, px, py + 44, tx, py + 44, { from: 0, to: 0 });
         c.save(); c.fillStyle = 'rgba(255,255,255,0.85)'; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(px + sd * 52, GND + 14); c.lineTo(px + sd * 40, GND + 6); c.lineTo(px + sd * 40, GND + 22); c.closePath(); c.fill(); } c.fillRect(px - 40, GND + 12, 80, 4); c.restore(); const w = win(s.ks[s.ri]); if (g.level === 0) { c.save(); c.fillStyle = 'rgba(255,240,150,0.3)'; c.beginPath(); c.roundRect(w.lo - BR, GND + 26, w.hi - w.lo + BR * 2, 10, 5); c.fill(); c.restore(); }
-        SK.demo(g, c, 'drag', [px, py], [(w.lo + w.hi) / 2, py]); }
+        SK.demo(g, c, 'drag', [px, py], [tx, py]); }
+      // the spots for the pivot that lift this rock onto the ledge: a green strip on the ground that stays while you drag,
+      // and an arrow on the barrel (left, right, or a tick when it is in the strip)
+      if (s.phase === 'aim' && !g.done) { const wt = win(s.ks[s.ri]), ok = px >= wt.lo && px <= wt.hi;
+        c.fillStyle = 'rgba(90,216,122,0.75)'; c.beginPath(); c.roundRect(wt.lo, GND + 4, wt.hi - wt.lo, 8, 4); c.fill();
+        G2.dir(c, px, py - BR - 34, ok ? 0 : 1, { s: 0.85, rot: px < wt.lo ? Math.PI / 2 : -Math.PI / 2 }); }
+      G2.count(c, 64, 44, s.ri, s.ks.length); // rocks on the ledge so far
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.phase !== 'aim' || s.drop < 1) return; const w = win(s.ks[s.ri]), tx = (w.lo + w.hi) / 2;

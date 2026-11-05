@@ -96,6 +96,14 @@
         c.restore();
       } else { const q = (t - s.splash) / 0.8; SK.animal(c, 'rabbit', s.fall.x - 8, 600 - Math.sin(q * Math.PI) * 10, 0.5, { t, pose: 'sad', expr: 'wow' }); }
       SK.tag(c, 'Ledge', RX[1] + LEDGE / 2 - 4, rim + 26, 18);
+      // the start heights that end on the ledge: a green stretch of the near ramp (a little above the ledge, not too far);
+      // while you drag, an arrow on the rabbit says higher, lower, or a tick when she is in it
+      if (k.st === 'rest' || k.st === 'drag') {
+        const yHi = rim - 4 - (s.rough ? ROUGH : 0), yTop = rim - LEDGE * s.mu / G + 6 - (s.rough ? ROUGH : 0);
+        c.save(); c.strokeStyle = 'rgba(90,216,122,0.85)'; c.lineWidth = 9; c.lineCap = 'round'; c.beginPath(); let on = false;
+        for (const pt of s.T) { if (pt.x > LX[1] + 30) break; const inb = pt.y <= yHi && pt.y >= yTop; if (inb) { on ? c.lineTo(pt.x, pt.y) : c.moveTo(pt.x, pt.y); on = true; } else on = false; } c.stroke(); c.restore();
+        if (k.st === 'drag') { const py = at(s.T, k.s).y, pp = at(s.T, k.s); G2.dir(c, pp.x + 34, pp.y - 40, py > yHi ? 1 : py < yTop ? -1 : 0); }
+      }
       // the rounds still to go: little flags along the top
       for (let i = 0; i < s.rims.length; i++) { c.fillStyle = i < s.round || (i === s.round && k.st === 'won') ? '#ffd45a' : 'rgba(255,255,255,0.35)'; c.beginPath(); c.arc(180 + (i - (s.rims.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
       const want = rim - 18 - (s.rough ? ROUGH : 0), tx = LX[1] - (LX[1] - LX[0]) * Math.sqrt((BOT - want) / (BOT - TOPL)), q = at(s.T, k.s);

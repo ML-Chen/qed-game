@@ -124,6 +124,8 @@ MG.add({
       const am = th + (p.a0 + p.a1) / 2; c.save(); c.rotate(am); const flip = Math.cos(am) < 0; c.font = `900 ${p.w === '.' ? 40 : p.a1 - p.a0 < 0.6 ? 18 : 22}px Nunito, system-ui`; c.textBaseline = 'middle';
       c.fillStyle = p.weird ? '#e8d8ff' : '#3a2040'; if (flip) { c.rotate(Math.PI); c.textAlign = 'left'; c.fillText(p.w, -WR + 12, 0); } else { c.textAlign = 'right'; c.fillText(p.w, WR - 12, 0); } c.restore();
     });
+    // timing feedback: the slice the wheel would coast onto if you tapped now is outlined (gold, or flashing red for the odd word)
+    if (s.state === 'spin') { const pr = landed(s, th + s.om * STOP / 2); c.save(); c.lineJoin = 'round'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, WR - 4, th + pr.a0, th + pr.a1); c.closePath(); c.strokeStyle = '#2a1424'; c.lineWidth = 10; c.stroke(); c.strokeStyle = pr.weird ? (Math.sin(t * 20) > 0 ? '#ff3a5a' : '#fff') : '#fff6ea'; c.lineWidth = 5; c.stroke(); c.restore(); }
     c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(0, 0, 16, 0, 7); c.fill(); c.strokeStyle = '#8a5a3a'; c.lineWidth = 3; c.stroke();
     c.restore();
     // the pointer at the top, ticking against the pegs
@@ -136,7 +138,8 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     B7.robot(c, 44, 616, 0.8, { t, dir: 0, mood: g.result === 'win' ? 'happy' : g.result === 'fail' ? 'wow' : 'idle' }); SK.tag(c, 'AI model', 52, 520, 18);
     SK.animal(c, 'fox', 316, 612, 0.75, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
-    if (s.state === 'spin') SK.glow(c, g, WX, WY, 40);
+    if (s.state === 'spin') SK.glow(c, g, WX, WY, 40, '#ffe27a', { level: 2 });
+    if (!g.done) SK.tag(c, Math.min(s.words.length, s.need) + ' / ' + s.need + ' words', 300, 350, 18);
     SK.demo(g, c, 'tap', [WX, WY]);
   },
   // the bot taps when the wheel will coast to the middle of the biggest slice (B7FAIL: aims for the sliver)

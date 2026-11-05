@@ -3,10 +3,14 @@
 // piece drops onto the token train. Chop in the wrong place and the model cannot read that piece, so it falls apart
 // into single letters, the train grows too long for the station, and the beaver groans. Level 2: a word in another
 // language needs more pieces.
+// four words per level (SK.variant, never the same twice in a row); every piece on the board counts as a token
 const WORDS = [
-  { w: 'unbelievable', toks: ['un', 'believ', 'able'], extra: ['be', 'lie'] },
-  { w: 'unfriendliness', toks: ['un', 'friend', 'li', 'ness'], extra: ['end', 'fri'] },
-  { w: 'Schmetterling', toks: ['Sch', 'met', 'ter', 'ling'], extra: ['me', 'ring'] },
+  [{ w: 'unbelievable', toks: ['un', 'believ', 'able'], extra: ['be', 'lie'] }, { w: 'rethinking', toks: ['re', 'think', 'ing'], extra: ['thin', 'kin'] },
+   { w: 'moonwalking', toks: ['moon', 'walk', 'ing'], extra: ['moo', 'king'] }, { w: 'snowboarder', toks: ['snow', 'board', 'er'], extra: ['no', 'boar'] }],
+  [{ w: 'unfriendliness', toks: ['un', 'friend', 'li', 'ness'], extra: ['end', 'fri'] }, { w: 'misunderstand', toks: ['mis', 'under', 'st', 'and'], extra: ['stan', 'der'] },
+   { w: 'undiscoverable', toks: ['un', 'dis', 'cover', 'able'], extra: ['cove', 'rab'] }, { w: 'overreacting', toks: ['over', 're', 'act', 'ing'], extra: ['eac', 'ver'] }],
+  [{ w: 'Schmetterling', toks: ['Sch', 'met', 'ter', 'ling'], extra: ['me', 'ring'] }, { w: 'Kindergarten', toks: ['Kind', 'er', 'gar', 'ten'], extra: ['in', 'art'] },
+   { w: 'Eichhörnchen', toks: ['Eich', 'hör', 'n', 'chen'], extra: ['hö', 'rn'] }, { w: 'Streichholz', toks: ['Stre', 'ich', 'hol', 'z'], extra: ['rei', 'olz'] }],
 ];
 const LOGY = 352, FS = 30, TRAINY = 548;
 function canSplit(seg, vocab) { const ok = [true]; for (let i = 1; i <= seg.length; i++) { ok[i] = false; for (const v of vocab) if (i >= v.length && ok[i - v.length] && seg.slice(i - v.length, i) === v) { ok[i] = true; break; } } return ok[seg.length]; }
@@ -28,7 +32,7 @@ MG.add({
     text: 'A language model does not read letters one by one, and it does not know every whole word. It reads tokens: pieces from a fixed list it learned. Common words are often one token. Rarer words are built from a few pieces, like "un" + "believ" + "able".\n\nIf a piece is not on the list, the model has to fall back to smaller pieces, sometimes single letters. Then the same text takes many more tokens, which costs more and fills the model\'s memory sooner.\n\nWords from languages that were rarer in the training text often need more pieces.',
     note: 'Models read tokens: common words whole, rarer words in a few pieces from a fixed list.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level), W = WORDS[L]; s.word = W.w; s.vocab = W.toks.concat(W.extra);
+    const s = g.s, L = Math.min(2, g.level); s.v = SK.variant(g, 4); const W = WORDS[L][s.v]; s.word = W.w; s.vocab = W.toks.concat(W.extra);
     s.board = s.vocab.slice().sort((a, b) => ((a.length * 7 + a.charCodeAt(0)) % 5) - ((b.length * 7 + b.charCodeAt(0)) % 5));
     s.cuts = [0, W.w.length]; s.segs = [{ a: 0, b: W.w.length, st: 'log' }]; s.toks = W.toks; s.res = null; s.swipe = null; s.chops = [];
     let ideal = 16; for (const tk of W.toks) ideal += carW(tk) + 6; s.cap = ideal + 52; // the station fits the right tokens and a little more
@@ -44,7 +48,7 @@ MG.add({
     const seg = s.segs.find(q => q.a < k && q.b > k && q.st === 'log'); if (!seg) return;
     s.cuts.push(k); s.chops.push({ k, t: g.t }); g.sfx('crunch'); g.shake(2, 0.1);
     const parts = [{ a: seg.a, b: k }, { a: k, b: seg.b }]; s.segs.splice(s.segs.indexOf(seg), 1);
-    for (const p of parts) { const txt = s.word.slice(p.a, p.b); p.st = s.vocab.includes(txt) && s.toks.includes(txt) ? 'tok' : canSplit(txt, s.toks) ? 'log' : 'bad'; p.t = g.t; s.segs.push(p); if (p.st === 'tok') g.sfx('ding'); if (p.st === 'bad') g.sfx('wrong'); }
+    for (const p of parts) { const txt = s.word.slice(p.a, p.b); p.st = s.vocab.includes(txt) ? 'tok' : canSplit(txt, s.vocab) ? 'log' : 'bad'; /* the rule the player can see: a piece on the board is a token */ p.t = g.t; s.segs.push(p); if (p.st === 'tok') g.sfx('ding'); if (p.st === 'bad') g.sfx('wrong'); }
     s.segs.sort((a, b) => a.a - b.a);
   },
   update(g, dt) {
@@ -94,8 +98,12 @@ MG.add({
     if (s.swipe) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(s.swipe.x0, s.swipe.y0); c.lineTo(s.swipe.x, s.swipe.y); c.stroke(); c.restore(); }
     // guidance: a dashed cut line at the next place the model splits (levels 0-1), and the hand swipes down through it
     const next = s.answer.find(k => !s.cuts.includes(k));
-    if (next != null && !g.done) { const gx = G.gapX(next); if (g.level <= 1) { c.save(); c.strokeStyle = `rgba(255,240,150,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(gx, LOGY - 46); c.lineTo(gx, LOGY + 46); c.stroke(); c.restore(); }
+    // (every level, the owner: "all the interaction should be very obvious from the guides") with a big down arrow on the log: swipe down here
+    if (next != null && !g.done) { const gx = G.gapX(next);
+      if (!s.swipe) { c.save(); c.strokeStyle = `rgba(255,240,150,${0.6 + 0.35 * Math.sin(t * 6)})`; c.lineWidth = 3.5; c.setLineDash([6, 6]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(gx, LOGY - 46); c.lineTo(gx, LOGY + 46); c.stroke(); c.restore();
+        const bob = ((t * 1.6) % 1) * 14; c.save(); c.translate(gx, LOGY - 66 + bob); c.fillStyle = '#ffe27a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-7, -18); c.lineTo(7, -18); c.lineTo(7, 0); c.lineTo(15, 0); c.lineTo(0, 16); c.lineTo(-15, 0); c.lineTo(-7, 0); c.closePath(); c.fill(); c.stroke(); c.restore(); }
       SK.demo(g, c, 'swipe', [gx, LOGY - 70], [gx, LOGY + 50]); }
+    if (!g.done) { const ok = Math.min(s.toks.length, s.segs.filter(q => q.st === 'tok').length); SK.tag(c, ok + ' / ' + s.toks.length + ' tokens', 150, 446, 20, ok === s.toks.length ? '#9affb0' : '#fff6ea'); }
   },
   // the bot chops at each place the model splits (B7FAIL: chops after the first letter)
   auto(g, dt, synth) {

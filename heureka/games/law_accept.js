@@ -117,7 +117,8 @@ MG.add({
     for (const p of s.prints) { c.save(); c.globalAlpha = 0.5; c.translate(p.x, CY + 18); c.fillStyle = '#c8203a'; c.beginPath(); c.ellipse(0, 6, 12, 9, 0, 0, TAU); c.fill(); for (const [px, py] of [[-11, -7], [-4, -12], [4, -12], [11, -7]]) { c.beginPath(); c.ellipse(px, py, 4, 5, 0, 0, TAU); c.fill(); } c.restore(); }
     // the swinging stamp: a dashed drop line shows where it would land
     const dk = s.drop ? SK.clamp((t - s.drop) / 0.18, 0, 1) * (t - s.drop < 0.3 ? 1 : 1 - SK.clamp((t - s.drop - 0.3) / 0.2, 0, 1)) : 0, sx = s.drop ? s.dx : s.sx;
-    if (!s.drop && !g.done) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.35)'; c.lineWidth = 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(sx, SY + 26); c.lineTo(sx, CY + 20); c.stroke(); c.restore(); }
+    const over = !!of && (s.ph === 'wait' || s.ph === 'slide') && Math.abs(s.sx - s.card.x) < 40; // the stamp is over the card: tap now
+    if (!s.drop && !g.done) { c.save(); c.strokeStyle = over ? 'rgba(110,240,140,0.95)' : 'rgba(255,246,234,0.35)'; c.lineWidth = over ? 4 : 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(sx, SY + 26); c.lineTo(sx, CY + 20); c.stroke(); c.restore(); }
     stampTool(c, sx, SK.lerp(SY, CY + 4, SK.easeOut(dk)), dk);
     // your friend the duck, who leans in with a pencil to haggle
     // the duck's pencil creeps toward the card while you wait (a visible clock), then crosses out a coin
@@ -132,7 +133,9 @@ MG.add({
     if (s.ph === 'seal' && s.sealed) SK.tag(c, 'Contract', 236, 520 - s.done.length * 26, 18, '#ffe9a0');
     if (!s.done.length && s.ph !== 'seal') { const lx = s.drop ? s.dx : s.sx; SK.tag(c, 'Your stamp', lx + (lx < 180 ? 74 : -74), SY - 16, 18); }
     if (of && s.ph === 'wait' && !s.drop) SK.glow(c, g, s.card.x, CY, 50);
-    if (of && (s.ph === 'wait' || s.ph === 'slide')) SK.demo(g, c, 'tap', [s.card.x, CY + 20], null, { delay: 1.0 });
+    G2.count(c, 64, 44, s.done.length, s.offers.length); // offers accepted so far
+    // the ghost hand presses only while the swinging stamp is over the card (copy it and the stamp lands on the card)
+    if (of && (s.ph === 'wait' || s.ph === 'slide')) G2.tapAt(g, c, s.card.x, CY + 20, !s.drop && Math.abs(s.sx - s.card.x) < 24 ? 1 : 0, { delay: 1.0 });
   },
   // the bot taps when the swinging stamp is about to pass over the card
   auto(g, dt, synth) {

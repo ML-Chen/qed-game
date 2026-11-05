@@ -30,7 +30,7 @@ function paintDiner(o) {
   o.fillStyle = '#f4f0f8'; o.beginPath(); o.roundRect(96, 444, 256, 26, 13); o.fill(); o.strokeStyle = '#b8b0c8'; o.lineWidth = 2; o.stroke();
 }
 MG.add({
-  id: 'stopeating', stage: 'markets', cmd: 'EAT WHILE IT\'S WORTH THE COIN!', time: 6, mood: 'desert', winText: 'Stopped at the right slice!', failText: 'Too full!', hold: 1.7,
+  id: 'stopeating', stage: 'markets', cmd: 'EAT UNTIL IT\'S NOT WORTH IT!', time: 6, mood: 'desert', winText: 'Stopped at the right slice!', failText: 'Too full!', hold: 1.7,
   card: { title: 'Stop when the next one isn\'t worth it', kind: 'Economics', ref: 'Marginal benefit',
     text: 'The first slice of a treat is wonderful. The second is still great. By the fifth, you hardly enjoy it. The extra enjoyment from one more slice is called its marginal benefit, and it usually shrinks as you have more.\n\nEach slice costs the same coin. So keep buying while the next slice is worth more to you than its price, and stop when it is worth less. When the price changes, the best place to stop changes too.',
     note: 'Keep going while the next one is worth more than it costs; stop when it isn\'t.' },
@@ -69,6 +69,8 @@ MG.add({
     for (const [px, py] of [[lx, ly], [rx, ry]]) { c.strokeStyle = '#7a4a5a'; c.lineWidth = 2; c.beginPath(); c.moveTo(px, py); c.lineTo(px - 26, py + 52); c.moveTo(px, py); c.lineTo(px + 26, py + 52); c.stroke(); c.fillStyle = '#c8a0b8'; c.beginPath(); c.ellipse(px, py + 54, 32, 7, 0, 0, 7); c.fill(); }
     if (s.eaten < N) { heart(c, lx, ly + 30, 19 * hN); B8.coin(c, rx, ry + 30, 22 * pN * pop); }
     SK.tag(c, 'Enjoyment', lx, ly + 82, 18); SK.tag(c, 'Price', rx, ry + 82, 18);
+    // the verdict on the next slice, as the balance tips
+    if (s.eaten < N && !g.done) { const w = hN > pN; SK.tag(c, w ? 'Worth it' : 'Not worth it', SC.x, SC.y - 36, 20, '#fff6ea', w ? 'rgba(40,140,70,0.92)' : 'rgba(190,40,60,0.92)'); }
     // the slices left on the plate, each with a small heart showing how much it would be enjoyed
     for (let i = s.eaten; i < N; i++) { const x = ROW(i); heart(c, x, HEARTY, 7.5 * s.h[i]); slice(c, x, SLICEY, 0.95, 0, s.food); }
     if (s.eaten < N && !g.done) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.roundRect(ROW(s.eaten) - 22, HEARTY - 22, 44, SLICEY - HEARTY + 44, 12); c.stroke(); c.restore(); }
@@ -85,7 +87,7 @@ MG.add({
     if (groan) { c.save(); c.strokeStyle = '#6aa848'; c.lineWidth = 3; for (let i = 0; i < 3; i++) { const a = t * 3 + i * 2; c.beginPath(); c.arc(60 + Math.cos(a) * 34, 488 + Math.sin(a) * 10, 5, 0, 7); c.stroke(); } c.restore(); }
     // your purse of coins, getting lighter
     for (let i = 0; i < N - s.eaten; i++) B8.flatCoin(c, 40 + (i % 3) * 20, 636 - 26 - Math.floor(i / 3) * 6, 10, 0);
-    if (!s.eaten && !g.done) SK.glow(c, g, ROW(0), SLICEY - 10, 30);
+    if (s.eaten < N && !g.done) SK.glow(c, g, ROW(s.eaten), SLICEY - 10, 30, '#ffe27a', { level: 2 });
     if (s.eaten < this.best(g)) SK.demo(g, c, 'tap', [ROW(s.eaten), SLICEY - 6], null, { delay: 0.8 }); // the next slice still worth its price
     else SK.demo(g, c, 'tap', [FULL.x, FULL.y], null, { delay: 0.8 }); // the next one isn't worth it: stop
   },

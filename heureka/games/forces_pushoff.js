@@ -81,6 +81,10 @@
       if (s.dir && t - s.pushT < 0.8) { const k = 1 - (t - s.pushT) / 0.8, mx = C.x, my = C.y; c.save(); c.globalAlpha = Math.min(1, k * 2); arrow(c, mx + s.dir.dx * 8, my + s.dir.dy * 8, s.dir.dx, s.dir.dy, 70, '#ff8a5a'); arrow(c, mx - s.dir.dx * 8, my - s.dir.dy * 8, -s.dir.dx, -s.dir.dy, 70, '#ff8a5a'); c.restore(); }
       // while aiming: where the big one will go (your swipe) and where the little one will go (the other way)
       if (s.aim) { const dx = s.aim.x - s.aim.x0, dy = s.aim.y - s.aim.y0, L = Math.hypot(dx, dy); if (L > 12) { c.save(); c.setLineDash([6, 7]); c.lineWidth = 3; c.strokeStyle = 'rgba(60,40,90,0.45)'; c.beginPath(); c.moveTo(C.x, C.y); c.lineTo(C.x + dx / L * 90, C.y + dy / L * 90); c.stroke(); c.strokeStyle = 'rgba(255,170,60,0.85)'; c.beginPath(); c.moveTo(C.x, C.y); c.lineTo(C.x - dx / L * 200, C.y - dy / L * 200); c.stroke(); c.restore(); } }
+      // while aiming: the home igloo's ring turns green (with a tick) when the little one's path will reach its door
+      if (s.aim && !g.done) { const dx = s.aim.x - s.aim.x0, dy = s.aim.y - s.aim.y0, L = Math.hypot(dx, dy); if (L > 12) { const ux = -dx / L, uy = -dy / L, vx = D.x - C.x, vy = D.y - C.y, along = vx * ux + vy * uy, perp = Math.abs(vx * uy - vy * ux), ok = along > 0 && perp < s.dr + 8;
+        c.save(); c.strokeStyle = ok ? '#5ad87a' : '#ff6a5a'; c.lineWidth = 4; if (!ok) c.setLineDash([7, 6]); c.beginPath(); c.arc(D.x, D.y, s.dr + 12, 0, 7); c.stroke(); c.restore(); if (ok) G2.dir(c, D.x + (D.x < 180 ? 1 : -1) * (s.dr + 26), D.y, 0); } }
+      G2.count(c, 64, 44, s.di, s.doors.length); // igloos reached so far
       if (ready && !g.done && g.t >= s.next) { const ax = C.x - D.x, ay = C.y - D.y, L = Math.hypot(ax, ay); SK.grab(c, g, C.x, C.y, 46); SK.target(c, g, C.x + ax / L * 120, C.y + ay / L * 120, 20); SK.arrow(c, g, C.x, C.y, C.x + ax / L * 120, C.y + ay / L * 120, { from: 48, to: 22 }); SK.demo(g, c, 'swipe', [C.x, C.y], [C.x + ax / L * 110, C.y + ay / L * 110]); }
     },
     auto(g, dt, synth) {

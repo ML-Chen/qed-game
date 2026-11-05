@@ -114,6 +114,9 @@ MG.add({
     if (s.parts.some(p => p.st === 'tray')) SK.tag(c, 'Your art', 212, 498, 18, '#d0ffd8');
     const nx = s.parts.find(p => p.st === 'tray');
     if (nx && !held && !g.done) { SK.grab(c, g, nx.x, nx.y, 30); SK.target(c, g, nx.slot[0], nx.slot[1], 30); SK.arrow(c, g, nx.x, nx.y, nx.slot[0], nx.slot[1]); }
+    // while you carry a piece, its spot on the canvas stays ringed, and the ring turns solid green when you are close enough to drop
+    if (held && !g.done) { const ok = SK.dist(held.x, held.y, held.slot[0], held.slot[1]) < s.tol; c.save(); c.strokeStyle = ok ? '#5ad87a' : '#ffe27a'; c.lineWidth = ok ? 5 : 3; if (!ok) c.setLineDash([8, 6]); c.beginPath(); c.arc(held.slot[0], held.slot[1], 34, 0, TAU); c.stroke(); c.restore(); }
+    G2.count(c, 64, 44, s.parts.filter(p => p.stamped).length, s.parts.length); // pieces protected so far
     if (nx && !held) SK.demo(g, c, 'drag', [nx.x, nx.y], nx.slot);
   },
   auto(g, dt, synth) {

@@ -82,6 +82,8 @@ MG.add({
     // labels, drawn unmirrored
     const mx = x => s.dirs[s.k] < 0 ? 360 - x : x;
     if (!s.drop && !g.done) { SK.tag(c, 'Cold air', mx(Math.max(64, s.f - 100)), PO_G - s.lift - 40, 18); SK.tag(c, 'Warm air', mx(Math.min(300, Math.max(s.f + 90, 240))), 372, 18, '#fff6ea', 'rgba(170,70,20,0.78)'); }
+    // how many cold fronts are done, so the reset after the first storm reads as "next one", not "start again"
+    G2.count(c, 60, 44, s.k + (s.stormT || g.result === 'win' ? 1 : 0), s.dirs.length);
     if (s.resetT && t - s.resetT < 0.35) { c.fillStyle = `rgba(20,20,40,${0.6 * (1 - (t - s.resetT) / 0.35)})`; c.fillRect(0, 0, 360, 640); }
   },
   auto(g, dt, synth) { const s = g.s, L = s.L, m = x => s.dirs[s.k] < 0 ? 360 - x : x; if (s.stormT) return;

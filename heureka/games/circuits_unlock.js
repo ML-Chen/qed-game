@@ -4,7 +4,7 @@
 // the open switch and nothing flows. Level 2: three switches in a row, so the duck has to stand on one too.
 // (Only one finger is tracked, so an animal holds the first switch down.)
 const WY = 522, TOPY = 150, BX = 40, RX = 330, DOOR = { x: 180, y: 306, r: 98 }, LOCK = { x: RX, y: 306 };
-const STAY = [1.6, 1.4, 2.0]; // seconds a helper will stand on a switch before hopping off
+const STAY = [4.5, 3.6, 3.2]; // seconds a helper will stand on a switch before hopping off (long enough to wait for the ghost hand)
 const LAY = [ // switch x positions and which animals help
   { pads: [118, 236], helpers: ['fox'] }, { pads: [118, 236], helpers: ['fox'] }, { pads: [92, 176, 260], helpers: ['fox', 'duck'] },
 ];
@@ -102,7 +102,7 @@ MG.add({
     const lit = all || g.result === 'win'; c.fillStyle = lit ? '#5aff8a' : '#ff3a3a'; c.beginPath(); c.arc(RX, LOCK.y - 14, 8, 0, 7); c.fill(); c.fillStyle = lit ? 'rgba(90,255,138,0.35)' : 'rgba(255,58,58,0.3)'; c.beginPath(); c.arc(RX, LOCK.y - 14, 15, 0, 7); c.fill();
     SK.tag(c, 'Battery', BX + 4, 404, 18); SK.tag(c, 'Lock', RX - 6, LOCK.y - 52, 18);
     // the floor switches
-    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!p.by) SK.tag(c, 'Switch', p.x, WY - 36, 18); if (!pressed(p) && !s.ani.some(a => !a.pad)) SK.glow(c, g, p.x, WY - 4, 32); }
+    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!p.by) { const holdMe = !s.ani.some(a => !a.pad) && !g.done; SK.tag(c, holdMe ? 'Hold switch' : 'Switch', p.x, WY - 36, 18, holdMe ? '#ffe27a' : '#fff6ea'); } if (!pressed(p) && !s.ani.some(a => !a.pad)) SK.glow(c, g, p.x, WY - 4, 32); }
     // a spark where the live wire stops at an open switch
     if (!all && !g.done) { const p = s.pads.find(q => !pressed(q)); if (p) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(p.x - 30, WY, 6, 0, 7); c.fill(); c.restore(); } }
     // the helpers, standing by or pressing a switch down

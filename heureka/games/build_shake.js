@@ -58,7 +58,7 @@ MG.add({
   },
   update(g, dt) {
     const s = g.s;
-    if (!s.shakeT) { if ((s.reachT && g.t - s.reachT > 0.45 && !s.held) || (!B5.patient() && g.t > SK.clamp(g.dur * 0.7, 4.5, 9))) { s.shakeT = g.t; s.held = null; SK.dragEnd(g); g.sfx('rumble'); g.sfx('thunder'); g.shake(5, 1.2); s.G = shGroups(s); } return; }
+    if (!s.shakeT) { if ((s.reachT && g.t - s.reachT > 0.45 && !s.held) || (!B5.patient() && g.t > g.dur - SH_Q - 1.2)) { s.shakeT = g.t; s.held = null; SK.dragEnd(g); g.sfx('rumble'); g.sfx('thunder'); g.shake(5, 1.2); s.G = shGroups(s); } return; }
     const k = g.t - s.shakeT;
     if (!g.done && k > 0.5) { const bad = s.G.find(G => !G.ok); if (bad) { s.fall = g.t; g.fail(); g.sfx('crunch'); g.sfx('laugh'); g.shake(4, 0.3); } }
     if (!g.done && k > SH_Q) { if (s.G.some(G => G.ok && G.top >= s.L.flag)) { g.win(); g.sfx('cheer'); } else { g.fail(); g.sfx('wrong'); } }
@@ -78,7 +78,7 @@ MG.add({
     const fy = SH_TOP - L.flag * SH_U, reached = s.top >= L.flag;
     c.strokeStyle = '#6a4a3a'; c.lineWidth = 4; c.beginPath(); c.moveTo(316, SH_TOP); c.lineTo(316, fy - 26); c.stroke();
     c.fillStyle = reached ? '#ffd45a' : '#e8403a'; c.beginPath(); c.moveTo(316, fy - 26); c.quadraticCurveTo(334, fy - 22 + Math.sin(t * 5) * 3, 346, fy - 16); c.lineTo(316, fy - 6); c.fill();
-    c.save(); c.strokeStyle = 'rgba(232,64,58,0.5)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(SH_X0 - 6, fy); c.lineTo(316, fy); c.stroke(); c.restore();
+    c.save(); c.strokeStyle = reached ? 'rgba(232,160,20,0.8)' : 'rgba(232,64,58,0.7)'; c.lineWidth = 3; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(SH_X0 - 6, fy); c.lineTo(316, fy); c.stroke(); c.restore();
     // the table, shaking
     c.save(); c.translate(quake, 0);
     c.fillStyle = '#8a5a34'; for (const lx of [SH_X0 + 4, SH_X0 + SH_COLS * SH_U - 16]) c.fillRect(lx, SH_TOP + 12, 12, 548 - SH_TOP - 12);
@@ -103,8 +103,14 @@ MG.add({
     SK.animal(c, 'beaver', 334, 612, 0.62, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : s.shakeT ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.shakeT ? 'wow' : 'happy' });
     // guidance: the next block goes on the lowest of the middle columns, so the base grows wide before the tower grows tall
     const mid = g.level >= 2 ? [0, 1, 2] : [1, 2], hs = mid.map(cc => s.placed.filter(q => q.c === cc).length), cn = mid[hs.indexOf(Math.min(...hs))], hn = Math.min(...hs);
-    if (s.pile.length && !s.shakeT && !s.held) B5.hint(c, g, [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { ra: 24, rb: 22, tw: SH_U - 4, th: SH_U - 4 });
-    if (s.pile.length) SK.demo(g, c, 'drag', [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { never: !!s.shakeT });
+    if (s.pile.length && !s.shakeT && !s.held && !g.done) { // the next block's place: a dashed blueprint block, ringed, with a flowing arrow from the pile (dark, so it shows on the pale wall)
+      const tx = SH_X0 + (cn + 0.5) * SH_U, ty = SH_TOP - (hn + 0.5) * SH_U, a = s.pile[0], p = 0.5 + 0.5 * Math.sin(t * 4);
+      c.save(); c.fillStyle = `rgba(255,255,255,${0.35 + 0.2 * p})`; c.strokeStyle = '#8a4a2a'; c.lineWidth = 3; c.setLineDash([7, 5]); c.lineDashOffset = -t * 20; c.beginPath(); c.roundRect(tx - SH_U / 2 + 2, ty - SH_U / 2 + 2, SH_U - 4, SH_U - 4, 6); c.fill(); c.stroke(); c.restore();
+      SK.target(c, g, tx, ty, 0, { w: SH_U + 6, h: SH_U + 6, col: '#e8563a' }); SK.arrow(c, g, a.x, a.y, tx, ty, { from: 30, to: 40, col: '#c0502a' }); SK.grab(c, g, a.x, a.y, 26, { col: '#e8563a' });
+    }
+    if (!s.shakeT && !g.done) SK.tag(c, s.top >= L.flag ? 'Quake!' : 'Up to the flag', 196, fy - 24, 18, s.top >= L.flag ? '#ffd45a' : '#fff6ea');
+    else if (s.shakeT && !g.done) SK.tag(c, 'Quake!', 196, fy - 24 - 4 * Math.abs(Math.sin(t * 20)), 22, '#ffd45a', 'rgba(160,30,20,0.85)');
+    if (s.pile.length) SK.demo(g, c, 'drag', [s.pile[0].x, s.pile[0].y], [SH_X0 + (cn + 0.5) * SH_U, SH_TOP - (hn + 0.5) * SH_U], { never: !!s.shakeT, arc: 40 });
   },
   // the bot builds a wide base first, then the top: (cols 1,2 then 1) or, at level 2, (cols 0,1,2 then 1,1)
   auto(g, dt, synth) {

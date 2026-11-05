@@ -107,6 +107,10 @@ MG.add({
     const vis = s.bots.filter(b => t >= b.t0).sort((a, b) => a.y - b.y);
     for (const b of vis) if (!b.stop && !g.done) { c.save(); c.strokeStyle = 'rgba(255,80,80,0.55)'; c.lineWidth = 3; c.setLineDash([8, 7]); c.lineDashOffset = -t * 40; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(CAKE.x + (b.x - CAKE.x) * 0.25, TABLE.y + 30); c.stroke(); c.restore(); } // where it is heading
     for (const b of vis) { robot(c, b, t); if (!b.stop) { const [bx, by] = btnPos(b); SK.glow(c, g, bx, by, 24); } }
+    // how many robots there are and how many are stopped: one little red button each on the wall, pressed and ticked once stopped
+    { const n = s.bots.length, w = n * 34 + 16, x0 = 180 - w / 2; c.save(); c.globalAlpha = SK.clamp((t - 1.6) * 3, 0, 1); c.fillStyle = 'rgba(30,14,36,0.6)'; c.beginPath(); c.roundRect(x0, 100, w, 34, 17); c.fill();
+      s.bots.forEach((b, i) => { const x = x0 + 25 + i * 34, y = 118; c.fillStyle = b.stop ? '#6a5a60' : '#e01a2a'; c.beginPath(); c.ellipse(x, y, 11, 8, 0, 0, 7); c.fill(); c.strokeStyle = '#ffd23a'; c.lineWidth = 2; c.stroke();
+        if (b.stop) { c.strokeStyle = '#7aff9a'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(x - 6, y); c.lineTo(x - 1, y + 5); c.lineTo(x + 8, y - 6); c.stroke(); } }); c.restore(); }
     const first = vis.find(b => !b.stop); if (first && !g.done) { const [bx, by] = btnPos(first); SK.tag(c, 'Stop button', SK.clamp(bx, 70, 290), by - 40, 18); }
     if (first) { const [bx, by] = btnPos(first); SK.demo(g, c, 'tap', [bx, by], null, { delay: first.t0 + 0.3, period: 0.9 }); }
   },

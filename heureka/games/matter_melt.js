@@ -86,7 +86,7 @@
       const ty = tY(T); c.fillStyle = '#e8403a'; c.beginPath(); c.arc(TH.x, TH.b + 6, 11, 0, 7); c.fill(); c.fillRect(TH.x - 4, ty, 8, TH.b + 6 - ty);
       const stuck = (T === 0 && s.melt > 0 && s.melt < 1) || (T === 100 && s.vap > 0); if (stuck) { const pz = 1 + 0.12 * Math.sin(t * 10); c.save(); c.translate(TH.x - 8, ty - 28); c.scale(pz, pz); SK.tag(c, T === 0 ? 'still 0 °C' : 'still 100 °C', -34, 0, 18); c.restore(); c.strokeStyle = `rgba(255,255,255,${0.5 + 0.5 * Math.sin(t * 10)})`; c.lineWidth = 3; c.beginPath(); c.arc(TH.x, ty, 9, 0, 7); c.stroke(); }
       for (let i = 0; i < s.goals.length; i++) { c.fillStyle = i < s.round || (i === s.round && s.okT) ? '#ffd45a' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(174 + (i - (s.goals.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
-      SK.tag(c, 'Burner', BTN[0], BTN[1] - 46, 18); if (s.melt < 1) SK.tag(c, 'Ice', (B.l + B.r) / 2, B.t - 22, 18);
+      SK.tag(c, 'Hold to heat', BTN[0] + 14, BTN[1] - 46, 18); if (s.boil && !s.okT) { const by = tY(100); c.fillStyle = '#ffd45a'; c.beginPath(); c.moveTo(TH.x - 12, by); c.lineTo(TH.x - 24, by - 8); c.lineTo(TH.x - 24, by + 8); c.closePath(); c.fill(); SK.tag(c, 'Boil', TH.x - 50, by, 18, '#ffe9a0'); } if (s.melt < 1) SK.tag(c, 'Ice', (B.l + B.r) / 2, B.t - 22, 18);
       // the burner button
       const pr = s.heat ? 1 : 0; c.fillStyle = '#7a1a1a'; c.beginPath(); c.arc(BTN[0], BTN[1] + 4, 30, 0, 7); c.fill(); SK.ball(c, BTN[0], BTN[1] + pr * 3, 27, s.heat ? '#ff6a3a' : '#e8403a');
       // the penguin: waits with its cup, skates on the leftover ice if you stop, cheers with a drink
@@ -94,7 +94,7 @@
       if (skate && ice.length) { let x0 = 999, x1 = 0, y0 = 999; for (const q of ice) { x0 = Math.min(x0, q.hx); x1 = Math.max(x1, q.hx); y0 = Math.min(y0, q.hy); } const k = 0.5 + 0.5 * Math.sin(t * 2.4); SK.animal(c, 'penguin', SK.lerp(x0, x1, k), y0 - PR - 2, 0.5, { t, pose: 'balance', expr: 'laugh', facing: Math.cos(t * 2.4) > 0 ? 1 : -1 }); }
       else SK.animal(c, 'penguin', 312, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.heat ? 'wow' : 'happy', facing: -1 });
       if (!s.heat) SK.glow(c, g, BTN[0], BTN[1], 32);
-      SK.demo(g, c, 'hold', BTN, null, { never: s.heat });
+      SK.demo(g, c, 'hold', BTN, null, { never: s.heat, period: s.boil ? 5 : 3.4 }); // the hand holds long enough to melt (or boil) a whole beaker
     },
     // the bot: hold the burner on until it is done
     auto(g, dt, synth) {

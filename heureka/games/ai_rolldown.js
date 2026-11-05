@@ -22,7 +22,7 @@ function paintSnow(o, s) {
   const rnd = P.rng(12); for (let i = 0; i < 60; i++) { const x = rnd() * 360, k = (x - 180) / s.dx, y = yAt(s, k) + 12 + rnd() * 120; o.fillStyle = `rgba(150,170,220,${0.2 + rnd() * 0.3})`; o.beginPath(); o.ellipse(x, y, 8 + rnd() * 14, 2 + rnd() * 2, 0, 0, 7); o.fill(); }
 }
 MG.add({
-  id: 'cs_rolldown', stage: 'ai', cmd: 'STEP DOWNHILL TO LESS ERROR!', time: 6, mood: 'night', winText: 'Lowest error!', failText: 'Uphill!',
+  id: 'cs_rolldown', stage: 'ai', cmd: 'STEP TO THE LOWEST ERROR!', time: 6, mood: 'night', winText: 'Lowest error!', failText: 'Uphill!',
   card: { title: 'Learning by going downhill', kind: 'Artificial intelligence', ref: 'Gradient descent',
     text: 'A model learns by changing its settings, called weights, to make its error smaller. Picture every possible setting as a spot on a hilly landscape, where height is the error.\n\nThe model cannot see the whole landscape. It can only feel the slope right where it stands. So it takes a small step downhill, feels the slope again, and takes another step. That is gradient descent.\n\nIt can get stuck in a small valley that is not the lowest one. Real training uses tricks, like starting in several places, to find a better valley.',
     note: 'Gradient descent: feel the slope where you are, step downhill, and repeat until the error stops falling.' },
@@ -85,7 +85,8 @@ MG.add({
     if (s.tapT && t - s.tapT < 0.3) { const q = (t - s.tapT) / 0.3; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#fff'; c.lineWidth = 3; c.beginPath(); c.arc(s.tapX, py - 20, 10 + q * 24, 0, 7); c.stroke(); c.restore(); }
     // guidance: a pulsing arrow on the downhill side (levels 0 and 1); the ghost hand taps it
     const down = s.two ? (s.kmin > s.k ? 1 : -1) : errAt(s, s.k - 1) < errAt(s, s.k + 1) ? -1 : 1; // at level 2 the hand points the way to the deep valley
-    if (!g.done && !s.anim && g.level === 0) { const ax = xAt(s, s.k) + down * 48, ay = yAt(s, s.k) - 30, p = 0.5 + 0.5 * Math.sin(t * 6); c.save(); c.globalAlpha = 0.5 + 0.4 * p; c.fillStyle = '#ffd45a'; c.strokeStyle = '#6a4a10'; c.lineWidth = 2; c.translate(ax + down * p * 4, ay); c.scale(down, 1); c.beginPath(); c.moveTo(-10, -9); c.lineTo(6, -9); c.lineTo(6, -16); c.lineTo(18, 0); c.lineTo(6, 16); c.lineTo(6, 9); c.lineTo(-10, 9); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    // a step button on each side of the penguin, at every level (tap one to step that way); the one toward the lowest error glows
+    if (!g.done && !s.anim) for (const sd of [-1, 1]) { const on = sd === down, ax = xAt(s, s.k) + sd * 52, ay = yAt(s, s.k) - 30, p = 0.5 + 0.5 * Math.sin(t * 6); c.save(); c.globalAlpha = on ? 0.75 + 0.25 * p : 0.55; c.fillStyle = on ? '#ffd45a' : '#e8ecf8'; c.strokeStyle = '#2a2a5a'; c.lineWidth = 2.5; c.translate(ax + (on ? sd * p * 4 : 0), ay); c.scale(sd, 1); c.beginPath(); c.moveTo(-12, -10); c.lineTo(6, -10); c.lineTo(6, -18); c.lineTo(20, 0); c.lineTo(6, 18); c.lineTo(6, 10); c.lineTo(-12, 10); c.closePath(); c.fill(); c.stroke(); c.restore(); if (on) SK.glow(c, g, ax, ay, 24, '#ffe27a', { level: 2 }); }
     SK.demo(g, c, 'tap', [xAt(s, s.k) + down * 52, yAt(s, s.k) - 30]);
   },
   // the bot steps toward the deepest valley (B7FAIL: steps uphill)

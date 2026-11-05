@@ -56,7 +56,7 @@ MG.add({
     text: 'Logging in proves who you are. That is called authentication. It does not prove that you may see a particular thing.\n\nSo every time a request asks the server for something, like order 42, the server must also check that order 42 belongs to the person asking. That check is called authorization.\n\nForgetting it is one of the most common security mistakes in real apps. A stranger just changes the number in the address and sees someone else\'s order, with their name and address on it.',
     note: 'The server checks every request: is this thing yours? Being logged in only proves who you are.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level); s.q = QUEUES[L].map(([who, want], i) => ({ i, who, want, st: 'wait' })); s.cur = 0; s.arr = 0.2; s.drag = null; s.res = null; s.anim = null;
+    const s = g.s, L = Math.min(2, g.level), v = SK.variant(g, 4); s.own = [0, 1, 2].map(i => OWN[(i + v) % 3]); s.q = QUEUES[L].map(([who, want], i) => ({ i, who, want, st: 'wait' })); s.cur = 0; s.arr = 0.2; s.drag = null; s.res = null; s.anim = null;
     s.q[0].st = 'here'; s.q[0].t = 0;
   },
   down(g, x, y) {
@@ -67,8 +67,8 @@ MG.add({
   up(g, x, y) {
     const s = g.s, d = s.drag; if (!d) return; s.drag = null; const r = s.q[s.cur], ex = x + d.ox, ey = y + d.oy;
     if (SK.dist(ex, ey, PAD.x, PAD.y) < 70) { r.stamp = g.t; s.anim = { kind: 'deny', t: g.t, r, ok: r.who !== r.want }; g.sfx('thud'); return; }
-    if (ex > CAB.x - 40) { let di = 0, bd = 999; OWN.forEach((o, i) => { const dd = Math.abs(ey - drawerY(i)); if (dd < bd) { bd = dd; di = i; } });
-      s.anim = { kind: 'give', t: g.t, r, di, ok: r.who === OWN[di] && OWN[di] === r.want, stranger: r.who !== OWN[di] }; g.sfx('swoosh'); return; }
+    if (ex > CAB.x - 40) { let di = 0, bd = 999; s.own.forEach((o, i) => { const dd = Math.abs(ey - drawerY(i)); if (dd < bd) { bd = dd; di = i; } });
+      s.anim = { kind: 'give', t: g.t, r, di, ok: r.who === s.own[di] && s.own[di] === r.want, stranger: r.who !== s.own[di] }; g.sfx('swoosh'); return; }
   },
   update(g, dt) {
     const s = g.s, a = s.anim; if (g.done || !a) return; const e = g.t - a.t;
@@ -90,8 +90,8 @@ MG.add({
     SK.animal(c, asker.who, 88 - (1 - askIn) * 120, 300, 0.95, { t, pose: happy || foxWin ? 'cheer' : 'idle', expr: happy || foxWin ? 'laugh' : asker.who === 'fox' ? 'think' : 'happy' });
     c.restore();
     // the cabinet of orders, one drawer per owner
-    OWN.forEach((o, i) => { const open = a && a.kind === 'give' && a.di === i ? Math.min(1, Math.sin(Math.min(1, (t - a.t) / 0.9) * Math.PI) * 1.4) : foxWin && s.res.a.di === i ? 1 : 0; drawerBox(c, i, o, open, t, foxWin && s.res.a.di === i); });
-    SK.tag(c, 'Database', CAB.x + CAB.w / 2 - 2, 136, 18); SK.tag(c, 'Denied', PAD.x, PAD.y + 40, 18); SK.tag(c, 'Server: you', 250, 560, 18);
+    s.own.forEach((o, i) => { const open = a && a.kind === 'give' && a.di === i ? Math.min(1, Math.sin(Math.min(1, (t - a.t) / 0.9) * Math.PI) * 1.4) : foxWin && s.res.a.di === i ? 1 : 0; drawerBox(c, i, o, open, t, foxWin && s.res.a.di === i); });
+    SK.tag(c, 'Database', CAB.x + CAB.w / 2 - 2, 136, 18); SK.tag(c, 'Denied', PAD.x, PAD.y + 40, 18); SK.tag(c, 'Server: you', 250, 518, 18);
     // the red stamp pad
     c.save(); c.translate(PAD.x, PAD.y); c.fillStyle = '#5a2a2a'; c.beginPath(); c.roundRect(-52, -22, 104, 44, 8); c.fill(); c.fillStyle = '#c83a4a'; c.beginPath(); c.roundRect(-44, -15, 88, 30, 6); c.fill();
     c.strokeStyle = 'rgba(255,220,220,0.7)'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-12, -9); c.lineTo(12, 9); c.moveTo(12, -9); c.lineTo(-12, 9); c.stroke(); c.restore();
@@ -109,9 +109,11 @@ MG.add({
     // the owl, the server's boss, watching from the floor
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'owl', 250, 612, 0.7, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
+    if (!g.done) { SK.tag(c, Math.min(s.cur, s.q.length) + ' / ' + s.q.length + ' requests', 250, 590 - 40, 18); }
+    if (r && r.st === 'here' && !a && !s.drag && askIn >= 1) { SK.tag(c, 'Badge', HATCH.x - 40, HATCH.y + 52, 18); SK.tag(c, 'Wants', HATCH.x + 40, HATCH.y + 52, 18); }
     // guidance: the next step glows and the hand shows it (to the asker's own drawer, or to the stamp pad)
     if (r && r.st === 'here' && !a && !s.drag) {
-      const deny = r.who !== r.want, to = deny ? [PAD.x, PAD.y] : [CAB.x + 50, drawerY(OWN.indexOf(r.want))];
+      const deny = r.who !== r.want, to = deny ? [PAD.x, PAD.y] : [CAB.x + 50, drawerY(s.own.indexOf(r.want))];
       SK.grab(c, g, HATCH.x, HATCH.y, 50); SK.target(c, g, to[0], to[1], 0, deny ? { w: 110, h: 50 } : { w: 140, h: 92 }); SK.arrow(c, g, HATCH.x, HATCH.y, to[0], to[1]);
       SK.demo(g, c, 'drag', [HATCH.x, HATCH.y], to);
     }
@@ -119,7 +121,7 @@ MG.add({
   // the bot: deliver when the badge matches the drawer, stamp otherwise (B7FAIL: delivers everything)
   auto(g, dt, synth) {
     const s = g.s; if (g.done || s.anim || g.t < (s.nb || 1.0)) return; const r = s.q[s.cur]; if (!r || r.st !== 'here' || g.t - (r.t || 0) < 0.4) return; s.nb = g.t + 0.4;
-    const fail = typeof window !== 'undefined' && window.B7FAIL, deny = r.who !== r.want && !fail, to = deny ? [PAD.x, PAD.y] : [CAB.x + 50, drawerY(OWN.indexOf(r.want))];
+    const fail = typeof window !== 'undefined' && window.B7FAIL, deny = r.who !== r.want && !fail, to = deny ? [PAD.x, PAD.y] : [CAB.x + 50, drawerY(s.own.indexOf(r.want))];
     synth('down', HATCH.x, HATCH.y); synth('move', (HATCH.x + to[0]) / 2, (HATCH.y + to[1]) / 2); synth('move', to[0], to[1]); synth('up', to[0], to[1]);
   },
 });

@@ -43,7 +43,7 @@ MG.add({
     s.h += ((s.on ? 1 : 0) - s.h) * (1 - Math.exp(-dt / 0.4)); // the radiator warms up and cools down slowly
     if (g.done) return;
     const loss = LOSS * (1 + 0.6 * s.windowOpen);
-    s.T += (A * s.h - loss * (s.T - OUT)) * dt;
+    s.dT = A * s.h - loss * (s.T - OUT); s.T += s.dT * dt;
     const inBand = s.T >= C.lo && s.T <= C.hi; if (inBand) { s.comfy += dt; if (Math.floor((s.comfy - dt) * 2) !== Math.floor(s.comfy * 2)) g.sfx('tap', { vol: 0.3, pitch: 1.5 }); }
     if (s.comfy >= C.need) { g.win(); g.sfx('cheer'); g.burst(SEAT.x, SEAT.y - 70, ['#ff7a9a', '#ffe27a'], 18, 140); return; }
     if (s.T < 0.02) { s.cold = 1; g.sfx('crunch'); g.fail(); }
@@ -66,12 +66,19 @@ MG.add({
     if (h > 0.2) for (let i = 0; i < 4; i++) { const k = (t * 0.8 + i / 4) % 1; c.strokeStyle = `rgba(255,190,120,${0.4 * h * (1 - k)})`; c.lineWidth = 3; c.beginPath(); const x = HEAT.x - 36 + i * 22; c.moveTo(x, HEAT.y - 80 - k * 60); c.quadraticCurveTo(x + 10, HEAT.y - 100 - k * 60, x, HEAT.y - 120 - k * 60); c.stroke(); }
     // the heater's switch light
     c.fillStyle = s.on ? '#5aff7a' : '#4a2a2a'; c.beginPath(); c.arc(HEAT.x + 2, HEAT.y - 86, 9, 0, 7); c.fill(); if (s.on) { c.fillStyle = 'rgba(90,255,122,0.35)'; c.beginPath(); c.arc(HEAT.x + 2, HEAT.y - 86, 16, 0, 7); c.fill(); }
-    if (!g.done) SK.glow(c, g, HEAT.x + 4, HEAT.y - 30, 56);
-    SK.tag(c, 'Heater', HEAT.x + 4, HEAT.y + 44, 18); SK.tag(c, 'Thermometer', TH.x - 40, TH.y0 - 30, 18);
+    // the switch is due (the next step): on while the room is cooling toward the bottom of the band, off once it nears the top
+    const due = !g.done && ((!s.on && s.T < C.lo + 0.06) || (s.on && s.T > C.hi - 0.08 * s.h - 0.03));
+    if (due) SK.glow(c, g, HEAT.x + 4, HEAT.y - 30, 56, '#ffe27a', { level: 2 });
+    SK.tag(c, s.on ? 'Heater: on' : 'Heater: off', HEAT.x + 4, HEAT.y + 44, 18, s.on ? '#ffd08a' : '#fff6ea'); SK.tag(c, 'Thermometer', TH.x - 40, TH.y0 - 30, 18);
     // the thermometer: green band and the red liquid
     c.fillStyle = 'rgba(90,220,120,0.45)'; c.fillRect(TH.x - 10, tY(C.hi), 20, tY(C.lo) - tY(C.hi));
     c.strokeStyle = '#3ac86a'; c.lineWidth = 2; c.strokeRect(TH.x - 16, tY(C.hi), 32, tY(C.lo) - tY(C.hi));
     c.fillStyle = '#e8323e'; c.beginPath(); c.arc(TH.x, TH.y1 + 22, 15, 0, 7); c.fill(); c.fillRect(TH.x - 5, tY(s.T), 10, TH.y1 + 22 - tY(s.T));
+    // which way the temperature is going: an arrow beside the liquid, red rising, blue falling; and a cue outside the band
+    if (!g.done) { const d = s.dT || 0, y = tY(s.T), up = d > 0, L = SK.clamp(Math.abs(d) * 90, 8, 30);
+      if (Math.abs(d) > 0.01) { c.save(); c.fillStyle = c.strokeStyle = up ? '#ff7a5a' : '#6ab8ff'; c.lineWidth = 5; c.lineCap = 'round'; const ax = TH.x - 34; c.beginPath(); c.moveTo(ax, y + (up ? L / 2 : -L / 2)); c.lineTo(ax, y + (up ? -L / 2 : L / 2)); c.stroke();
+        c.beginPath(); const hy = y + (up ? -L / 2 - 8 : L / 2 + 8); c.moveTo(ax, hy); c.lineTo(ax - 8, hy + (up ? 9 : -9)); c.lineTo(ax + 8, hy + (up ? 9 : -9)); c.closePath(); c.fill(); c.restore(); }
+      if (s.T < C.lo) SK.tag(c, 'Too cold', TH.x - 62, tY(C.lo) + 30, 18, '#9ad0ff'); else if (s.T > C.hi) SK.tag(c, 'Too warm', TH.x - 62, tY(C.hi) - 30, 18, '#ffb08a'); }
     // the hedgehog: shivering when cold, wilting when stuffy, happy in the band
     const inBand = s.T >= C.lo && s.T <= C.hi, cold = s.T < C.lo, sh = cold && !won ? Math.sin(t * 50) * (C.lo - s.T) * 14 : 0;
     SK.animal(c, 'hedgehog', SEAT.x + sh, SEAT.y + 4, 1.3, { t, pose: won ? 'cheer' : 'idle', expr: won || inBand ? 'laugh' : s.T > C.hi ? 'sad' : 'wow', tint: s.cold ? '#a8c8f0' : s.T > 0.82 ? '#e89a7a' : undefined });
@@ -83,7 +90,7 @@ MG.add({
     const heart = () => { c.beginPath(); c.moveTo(hx, hy + R * 0.9); c.bezierCurveTo(hx - R * 1.6, hy - R * 0.1, hx - R * 0.6, hy - R * 1.2, hx, hy - R * 0.4); c.bezierCurveTo(hx + R * 0.6, hy - R * 1.2, hx + R * 1.6, hy - R * 0.1, hx, hy + R * 0.9); c.closePath(); };
     c.save(); heart(); c.fillStyle = 'rgba(255,255,255,0.18)'; c.fill(); c.clip(); c.fillStyle = '#ff5a7a'; c.fillRect(hx - 50, hy + R - k * 2.2 * R, 100, 2.2 * R + 10); c.restore();
     c.save(); heart(); c.strokeStyle = inBand ? '#ffe27a' : '#fff6ea'; c.lineWidth = 3; c.stroke(); c.restore();
-    SK.demo(g, c, 'tap', [HEAT.x, HEAT.y - 30]);
+    SK.demo(g, c, 'tap', [HEAT.x, HEAT.y - 30], null, { never: !due });
   },
   auto(g, dt, synth) { // a bot thermostat: switch on low in the band, off early (the radiator keeps heating for a moment)
     const s = g.s, C = s.C; if (g.done || g.t < 1.0) return; const B = s._bot = s._bot || {}; if (B.next && g.t < B.next) return;

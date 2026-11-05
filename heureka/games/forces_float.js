@@ -91,6 +91,14 @@
         if (g.level === 0) { c.save(); c.setLineDash([5, 6]); c.strokeStyle = 'rgba(80,60,40,0.55)'; c.lineWidth = 2; c.translate(CL.x, CL.y); boatPath(c, 140, wallH(140)); c.stroke(); c.restore(); }
         c.save(); c.fillStyle = 'rgba(255,255,255,0.9)'; for (const sd of [-1, 1]) { const ax = CL.x + sd * (s.w / 2 + 22); c.beginPath(); c.moveTo(ax + sd * 12, CL.y - 20); c.lineTo(ax, CL.y - 30); c.lineTo(ax, CL.y - 10); c.closePath(); c.fill(); } c.restore();
         SK.tag(c, 'Clay', CL.x, CL.y - 96, 18);
+        // the width ruler under the clay: green where a boat this wide carries the waiting load, the clay's edges on it,
+        // and an arrow at the edge saying wider, narrower, or a tick
+        { const M = MCLAY + loadOf(load), D = 16900 - 2 * M, lo = D > 0 ? Math.max(56, 130 - Math.sqrt(D) + 6) : 999, hi = D > 0 ? Math.min(WMAX, 130 + Math.sqrt(D) - 6) : 0, ry = CL.y + 24;
+          c.fillStyle = 'rgba(30,14,36,0.55)'; c.beginPath(); c.roundRect(CL.x - WMAX / 2 - 6, ry - 5, WMAX + 12, 10, 5); c.fill();
+          if (hi > lo) { c.fillStyle = '#5ad87a'; for (const sg of [-1, 1]) { const a = CL.x + sg * lo / 2, b = CL.x + sg * hi / 2; c.fillRect(Math.min(a, b), ry - 3, Math.abs(b - a), 6); } }
+          const ok = s.w >= lo && s.w <= hi; c.fillStyle = ok ? '#9dffb0' : '#ffd45a'; for (const sg of [-1, 1]) { c.beginPath(); c.roundRect(CL.x + sg * s.w / 2 - 3, ry - 9, 6, 18, 3); c.fill(); }
+          G2.dir(c, CL.x + s.w / 2 + 26, ry + 24, ok ? 0 : 1, { s: 0.8, rot: s.w < lo ? Math.PI / 2 : -Math.PI / 2 }); }
+        G2.count(c, 64, 44, s.ri, s.loads.length);
         SK.grab(c, g, CL.x + s.w / 2, CL.y - 20, 22); SK.target(c, g, CL.x + 70, CL.y - 20, 18); SK.arrow(c, g, CL.x + s.w / 2, CL.y - 20, CL.x + 70, CL.y - 20, { from: 18, to: 20 });
         SK.demo(g, c, 'drag', [CL.x + s.w / 2, CL.y - 20], [CL.x + s.w / 2 + Math.max(0, (140 - s.w) / 2), CL.y - 20]);
       }

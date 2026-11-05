@@ -133,6 +133,9 @@
       const nx = s.tools.find(tl => tl.id === s.order.find(id => !s.used[id])), busy = !!A || !!s.out || !!s.fan;
       if (nx && !busy && !SK.dragging(g)) { SK.grab(c, g, nx.x, nx.y, 34); SK.target(c, g, FIRE.x, FIRE.y - 20, 60); SK.arrow(c, g, nx.x, nx.y, FIRE.x, FIRE.y - 20, { from: 40, to: 80 }); }
       for (const sd of SIDES) if (!s.broken[sd.id]) SK.tag(c, { heat: 'Heat', air: 'Air', fuel: 'Fuel' }[sd.id], sd.x, sd.y + 44, 18);
+      // the tools' names, so the scene says what each one is
+      if (!g.done) for (const tl of s.tools) if (!tl.hidden && SK.dragging(g) !== tl && !tl.back) SK.tag(c, { heat: 'Water', air: 'Sand', fuel: 'Rake', fan: 'Bellows' }[tl.id], SK.clamp(tl.hx, 52, 308), tl.hy + 42, 18);
+      SK.tag(c, `Fires out: ${s.k + (s.out ? 1 : 0)} / ${s.n}`, 190, 150, 18);
       SK.demo(g, c, 'drag', nx ? [nx.hx, nx.hy] : [180, 400], [FIRE.x, FIRE.y - 20], { never: !nx || busy });
     },
     // the bot drags the next unused tool (rake, then sand, then water) onto the fire

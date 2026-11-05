@@ -100,6 +100,12 @@
         c.restore();
       }
       const next = s.b.find(b => b.gas < 0.3); if (next && !s.grab) { const tp = toScr(next, tipOf(next)), up = toScr(next, { x: MOUTH.x, y: MOUTH.y - 100 }); SK.grab(c, g, tp.x, tp.y, 24); SK.target(c, g, up.x, up.y, 26); SK.arrow(c, g, tp.x, tp.y, up.x, up.y, { from: 26, to: 34 }); }
+      // while a balloon is held: a ring above its bottle that turns green once it is upright enough for the soda to pour,
+      // filling round as the soda falls in (keep holding until it closes)
+      if (s.grab && !g.done) { const b = s.grab, up = toScr(b, { x: MOUTH.x, y: MOUTH.y - 100 }), pour = Math.abs(b.a) < 0.75, r = 40 * b.k + 12;
+        c.save(); c.lineCap = 'round'; c.strokeStyle = 'rgba(30,14,36,0.45)'; c.lineWidth = 8; c.beginPath(); c.arc(up.x, up.y, r, 0, 7); c.stroke();
+        c.strokeStyle = pour ? '#7ee8a0' : '#ffb060'; c.lineWidth = 5; c.beginPath(); c.arc(up.x, up.y, r, -Math.PI / 2, -Math.PI / 2 + Math.max(0.05, 1 - b.powder) * Math.PI * 2); c.stroke(); c.restore();
+        if (!pour) { const p = 0.5 + 0.5 * Math.sin(t * 8); SK.tag(c, 'Higher!', up.x, up.y - r - 22 - 3 * p, 18, '#ffe27a'); } }
       const won = g.result === 'win', lost = g.result === 'fail', foamy = s.b.some(b => b.foam > 0.2);
       SK.animal(c, 'frog', 180, 294, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : foamy ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : foamy ? 'wow' : 'happy' });
       const b0 = next || s.b[0], h = toScr(b0, tipOf(b0, b0.hang, 0)), up = toScr(b0, { x: MOUTH.x, y: MOUTH.y - 110 });

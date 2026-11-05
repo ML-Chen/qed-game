@@ -74,7 +74,7 @@ MG.add({
     text: 'Some things about you are fine to share online, like a drawing of your cat or your favourite colour. Other things should stay private: your password, where you live and your phone number.\n\nOnce something is posted, anyone who can see the page can copy it, including strangers. A password lets someone pretend to be you. An address tells a stranger where to find you.\n\nIf someone online asks for one of these, keep it to yourself and tell a grown-up you trust.',
     note: 'Share the fun things; keep your password, address and phone number private.' },
   init(g) {
-    const s = g.s, L = Math.min(2, g.level), ord = ORDERS[L];
+    const s = g.s, L = Math.min(2, g.level), v = SK.variant(g, 4), ord = ORDERS[L].map((_, i, a) => a[(i + v) % a.length]); // the order of the cards changes from play to play
     s.gap = [1.0, 0.9, 0.8][L]; s.rise = [85, 95, 105][L];
     s.cards = ord.map((k, i) => ({ i, kind: k, x: 180 + (i % 2 ? 12 : -12), y: i ? 690 : 590, t0: i * s.gap, state: 'wait', ph: g.rand() * 6 }));
     s.pins = 0; s.chestOpen = 0; s.fox = null; s.lock = 0;
@@ -155,6 +155,7 @@ MG.add({
     // the owl host, on the rug
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'owl', 48, 612, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
+    if (!g.done) { const pv = s.cards.filter(cd => KINDS[cd.kind].priv), n = pv.filter(cd => cd.state === 'kept' || cd.state === 'fly').length; SK.tag(c, n + ' / ' + pv.length + ' hidden', CHEST.x, CHEST.y - 74, 18, n === pv.length ? '#9affb0' : '#fff6ea'); }
     // guidance: glow the private cards; the ghost hand flicks the first one into the chest
     // the hand flicks the private card closest to the board into the chest
     const next = s.cards.filter(cd => KINDS[cd.kind].priv && cd.state === 'float' && cd.y < 640).sort((a, b) => a.y - b.y)[0];

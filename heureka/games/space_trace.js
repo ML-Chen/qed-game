@@ -53,8 +53,26 @@ function trGlobe(c, x, y, r, th, t) {
   const ax = x + Math.cos(-1.6) * (r + 6), ay = y + Math.sin(-1.6) * (r + 6); c.beginPath(); c.moveTo(ax - 6, ay - 3); c.lineTo(ax, ay); c.lineTo(ax - 3, ay + 6); c.stroke();
   c.restore();
 }
+// when the kit's ghost hand would show (SK.demo's rule), or -1: the hand here follows the curved path, which SK.demo can't
+function trHandT(g) {
+  if (g.done || (g.ptr && g.ptr.down)) return -1; const idle = g.t - (g.lastIn ?? 0); let t0;
+  if (!g.s.touched) t0 = 0.9; else if (idle >= 1.4) t0 = (g.lastIn ?? 0) + 1.4; else return -1;
+  return g.t >= t0 ? g.t - t0 : -1;
+}
+function trRounds(c, s, t) { // the goal: a little sun or moon per crossing, lit and ticked once it has set in the west
+  const n = s.rounds.length, x0 = 340 - n * 40;
+  c.save(); c.fillStyle = 'rgba(20,16,50,0.45)'; c.beginPath(); c.roundRect(x0 - 6, 154, n * 40 + 12, 44, 14); c.fill(); c.restore();
+  s.rounds.forEach((r, i) => { const x = x0 + 20 + i * 40, y = 176, done = i < s.ri || (i === s.ri && s.setT), cur = i === s.ri && !s.setT;
+    c.save(); c.globalAlpha *= done || cur ? 1 : 0.45;
+    if (r === 'sun') { c.fillStyle = '#ffcc3a'; c.strokeStyle = '#ffd25a'; c.lineWidth = 2; for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; c.beginPath(); c.moveTo(x + Math.cos(a) * 11, y + Math.sin(a) * 11); c.lineTo(x + Math.cos(a) * 15, y + Math.sin(a) * 15); c.stroke(); } c.beginPath(); c.arc(x, y, 9, 0, 7); c.fill(); }
+    else { c.fillStyle = '#e8ecf4'; c.beginPath(); c.arc(x, y, 11, 0, 7); c.fill(); c.fillStyle = 'rgba(150,156,180,0.6)'; c.beginPath(); c.arc(x - 3, y - 2, 3, 0, 7); c.arc(x + 4, y + 4, 2, 0, 7); c.fill(); }
+    if (cur) { c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; c.setLineDash([4, 4]); c.lineDashOffset = -t * 12; c.beginPath(); c.arc(x, y, 18, 0, 7); c.stroke(); }
+    c.restore();
+    if (done) { c.save(); c.strokeStyle = '#5ad07a'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x + 2, y + 10); c.lineTo(x + 8, y + 16); c.lineTo(x + 18, y + 2); c.stroke(); c.restore(); }
+  });
+}
 MG.add({
-  id: 'trace', stage: 'space', cmd: 'MOVE THE SUN EAST TO WEST!', time: 6.5, mood: 'bright', winText: 'Earth spins!', failText: 'Huh?',
+  id: 'trace', stage: 'space', cmd: 'MOVE SUN AND MOON EAST TO WEST!', time: 6.5, mood: 'bright', winText: 'Earth spins!', failText: 'Huh?',
   card: { title: "The Sun's path", kind: 'Astronomy', ref: 'Apparent motion of the Sun',
     text: 'Every morning the Sun rises on one side of the sky, the east. It climbs highest around noon and sets on the other side, the west. It never goes straight up and falls back. At night the Moon and the stars cross the sky the same way.\n\nThe Sun is not really moving across the sky. The Earth spins once a day, and as we turn, the Sun, the Moon and the stars seem to sweep across from east to west.\n\nIn winter the path is lower and shorter, so days are short and noon shadows are long.',
     note: 'The Sun rises in the east, is highest at noon and sets in the west, because the Earth spins. So does the Moon.' },
@@ -65,16 +83,20 @@ MG.add({
     s.rounds = g.level >= 2 ? ['sun', 'moon', 'sun'] : ['sun', 'moon']; s.ri = 0; s.nextT = 0;
     s.sun = { x: L.rise, y: TR_H - 30 }; s.trail = []; s.peak = 999; s.rose = false; s.crow = 0; s.lunch = 0; s.setT = 0; s.backT = 0; s.lit = new Array(TR_N).fill(0);
   },
-  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (SK.dist(x, y, s.sun.x, s.sun.y) < 64) SK.dragStart(g, s.sun, x, y); },
+  down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.reset) return; if (SK.dist(x, y, s.sun.x, s.sun.y) < 64) SK.dragStart(g, s.sun, x, y); },
   move(g, x, y) { const s = g.s; if (g.done || !SK.dragging(g)) return; SK.dragMove(g, x, y);
     const L = s.L; s.sun.x = SK.clamp(s.sun.x, 14, 346); s.sun.y = SK.clamp(s.sun.y, Math.max(140, L.cap), TR_H + 8); },
-  up(g) { SK.dragEnd(g); },
+  up(g) { const s = g.s; if (!SK.dragging(g)) return; SK.dragEnd(g); if (g.done || s.setT || s.backT) return;
+    // let go after leaving the path (dots skipped behind it): the Sun slides back to where it rose, to try again
+    const L = s.L, ku = (s.sun.x - L.rise) / (L.set - L.rise); let miss = 0; for (let i = 1; i < TR_N; i++) if (!s.lit[i] && i / TR_N < ku - 0.06) miss++;
+    if (miss >= 3) { s.reset = { t: g.t, x: s.sun.x, y: s.sun.y }; g.sfx('swoosh'); } },
   update(g, dt) {
     const s = g.s, L = s.L, u = s.sun;
     if (s.setT) { u.y += 70 * dt; // sinking behind the hills; then the next body rises in the east
       if (!g.done && g.t - s.setT > 0.6) { s.ri++; s.sun = { x: L.rise, y: TR_H - 30 }; s.trail = []; s.peak = 999; s.rose = false; s.setT = 0; s.lunch = 0; s.lit = new Array(TR_N).fill(0); s.crow = s.rounds[s.ri] === 'sun' ? 0 : s.crow; s.nextT = g.t; g.sfx(s.rounds[s.ri] === 'moon' ? 'sparkle' : 'tweet'); }
       return; }
     if (s.backT) { u.y += 50 * dt; return; }
+    if (s.reset) { const k = SK.easeInOut((g.t - s.reset.t) / 0.6); u.x = SK.lerp(s.reset.x, L.rise, k); u.y = SK.lerp(s.reset.y, TR_H - 30, k); if (k >= 1) { s.reset = null; s.trail = []; s.peak = 999; s.rose = false; s.lunch = 0; s.lit = new Array(TR_N).fill(0); } return; }
     if (g.done) return;
     const last = s.trail[s.trail.length - 1]; if (!last || SK.dist(last[0], last[1], u.x, u.y) > 6) { s.trail.push([u.x, u.y]); if (s.trail.length > 90) s.trail.shift(); }
     if (u.y < TR_H - 70) s.rose = true;
@@ -99,6 +121,12 @@ MG.add({
     // spot on the western hill where the Sun (or Moon) should set
     const arcH = L.h, arcP = k => trArc(L, k);
     if (!g.done && !s.setT) { c.save(); for (let i = 1; i < TR_N; i++) { const [x, y] = arcP(i / TR_N); c.globalAlpha = s.lit[i] ? 1 : 0.6; c.fillStyle = s.lit[i] ? (moon ? '#ffffff' : '#ffd45a') : (moon ? 'rgba(220,230,255,0.7)' : 'rgba(255,240,190,0.8)'); c.beginPath(); c.arc(x, y, s.lit[i] ? 5 : 3, 0, 7); c.fill(); } c.restore();
+      // chevrons along the path that flow from east to west: the way to go (a curved SK.arrow)
+      c.save(); c.fillStyle = moon ? 'rgba(235,240,255,0.9)' : 'rgba(255,236,170,0.95)'; const fl = (t * 0.35) % (1 / 5);
+      for (let q = fl + 0.04; q < 0.96; q += 1 / 5) { const kq = q; if (kq < (u.x - L.rise) / (L.set - L.rise) + 0.04) continue; const [x0, y0] = arcP(kq), [x1, y1] = arcP(kq + 0.01), a = Math.atan2(y1 - y0, x1 - x0); c.save(); c.translate(x0, y0); c.rotate(a); c.beginPath(); c.moveTo(9, 0); c.lineTo(-5, -7); c.lineTo(-1, 0); c.lineTo(-5, 7); c.closePath(); c.fill(); c.restore(); }
+      c.restore();
+      // dots the Sun went past without touching: hollow orange rings, so the player sees the path wasn't followed
+      const ku = (u.x - L.rise) / (L.set - L.rise); c.save(); c.strokeStyle = '#ff8a4a'; c.lineWidth = 2.5; for (let i = 1; i < TR_N; i++) if (!s.lit[i] && i / TR_N < ku - 0.06) { const [x, y] = arcP(i / TR_N); c.beginPath(); c.arc(x, y, 6 + Math.sin(t * 6) * 1.5, 0, 7); c.stroke(); } c.restore();
       const [ex, ey] = arcP(1), p = 0.5 + 0.5 * Math.sin(t * 4); c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.85)' : 'rgba(255,200,120,0.9)'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.arc(ex, ey, TR_R + 6 + p * 4, 0, 7); c.stroke(); c.restore(); }
     // the trace: a warm dotted line where the finger took the Sun
     if (s.trail.length > 1) { c.save(); c.strokeStyle = moon ? 'rgba(220,230,255,0.75)' : 'rgba(255,226,140,0.75)'; c.lineWidth = 4; c.setLineDash([3, 9]); c.lineCap = 'round'; c.beginPath(); s.trail.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore(); }
@@ -131,9 +159,17 @@ MG.add({
     // guidance: a ghost hand sweeps the Sun over the top of the sky
     // east and west on the hills, and the spinning Earth that makes the day
     SK.tag(c, 'East', Math.max(42, L.rise), 470, 18); SK.tag(c, 'West', Math.min(318, L.set), 470, 18);
-    const kk = s.setT ? 1 : SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 1); trGlobe(c, 44, 176, 22, (moon ? -Math.PI / 2 : Math.PI / 2) - kk * Math.PI, t);
+    const kk = s.setT ? 1 : SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 1); c.save(); c.globalAlpha = SK.clamp((t - 2.0) * 3, 0, 1); trGlobe(c, 44, 176, 22, (moon ? -Math.PI / 2 : Math.PI / 2) - kk * Math.PI, t);
     // guidance (every level when idle): a hand drags the current body from where it is along the rest of the arc
-    if (!s.setT) { const k0 = SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 0.9); SK.demo(g, c, 'drag', [u.x, u.y], arcP(1), { arc: Math.max(0, arcH * Math.sin(((k0 + 1) / 2) * Math.PI) - 10) * (1 - k0), period: 2.4 }); }
+    trRounds(c, s, t); c.restore();
+    // live direction: dragged under the path in the middle of the sky, a "Higher!" cue above the Sun
+    if (!g.done && !s.setT && SK.dragging(g)) { const k = (u.x - L.rise) / (L.set - L.rise); if (k > 0.12 && k < 0.88 && u.y > trArc(L, k)[1] + 40) { const p = 0.5 + 0.5 * Math.sin(t * 8); SK.tag(c, 'Higher!', u.x, u.y - 62 - 4 * p, 20, '#ffe27a'); } }
+    // guidance (every level when idle, SK.demo's timing): a hand presses the Sun and carries it along the rest of the curved path
+    const ht = s.setT ? -1 : trHandT(g);
+    if (ht >= 0) { const per = 2.6, k = (ht % per) / per, k0 = SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 0.9), fade = SK.clamp(ht * 4, 0, 1);
+      const press = k < 0.12 ? k / 0.12 : k < 0.82 ? 1 : 1 - (k - 0.82) / 0.1, m = SK.easeInOut((k - 0.12) / 0.7);
+      const [ax, ay] = arcP(k0), [px, py] = m < 0.12 ? [SK.lerp(u.x, ax, m / 0.12), SK.lerp(u.y, ay, m / 0.12)] : arcP(SK.lerp(k0, 1, (m - 0.12) / 0.88));
+      SK.hand(c, px, py, SK.clamp(press, 0, 1), 0.9 * fade * (k > 0.9 ? 0 : 1)); }
   },
   // the bot drags the Sun along a real arc from its rising point, over the middle, down to its setting point
   auto(g, dt, synth) {

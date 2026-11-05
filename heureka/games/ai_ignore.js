@@ -59,7 +59,8 @@ MG.add({
     note: 'Text an AI reads can hide instructions, so an app treats outside text as data, never as orders.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level), pl = PLANS[L]; s.L = L; s.v = pl.v;
-    s.mails = pl.bad.map((b, i) => ({ i, bad: b, pic: PICS[(i + Math.floor(g.rand() * 5)) % 5], x: BELT.x0 - (i + 1) * pl.v * pl.gap, y: BELT.y, boxed: 0, state: 'belt' }));
+    const vr = SK.variant(g, 4), bad = pl.bad.map((_, i) => pl.bad[(i + vr) % pl.bad.length]); // which emails hide orders changes from play to play
+    s.mails = bad.map((b, i) => ({ i, bad: b, pic: PICS[(i + Math.floor(g.rand() * 5)) % 5], x: BELT.x0 - (i + 1) * pl.v * pl.gap, y: BELT.y, boxed: 0, state: 'belt' }));
     // the opening beat: one email with the fox's order is already at the robot, too late to box; watch what it does
     s.mails.unshift({ i: -1, bad: 1, demo: true, pic: 'note', x: BELT.read - 46, y: BELT.y, boxed: 0, state: 'belt' });
     s.drag = null; s.res = null; s.fwd = null; s.read = 0;
@@ -123,6 +124,7 @@ MG.add({
     // the hand drags a case down onto the email closest to the robot that is not yet boxed
     const next = s.mails.filter(m => m.state === 'belt' && !m.boxed && !m.demo && m.x > 10 && m.x < BELT.read - 40).sort((a, b) => b.x - a.x)[0];
     if (next && !s.drag) { SK.grab(c, g, STACK.x, STACK.y, 50); SK.target(c, g, next.x + 30, BELT.y, 0, { w: EW2 + 24, h: EH + 24 }); SK.arrow(c, g, STACK.x, STACK.y, next.x + 30, BELT.y); }
+    if (!g.done) { const all = s.mails.filter(m => !m.demo), n = all.filter(m => m.boxed).length; SK.tag(c, n + ' / ' + all.length + ' boxed', STACK.x, STACK.y - 66, 18, n === all.length ? '#9affb0' : '#fff6ea'); }
     if (next && !s.drag) SK.demo(g, c, 'drag', [STACK.x, STACK.y], [next.x + s.v * 0.9, BELT.y]);
   },
   // the bot boxes every email once it is well onto the belt (B7FAIL: boxes none)

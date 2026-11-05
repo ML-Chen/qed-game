@@ -1,7 +1,8 @@
-// INHALE! (chem_bio AN-17) — a rabbit with a window into its chest: two floppy lungs and the dome of the diaphragm
-// under them. Pull the diaphragm down: the chest gets roomier, air streams in through the nose and the lungs fill.
-// Push it up instead and the air rushes out and the cheeks puff. Let go and it springs back up (breathing out).
-// Level 2: breathe in, then let go to blow out the birthday candles; a half breath leaves some still lit.
+// BLOW OUT THE CANDLES! (chem_bio AN-17) — a rabbit with a window into its chest: two floppy lungs and the dome of the
+// diaphragm under them, and a birthday cake. Pull the diaphragm down: the chest gets roomier, air streams in through the
+// nose and the lungs fill. Let go and it springs back up: the chest shrinks and the air blows out at the candles. Air
+// moves only while the diaphragm moves (in while it goes down, out while it goes up, none while it is held still).
+// Each full breath blows out two candles; a half breath blows out one. Levels: 4, 6, 8 candles.
 const EDGE = 472, REST = 378, LOW = 538, UP_FAIL = 330; // diaphragm: edge height, apex at rest, apex fully pulled, apex pushed too far up
 const MOUTH = [180, 252];
 const candleXY = (i, n) => [250 + i * (84 / (n - 1)), 266 + (i % 2) * 6];
@@ -69,29 +70,32 @@ function bunny(c, t, fill, ay, cheeks, won, lost) {
 }
 
 MG.add({
-  id: 'body_inhale', stage: 'body', cmd: 'PULL THE DIAPHRAGM DOWN!', time: 8, mood: 'bright', winText: 'Deep breaths!', failText: 'Pfffft!',
+  id: 'body_inhale', stage: 'body', cmd: 'BLOW OUT THE CANDLES!', time: 8, mood: 'bright', winText: 'Deep breaths!', failText: 'Pfffft!',
   card: { title: 'Breathing in', kind: 'Biology', ref: 'The diaphragm and the lungs',
     text: 'Your lungs have no muscles of their own to pull in air. Under them sits the diaphragm, a dome-shaped sheet of muscle.\n\nWhen you breathe in, the diaphragm tightens and pulls down, and muscles between your ribs lift your chest outward. The space inside your chest gets bigger, so the air pressure in your lungs drops below the pressure of the air outside. Air rushes in through your nose and mouth to fill the space.\n\nWhen the diaphragm relaxes, it springs back up, the space shrinks, and air is pushed out.',
     note: 'Pulling the diaphragm down makes more room in your chest, so air flows into your lungs.' },
   init(g) {
     const s = g.s; s.v = SK.variant(g, 4); s.ay = apexOf(REST); s.ayRest = apexOf(REST); s.fill = 0.25; s.air = []; s.cheeks = 0; s.held = false; s.full = -1;
-    s.candles = Array.from({ length: [4, 6, 8][Math.min(2, g.level)] }, () => ({ lit: 1 })); s.blow = 0; s.vol = 0; s.outThis = 0; s.pushed = -1;
+    s.candles = Array.from({ length: [4, 6, 8][Math.min(2, g.level)] }, () => ({ lit: 1 })); s.blow = 0; s.vol = 0; s.outThis = 0; s.pushed = -1; s.inAt = -9; s.outAt = -9;
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done) return; if (Math.abs(y - s.ay) < 70 && x > 90 && x < 270) { s.held = true; s.grabDy = s.ay - y; } },
   move(g, x, y) { const s = g.s; if (!s.held || g.done) return; s.ay = SK.clamp(y + s.grabDy, apexOf(UP_FAIL) - 10, apexOf(LOW)); },
   up(g) { g.s.held = false; },
   update(g, dt) {
     const s = g.s, rest = s.ayRest, lo = apexOf(LOW);
-    if (!s.held && s.pushed < 0) s.ay += (rest - s.ay) * Math.min(1, dt * 5); // a relaxed diaphragm springs back up
-    // the lungs follow the room in the chest, as air flows in or out through the nose
-    const target = SK.clamp(0.25 + 0.75 * (s.ay - rest) / (lo - rest), 0, 1), flow = (target - s.fill) * Math.min(1, dt * 14); // air moves only while the chest is changing size: hold the diaphragm still and the flow stops (the owner)
-    s.fill = SK.clamp(s.fill + flow, 0, 1);
-    const n = Math.abs(flow) * 120; for (let i = 0; i < n; i++) { const inward = flow > 0; s.air.push({ k: 0, inward, dx: (g.rand() - 0.5) * 30, side: g.rand() < 0.5 ? -1 : 1, sp: 3.2 + g.rand() }); }
+    if (!s.held && s.pushed < 0) { s.ay += (rest - s.ay) * Math.min(1, dt * 9); if (Math.abs(rest - s.ay) < 0.6) s.ay = rest; } // a relaxed diaphragm springs back up, quickly
+    // the lungs follow the room in the chest exactly: air flows only while the chest is changing size (the owner: in
+    // only while the diaphragm is lowering, out only while it rises, nothing while it is held still)
+    const target = SK.clamp(0.25 + 0.75 * (s.ay - rest) / (lo - rest), 0, 1), flow = target - s.fill;
+    s.fill = target;
+    if (flow > 0.0005) s.inAt = g.t; else if (flow < -0.0005) s.outAt = g.t;
+    const n = Math.abs(flow) < 0.0015 ? 0 : Math.floor(Math.abs(flow) * 120 + g.rand());
+    for (let i = 0; i < n; i++) { const inward = flow > 0; s.air.push({ k: 0, inward, dx: (g.rand() - 0.5) * 30, side: g.rand() < 0.5 ? -1 : 1, sp: 3.6 + g.rand() }); }
     for (const a of s.air) a.k += dt * a.sp; s.air = s.air.filter(a => a.k < 1);
     // breathing out: the stream of air blows candles out (level 2)
     s.blow = Math.max(0, -flow / dt);
     // each breath out can blow out up to two candles, nearest first: a deep breath blows two, a shallow one fewer
-    if (flow > 0.002) { s.vol = 0; s.outThis = 0; } else if (flow < 0) s.vol += -flow;
+    if (flow > 0.0005) { s.vol = 0; s.outThis = 0; } else if (flow < 0) s.vol += -flow;
     const want = (s.vol > 0.26 ? 1 : 0) + (s.vol > 0.58 ? 1 : 0);
     while (s.outThis < want) { const cd = s.candles.find(q => !q.out); if (!cd) break; cd.out = true; cd.outAt = g.t; s.outThis++; g.sfx('wind'); }
     for (const cd of s.candles) if (cd.out) cd.lit = Math.max(0, cd.lit - dt * 6);
@@ -125,8 +129,16 @@ MG.add({
     if (!g.done) { c.fillStyle = 'rgba(255,255,255,0.85)'; c.strokeStyle = '#c0384a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(156, s.ay - 9, 48, 18, 9); c.fill(); c.stroke(); const bob = Math.sin(t * 5) * 3; c.fillStyle = '#c0384a'; c.beginPath(); c.moveTo(170, s.ay + 16 + bob); c.lineTo(190, s.ay + 16 + bob); c.lineTo(180, s.ay + 28 + bob); c.closePath(); c.fill(); }
     c.strokeStyle = 'rgba(58,22,64,0.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(108, 382); c.lineTo(132, 382); c.moveTo(118, EDGE); c.lineTo(132, EDGE - 4); c.stroke();
     SK.tag(c, 'Lungs', 60, 382, 18); SK.tag(c, 'Diaphragm', 62, EDGE, 18);
-    if (s.fill < 0.85) { SK.target(c, g, 180, apexOf(LOW) + 6, 0, { w: 70, h: 26 }); SK.arrow(c, g, 180, s.ay, 180, apexOf(LOW), { from: 34, to: 18 }); SK.grab(c, g, 180, s.ay, 28); }
-    SK.demo(g, c, 'drag', [180, apexOf(REST)], [180, apexOf(LOW)]);
+    // what the air is doing right now: in while the diaphragm goes down, out while it goes up, nothing while it is still
+    if (!g.done || won) { if (t - s.inAt < 0.12) SK.tag(c, 'Breathing in', 72, 300, 18, '#bfe6ff'); else if (t - s.outAt < 0.12) SK.tag(c, 'Breathing out', 72, 300, 18, '#ffe2a0'); }
+    if (s.candles.length && !won) { const left = s.candles.filter(cd => !cd.out).length; SK.tag(c, left + ' lit', 290, 342, 18); }
+    if (!g.done) {
+      if (s.held && s.fill > 0.9) { // full: now let go, and the diaphragm springs up
+        const bob = Math.sin(t * 6) * 4; c.save(); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.translate(228, s.ay - 30 - bob); c.beginPath(); c.moveTo(0, -16); c.lineTo(12, 0); c.lineTo(5, 0); c.lineTo(5, 16); c.lineTo(-5, 16); c.lineTo(-5, 0); c.lineTo(-12, 0); c.closePath(); c.fill(); c.stroke(); c.restore();
+        SK.tag(c, 'Let go', 290, s.ay - 30, 18);
+      } else if (!s.held && s.fill < 0.85) { SK.target(c, g, 180, apexOf(LOW) + 6, 0, { w: 70, h: 26, col: '#e0405a' }); SK.arrow(c, g, 180, s.ay, 180, apexOf(LOW), { from: 34, to: 18 }); SK.grab(c, g, 180, s.ay, 28); }
+    }
+    SK.demo(g, c, 'drag', [180, s.ay], [180, apexOf(LOW)]);
   },
   // the bot: pull down and hold until the lungs are full; at level 2 then let go to blow
   auto(g, dt, synth) {

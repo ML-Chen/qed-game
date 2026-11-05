@@ -73,6 +73,16 @@ MG.add({
       B6.drawKnob(c, b.kn, { col: P.shade(B.col, -0.45), cap: P.shade(B.col, 0.5), arc: B.col });
     }
     for (let i = 0; i < 3; i++) SK.tag(c, 'Gain', KX[i] - 2, KY + 40, 18);
+    // which way to turn each knob still to set: a curved arrow round it and "More" / "Less" (more turns clockwise);
+    // once its gain is about right, a green ring
+    if (!g.done) for (const b of s.b) { if (b.done) continue; const want = kOf(0.9 / (4 * b.tau)), d = want - b.kn.k, kn = b.kn, R = kn.r + 14, ca = k => -Math.PI / 2 + (k - 0.5) * B6.SWEEP;
+      c.save(); c.lineCap = 'round';
+      if (Math.abs(d) < 0.07) { c.strokeStyle = '#6aff8a'; c.lineWidth = 4; c.beginPath(); c.arc(kn.x, kn.y, R, 0, 7); c.stroke(); }
+      else { const up = d > 0, a0 = ca(kn.k), sw = (up ? 1 : -1) * (0.9 + 0.15 * Math.sin(t * 5)), a1 = a0 + sw; c.strokeStyle = '#ffe27a'; c.fillStyle = '#ffe27a'; c.lineWidth = 4;
+        c.beginPath(); c.arc(kn.x, kn.y, R, Math.min(a0, a1), Math.max(a0, a1)); c.stroke();
+        const hx = kn.x + Math.cos(a1) * R, hy = kn.y + Math.sin(a1) * R, ta = a1 + (up ? Math.PI / 2 : -Math.PI / 2); c.translate(hx, hy); c.rotate(ta); c.beginPath(); c.moveTo(9, 0); c.lineTo(-5, -7); c.lineTo(-5, 7); c.closePath(); c.fill(); }
+      c.restore();
+      if (Math.abs(d) >= 0.07) SK.tag(c, d > 0 ? 'More' : 'Less', kn.x, kn.y - kn.r - 30, 18, '#ffe27a'); }
     SK.tag(c, 'Wall', WALL + 4, LANES[0] - 64, 18); SK.tag(c, 'Sensor', 120, LANES[0] - 64, 18);
     { const nb = s.b.find(b => !b.done); if (nb && !g.done && !nb.kn.grab) SK.grab(c, g, nb.kn.x, nb.kn.y, 30); }
     // guidance: turn the first unsettled robot's knob toward a good gain (up from a creep, down from a bounce)

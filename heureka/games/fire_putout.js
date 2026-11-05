@@ -89,7 +89,7 @@
         else if (S.e.kind === 'water' && f.kind === 'fryer') { if (!s.flare) { s.flare = g.t; g.sfx('whoosh'); g.sfx('fire'); g.shake(6, 0.4); } }
         else if (S.e.kind === 'water' && f.kind === 'toaster') { f.spark = g.t; f.k = Math.min(1.5, f.k + dt); if (g.rand() < 0.3) g.sfx('snap'); }
         else { f.k = 0.6 + 0.4 * Math.abs(Math.sin(k * 9)); if (k > 0.7) f.k = 1; }
-        if (k > 0.75) { s.spray = null; S.e.back = true; if (!ok && !s.flare) g.sfx('wrong'); }
+        if (k > 0.75) { s.spray = null; S.e.back = true; if (!ok && !s.flare) g.sfx('wrong'); if (!ok) g.float('Wrong kind!', S.f.x < 120 ? 120 : S.f.x > 240 ? 240 : S.f.x, BENCH - 120); }
       }
       if (s.flare && g.t - s.flare > 1.4) { s.flare = 0; s.singed = g.t; } // the whoosh dies back down: it cost time, and the beaver's eyebrows
       for (const f of s.fires) if (!f.out && f.k > 1 && !(S && S.f === f)) f.k = Math.max(1, f.k - dt);

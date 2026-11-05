@@ -106,6 +106,11 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'frog', 304, 290, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (cp && cp.st === 'here' && cp.kind !== 'own' && !g.done) SK.glow(c, g, EASEL.x, EASEL.y, 70, '#ffe27a', { level: 0 });
+    // the swipe: a big arrow across a copier's easel, pointing the way to swipe it off (levels 0-1; level 2 leaves the
+    // spotting to you, with the ghost hand when idle)
+    if (cp && cp.st === 'here' && cp.kind !== 'own' && !g.done && g.level < 2 && !(g.ptr && g.ptr.down)) { const p = 0.5 + 0.5 * Math.sin(t * 6), ax = EASEL.x - 60 + p * 12, ay = EASEL.y + EH / 2 + 26;
+      c.save(); c.fillStyle = '#ffe27a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(ax, ay - 8); c.lineTo(ax + 96, ay - 8); c.lineTo(ax + 96, ay - 20); c.lineTo(ax + 124, ay); c.lineTo(ax + 96, ay + 20); c.lineTo(ax + 96, ay + 8); c.lineTo(ax, ay + 8); c.closePath(); c.fill(); c.stroke(); c.restore(); }
+    { const nc = s.seq.filter(q => q.kind !== 'own').length, got = s.seq.filter(q => q.kind !== 'own' && q.st === 'swept').length; SK.tag(c, `Copies caught: ${got} / ${nc}`, 180, 286, 18, got >= nc ? '#9dffb0' : '#fff6ea'); }
     if (cp && cp.st === 'here' && cp.kind !== 'own') SK.demo(g, c, 'swipe', [EASEL.x - 40, EASEL.y + 10], [EASEL.x + 110, EASEL.y - 10], { delay: 0.6 });
   },
   auto(g, dt, synth) {

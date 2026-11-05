@@ -46,7 +46,7 @@ function rat(c, x, y, t, ph, o = {}) {
   c.restore();
 }
 MG.add({
-  id: 'clearrats', stage: 'policy', cmd: 'CATCH ALL THE RATS!', time: 7, mood: 'bright', winText: 'Rats gone for good!', failText: 'Rat farm!',
+  id: 'clearrats', stage: 'policy', cmd: 'CATCH RATS, STOP THE RAT FARM!', time: 7, mood: 'bright', winText: 'Rats gone for good!', failText: 'Rat farm!',
   card: { title: 'Pay for what you really want', kind: 'Policy', ref: 'Perverse incentives (the Hanoi rat bounty, 1902)',
     text: 'In 1902, the French colonial rulers of Hanoi paid people a reward for every rat tail they brought in. Historians report that many people cut off the tails and let the rats go, so the rats could breed more tails. Some even raised rats to sell their tails.\n\nThe reward paid for a sign of success (a tail), not for success itself (fewer rats). A rule like that is called a perverse incentive. Here the rat farm lived on the bounty\'s coins; once the bounty stopped, the farm had no reason to breed rats, and catching them finally worked.',
     note: 'People do what a reward pays for, so pay for the result you want, not for something that only looks like it.' },
@@ -58,7 +58,9 @@ MG.add({
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done) return;
-    if (!s.closed && x > STALL.x0 && x < STALL.x1 && y > STALL.y0 - 20 && y < STALL.y1) { s.closed = g.t; g.sfx('snap'); g.sfx('bell'); g.shake(3, 0.15); return; }
+    if (s.farm && !s.closed && x > STALL.x0 && x < STALL.x1 && y > STALL.y0 - 20 && y < STALL.y1) { s.closed = g.t; g.sfx('snap'); g.sfx('bell'); g.shake(3, 0.15); return; }
+    // tapping the farm itself can't shut it: the coins from the bounty keep it going (the path flashes back to the stall)
+    if (s.farm && !s.closed && SK.dist(x, y, SHED.x, SHED.y - 30) < 46) { s.flash = g.t; g.sfx('wrong'); return; }
     let best = null, bd = 34; for (const r of s.rats) { if (r.st !== 'roam') continue; const d = SK.dist(x, y, r.x, r.y - 6); if (d < bd) { bd = d; best = r; } }
     if (!best) { g.sfx('tap'); return; }
     best.st = 'caught'; s.poofs.push({ x: best.x, y: best.y, t: g.t }); g.sfx('pop'); g.burst(best.x, best.y, ['#a8a0b0', '#fff6ea'], 8, 110);
@@ -95,13 +97,14 @@ MG.add({
     c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.roundRect(mx, my - 10, mw, 20, 10); c.fill();
     c.fillStyle = f > m0 + 0.04 ? '#ff4a4a' : f < 0.1 ? '#6ad070' : '#f0a040'; c.beginPath(); c.roundRect(mx, my - 10, Math.max(20, mw * f), 20, 10); c.fill();
     c.strokeStyle = '#fff6ea'; c.lineWidth = 2; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(mx + mw * m0, my - 14); c.lineTo(mx + mw * m0, my + 14); c.stroke(); c.setLineDash([]);
+    const nLeft = s.rats.filter(r => r.st === 'roam').length; c.save(); c.font = '900 18px Nunito, system-ui, sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; c.lineWidth = 4; c.strokeStyle = 'rgba(40,20,40,0.8)'; c.strokeText(nLeft + ' rats', mx + mw - 6, my + 1); c.fillStyle = '#fff6ea'; c.fillText(nLeft + ' rats', mx + mw - 6, my + 1); c.restore();
     // the shed: shut, then a rat farm while the bounty pays, then shut again once the bounty closes
     const open = s.farm && !(s.closed && t - s.closed > 0.5);
     if (open) { c.fillStyle = '#2a1420'; c.fillRect(SHED.x - 14, SHED.y - 44, 32, 46); c.save(); c.translate(SHED.x - 14, SHED.y + 2); c.rotate(-1.2); c.fillStyle = '#6a3a24'; c.fillRect(0, -46, 32, 46); c.restore(); c.fillStyle = 'rgba(255,90,120,0.85)'; c.font = '900 16px Nunito, system-ui'; c.textAlign = 'center'; c.fillText('♥', SHED.x + 2 + Math.sin(t * 9) * 5, SHED.y - 64 - ((t * 30) % 22)); }
     else { c.fillStyle = '#5a3020'; c.fillRect(SHED.x - 14, SHED.y - 44, 32, 46); c.fillStyle = '#f6c445'; c.beginPath(); c.arc(SHED.x + 12, SHED.y - 20, 2.5, 0, TAU); c.fill(); }
     if (s.farm) SK.tag(c, 'Rat farm', SHED.x - 4, SHED.y - 104, 18, open ? '#ffd0d0' : '#c8c0c8');
     // the dotted coin path from the stall's till up to the farm, with coins travelling along it
-    if (s.farm) { const path = [[TILL[0], TILL[1] - 20], [240, 500], [SHED.x + 20, SHED.y + 6]]; c.save(); c.globalAlpha = open ? 0.85 : 0.3; c.strokeStyle = '#f6c445'; c.lineWidth = 4; c.setLineDash([3, 9]); c.lineCap = 'round'; c.lineDashOffset = -t * 40; c.beginPath(); c.moveTo(path[0][0], path[0][1]); c.quadraticCurveTo(path[1][0], path[1][1], path[2][0], path[2][1]); c.stroke(); c.restore();
+    if (s.farm) { const path = [[TILL[0], TILL[1] - 20], [240, 500], [SHED.x + 20, SHED.y + 6]]; const fl = s.flash != null && t - s.flash < 0.8 ? 1 - (t - s.flash) / 0.8 : 0; c.save(); c.globalAlpha = open ? 0.85 : 0.3; c.strokeStyle = '#f6c445'; c.lineWidth = 4 + fl * 6; c.setLineDash([3, 9]); c.lineCap = 'round'; c.lineDashOffset = -t * 40; c.beginPath(); c.moveTo(path[0][0], path[0][1]); c.quadraticCurveTo(path[1][0], path[1][1], path[2][0], path[2][1]); c.stroke(); c.restore();
       for (const q of s.flow) { const k = (t - q.t) / 0.9; if (k < 1) { const a = path[0], b = path[1], e = path[2], u = 1 - k, x = u * u * a[0] + 2 * u * k * b[0] + k * k * e[0], y = u * u * a[1] + 2 * u * k * b[1] + k * k * e[1]; B9.coin(c, x, y, 9, Math.cos(t * 14)); } } }
     const rs = s.rats.filter(r => r.st === 'roam').sort((a, b) => a.y - b.y);
     for (const r of rs) rat(c, r.x, r.y, t, r.ph, { dir: r.vx < 0 ? -1 : 1, s: 1.45, heart: r.heart });
@@ -116,9 +119,22 @@ MG.add({
     SK.animal(c, 'hedgehog', 50, 572, 0.75, { t, pose: s.closed ? 'idle' : 'carry', expr: s.closed ? 'sad' : 'laugh', hold: s.closed ? undefined : tail });
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'fox', 290, 612, 0.85, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.farm && !s.closed ? 'wow' : 'happy', facing: -1 });
-    // guidance: the stall once the farm is breeding, otherwise the nearest rat
-    const target = s.farm && !s.closed ? [99, 548] : (() => { const r = rs[0]; return r ? [r.x, r.y - 6] : null; })();
-    if (target && !g.done) { SK.glow(c, g, target[0], target[1], s.farm && !s.closed ? 60 : 26); SK.demo(g, c, 'tap', target, null, { delay: 1.0 }); }
+    // once the farm breeds, the stall shows a big button that ends the bounty
+    const btn = s.farm && !s.closed && !g.done;
+    if (btn) {
+      const p = 0.5 + 0.5 * Math.sin(t * 7); c.save(); c.translate(99, 552); c.scale(1 + 0.04 * p, 1 + 0.04 * p);
+      c.fillStyle = '#8a1a24'; c.beginPath(); c.roundRect(-78, -20, 156, 46, 16); c.fill(); c.fillStyle = '#e8384a'; c.beginPath(); c.roundRect(-78, -26, 156, 46, 16); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.stroke();
+      c.font = '900 20px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff6ea'; c.fillText('End the bounty', 0, -2); c.restore();
+    }
+    // guidance: the button once the farm is breeding, otherwise the nearest rat
+    const target = btn ? [99, 548] : (() => { const r = rs[0]; return r ? [r.x, r.y - 6] : null; })();
+    if (target && !g.done) {
+      SK.glow(c, g, target[0], target[1], btn ? 70 : 26, '#ffe27a', { level: btn ? 2 : 1 });
+      // while the farm breeds and the player keeps catching, a hand keeps pointing at the button, idle or not
+      const busy = btn && g.t - s.farm > 1.2 && g.s.touched && g.t - (g.lastIn ?? 0) < 1.4 && !(g.ptr && g.ptr.down);
+      if (busy) { const k = ((t - s.farm) % 1.1) / 1.1, pr = k < 0.3 ? 0 : k < 0.45 ? (k - 0.3) / 0.15 : k < 0.6 ? 1 - (k - 0.45) / 0.15 : 0; SK.hand(c, 112, 560 + 10 * (1 - pr), pr, 0.9); }
+      SK.demo(g, c, 'tap', btn ? [112, 560] : target, null, { delay: 1.0, never: busy });
+    }
   },
   auto(g, dt, synth) { // the bot catches rats; once the farm opens, it shuts the bounty stall, then catches the rest
     const s = g.s, Q = s._plan = s._plan || {}; if (g.done || g.t < 1.0 || g.t < (Q.next || 0)) return; Q.next = g.t + 0.3;

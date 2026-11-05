@@ -1,9 +1,10 @@
 // ROLL DICE! (earth EE HES-06) — 100 copies of the same house on a river floodplain where a flood has a 1-in-100 chance
 // each year. Mash to roll the year's dice: each tap is one year, and every house rolls its own 100-sided die. Floods
 // splash at random; a house that has flooded keeps a blue water line. After 30 years about a quarter of the houses have
-// flooded at least once, and a few have flooded twice (their duck owners faint). Level 2: 60 years, two per tap.
+// flooded at least once, and a few have flooded twice (their duck owners faint). Each tap rolls three years.
+// Level 2: 60 years.
 const RD_COLS = 10, RD_X0 = 26, RD_Y0 = 226, RD_DX = 34, RD_DY = 30;
-const RD_LV = [{ years: 30, per: 1 }, { years: 30, per: 1 }, { years: 60, per: 2 }];
+const RD_LV = [{ years: 30, per: 3 }, { years: 30, per: 3 }, { years: 60, per: 3 }]; // years rolled per tap (10 taps at levels 0-1, so copying the ghost hand tap by tap is enough)
 function rdHouse(o, x, y, s, wall, roof) {
   o.fillStyle = 'rgba(30,14,36,0.2)'; o.beginPath(); o.ellipse(x + 1, y + 1, 12 * s, 3 * s, 0, 0, 7); o.fill();
   o.fillStyle = wall; o.strokeStyle = '#5a2e3a'; o.lineWidth = 1.4; o.beginPath(); o.rect(x - 9 * s, y - 13 * s, 18 * s, 13 * s); o.fill(); o.stroke();
@@ -68,7 +69,7 @@ MG.add({
     if (s.faint >= 0) { const i = s.faint, cx = RD_X0 + (i % RD_COLS) * RD_DX, cy = RD_Y0 + Math.floor(i / RD_COLS) * RD_DY + 20, k = SK.easeOut((t - s.faintT) / 0.4);
       c.save(); c.translate(cx + 12, cy); c.rotate(-k * 1.4); SK.animal(c, 'duck', 0, 0, 0.6, { t, expr: 'wow', pose: 'sad', noShadow: true }); c.restore(); }
     // the running count of houses that have flooded at least once, and the yearly odds of the dice
-    const nf = s.hits.filter(h => h > 0).length; SK.tag(c, 'Flooded: ' + nf, 180, 166, 20, '#fff6ea', 'rgba(30,80,150,0.85)');
+    const nf = s.hits.filter(h => h > 0).length; SK.tag(c, `Year ${s.year} / ${n}`, 96, 166, 20, s.year >= n ? '#9dffb0' : '#fff6ea'); SK.tag(c, 'Flooded: ' + nf, 262, 166, 20, '#fff6ea', 'rgba(30,80,150,0.85)');
     SK.tag(c, '1 in 100 each year', 110, 574, 18);
     // the big die: every tap rolls it
     const rk = SK.clamp((t - s.rollT) / 0.3, 0, 1), hop = Math.sin(rk * Math.PI) * 26;

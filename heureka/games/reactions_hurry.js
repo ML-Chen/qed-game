@@ -78,7 +78,9 @@
         SK.animal(c, a.kind, a.x, Y + 6 - hop, a.kind === 'turtle' ? 1.3 : 1.2, { t: t * (fast ? 2.5 : 1), phase: i, pose: won ? 'cheer' : lost ? 'sad' : a.busy ? 'carry' : 'idle', expr: won ? 'laugh' : a.q > 3 ? 'wow' : fast ? 'laugh' : KIND[a.kind] === 'slow' ? 'think' : 'happy' });
         if (fast) { c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2.5; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(a.x - 30 - k * 4, Y - 40 + k * 12); c.lineTo(a.x - 46 - k * 4, Y - 40 + k * 12); c.stroke(); } }
         if (a.busy) { const k = a.p, x = SK.lerp(a.x + 8, nx, k), y = Y - 74 - Math.sin(k * Math.PI) * 30; bucket(c, x, y, true, 1.3); }
-        if (!g.done && !s.touched) SK.glow(c, g, a.x, Y - 36, 42);
+        // every helper can be tapped (all glow until the first tap); after that, the one with buckets piling up in front of it glows
+        const jam = s.a.reduce((m, b) => b.q > m.q ? b : m, s.a[0]);
+        if (!g.done && (!s.touched || (a === jam && a.q >= 2))) SK.glow(c, g, a.x, Y - 36, 42);
         if (a.q >= 3) { const bob = Math.abs(Math.sin(t * 5)) * 4; c.fillStyle = '#ff5a3a'; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(a.x - 36, Y - 6 - Math.min(a.q, 14) * 17 - 18 - bob, 12, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff6ea'; c.fillRect(a.x - 38, Y - Math.min(a.q, 14) * 17 - 31 - bob, 4, 10); c.fillRect(a.x - 38, Y - Math.min(a.q, 14) * 17 - 19 - bob, 4, 4); }
       });
       // buckets waiting in front of a helper stack up into a wobbly tower
@@ -86,8 +88,8 @@
       for (const tp of s.taps) { const q = (t - tp.t) * 3; if (q > 1) continue; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#ffd45a'; c.lineWidth = 3; c.beginPath(); c.arc(tp.x, tp.y, 12 + q * 18, 0, 7); c.stroke(); c.restore(); }
       // how many buckets the fire still needs: drops along the top of the barn
       const left = s.need - s.hits, gw = Math.max(0, 1 - (t - s.grow) * 3); for (let i = 0; i < left; i++) { const x = 316 - (left - 1) * 8 + i * 16, y = 268 - (i === left - 1 ? gw * 8 : 0); c.fillStyle = i === left - 1 && gw > 0 ? '#ff8a3a' : 'rgba(255,255,255,0.6)'; c.beginPath(); c.moveTo(x, y - 9); c.quadraticCurveTo(x + 7, y, x, y + 5); c.quadraticCurveTo(x - 7, y, x, y - 9); c.fill(); }
-      // the hand shows how to hurry a helper; once you have tried, a stuck hint points at the slow one
-      const slow = s.a.find(a => KIND[a.kind] === 'slow'), first = s.touched ? slow : s.a[0]; SK.demo(g, c, 'tap', [first.x, Y - 30], null, { period: 0.5 });
+      // the hand taps again and again on the helper the buckets pile up in front of (the slow one)
+      const slow = s.a.find(a => KIND[a.kind] === 'slow'); SK.demo(g, c, 'tap', [slow.x, Y - 30], null, { period: 0.5 });
     },
     // the bot mashes the slow helper
     auto(g, dt, synth) { const s = g.s; if (g.done || g.t < 1.0) return; const B = s._b = s._b || { n: 1.0 }; if (g.t < B.n) return; const a = s.a.find(a => KIND[a.kind] === 'slow'); synth('down', a.x, Y - 30); synth('up', a.x, Y - 30); B.n = g.t + 0.14; },

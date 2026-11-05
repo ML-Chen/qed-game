@@ -47,7 +47,7 @@
         if (a.out) { a.x += 200 * dt; continue; }
         const mine = s.cur === a && s.fy != null, want = mine ? SK.clamp((FLOOR - s.fy) / 110, 0.42, 1) : 1; a.sy += (want - a.sy) * Math.min(1, dt * 10);
         const inSmoke = FLOOR - HT * a.sy - 10 < sl;
-        if (inSmoke) { a.smk += dt * 0.7; if ((a.cough += dt) > 0.4) { a.cough = 0; g.sfx('thud'); } } else a.cough = 0;
+        if (inSmoke) { a.smk += dt * (mine || g.level >= 2 ? 0.7 : 0.12); /* a waiting animal covers its nose: at levels 0-1 there is time to follow the ghost hand one by one */ if ((a.cough += dt) > 0.4) { a.cough = 0; g.sfx('thud'); } } else a.cough = 0;
         if (mine) { const v = inSmoke ? 34 : 160, dx = s.tx - a.x; a.x += SK.clamp(dx, -v * dt, v * dt); a.x = Math.max(30, a.x); }
         if (a.x >= GOAL) { a.out = g.t; if (s.cur === a) s.cur = null; g.sfx('ding'); }
         if (a.smk >= 1.2 && !g.done) { s.fell = a; a.fellT = g.t; g.sfx('fail'); g.fail(); }
@@ -78,7 +78,11 @@
       c.strokeStyle = 'rgba(190,180,196,0.9)'; c.lineWidth = 3; c.beginPath(); for (let x = 0; x <= 360; x += 10) x ? c.lineTo(x, edge(x)) : c.moveTo(x, edge(x)); c.stroke();
       SK.tag(c, 'Smoke', 180, sl - 36, 20);
       SK.tag(c, 'Clean air', 252, Math.min(FLOOR - 30, sl + 32), 18, '#d8ffe8', 'rgba(20,60,40,0.65)');
-      SK.tag(c, 'Exit', DOOR.x + DOOR.w / 2, 282, 20, '#fff', 'rgba(30,140,70,0.9)');
+      SK.tag(c, 'Exit', DOOR.x + DOOR.w / 2, 282, 20, '#fff', 'rgba(30,140,70,0.9)'); G2.count(c, DOOR.x + DOOR.w / 2 - 6, 246, s.an.filter(a => a.out).length, s.an.length);
+      // how much smoke each animal has breathed (a bar over its head), and, for the one you drag, which way to go: lower while its head is in the smoke
+      for (const a of s.an) { if (a.out || a.x > 380) continue; const head = FLOOR - HT * a.sy, inSmoke = head - 10 < sl;
+        if (a.smk > 0.02 && !a.fellT) { const k = Math.min(1, a.smk / 1.2); c.fillStyle = 'rgba(30,14,36,0.8)'; c.beginPath(); c.roundRect(a.x - 22, head - 18, 44, 9, 4); c.fill(); c.fillStyle = k > 0.6 ? '#ff5a4a' : '#ffb04a'; c.beginPath(); c.roundRect(a.x - 20, head - 16, 40 * k, 5, 2); c.fill(); }
+        if (s.cur === a && s.fy != null && !g.done) G2.dir(c, a.x + 40, head - 4, inSmoke ? -1 : 0); }
       const next = s.an.find(a => !a.out); if (next && !s.cur) { SK.grab(c, g, next.x, FLOOR - 60, 50); SK.target(c, g, DOOR.x + DOOR.w / 2, FLOOR - 50, 0, { w: DOOR.w + 10, h: 90 }); SK.arrow(c, g, next.x, FLOOR - 24, DOOR.x + DOOR.w / 2, FLOOR - 24, { from: 50, to: 50 }); }
       SK.demo(g, c, 'drag', [next ? next.x : START, FLOOR - 18], [GOAL + 6, FLOOR - 14], { period: 2.4, never: !next });
     },

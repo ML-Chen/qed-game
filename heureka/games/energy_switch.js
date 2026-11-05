@@ -90,6 +90,10 @@
         else { const q = (t - a.offT) * 2.5; if (q < 1) { c.fillStyle = 'rgba(255,220,90,0.8)'; c.beginPath(); c.arc(K.x, K.ceil + 26 + q * (K.y - K.ceil - 26), 3, 0, 7); c.fill(); } }
         appliance(c, a.k, a, t, s);
       }
+      // every appliance has its power button: lit (pulsing) while it is on, dark once switched off, so it is clear they are tapped
+      if (!g.done) for (const a of s.apps) { const bx = a.x + 26, by = a.y - 30, pu = a.on ? 0.5 + 0.5 * Math.sin(t * 5 + a.x) : 0;
+        c.save(); c.fillStyle = a.on ? '#2a1430' : 'rgba(42,20,48,0.6)'; c.beginPath(); c.arc(bx, by, 11 + pu * 1.5, 0, 7); c.fill(); c.strokeStyle = a.on ? '#7aff9a' : '#6a6a7a'; c.lineWidth = 2.6; c.lineCap = 'round';
+        c.beginPath(); c.arc(bx, by + 1, 5.5, -Math.PI / 2 + 0.7, -Math.PI / 2 - 0.7 + Math.PI * 2); c.stroke(); c.beginPath(); c.moveTo(bx, by - 6); c.lineTo(bx, by); c.stroke(); c.restore(); }
       // the meter: a dial with a red zone above the line, and a spinning disc
       c.fillStyle = '#3a3a50'; c.beginPath(); c.roundRect(MC[0] - 62, MC[1] - 60, 124, 98, 14); c.fill();
       c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(MC[0], MC[1], MR, 0, 7); c.fill();

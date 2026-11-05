@@ -28,10 +28,9 @@ function ovCube(c, x, y, s, a = 1) { // an ice cube, centre (x, y), side s
   c.fillStyle = gr; c.strokeStyle = '#5aa0c8'; c.lineWidth = 2; c.beginPath(); c.roundRect(x - s / 2, y - s / 2, s, s, s * 0.18); c.fill(); c.stroke();
   c.fillStyle = 'rgba(255,255,255,0.8)'; c.beginPath(); c.roundRect(x - s * 0.32, y - s * 0.34, s * 0.3, s * 0.12, 2); c.fill(); c.restore();
 }
-// where the lamp should go next: the first iceberg until one has melted, then the land ice
+// where the lamp should go next: the next block of land ice (the lamp starts over an iceberg, so a player who just
+// presses there sees that melting floating ice leaves the sea at the red line)
 function ovNext(s) {
-  const ice = s.cubes.find(q => !q.land && q.v > 0), meltedIce = s.cubes.some(q => !q.land && q.v <= 0);
-  if (ice && !meltedIce) return [ice.x, ice.y];
   const q = s.cubes.find(q => q.land && q.v > 0); return q ? [q.x, q.y - OV_S / 2] : null;
 }
 MG.add({
@@ -95,10 +94,13 @@ MG.add({
     const ice0 = s.cubes.find(q => !q.land && q.v > 0);
     if (!g.done) { for (const isl of L.rocks) if (s.cubes.some(q => q.land && q.v > 0 && q.x > isl[0] && q.x < isl[1])) SK.tag(c, 'Land ice', (isl[0] + isl[1]) / 2, 236, 18); if (ice0) SK.tag(c, 'Sea ice', ice0.x, wy + 56, 18); }
     // guidance: the lamp glows; the hand drags it to the next ice: an iceberg first (nothing happens), then the land ice
-    const nx = ovNext(s); if (!s.heat && !g.done) SK.glow(c, g, hx, hy - 50, 30, '#ffe27a', { level: 2 });
+    // the rim the sea must rise over, and the drag: grab the lamp, take it to the next land ice
+    if (!g.done) { c.save(); c.strokeStyle = '#5ad87a'; c.lineWidth = 3; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(OV_L, OV_RIM); c.lineTo(OV_R, OV_RIM); c.stroke(); c.restore(); SK.tag(c, 'Rim', OV_R - 2, OV_RIM - 22, 18, '#9dffb0'); }
+    const nx = ovNext(s);
+    if (nx && !s.heat && !g.done) { SK.grab(c, g, hx, hy - 50, 34); SK.target(c, g, nx[0], nx[1], 26); if (SK.dist(hx, hy - 50, nx[0], nx[1]) > 70) SK.arrow(c, g, hx, hy - 50, nx[0], nx[1], { from: 40, to: 34 }); }
     if (nx) SK.demo(g, c, 'drag', [hx, hy - 40], nx, { period: 2.2 });
   },
-  // the bot melts an iceberg first, then holds the lamp on each block of land ice in turn
+  // the bot holds the lamp on each block of land ice in turn
   auto(g, dt, synth) {
     const s = g.s, B = s._bot = s._bot || {}; if (g.done || g.t < 0.9) return; const p = ovNext(s); if (!p) { if (B.on) { B.on = 0; synth('up', 0, 0); } return; }
     if (!B.on) { B.on = 1; synth('down', p[0], p[1]); } else synth('move', p[0], p[1]);

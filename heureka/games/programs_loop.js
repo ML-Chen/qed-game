@@ -2,13 +2,13 @@
 // by itself (forward, pick a gem) while the glow walks the lines. Each time the glow comes back to `for i in range(3):`
 // you decide: tap the lap counter for another lap, or, when range(3) has given 0, 1 and 2, tap the beep() line to leave
 // the loop. One lap too many and the robot rolls off the path into the pond; beep too soon and gems are left behind.
-const LV = [ // per level: how many laps, the loop body, and the path (tiles after the start; gems where the body picks)
-  { n: 3, body: ['forward()', 'pick_gem()'] },
-  { n: 4, body: ['forward()', 'pick_gem()'] },
-  { n: 2, body: ['forward()', 'forward()', 'pick_gem()'] },
+const F = 'forward()', G_ = 'pick_gem()';
+const LV = [ // per level, four variants (SK.variant): how many laps, and the loop body (gems where the body picks)
+  [{ n: 3, body: [F, G_] }, { n: 2, body: [F, G_] }, { n: 4, body: [F, G_] }, { n: 3, body: [G_, F] }],
+  [{ n: 4, body: [F, G_] }, { n: 5, body: [F, G_] }, { n: 3, body: [F, F, G_] }, { n: 4, body: [G_, F] }],
+  [{ n: 2, body: [F, F, G_] }, { n: 3, body: [F, F, G_] }, { n: 2, body: [F, G_, F] }, { n: 3, body: [F, G_, F] }],
 ];
 const PX = 14, PY = 126, PW = 332, CX = 130; // code panel; the counter board's centre x (under the panel)
-const KIND = { 'forward()': 'fwd', 'pick_gem()': 'gem' };
 function prog(L) { return [`for i in range(${L.n}):`, ...L.body.map(b => '    ' + b), 'beep()']; }
 function pathGeo(s) { const tiles = s.tiles, w = Math.min(62, 236 / (tiles + 1)); return { w, x0: 20 + w / 2, y: 530, at: k => 20 + w / 2 + k * w, pond: 20 + (tiles + 1) * w + 58 }; }
 function paintGarden(o, s) {
@@ -47,7 +47,7 @@ MG.add({
     text: 'A for loop runs the indented lines under it, called its body, once for each value it is given. range(3) gives 0, 1 and 2, then stops. That is three values, starting from 0, so the body runs three times.\n\nEach time the computer reaches the for line, it takes the next value. When there are none left, it skips past the body to the first line after the loop.\n\nA very common mistake is to run one lap too many, or one too few. It is called an off-by-one error. Here one lap too many walks the robot off the end of the path.',
     note: 'A for loop runs its body once per value; range(3) gives 0, 1, 2 and then the loop ends.' },
   init(g) {
-    const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.lines = prog(L); s.pc = 0; s.i = -1; s.pos = 0; s.anim = null; s.cAt = null; s.res = null; s.done = []; s.bt = 0;
+    const s = g.s, v = SK.variant(g, 4), L = LV[Math.min(2, g.level)][v]; s.v = v; s.L = L; s.lines = prog(L); s.pc = 0; s.i = -1; s.pos = 0; s.anim = null; s.cAt = null; s.res = null; s.done = []; s.bt = 0;
     const fw = L.body.filter(b => b === 'forward()').length; s.tiles = L.n * fw;
     s.gems = []; let p = 0; for (let k = 0; k < L.n; k++) for (const b of L.body) { if (b === 'forward()') p++; else s.gems.push({ at: p, got: 0 }); }
     const lay = B7.layout({ x: PX, y: PY, w: PW, lines: s.lines }); s.lay = lay; s.panelB = lay.y + lay.h; s.cY = lay.y + lay.h + 28;
@@ -81,10 +81,10 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, G = pathGeo(s);
-    c.drawImage(g.bake('cs_loop' + Math.min(2, g.level), o => paintGarden(o, s)), 0, 0, 360, 640);
+    c.drawImage(g.bake('cs_loop' + Math.min(2, g.level) + '_' + s.v, o => paintGarden(o, s)), 0, 0, 360, 640);
     B7.panel(c, g, { x: PX, y: PY, w: PW, lines: s.lines, cur: s.res && s.res.win ? -1 : s.pc, flash: s.b7flash, done: s.done, icons: ['loop', ...s.L.body.map(b => b === 'forward()' ? 'right' : 'gem'), 'say'] });
     counterBoard(c, g, s, CX, s.cY); SK.tag(c, 'Lap counter', CX, s.cY + 38, 18);
-    if (s.i >= s.L.n) { c.save(); c.fillStyle = '#ff5a6a'; c.beginPath(); c.roundRect(CX + 76, s.cY - 14, 32, 28, 6); c.fill(); c.fillStyle = '#fff'; c.font = `800 20px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(s.L.n), CX + 92, s.cY + 1); c.restore(); }
+    if (s.i >= s.L.n) { c.save(); c.fillStyle = '#ff5a6a'; const ox = CX - (46 + s.L.n * 40) / 2 + 44 + s.L.n * 40 + 16; c.beginPath(); c.roundRect(ox - 16, s.cY - 14, 32, 28, 6); c.fill(); c.fillStyle = '#fff'; c.font = `800 20px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(s.L.n), ox, s.cY + 1); c.restore(); }
     for (const gm of s.gems) { const gx = G.at(gm.at); if (!gm.got) { const blink = s.res && s.res.early && Math.sin(t * 14) > 0; if (!blink) B7.gem(c, gx, G.y - 100 + Math.sin(t * 3 + gm.at) * 4, 1.3, '#5ee0ff', t); } else { const k = Math.min(1, (t - gm.got) * 3); if (k < 1) B7.gem(c, SK.lerp(gx, 300, k), SK.lerp(G.y - 100, s.panelB + 76, k), 1.3 * (1 - k * 0.5), '#5ee0ff', t); } }
     s.gems.filter(q => q.got && t - q.got > 0.33).forEach((q, i) => B7.gem(c, 250 + i * 22, s.panelB + 76, 0.8, '#5ee0ff', t));
     let rx = G.at(s.pos), ry = G.y, sink = 0, bob = 0;
@@ -101,8 +101,9 @@ MG.add({
     // guidance: at the first for line the counter glows; after that you read range() and the counter yourself.
     // The hand (after a pause, or at level 0 from the start) shows the right tap.
     if (!g.done && !s.anim && s.pc === 0) {
-      if (s.i < 0) SK.glow(c, g, CX + 10, s.cY, 46);
-      const last = s.i === s.L.n - 1; SK.demo(g, c, 'tap', last ? [PX + 60, s.lay.lineY(s.lines.length - 1)] : [CX, s.cY]);
+      // the next tap glows (levels 0 and 1): the counter while range() still has values, the beep() line once they are used up
+      const last = s.i === s.L.n - 1, by = s.lay.lineY(s.lines.length - 1);
+      if (last) SK.glow(c, g, PX + 70, by, 26); else SK.glow(c, g, CX + 10, s.cY, 46); SK.demo(g, c, 'tap', last ? [PX + 60, s.lay.lineY(s.lines.length - 1)] : [CX, s.cY]);
     }
   },
   // the bot taps the counter for each lap, then the beep() line (B7FAIL: one lap too many)

@@ -91,8 +91,22 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 336, 626, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
       const next = s.cups.find(cc => !cc.full);
-      if (!s.grab && next) { SK.grab(c, g, j.x - 36, RAIL + 12, 42); SK.target(c, g, next.cx, BASE + next.top - 16, 24); SK.arrow(c, g, j.x - 36, RAIL + 12, next.cx - 20, BASE + next.top - 30, { from: 50, to: 30 }); }
-      SK.demo(g, c, 'drag', [j.x - 36, RAIL + 12], [next ? next.cx - 36 : j.x, RAIL + 92], { period: 2, never: !next || !!s.grab });
+      // guidance in two steps: slide the jug along the rail until its spout is over the next glass, then pull down to tip it
+      const over = next && j.x > next.cx + next.open[0] + 4 && j.x < next.cx + next.open[1] - 4, gx = j.x - 36, gy = RAIL + 12;
+      if (s.flow && !g.done && (!s.target || s.target.area >= s.target.cap)) SK.tag(c, 'Spilling!', SK.clamp(j.x, 60, 300), 588, 18, '#fff6ea', 'rgba(190,40,60,0.9)');
+      if (!s.grab && next && !g.done) {
+        if (!over) { const tx = next.cx - 36; SK.grab(c, g, gx, gy, 42); SK.target(c, g, tx, gy, 40); SK.arrow(c, g, gx, gy, tx, gy, { from: 48, to: 50 });
+          c.save(); c.strokeStyle = 'rgba(255,255,255,0.8)'; c.lineWidth = 3; c.setLineDash([5, 7]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(next.cx, RAIL + 30); c.lineTo(next.cx, BASE + next.top - 8); c.stroke(); c.restore(); }
+        else { SK.grab(c, g, gx, gy, 42); SK.target(c, g, gx, gy + 96, 22); SK.arrow(c, g, gx, gy, gx, gy + 96, { from: 46, to: 28 }); }
+      }
+      SK.demo(g, c, 'drag', [gx, gy], [next ? next.cx - 36 : gx, gy], { period: 1.8, never: !next || !!s.grab || over });
+      // over a glass, the hand pulls the jug down and keeps holding while the glass fills (the kit's drag never dwells)
+      if (over && !s.grab && !g.done) {
+        const idle = t - (g.lastIn ?? 0), t0 = !g.s.touched ? 0.9 : idle >= 1.4 ? (g.lastIn ?? 0) + 1.4 : null;
+        if (t0 != null && t >= t0) { const per = 3, k = ((t - t0) % per) / per, fade = SK.clamp((t - t0) * 4, 0, 1), p = k < 0.06 ? k / 0.06 : k < 0.86 ? 1 : 1 - (k - 0.86) / 0.06, m = SK.easeInOut((k - 0.06) / 0.2);
+          if (p > 0.3 && k < 0.88) { c.save(); c.globalAlpha = 0.35 * fade; c.strokeStyle = '#fff6ea'; c.lineWidth = 4; c.setLineDash([6, 8]); c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx, gy + 92 * m); c.stroke(); c.restore(); }
+          SK.hand(c, gx, gy + 92 * m, SK.clamp(p, 0, 1), 0.9 * fade * (k > 0.92 ? 0 : 1)); }
+      }
     },
     // the bot: carry the jug over each glass (tilt so the spout sits over the opening), pour, ease off at the brim
     auto(g, dt, synth) {

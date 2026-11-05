@@ -86,7 +86,10 @@ MG.add({
     text: 'A program is a list of steps. The computer does them one at a time, from the top line down, exactly as written.\n\nThe same three steps in a different order make a different program. "Right, right, up" takes the frog around the water to the fly. "Up, right, right" sends it into the rock, because the first step already goes the wrong way.\n\nWhen a program goes wrong, look for the first line where the world stopped matching your plan.',
     note: 'A program is a list of steps, and the computer does them in exactly the order you write them.' },
   init(g) {
-    const s = g.s, L = LAYOUTS[Math.min(2, g.level)], S = solve(L);
+    // variants: the pond as drawn or mirrored left to right, and the cards dealt in a different order
+    const s = g.s, v = SK.variant(g, 4), L0 = LAYOUTS[Math.min(2, g.level)], flip = k => k === 'right' ? 'left' : k === 'left' ? 'right' : k;
+    const L = v & 1 ? { rows: L0.rows.map(r => [...r].reverse().join('')), cards: L0.cards.map(flip) } : { rows: L0.rows, cards: L0.cards.slice() };
+    if (v & 2) L.cards = SK.shuffled(g, L.cards); s.v = v; const S = solve(L);
     s.S = S; s.L = L; s.prog = new Array(S.n).fill(null); s.run = null; s.res = null; s.eaten = 0;
     const lay = B7.layout({ x: PX, y: PY, w: PW, lines: s.prog.map(() => '') }); s.panelB = lay.y + lay.h; s.lay = lay;
     s.go = { x: 298, y: lay.y + lay.h / 2 + 6, r: 30 };
@@ -129,7 +132,7 @@ MG.add({
   },
   draw(g, c) {
     const s = g.s, t = g.t, G = geo(s), { cs } = G;
-    c.drawImage(g.bake('cs_hop' + Math.min(2, g.level), o => paintPond(o, s)), 0, 0, 360, 640);
+    c.drawImage(g.bake('cs_hop' + Math.min(2, g.level) + (s.v & 1 ? 'm' : ''), o => paintPond(o, s)), 0, 0, 360, 640);
     // live water shimmer
     c.save(); c.globalAlpha = 0.12; c.strokeStyle = '#fff'; c.lineWidth = 2; for (let i = 0; i < 6; i++) { const y = 180 + i * 75 + Math.sin(t + i) * 6, x = (i * 97 + t * 14) % 400 - 20; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + 20, y - 4, x + 40, y); c.stroke(); } c.restore();
     // the code panel: each filled line reads the card's step
@@ -182,7 +185,9 @@ MG.add({
     }
     if (dragC) drawCard(c, dragC.kind, dragC.x, dragC.y, 1.12, 6);
     // guidance: glow the next card the program needs (level 0); the ghost hand drags the first one up
-    if (!run && !dragC && nextSlot >= 0) { const want = s.S.answer[nextSlot], cd = s.cards.find(c2 => c2.slot < 0 && c2.kind === want); if (cd) { SK.grab(c, g, cd.hx, cd.hy, 32); SK.target(c, g, PX + 84, s.lay.lineY(nextSlot), 0, { w: 112, h: 30 }); SK.arrow(c, g, cd.hx, cd.hy, PX + 84, s.lay.lineY(nextSlot)); } }
+    const badLine = run ? -1 : s.prog.findIndex((p, i) => p != null && s.cards[p].kind !== s.S.answer[i]);
+    if (badLine >= 0) SK.glow(c, g, PX + 84, s.lay.lineY(badLine), 26, '#ff9a7a', { level: 2 }); // a line that sends the frog the wrong way: tap it to take it back
+    else if (!run && !dragC && nextSlot >= 0) { const want = s.S.answer[nextSlot], cd = s.cards.find(c2 => c2.slot < 0 && c2.kind === want); if (cd) { SK.grab(c, g, cd.hx, cd.hy, 32); SK.target(c, g, PX + 84, s.lay.lineY(nextSlot), 0, { w: 112, h: 30 }); SK.arrow(c, g, cd.hx, cd.hy, PX + 84, s.lay.lineY(nextSlot)); } }
     // the hand shows the next step: drag the card the next line needs, take back a wrong line, or tap run
     if (!run) {
       const bad = s.prog.findIndex((p, i) => p != null && s.cards[p].kind !== s.S.answer[i]);

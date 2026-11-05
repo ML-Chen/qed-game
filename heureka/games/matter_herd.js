@@ -74,9 +74,16 @@
       if (!s.broom) { // the broom, lying on the bench until you pick it up (dim until the gas has spread)
         c.save(); c.globalAlpha = s.spread ? 1 : 0.55; c.translate(268, 584); c.rotate(-0.12); c.strokeStyle = '#d89a5a'; c.lineWidth = 8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-70, 6); c.lineTo(10, 0); c.stroke();
         c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(8, -14, 70, 26, 6); c.fill(); c.stroke(); c.strokeStyle = 'rgba(138,106,42,0.6)'; for (let xx = 14; xx < 76; xx += 6) { c.beginPath(); c.moveTo(xx, -12); c.lineTo(xx + 3, 10); c.stroke(); } c.restore();
-        if (s.spread) { SK.grab(c, g, 300, 584, 36); SK.target(c, g, (BOX.l + MID) / 2, (BOX.t + BOX.b) / 2, 0, { w: MID - BOX.l - 16, h: BOX.b - BOX.t - 16 }); SK.arrow(c, g, 300, 560, 160, 420, { from: 30, to: 30 }); }
       }
-      const far = s.ps.reduce((a, p) => (p.x > (a ? a.x : MID) ? p : a), null), fy = far ? SK.clamp(far.y, BOX.t + 40, BOX.b - 40) : 358;
+      const far = s.ps.reduce((a, p) => (p.x > (a ? a.x : MID) ? p : a), null), fy = far ? SK.clamp(far.y, BOX.t + s.h / 2 - 10, BOX.b - s.h / 2 + 10) : 358;
+      if (s.spread && !g.done) {
+        // where to put the broom (a faint broom to the right of the farthest particle) and which way to sweep (left, to the green half)
+        const sx = Math.min(BOX.r - 10, (far ? far.x : 300) + 34);
+        if (!s.broom) { c.save(); c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 6); c.fillStyle = '#e8c060'; c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(sx - 6, fy - s.h / 2, 12, s.h, 5); c.fill(); c.stroke(); c.restore(); }
+        SK.grab(c, g, sx, fy, 30); SK.target(c, g, (BOX.l + MID) / 2, (BOX.t + BOX.b) / 2, 0, { w: MID - BOX.l - 16, h: BOX.b - BOX.t - 16 }); SK.arrow(c, g, sx, fy, MID - 20, fy, { from: 34, to: 10 });
+        // what's left: the particles still on the right
+        const nr = s.ps.filter(p => p.x + PR * 0.5 >= MID).length; SK.tag(c, nr ? nr + ' still on the right' : 'All on the left!', (MID + BOX.r) / 2 + 8, BOX.t - 30, 18, nr ? '#fff6ea' : '#c8ffc8');
+      }
       SK.demo(g, c, 'drag', [Math.min(BOX.r - 10, (far ? far.x : 300) + 34), fy], [MID - 20, fy], { period: 2, delay: (s.spread || 0) + 0.2, never: !s.spread || !far });
     },
     // the bot: sweep the broom from the right wall toward the middle, keeping it in front of whichever particle is about to

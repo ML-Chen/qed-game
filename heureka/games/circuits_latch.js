@@ -58,7 +58,9 @@ MG.add({
     const beadX = i => GX + ((i + 0.5) * C.dur - t) * v, i0 = Math.floor(t / C.dur);
     for (let i = Math.max(0, i0 - 4); i < i0 + 5; i++) { const x = beadX(i); if (x < -20 || x > 380) continue; lamp(c, x, BELTY, 14, s.bits[i % s.bits.length], '#5ae0ff', '#1e2a34'); }
     const dNow = s.bits[i0 % s.bits.length];
-    c.save(); c.strokeStyle = '#ffffff'; c.lineWidth = 3; c.setLineDash([6, 5]); c.beginPath(); c.roundRect(GX - 26, BELTY - 28, 52, 56, 10); c.stroke(); c.restore();
+    // the window turns green while the bead in it is the bit the lock wants next: that is the moment to tick
+    const match = !g.done && dNow === s.code[s.cells.length];
+    c.save(); c.strokeStyle = match ? '#5aff8a' : '#ffffff'; c.lineWidth = match ? 5 : 3; if (!match) c.setLineDash([6, 5]); c.beginPath(); c.roundRect(GX - 26, BELTY - 28, 52, 56, 10); c.stroke(); c.restore();
     // the clock: your tap is the tick; the chip flashes and its window snaps like a shutter
     const tk = s.tick ? Math.max(0, 1 - (t - s.tick) / 0.25) : 0;
     if (tk) { c.save(); c.globalAlpha = tk; c.fillStyle = '#fff6c0'; c.beginPath(); c.roundRect(GX - 26, BELTY - 28, 52, 56, 10); c.fill(); c.strokeStyle = '#ffe27a'; c.lineWidth = 3; c.beginPath(); c.roundRect(CHIP.x - 70, CHIP.y - 42, 140, 84, 12); c.stroke(); c.restore(); }
@@ -70,14 +72,16 @@ MG.add({
     for (let i = 0; i < C.n; i++) lamp(c, cx(i), CODEY, 13, s.code[i], won ? '#7aff9a' : '#5ae0ff', '#1e2a34');
     for (let i = 0; i < C.n; i++) { const x = cx(i), has = i < s.cells.length, next = i === s.cells.length && !g.done; c.fillStyle = '#16161c'; c.beginPath(); c.roundRect(x - 22, CELLY - 24, 44, 48, 8); c.fill(); c.strokeStyle = next ? '#ffe27a' : 'rgba(200,160,74,0.6)'; c.lineWidth = next ? 3 : 2; c.stroke(); if (has) lamp(c, x, CELLY, 14, s.cells[i], won ? '#7aff9a' : '#5ae0ff', '#1e2a34'); if (next && s.bad && t - s.bad < 0.5) { c.strokeStyle = '#ff5a5a'; c.lineWidth = 4; c.beginPath(); c.moveTo(x - 10, CELLY - 10); c.lineTo(x + 10, CELLY + 10); c.moveTo(x + 10, CELLY - 10); c.lineTo(x - 10, CELLY + 10); c.stroke(); } }
     if (!g.done) { const i = s.cells.length; c.fillStyle = '#ffe27a'; c.beginPath(); c.moveTo(cx(i), CODEY + 20); c.lineTo(cx(i) - 6, CODEY + 30); c.lineTo(cx(i) + 6, CODEY + 30); c.fill(); }
-    void dNow;
+    // the lock: its shackle springs open once every bit is stored
+    { const op = won ? SK.easeOut((t - g.doneAt) / 0.4) : 0, lx = 318, ly = CODEY - 6; c.save(); c.strokeStyle = won ? '#7aff9a' : '#c8a04a'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(lx - 12, ly - op * 16); c.lineTo(lx - 12, ly - 16 - op * 16); c.arc(lx, ly - 16 - op * 16, 12, Math.PI, 0); c.lineTo(lx + 12, ly - op * 6); c.stroke(); c.restore(); }
     // the stored bit flying from the memory light into its cell
     if (s.fly && t - s.fly.t < 0.3) { const k = SK.easeInOut((t - s.fly.t) / 0.3), i = s.cells.length - 1, x = SK.lerp(CHIP.x + 22, cx(i), k), y = SK.lerp(CHIP.y, CELLY, k); lamp(c, x, y, 10, s.fly.b, '#5ae0ff', '#1e2a34'); }
     SK.tag(c, 'Data', 46, BELTY - 44, 18); SK.tag(c, 'Flip-flop', CHIP.x + 112, CHIP.y, 18); SK.tag(c, 'Lock code', CHIP.x, CODEY - 52, 18); SK.tag(c, 'Memory', CHIP.x, CELLY + 44, 18);
     if (!g.done) SK.glow(c, g, GX, BELTY, 40);
     // the frog
     SK.animal(c, 'frog', 56, 612, 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : g.result === 'fail' ? 'sad' : s.bad && t - s.bad < 0.6 ? 'wow' : 'think' });
-    SK.demo(g, c, 'tap', [GX, BELTY + 8], null, { period: C.dur * 2 });
+    // the ghost hand presses only while the wanted bit sits in the window (copy it and you store the right bit)
+    { const ph = t / C.dur - i0; G2.tapAt(g, c, GX, BELTY + 8, match && ph > 0.3 && ph < 0.7 ? 1 : 0); }
   },
   auto(g, dt, synth) { // tick in the middle of a stretch where the data matches the next bit of the code
     const s = g.s; if (g.done || g.t < 1.0) return; const B = s._bot = s._bot || {}; if (B.next && g.t < B.next) return;

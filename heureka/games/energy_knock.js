@@ -111,6 +111,7 @@
               } else { // not enough: the ball bounces back (tik) and the tower only wobbles
                 b.st = 'back'; b.backT = g.t; b.sp -= 1; b.u = -b.u * (b.k === 'pong' ? 0.8 : 0.12); s.wob = g.t; s.tik = g.t; s.tikK = b.k;
                 g.sfx(b.k === 'pong' ? 'click' : 'thud'); if (b.k === 'pong') g.sfx('boing');
+                g.float(b.k === 'pong' ? 'Too light!' : 'Start higher!', 196, 380); // say which way to go
               }
             }
             if (b.x + b.r > 352) { b.sp -= (b.x + b.r - 352); b.u = -Math.abs(b.u) * 0.4; }
@@ -146,6 +147,7 @@
       SK.animal(c, 'hedgehog', 296, 614, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : ow ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : ow ? 'wow' : 'happy', facing: -1 });
       if (s.balls[0].st === 'home') SK.tag(c, 'Bowling ball', 80, 496, 18); if (s.balls[1].st === 'home') SK.tag(c, 'Ping-pong ball', 178, 598, 18);
       const bowl = s.balls[0];
+      G2.count(c, 64, 44, s.round + (s.down ? 1 : 0), s.towers.length); // towers knocked down so far
       if (bowl.st === 'home' && !s.down && s.balls[1].st === 'home') { const tg = [P0[0] + D[0] * 50 + N[0] * 27, P0[1] + D[1] * 50 + N[1] * 27]; SK.target(c, g, tg[0], tg[1], 30); SK.grab(c, g, bowl.x, bowl.y, 32); SK.arrow(c, g, bowl.x, bowl.y, tg[0], tg[1], { from: 40, to: 44 }); }
       SK.demo(g, c, 'drag', bowl.home, [P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23], { period: 2, never: s.down || s.balls.some(b => b.st !== 'home') });
     },

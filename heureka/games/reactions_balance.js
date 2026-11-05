@@ -120,7 +120,10 @@
       const tr = s.trays.find(t => t.kind === need) || s.trays[0], tp = tr.side === 'L' ? lp : rp;
       if (need && !s.held) { SK.grab(c, g, tr.x, tr.y - 6, 34); SK.target(c, g, tp.x, tp.y - 30, 58); SK.arrow(c, g, tr.x, tr.y - 6, tp.x, tp.y - 30, { to: 70 }); }
       const NAME = { O2: 'Oxygen', CO2: 'CO\u2082', H2O: 'Water' }; for (const tr of s.trays) SK.tag(c, NAME[tr.kind], tr.x, 598, 18);
-      SK.demo(g, c, 'drag', [tr.x, tr.y], [tp.x, tp.y - 40], { never: !need });
+      // too many of something you added: that molecule glows on its pan, and the hand taps it off
+      const off = need ? null : nr.C > nl.C ? ['R', 'CO2'] : nr.H > nl.H ? ['R', 'H2O'] : nl.O > nr.O ? ['L', 'O2'] : null;
+      let offAt = null; if (off && !s.held) { const list = off[0] === 'L' ? s.L : s.R, i = list.map(m => !m.base && m.kind === off[1]).lastIndexOf(true); if (i >= 0) { offAt = slot(off[0] === 'L' ? lp : rp, i); SK.glow(c, g, offAt.x, offAt.y, 22, '#ff9a7a', { level: 2 }); } }
+      if (offAt) SK.demo(g, c, 'tap', [offAt.x, offAt.y]); else SK.demo(g, c, 'drag', [tr.x, tr.y], [tp.x, tp.y - 40], { never: !need });
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done) return; const B = s._bt = s._bt || { n: 0, next: 1.0 };

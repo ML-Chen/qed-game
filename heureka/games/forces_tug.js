@@ -52,7 +52,7 @@
       s.foxes = L >= 2 ? 2 : 1; s.fox = L >= 2 ? 92 : [60, 74][L]; // the fox side's total pull
       s.vr = SK.variant(g, 4); s.me = 30; s.x = 180; s.v = 0; s.taps = 0; s.yank = 0; s.won = 0; s.puff = 0; s.lastTap = -1; s.ry = 0;
     },
-    down(g) { const s = g.s; SK.touched(g); if (g.done) return; s.me = Math.min(150, s.me + 15); s.taps++; s.lastTap = g.t; g.sfx('tap', { pitch: 0.8 + Math.min(1, s.me / 150) * 0.6 }); if (s.taps % 3 === 0) g.sfx('stretch', { vol: 0.25 }); },
+    down(g) { const s = g.s; SK.touched(g); if (g.done) return; s.me = Math.min(150, s.me + [22, 26, 15][Math.min(2, g.level)]); /* levels 0-1: tapping at the ghost hand's pace (4 a second) out-pulls the fox */ s.taps++; s.lastTap = g.t; g.sfx('tap', { pitch: 0.8 + Math.min(1, s.me / 150) * 0.6 }); if (s.taps % 3 === 0) g.sfx('stretch', { vol: 0.25 }); },
     update(g, dt) {
       const s = g.s;
       s.me = Math.max(14, s.me - s.me * 1.05 * dt); // pulls fade when the rabbit rests
@@ -92,7 +92,7 @@
       // the crowd on the ice: three penguins and a duck, cheering whoever wins
       for (const [px, kind, ph] of [[96, ['penguin', 'duck', 'owl', 'frog'][s.vr], 0], [150, 'duck', 1.3], [212, ['penguin', 'beaver', 'penguin', 'hedgehog'][s.vr], 2.1], [266, 'penguin', 3.3]]) SK.animal(c, kind, px, 598 + Math.sin(ph) * 6, 0.85, { t, phase: ph, pose: g.done ? 'cheer' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: px < 180 ? 1 : -1 });
       if (!g.done) SK.glow(c, g, RX + 4, Y - 40, 42, undefined, { level: 2 });
-      SK.demo(g, c, 'tap', [RX + 12, Y - 30], null, { period: 0.32, delay: 0.7 });
+      SK.demo(g, c, 'tap', [RX + 12, Y - 30], null, { period: 0.25, delay: 0.7 });
     },
     auto(g, dt, synth) { const s = g.s; if (g.done || g.t < 0.8) return; if (g.t - (s._bt || 0) > 0.11) { s._bt = g.t; synth('down', RX, Y - 30); synth('up', RX, Y - 30); } },
   });

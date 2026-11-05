@@ -135,7 +135,12 @@ MG.add({
     if (s.L.some(q => q.st === 'fly' && t < q.T0)) SK.tag(c, 'Debts', 170, 206, 18, '#ffd0d0');
     for (const q of s.L) letter(c, q.x, q.y, t, q.ph, { paid: q.paid, stuck: q.st === 'stuck', rot: q.st === 'stuck' ? (q.i - 1) * 0.25 : q.st === 'bounce' ? q.dir * (t - q.at) * 6 : undefined });
     const next = L.shops.find(k => !s.bub[k]);
-    if (next && !g.done) { const [cx, cy] = centre(SHOPS[next]); SK.glow(c, g, cx, cy, R); B9.demoPath(g, c, B9.ring(cx, cy, R + 2, R + 2, 30, -Math.PI / 2, 1.05), { period: 2.4 }); }
+    // the loop to trace round the next shop: a dashed ring, filling in green as your finger goes round it
+    if (next && !g.done) { const [cx, cy] = centre(SHOPS[next]); SK.glow(c, g, cx, cy, R);
+      c.save(); c.strokeStyle = 'rgba(255,226,122,0.85)'; c.lineWidth = 3; c.setLineDash([8, 7]); c.lineDashOffset = -t * 20; c.beginPath(); c.arc(cx, cy, R + 2, 0, TAU); c.stroke(); c.restore();
+      const wn = s.w[next] || 0, fr = SK.clamp(Math.abs(wn) / (TAU * 0.86), 0, 1); if (s.drawing && fr > 0.02 && s.path.length) { const a0 = Math.atan2(s.path[0][1] - cy, s.path[0][0] - cx); c.save(); c.strokeStyle = '#5ad87a'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.arc(cx, cy, R + 2, a0, a0 + Math.sign(wn) * fr * TAU, wn < 0); c.stroke(); c.restore(); }
+      G2.path(g, c, B9.ring(cx, cy, R + 2, R + 2, 30, -Math.PI / 2, 1.05), { period: 2.4 }); }
+    G2.count(c, 64, 44, L.shops.filter(k => s.bub[k]).length, L.shops.length); // shops wrapped so far
   },
   auto(g, dt, synth) { lay(g).shops.forEach((k, i) => { const [cx, cy] = centre(SHOPS[k]); B9.botPath(g, synth, 'loop' + i, 1.0 + i * 0.85, B9.ring(cx, cy, R, R, 40, -Math.PI / 2, 1.08), 0.65); }); },
 });

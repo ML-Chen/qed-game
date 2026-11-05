@@ -83,12 +83,15 @@ MG.add({
       else if (e.st === 'left') { const k = Math.min(1, (t - s.res.t) / 0.8); bx = SK.lerp(DOOR.x + 58, 420, k); by = SK.lerp(DOOR.y - 66, 240, k); }
       SK.animal(c, 'bird', bx, by, 0.7, { t, pose: flap ? 'cheer' : 'idle', expr: e.st === 'left' ? 'sad' : 'happy', facing: -1, noShadow: true });
       const keep = e.st !== 'answered' || t - e.at < 0.35; if (keep) { c.save(); c.translate(bx - 18, by - 10); c.rotate(-0.2); c.fillStyle = '#fff6ea'; c.strokeStyle = '#6a5a8a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-11, -7, 22, 14, 2); c.fill(); c.stroke(); c.restore(); }
-      if (e.st === 'peck') SK.tag(c, 'peck!', DOOR.x + 70, DOOR.y - 112, 18);
+      if (e.st === 'peck') { SK.tag(c, 'peck!', DOOR.x + 70, DOOR.y - 112, 18);
+        // how long the bird will wait: a ring round it that runs down, green to red
+        const left = SK.clamp(1 - (t - e.pt) / s.pl.win, 0, 1), col = left > 0.5 ? '#7ee8a0' : left > 0.25 ? '#ffd45a' : '#ff6a5a';
+        c.save(); c.strokeStyle = 'rgba(30,14,36,0.5)'; c.lineWidth = 7; c.beginPath(); c.arc(bx, by - 22, 34, 0, 7); c.stroke(); c.strokeStyle = col; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.arc(bx, by - 22, 34, -Math.PI / 2, -Math.PI / 2 + left * Math.PI * 2); c.stroke(); c.restore(); }
     }
     // letters delivered so far
     for (let i = 0; i < s.ev.filter(e => e.k === 'peck').length; i++) { const got = i < s.got; c.save(); c.translate(40 + i * 30, 330); c.globalAlpha = got ? 1 : 0.35; c.fillStyle = '#fff6ea'; c.strokeStyle = '#6a5a8a'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-11, -8, 22, 16, 2); c.fill(); c.stroke(); c.restore(); }
-    // guidance: the bell glows only while a peck is waiting; the hand taps it then
-    if (peck && !g.done) { SK.glow(c, g, BELL.x, BELL.y + 6, 50); SK.demo(g, c, 'tap', [BELL.x, BELL.y + 10], null, { delay: 0 }); }
+    // guidance: the bell glows (every level) only while a peck is waiting; the hand taps it then
+    if (peck && !g.done) { SK.glow(c, g, BELL.x, BELL.y + 6, 50, '#ffe27a', { level: 2 }); SK.demo(g, c, 'tap', [BELL.x, BELL.y + 10], null, { delay: 0 }); }
   },
   // the bot rings 0.35 s after each peck (B7FAIL: rings at once, before any bird)
   auto(g, dt, synth) {

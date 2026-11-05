@@ -35,7 +35,7 @@
     down(g, x, y) {
       const s = g.s; SK.touched(g); if (g.done) return;
       if (s.kettle && SK.dist(x, y, SW[0], SW[1]) < 46) { s.kettle = false; g.sfx('click'); g.burst(SW[0], SW[1], ['#9aa0c0', '#fff'], 6, 80); return; }
-      s.cad += 0.4; s.taps++; if (s.taps % 2) g.sfx('tap');
+      s.cad += [0.6, 0.55, 0.42][Math.min(2, g.level)]; s.taps++; // each tap's push (levels 0-1: tapping as fast as the ghost hand is enough) if (s.taps % 2) g.sfx('tap');
     },
     update(g, dt) {
       const s = g.s, load = 60 * s.bulbs.length + (s.kettle ? 2000 : 0);
@@ -81,8 +81,14 @@
       const rk = s.read / s.need, rx = 330, ry = 452; c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 7; c.beginPath(); c.arc(rx, ry, 16, 0, 7); c.stroke(); c.strokeStyle = '#ffe27a'; c.lineCap = 'round'; c.beginPath(); c.arc(rx, ry, 16, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
       SK.tag(c, 'Generator', cx + 82, cy - 40, 18); if (s.kettle) SK.tag(c, 'Kettle', KET.x - 8, KET.y - 44, 18);
       if (s.kettle) SK.glow(c, g, SW[0], SW[1], 26);
-      SK.glow(c, g, cx + 4, cy + 14, 34, '#ffe27a', { level: 0 });
-      SK.demo(g, c, 'tap', s.kettle ? SW : [cx + 4, cy + 30], null, { period: s.kettle ? 1.1 : 0.35 });
+      SK.glow(c, g, cx + 4, cy + 14, 34, '#ffe27a', { level: 2 }); if (!g.done) SK.tag(c, 'Tap to pedal', cx + 20, cy + 70, 18, '#ffe27a');
+      SK.tag(c, 'Reading', 306, ry - 36, 18);
+      // the light meter: how bright the bulb is, with the green band that is bright enough to read by
+      { const mx = 30, m0 = 430, m1 = 300, my = v => SK.lerp(m0, m1, v); c.fillStyle = 'rgba(20,14,30,0.8)'; c.beginPath(); c.roundRect(mx - 12, m1 - 6, 24, m0 - m1 + 12, 10); c.fill();
+        c.fillStyle = 'rgba(90,216,122,0.45)'; c.fillRect(mx - 8, my(1), 16, my(s.th) - my(1)); c.fillStyle = b >= s.th ? '#7aff9a' : '#ffd45a'; c.beginPath(); c.roundRect(mx - 6, my(b), 12, Math.max(2, m0 - my(b)), 4); c.fill();
+        c.strokeStyle = '#5ad87a'; c.lineWidth = 3; c.beginPath(); c.moveTo(mx - 12, my(s.th)); c.lineTo(mx + 12, my(s.th)); c.stroke(); SK.tag(c, 'Light', mx + 8, m1 - 22, 18);
+        if (!g.done) G2.dir(c, mx + 30, my(b) - 4, b >= s.th ? 0 : 1, { s: 0.85 }); }
+      SK.demo(g, c, 'tap', s.kettle ? SW : [cx + 4, cy + 30], null, { period: s.kettle ? 1.1 : 0.28 });
     },
     // the bot: mash steadily (fast enough for two bulbs at level 2), and switch the kettle off when it comes on
     auto(g, dt, synth) {

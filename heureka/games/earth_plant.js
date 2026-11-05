@@ -42,8 +42,8 @@ MG.add({
   },
   update(g, dt) {
     const s = g.s, all = s.spots.every(p => p.at);
-    // the clouds roll in on their own; once every patch is planted they hurry up
-    if (!s.rainT) { const arrive = SK.clamp(g.dur * 0.5, 3.2, 6.5); s.ck = Math.min(1, s.ck + dt * (all ? 2.2 : B5.patient() ? 0 : 1 / arrive)); if (s.ck >= 1) { s.rainT = g.t; g.sfx('rain'); g.sfx('thunder');
+    // the clouds roll in on their own (slowly enough to copy the ghost hand patch by patch); once every patch is planted they hurry up
+    if (!s.rainT) { const arrive = Math.min(g.dur * 0.8, s.spots.length * [2.3, 1.9, 1.1][Math.min(2, g.level)] + 1.2); s.ck = Math.min(1, s.ck + dt * (all ? 2.2 : B5.patient() ? 0 : 1 / arrive)); if (s.ck >= 1) { s.rainT = g.t; g.sfx('rain'); g.sfx('thunder');
       for (const p of s.spots) if (!p.at) s.mud.push({ x: p.x, v: 20, r: 13 }); } }
     if (!s.rainT || g.done) return;
     for (const m of s.mud) { m.v = Math.min(300, m.v + 420 * dt); m.x += m.v * dt; m.r = Math.min(24, m.r + dt * 10);
