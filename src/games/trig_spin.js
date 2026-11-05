@@ -162,7 +162,7 @@ function next(g, wait) {
 }
 
 MG.add({
-  id: 'spin', stage: 'trig', cmd: 'UNIT CIRCLE!', hint: 'tap', time: 9, mood: 'night', winText: 'On the dot!', hold: 1.6,
+  id: 'spin', stage: 'trig', cmd: 'UNIT CIRCLE!', hint: 'tap', time: 9, mood: 'night', winText: 'Spot on!', hold: 1.6,
   card: {
     title: 'The unit circle', ref: 'Trigonometry', kind: 'Trigonometry',
     text: 'The unit circle is a circle with radius 1, centred where the x-axis and the y-axis cross. Start at the point (1, 0) and turn counter-clockwise by an angle θ (the Greek letter theta). You land on a point of the circle. Its coordinates are (cos θ, sin θ): cos θ is how far across the point is, and sin θ is how far up.\n\nFor example, at θ = 60° the point is (1/2, √3/2), so cos 60° = 1/2 and sin 60° = √3/2. At 90° you are at the top, (0, 1).\n\nAngles can also be measured in radians. Half a turn is π radians, so π radians = 180°, and 60° is π/3.',

@@ -25,6 +25,10 @@ Kit helpers (all in `src/mathkit.js`; targets are ids or node objects; every hel
 - `MK.note(g, { node, at, off, s, col, write, hold, to, toOff, s1, then })` — a working note writes itself next to the problem, then flies into its place in the expression (calls `then` on landing) or fades. This is the "showing your work" voice.
 - `MK.arrow(g, from, to, { label, bend, col })` — a curved arrow with a label draws itself.
 - `MK.tween(g, target, { sc, hl, alpha, dx, dy }, dur, { yoyo })` — animate node properties; `MK.sparkle(g, target)` — a burst of sparkles.
+- Every helper that takes a target accepts an id, a node object, a list of either, or `[x, y]`. Notes stay inside the screen while they are written.
+- `MK.note(g, { ..., pill: true })` puts a dark rounded panel behind a note so it reads on a busy scene.
+- `MK.onMiss(g, fn)` — `fn(g, info)` runs after every wrong move (`info` is `{ tap }`, `{ drag, to }`, or `{ ask }` for a wrong tray tile), so a game can act out the mistake.
+- `MK.place(g, key, node, x, y, s, { still: true })` — turns off the automatic glide for an expression the game moves itself every frame (a turning dial, a label riding a moving arrow).
 - Node properties the renderer understands: `sc` (scale), `hl` (0–1 highlight, colour `hlc`), `roll`, `write`, `strike`, `bar`, plus `alpha`, `dx`, `dy`, `pop`. A node created with `_born: -1` appears at once instead of fading in (use it for symbols that land from a note). A node faded to `alpha: 0` leaves no ghost when removed.
 - When an expression is rewritten, symbols that are still there glide to their new places by themselves (reuse the same node objects to get a glide; new symbols fade in; removed symbols fly into the nearest new one and fade).
 In medium mode, the tray opens at `askAt` (when the working has reached the computation, for example "3 + 1"), and `resolve` plays the rest; set `after` to the length of that rest. Film a microgame with `python3 tools/film.py OUTDIR id [level] [mode] [step]`, which writes a frame grid and a GIF of the bot playing it; look at the frames and fix anything that is unclear, cramped or glitchy.
@@ -48,6 +52,8 @@ Dragging numbers in similar-looking equations gets monotonous fast, so every mic
 - Expression size and placement can vary too: big and bold for a short problem, spread across the scene when the parts have a place in the world (a seesaw's two sides, a grid, a graph).
 
 ## Where the player looks (the owner's rule)
+Readable on a phone: the screen is 360 × 640, so every number the player must read is at least 18 px (bold, with a shadow or on a contrasting panel), working notes are at least 22 px, the problem line is at least 28 px, nothing runs past the screen edge, the win banner is one or two short words, and the solved line stays bright and large.
+
 The work happens where the player is already looking. Don't send the player's gaze to a side area to do or watch the work: no plates, napkins, benches, side tallies or second working lines in another part of the screen. The expression itself changes in place, and the animals act on the expression. A working note (`MK.note`, "6 ÷ 3 = 2") is fine when it writes itself right beside the part being worked on and then flies into the expression or fades.
 - Gestures match how people do the math by hand. Long addition is one swipe down a column; the column adds itself up and the carried 1 hops to the next column by itself (no separate "carry" tap).
 - Drops are forgiving. A part dropped near its target counts (the kit accepts drops within `reach`, 64 px by default), and a move can accept a whole region with `area: [x0, y0, x1, y1]`: moving a term to the other side of an equation works anywhere on that side, not only on top of a number. Accept every natural way of doing a move: for vector addition, dragging the second arrow's tail to the first arrow's tip, or the first's tip to the second's tail.

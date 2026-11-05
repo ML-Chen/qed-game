@@ -159,7 +159,7 @@ MG.add({
     M.play(g, {
       moves(g) { return S.toks.length > 1 ? validOps(S.toks).map(opMove) : []; },
       area(g) { const v = validOps(S.toks)[0]; if (!v) return null; const i = S.toks.indexOf(v); return [S.toks[i - 1].id, v.id, S.toks[i + 1].id]; },
-      onWin(g) { const n = S.toks[0]; if (n) { n.mark = 'good'; n.pop = g.t; } },
+      onWin(g) { const n = S.toks[0]; if (n) { n.pop = g.t; S.wonLit = true; M.sparkle(g, n.id, { n: 16, cols: ['#ffe08a', '#fff', '#7ae08a'] }); } },
     });
   },
   update(g, dt) {
@@ -192,7 +192,7 @@ MG.add({
       c.save(); c.globalAlpha = la;
       const LH = S.size * 1.25, top = p.y - (isNum ? LH / 2 + 2 : S.size * 0.3 + 2) * p.sc; c.strokeStyle = 'rgba(30,14,14,0.85)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(p.x, sagY(p.x)); c.lineTo(p.x, top); c.stroke();
       c.translate(p.x, p.y); c.scale(p.sc, p.sc);
-      if (isNum) { const b = M.box(g, n.id), w = Math.max(S.size * 0.8, b.w + 14); lantern(c, 0, 0, n.mark === 'good' ? w + 4 : w, LH, n.mark === 'bad' ? '#ff3a3a' : n.mark === 'good' ? '#7ae08a' : LANT[(S.seed[n.id] || 0) % LANT.length], p.k, t, S.seed[n.id] || 0); }
+      if (isNum) { const b = M.box(g, n.id), w = Math.max(S.size * 0.8, b.w + 14); lantern(c, 0, 0, S.wonLit ? w + 4 : w, LH, n.mark === 'bad' ? '#ff3a3a' : S.wonLit ? '#ffc23a' : LANT[(S.seed[n.id] || 0) % LANT.length], p.k, t, S.seed[n.id] || 0); }
       else bulb(c, 0, 0, S.size * 0.3, p.k, t);
       c.restore();
     }

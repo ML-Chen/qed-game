@@ -98,7 +98,7 @@ const MK = (() => {
         const bx = x + s * 0.06, cy = y - s * 0.3;
         draw(c, n.n, bx + (m.bw - m.na.w) / 2, cy - s * 0.1 - m.na.d, m.fs, X); draw(c, n.d, bx + (m.bw - m.nb.w) / 2, cy + s * 0.1 + m.nb.a, m.fs, X);
         // n.bar = { t0, dur }: the fraction bar draws itself from left to right
-        const bk = n.bar && X.t != null ? easeIO((X.t - n.bar.t0) / n.bar.dur) : 1; if (bk >= 1) n.bar = null;
+        const bk = n.bar && X.t != null ? easeIO((X.t - n.bar.t0) / n.bar.dur) : 1; if (bk >= 1 && X.t != null) n.bar = null; // only a timed (real) draw ends the animation; the measuring pass has no time
         if (bk > 0) { c.fillStyle = col; c.beginPath(); roundRectK(c, bx, cy - s * 0.035, Math.max(s * 0.07, m.bw * bk), s * 0.07, s * 0.035); c.fill(); } break;
       }
       case 'row': { let xx = x; n.items.forEach((it, i) => { draw(c, it, xx, y, s, X); xx += m.ms[i].w; }); break; }
@@ -112,7 +112,7 @@ const MK = (() => {
       }
       case 'slot': {
         const bx = x + s * 0.06, top = y - m.a, h = m.a + m.d;
-        if (!n.fill) { c.save(); c.fillStyle = 'rgba(255,255,255,0.55)'; roundRectK(c, bx, top, m.bw, h, s * 0.2); c.fill(); c.setLineDash([s * 0.14, s * 0.1]); c.lineWidth = s * 0.06; c.strokeStyle = n.col || MID; roundRectK(c, bx, top, m.bw, h, s * 0.2); c.stroke(); c.restore();
+        if (!n.fill) { c.save(); c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); roundRectK(c, bx, top, m.bw, h, s * 0.2); c.fill(); c.setLineDash([s * 0.14, s * 0.1]); c.lineWidth = s * 0.06; c.strokeStyle = n.col || MID; c.beginPath(); roundRectK(c, bx, top, m.bw, h, s * 0.2); c.stroke(); c.restore();
           c.font = NUMF(s * 0.8, 600); c.fillStyle = 'rgba(122,74,90,0.55)'; c.textAlign = 'center'; c.fillText('?', bx + m.bw / 2, y - s * 0.02); }
         else draw(c, n.fill, bx + (m.bw - m.f.w) / 2, y, s, X);
         break;
@@ -443,7 +443,7 @@ const MK = (() => {
     return anim(g, { delay: o.delay, dur, draw(c, g, k) { const b = boxOf(g, tgt); if (!b) return; const w = b.w + pad * 2, h = b.h + pad * 2, r = Math.min(h / 2, 16), per = 2 * (w + h);
       c.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 12; c.lineWidth = 3.5; c.lineCap = 'round';
       c.setLineDash([per * easeIO(Math.min(1, k / 0.6)), per * 2]); c.beginPath(); roundRectK(c, b.x - w / 2, b.y - h / 2, w, h, r); c.stroke(); } }); }
-  // MK.note(g, { node, at: [x, y] | id, off: [dx, dy], s, col, delay, write, hold, to: [x, y] | id, fly, s1, fade, then }):
+  // MK.note(g, { node, at: [x, y] | id, off: [dx, dy], s, col, delay, write, hold, to: [x, y] | id, fly, s1, fade, then, pill }):
   // a small chalk-style working note ("+1", "6 ÷ 3 = 2") writes itself next to the problem, stays a moment, then either
   // flies into its place in the expression (and calls then) or fades away. This is the "showing your work" voice.
   function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.hold ?? 0.3, fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
@@ -455,6 +455,7 @@ const MK = (() => {
       else if (t > wr + hold) al = 1 - (t - wr - hold) / fade;
       const m = lay(nd, sz); if (!(t > wr + hold && o.to)) x = clamp(x, m.w / 2 + 10, 350 - m.w / 2); // keep a note inside the 360-wide screen
       c.globalAlpha = clamp(al, 0, 1); c.shadowColor = 'rgba(0,0,0,0.35)'; c.shadowBlur = 6;
+      if (o.pill) { c.save(); c.shadowBlur = 0; c.fillStyle = typeof o.pill === 'string' ? o.pill : 'rgba(20,24,40,0.72)'; c.beginPath(); roundRectK(c, x - m.w / 2 - 9, y - sz * 0.72, m.w + 18, sz * 1.44, sz * 0.5); c.fill(); c.restore(); } // a dark pill behind the note, for busy scenes
       if (wk < 1) { c.beginPath(); c.rect(x - m.w / 2 - 4, y - sz * 1.5, (m.w + 8) * easeIO(wk), sz * 3); c.clip(); }
       draw(c, nd, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col });
       if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }

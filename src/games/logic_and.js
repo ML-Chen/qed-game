@@ -1,10 +1,10 @@
 // logic_and.js — TRUTH TABLE! A chalked truth table for P ∧ Q (level 1: P ∨ Q, level 2: P → Q) with all four rows.
-// The result column is already filled in, but some of its T/F cells are wrong. The player taps each wrong cell, and
-// the check plays by itself in that row: the wrong value is struck out, a chalk band sweeps across the row, its P and
-// Q glow and fly into the cell, where they read like the header ("T ∧ F"), then that merges into the right value,
-// which pops in with a tick. Tapping a cell that is already right is a wrong move (it only wobbles). Rows can be fixed
-// in any order. ∧, ∨ and → are drawn as strokes (the fonts lack them).
-// Level 0: P ∧ Q, 2 wrong cells. Level 1: P ∨ Q, 2–3 wrong cells. Level 2: P → Q, 2–3 wrong cells.
+// Some cells of the result column are filled in (correctly, as worked examples) and the rest are blank. The player
+// taps each blank cell, and the working plays by itself in that row: a chalk band sweeps across the row, its P and Q
+// glow and fly into the cell, where they read like the header ("T ∧ F"), then that merges into the value, which pops
+// in with a tick. Tapping a filled cell is a wrong move (it only wobbles). Rows can be done in any order. ∧, ∨ and →
+// are drawn as strokes (the fonts lack them). (The owner asked for blank cells instead of wrong values to correct.)
+// Level 0: P ∧ Q, 2 blank cells. Level 1: P ∨ Q, 2–3 blank cells. Level 2: P → Q, 2–3 blank cells.
 // Medium mode: once "T ∧ F" is in the cell, the player picks T or F from the tray.
 const M = MK, INK = SCN.ink('chalk'), TCOL = '#ffe27a', FCOL = '#9ad4ff';
 const OPS = { and: (p, q) => p && q, or: (p, q) => p || q, imp: (p, q) => !p || q };
@@ -24,13 +24,13 @@ function gen(g) {
   const ix = [0, 1, 2, 3]; for (let i = 3; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [ix[i], ix[j]] = [ix[j], ix[i]]; }
   const nBad = g.level === 0 ? 2 : 2 + Math.floor(g.rand() * 2);
   ix.slice(0, nBad).forEach(i => { rows[i].bad = true; });
-  rows.forEach(r => { r.val = r.bad ? !r.want : r.want; });
+  rows.forEach(r => { r.val = r.bad ? null : r.want; }); // a blank cell has no value yet
   return { op, rows };
 }
 const tf = v => M.num(v ? 'T' : 'F');
 
 MG.add({
-  id: 'logic_and', stage: 'logic', cmd: 'TRUTH TABLE!', hint: 'tap', time: 8, mood: 'night', winText: 'All true!', hold: 1.4,
+  id: 'logic_and', stage: 'logic', cmd: 'TRUTH TABLE!', hint: 'tap', time: 8, mood: 'night', winText: 'Table done!', hold: 1.4,
   card: {
     title: 'Truth tables', ref: 'Discrete math', kind: 'Logic',
     text: 'A statement is a sentence that is either true (T) or false (F). Here P and Q stand for two statements, such as P = "it is sunny" and Q = "we swim".\n\nP ∧ Q means "P and Q". It is true only when both are true. P ∨ Q means "P or Q". It is true when at least one of them is true. P → Q means "if P, then Q". It is false only when P is true and Q is false.\n\nA truth table has one row for each way P and Q can be true or false, so it has 2 × 2 = 4 rows. For example, in the row where P is T and Q is F, P ∧ Q is F and P ∨ Q is T.\n\nWhy is P → Q true when P is false? "If it is sunny, we swim" is a promise, and it is broken only on a sunny day with no swim.',
@@ -96,16 +96,13 @@ MG.add({
       c.fillStyle = miss ? 'rgba(216,69,74,0.4)' : 'rgba(255,255,255,0.08)'; c.strokeStyle = 'rgba(251,248,238,0.5)'; c.lineWidth = 2; c.setLineDash([5, 5]);
       c.beginPath(); c.roundRect(-34, -16, 68, 32, 8); c.fill(); c.stroke(); c.setLineDash([]);
       if (r.workAt != null && r.okAt == null) {
-        // the old value is struck out and fades
-        const e = t - r.workAt, sk = M.easeIO(e / (0.18 * T)), fa = 1 - M.clamp((e - 0.2 * T) / (0.15 * T), 0, 1);
-        if (fa > 0) { c.globalAlpha = fa; cell(!r.want, 0, 0, 30); c.strokeStyle = '#ff8a7a'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-12, 12); c.lineTo(-12 + 24 * sk, 12 - 24 * sk); c.stroke(); c.globalAlpha = 1; }
         // "T ∧ F", built from the flown-in values; it slides together and fades when it merges
         const mk = r.mergeAt != null ? M.easeIO((t - r.mergeAt) / (0.2 * T)) : 0, sp = 23 * (1 - mk);
         c.globalAlpha = 1 - mk;
         if (r.landP != null) { cell(r.p, -sp, 0, 22); const gk = M.ease((t - r.landP) / (0.15 * T)); c.globalAlpha = (1 - mk) * gk; glyph(c, S.op, 0, 0, S.op === 'imp' ? 17 : 22, INK); c.globalAlpha = 1 - mk; }
         if (r.landQ != null) cell(r.q, sp, 0, 22);
         c.globalAlpha = 1;
-      } else { const pk = r.okAt != null ? M.clamp((t - r.okAt) / 0.3, 0, 1) : 1, sc = 1 + Math.sin(pk * Math.PI) * 0.45; c.scale(sc, sc); cell(r.val, 0, 0, 30, miss ? '#ffb0a8' : null); }
+      } else if (r.val != null) { const pk = r.okAt != null ? M.clamp((t - r.okAt) / 0.3, 0, 1) : 1, sc = 1 + Math.sin(pk * Math.PI) * 0.45; c.scale(sc, sc); cell(r.val, 0, 0, 30, miss ? '#ffb0a8' : null); }
       c.restore();
       if (r.okAt != null) { const k = M.ease((t - r.okAt) / 0.25); c.save(); c.strokeStyle = '#9ae07a'; c.lineWidth = 4; c.lineCap = 'round'; c.globalAlpha = k;
         c.beginPath(); c.moveTo(298, y); c.lineTo(298 + 6 * Math.min(1, k * 2), y + 7 * Math.min(1, k * 2)); if (k > 0.5) c.lineTo(304 + 10 * (k - 0.5) * 2, y + 7 - 15 * (k - 0.5) * 2); c.stroke(); c.restore(); }

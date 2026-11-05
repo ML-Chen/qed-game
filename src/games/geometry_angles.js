@@ -26,7 +26,7 @@ function pick(g) {
 }
 
 MG.add({
-  id: 'geometry_angles', stage: 'geometry', cmd: 'ANGLE SUM!', hint: 'drag', time: 10, mood: 'bright', winText: 'Straight line!', hold: 1.7,
+  id: 'geometry_angles', stage: 'geometry', cmd: 'ANGLE SUM!', hint: 'drag', time: 10, mood: 'bright', winText: 'Straight!', hold: 1.7,
   card: {
     title: 'Angles of a triangle', ref: 'Grade 8', kind: 'Geometry',
     text: 'The three angles inside any triangle add up to 180°, whatever its shape.\n\nYou can see it with a paper triangle. Tear off its three corners and put their tips together at one point. They fit side by side into a straight line, and a straight line is a half turn, 180°.\n\nSo if two angles are known, the third is what is left of 180°. In a triangle with angles 50° and 60°, the third angle is x = 180° − 50° − 60° = 70°.',

@@ -26,7 +26,7 @@ function term(v, kind, first, id, col) {
 const cnum = (re, im) => M.row(term(re, 0, true), term(im, 1, false)); // re + im·i as a tray tile
 
 MG.add({
-  id: 'complex_mult', stage: 'complex', cmd: 'COMPLEX MULT!', hint: 'drag', time: 7, mood: 'bright', winText: 'Multiplied!', hold: 1.4,
+  id: 'complex_mult', stage: 'complex', cmd: 'COMPLEX MULT!', hint: 'drag', time: 7, mood: 'bright', winText: 'Nailed it!', hold: 1.4,
   card: {
     title: 'Multiplying complex numbers', ref: 'Algebra 2', kind: 'Complex numbers',
     text: 'A complex number has a real part and an imaginary part, such as 2 + i. Here i is the number whose square is −1.\n\nTo multiply two complex numbers, multiply each part of the first by each part of the second, the same way you multiply two binomials. That makes four products. Then replace i² with −1. Last, add the real numbers together and the multiples of i together.\n\nFor example, (2 + i)(3 + i) = 6 + 2i + 3i + i². Since i² = −1, this is 6 + 2i + 3i − 1, which is 5 + 5i.\n\nThis works because complex numbers follow the same rules as ordinary numbers, such as the distributive law. The only new rule is i² = −1.',

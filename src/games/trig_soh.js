@@ -13,7 +13,7 @@
 //      found, and on the triangle a gold copy of the known side swings onto the unknown one, shrinking (or growing) to fit.
 // Level 0: sin 30° with the string known. Level 1: sin 30°, cos 60°, tan 45°. Level 2: also the string unknown.
 // Medium mode: x is picked from the tray. Wrong moves: dragging a card that uses the wrong sides (it only wobbles).
-const M = MK, INK = '#2a2a52', OC = '#f0604a', AC = '#1aa39a', HC = '#8a5ad8', GOLD = '#ffc23a', NOTE = '#fff6e6', EQY = 226, GY = 488, HX = 44, HY = 540;
+const M = MK, INK = '#2a2a52', OC = '#f0604a', AC = '#1aa39a', HC = '#8a5ad8', GOLD = '#ffc23a', NOTE = '#fff6e6', EQY = 222, GY = 500, HX = 44, HY = 556;
 const RAT = { S: ['sin', 'O', 'H'], C: ['cos', 'A', 'H'], T: ['tan', 'O', 'A'] };
 function pick(g) {
   const L = g.level, r = k => Math.floor(g.rand() * k), ev = [6, 8, 10, 12][r(4)], sm = [3, 4, 5, 6][r(4)];
@@ -28,7 +28,7 @@ function pick(g) {
 const VAL = deg => deg === 45 ? M.num(1) : M.frac(M.num(1), M.num(2)); // sin 30° = cos 60° = ½, tan 45° = 1
 const kk = (g, a) => a ? M.clamp((g.t - a.t0) / a.dur, 0, 1) : 0;
 function put(g, c, n, cx, cy, s, col, alpha = 1) { const m = M.lay(n, s); c.save(); c.globalAlpha *= alpha; M.draw(c, n, cx - m.w / 2, cy + (m.a - m.d) / 2, s, { t: g.t, col }); c.restore(); }
-function badge(g, c, letter, x, y, col, k) { if (k <= 0) return; const r = 12 * (1 + Math.sin(Math.min(1, k) * Math.PI) * 0.5); c.save(); c.globalAlpha *= Math.min(1, k * 3); c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); c.restore(); put(g, c, M.txt(letter), x, y + 0.5, 16, '#fff', Math.min(1, k * 3)); }
+function badge(g, c, letter, x, y, col, k) { if (k <= 0) return; const r = 14 * (1 + Math.sin(Math.min(1, k) * Math.PI) * 0.5); c.save(); c.globalAlpha *= Math.min(1, k * 3); c.fillStyle = col; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); c.restore(); put(g, c, M.txt(letter), x, y + 0.5, 19, '#fff', Math.min(1, k * 3)); }
 function tagv(g, c, n, x, y, s, col, alpha = 1) { const m = M.lay(n, s); x = M.clamp(x, m.w / 2 + 10, 350 - m.w / 2); c.save(); c.globalAlpha *= alpha; c.fillStyle = 'rgba(255,255,255,0.88)'; c.beginPath(); c.roundRect(x - m.w / 2 - 6, y - (m.a + m.d) / 2 - 4, m.w + 12, m.a + m.d + 8, 9); c.fill(); c.restore(); put(g, c, n, x, y, s, col, alpha); }
 
 MG.add({
@@ -43,7 +43,7 @@ MG.add({
   init(g) {
     const S = g.s; M.setup(g); const p = S.p = pick(g), T = M.pace(g), th = p.deg * Math.PI / 180;
     // the triangle: the peg (angle), the point under the kite (right angle), the kite
-    const Lh = Math.min(250, 190 / Math.sin(th), 236 / Math.cos(th)), ap = Lh * Math.cos(th), op = Lh * Math.sin(th), x0 = 180 - ap / 2 + 4;
+    const Lh = Math.min(280, 175 / Math.sin(th), 250 / Math.cos(th)), ap = Lh * Math.cos(th), op = Lh * Math.sin(th), x0 = 180 - ap / 2 + 4;
     S.V = { P: [x0, GY], R: [x0 + ap, GY], K: [x0 + ap, GY - op] };
     S.sides = { O: ['R', 'K'], A: ['P', 'R'], H: ['P', 'K'] };
     S.len = { [p.kn]: p.kv, [p.un]: 'x' };
@@ -55,9 +55,10 @@ MG.add({
       const th0 = M.vr('θ', 'h' + k), fr = M.frac(na, nb, 'q' + k);
       S.cards[k] = { row: M.row(M.txt(fn, 'f' + k), M.gap(5), th0, M.op('='), fr), th: th0, fr }; S.cards[k].row.id = 'c' + k; }
     S.list = ['S', 'C', 'T'];
-    S.relay = () => { const items = []; S.list.forEach((k, i) => { if (i) items.push(M.gap(18)); items.push(S.cards[k].row); }); M.place(g, 'cards', M.row(items), 180, EQY, S.fs, { col: INK }); };
-    const wide = M.lay(M.row(...['S', 'C', 'T'].map(k => M.row(M.txt(RAT[k][0]), M.gap(5), M.vr('θ'), M.op('='), M.frac(M.vr('O'), M.vr('H')))), M.gap(36)), 30).w;
-    S.fs = Math.min(30, 30 * 318 / wide);
+    // the cards hang in two rows (big enough to read on a phone); each is its own expression, so the chosen one glides
+    const wide = Math.max(...['S', 'C', 'T'].map(k => M.lay(M.row(M.txt(RAT[k][0]), M.gap(5), M.vr('θ'), M.op('='), M.frac(M.vr('O'), M.vr('H'))), 28).w));
+    S.fs = Math.min(28, 28 * 138 / wide); S.pos = { S: [94, 210], C: [266, 210], T: [180, 272] }; S.size = { S: S.fs, C: S.fs, T: S.fs };
+    S.relay = () => { for (const k of S.list) M.place(g, 'k' + k, S.cards[k].row, S.pos[k][0], S.pos[k][1], S.size[k], { col: INK }); };
     S.relay(); M.inert(g, ['nt', 'xa']);
     S.face = 'happy'; S.faceT = -9; S.hopT = -9; S.point = false;
     const hop = (g, e) => { S.hopT = g.t; S.face = e || 'wow'; S.faceT = g.t; };
@@ -66,9 +67,9 @@ MG.add({
     const mid = s => { const [a, b] = S.sides[s].map(v => S.V[v]); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
     S.mid = mid;
     // where each side's label sits: outside the triangle
-    S.lpos = s => { const [mx, my] = mid(s); return s === 'O' ? [mx + 26, my] : s === 'A' ? [mx, my + 24] : [mx - 22 * Math.sin(th) - 4, my - 22 * Math.cos(th) - 4]; };
-    S.bpos = s => { const [mx, my] = mid(s); return s === 'O' ? [mx + 26, my - 30] : s === 'A' ? [mx + 46, my + 24] : [mx - 22 * Math.sin(th) - 30, my - 22 * Math.cos(th) - 22]; };
-    const noteAt = (g, node, y) => { node.id = 'nt'; M.place(g, 'note', node, 180, y, 24, { col: NOTE }); M.writeIn(g, node, { dur: 0.4 * T, delay: 0.05 * T }); };
+    S.lpos = s => { const [mx, my] = mid(s); return s === 'O' ? [mx + 28, my] : s === 'A' ? [mx, my + 26] : [mx - 24 * Math.sin(th) - 6, my - 24 * Math.cos(th) - 6]; };
+    S.bpos = s => { const [mx, my] = mid(s); return s === 'O' ? [mx + 28, my - 34] : s === 'A' ? [mx + 50, my + 26] : [mx - 24 * Math.sin(th) - 36, my - 24 * Math.cos(th) - 22]; };
+    const noteAt = (g, node, y) => { node.id = 'nt'; M.place(g, 'note', node, 180, y, 26, { col: NOTE }); M.writeIn(g, node, { dur: 0.4 * T, delay: 0.05 * T }); };
     const noteOff = (g, d) => { const e = g.s.mk.ex.note; if (!e) return; M.tween(g, e.node, { alpha: 0 }, 0.25 * T, { delay: d });
       M.at(g, [[d + 0.3 * T, g => { if (g.s.mk.ex.note && g.s.mk.ex.note.node === e.node) { delete g.s.mk.ex.note; if (g.s.mk.prevNodes) delete g.s.mk.prevNodes.note; } }]]); };
     const COL = { O: OC, A: AC, H: HC };
@@ -87,14 +88,15 @@ MG.add({
           out.push({ drag: ['c' + k, 'f' + k, 'h' + k, 'n' + k, 'd' + k, 'q' + k], to: 'ang', area: X, busy: 0.1,
             then(g) { S.chosen = true; M.show(g, 1.5 * T); S.point = true; hop(g, 'think'); g.sfx('whoosh'); const C = S.cards[k];
               for (const o of ['S', 'C', 'T']) if (o !== k) { M.tween(g, S.cards[o].row, { alpha: 0, dy: -30, sc: 0.7 }, 0.3 * T); }
-              M.at(g, [[0.3 * T, g => { for (const o of ['S', 'C', 'T']) if (o !== k) (function hide(n) { if (!n) return; n.alpha = 0; for (const ch of [n.n, n.d, ...(n.items || [])]) hide(ch); })(S.cards[o].row); S.list = [k]; S.relay(); g.sfx('swoosh'); }], // faded cards leave no ghosts
+              M.at(g, [[0.3 * T, g => { for (const o of ['S', 'C', 'T']) if (o !== k) (function hide(n) { if (!n) return; n.alpha = 0; for (const ch of [n.n, n.d, ...(n.items || [])]) hide(ch); })(S.cards[o].row); S.list = [k]; for (const o of ['S', 'C', 'T']) if (o !== k) { delete g.s.mk.ex['k' + o]; if (g.s.mk.prevNodes) delete g.s.mk.prevNodes['k' + o]; }
+                  S.pos[k] = [180, EQY]; S.size[k] = 34; S.relay(); g.sfx('swoosh'); }], // faded cards leave no ghosts
                 [0.6 * T, g => { const a = M.box(g, 'ang'); C.deg = M.txt(p.deg + '°', 'dg', { alpha: 0 });
-                  M.fly(g, { node: M.txt(p.deg + '°'), from: [a.x + 12, a.y - 6], to: 'h' + k, dur: 0.4 * T, arc: -60, s0: 20, s1: S.fs, col: GOLD,
+                  M.fly(g, { node: M.txt(p.deg + '°'), from: [a.x + 12, a.y - 6], to: 'h' + k, dur: 0.4 * T, arc: -60, s0: 20, s1: 34, col: GOLD,
                     then(g) { C.th.alpha = 0; C.row.items[2] = C.deg; C.deg.alpha = 1; C.deg.pop = g.t; S.relay(); g.sfx('pop'); } }); }],
                 [0.85 * T, g => { // the side letters become lengths, flying from the triangle
                   const [na, nb] = S.lt[k]; [na, nb].forEach((n, i) => { const s = n.v, v = S.len[s]; if (v == null) return; const lp = S.lpos(s), id = n.id;
                     const nn = v === 'x' ? M.vr('x', 'xv', { alpha: 0 }) : M.num(v, 'k' + i, { alpha: 0 });
-                    M.fly(g, { node: v === 'x' ? M.vr('x') : M.num(v), from: lp, to: id, delay: i * 0.12 * T, dur: 0.4 * T, arc: -50, s0: 20, s1: S.fs * 0.82, col: COL[s],
+                    M.fly(g, { node: v === 'x' ? M.vr('x') : M.num(v), from: lp, to: id, delay: i * 0.12 * T, dur: 0.4 * T, arc: -50, s0: 22, s1: 34 * 0.82, col: COL[s],
                       then(g) { if (i === 0) C.fr.n = nn; else C.fr.d = nn; nn.alpha = 1; nn.pop = g.t; S.relay(); g.sfx('pop'); M.sparkle(g, nn.id, { n: 6, cols: [COL[s], '#fff'] }); } }); }); }],
                 [1.45 * T, g => { hop(g, 'laugh'); S.point = false; }]]); } }); }
         // 3. solve for x
@@ -103,19 +105,20 @@ MG.add({
           out.push({ tap: ['c' + k, 'xv', 'k0', 'k1', 'dg', 'q' + k, 'f' + k, 'vv'], busy: 0.1, askAt: 1.2 * T, after: 1.35 * T,
             ask: { v: p.x, wrong: [mul ? p.kv * 2 : p.kv / 2, p.kv, p.x + 1, half ? p.x * 4 : p.x * 2].filter(v => v !== p.x && Number.isInteger(v)) },
             then(g) { S.solved = true; M.show(g, 1.2 * T); S.point = true; hop(g, 'think'); M.circle(g, ['f' + k, 'dg'], { col: GOLD, dur: 0.45 * T });
-              noteAt(g, M.row(M.txt(RAT[k][0]), M.gap(5), M.txt(p.deg + '°'), M.op('='), VAL(p.deg)), EQY + 52);
+              noteAt(g, M.row(M.txt(RAT[k][0]), M.gap(5), M.txt(p.deg + '°'), M.op('='), VAL(p.deg)), EQY + 60);
               M.at(g, [[0.5 * T, g => { // the value flies up into the equation in place of sin 30°
                   const v = M.row(VAL(p.deg)); v.id = 'vv'; v.alpha = 0; const fb = M.box(g, 'nt');
-                  M.fly(g, { node: VAL(p.deg), from: [fb.x + fb.w / 2 - 14, fb.y], to: 'f' + k, dur: 0.35 * T, arc: -30, s0: 24, s1: S.fs, col: GOLD,
+                  M.fly(g, { node: VAL(p.deg), from: [fb.x + fb.w / 2 - 14, fb.y], to: 'f' + k, dur: 0.35 * T, arc: -30, s0: 26, s1: 34, col: GOLD,
                     then(g) { C.row.items = [v, M.op('='), C.fr]; v.alpha = 1; v.pop = g.t; S.relay(); g.sfx('pop'); } });
                   noteOff(g, 0.05 * T); }],
-                [0.95 * T, g => { noteAt(g, step, EQY + 56); hop(g); }]]); },
+                [0.95 * T, g => { noteAt(g, step, EQY + 62); hop(g); }]]); },
             resolve(g) { M.show(g, 1.35 * T); g.sfx('ding');
               const xv = M.node(g, 'xv') || M.vr('x', 'xv'), ans = M.num(p.x, 'xa', { col: GOLD, _born: -1, alpha: 0 });
-              M.at(g, [[0.15 * T, g => { const fb = M.box(g, 'nt'); noteOff(g, 0.1 * T);
-                  for (const q of C.row.items) if (q !== C.fr) M.tween(g, q, { alpha: 0 }, 0.2 * T);
-                  C.row.items = [xv, M.op('='), ans]; C.row.items[1].alpha = 0; M.tween(g, C.row.items[1], { alpha: 1 }, 0.2 * T, { delay: 0.15 * T }); S.relay();
-                  M.fly(g, { node: M.num(p.x), from: [fb.x + fb.w / 2, fb.y], to: 'xa', dur: 0.35 * T, arc: -40, s0: 24, s1: S.fs, col: GOLD, then(g) { ans.alpha = 1; ans.pop = g.t; M.sparkle(g, 'xa', { n: 10 }); g.sfx('pop'); } }); }],
+              M.at(g, [[0.05 * T, g => { noteOff(g, 0.2 * T); (function fade(n) { if (!n) return; if (n !== C.row) M.tween(g, n, { alpha: 0 }, 0.15 * T); for (const ch of [n.n, n.d, ...(n.items || [])]) fade(ch); })(C.row); M.tween(g, C.fr, { alpha: 0 }, 0.15 * T); }],
+                [0.22 * T, g => { const fb = M.box(g, 'nt') || { x: 180, y: EQY + 62, w: 0 }; void xv;
+                  const xn = M.vr('x', 'xv', { alpha: 0, _born: -1 }), eq = M.op('=', null, { alpha: 0, _born: -1 }); C.row.items = [xn, eq, ans]; S.relay();
+                  M.tween(g, xn, { alpha: 1 }, 0.15 * T); M.tween(g, eq, { alpha: 1 }, 0.15 * T);
+                  M.fly(g, { node: M.num(p.x), from: [fb.x + fb.w / 2, fb.y], to: 'xa', dur: 0.35 * T, arc: -40, s0: 26, s1: 34, col: GOLD, then(g) { ans.alpha = 1; ans.pop = g.t; M.sparkle(g, 'xa', { n: 10 }); g.sfx('pop'); M.tween(g, C.row, { sc: 1.4 }, 0.3 * T); } }); }],
                 [0.35 * T, g => { S.swing = { t0: g.t, dur: 0.7 * T }; g.sfx('sweep'); }],
                 [1.05 * T, g => { S.found = g.t; S.glow[p.un] = g.t; hop(g, 'laugh'); const lp = S.lpos(p.un); g.burst(lp[0], lp[1], [GOLD, '#fff', COL[p.un]], 14, 140); g.sfx('coin'); S.point = false; }]]); } }); }
         return out;
@@ -136,7 +139,7 @@ MG.add({
       // the backing follows the card when it glides to the middle (the same ease and length as the kit's glide)
       const lb = (S.lastB = S.lastB || {})[k]; if (lb && (Math.abs(lb.x - b.x) > 1.5 || Math.abs(lb.y - b.y) > 1.5)) (S.bgl = S.bgl || {})[k] = { dx: lb.x - b.x, dy: lb.y - b.y, t0: t }; S.lastB[k] = { x: b.x, y: b.y };
       const q = S.bgl && S.bgl[k], gk = q ? M.ease(M.clamp((t - q.t0) / 0.32, 0, 1)) : 1, gx = q ? q.dx * (1 - gk) : 0, gy = q ? q.dy * (1 - gk) : 0;
-      c.save(); c.globalAlpha *= al; c.translate((C.row.dx || 0) + gx, (C.row.dy || 0) + gy); const w = b.w + 16, h = Math.max(b.h + 12, 50);
+      c.save(); c.globalAlpha *= al; c.translate((C.row.dx || 0) + gx, (C.row.dy || 0) + gy); const sc = C.row.sc ?? 1, w = (b.w + 16) * sc, h = Math.max(b.h + 12, 50) * sc;
       c.strokeStyle = 'rgba(90,70,60,0.5)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(b.x, b.y - h / 2); c.lineTo(b.x, 150); c.stroke();
       c.fillStyle = 'rgba(40,40,80,0.18)'; c.beginPath(); c.roundRect(b.x - w / 2 + 2, b.y - h / 2 + 4, w, h, 10); c.fill();
       c.fillStyle = '#fffaf0'; c.beginPath(); c.roundRect(b.x - w / 2, b.y - h / 2, w, h, 10); c.fill(); c.strokeStyle = 'rgba(160,120,90,0.6)'; c.lineWidth = 1.5; c.stroke(); c.restore(); }
@@ -151,7 +154,7 @@ MG.add({
     c.save(); c.strokeStyle = '#4a3a30'; c.lineWidth = 2; c.strokeRect(V.R[0] - 14, V.R[1] - 14, 14, 14); c.restore();
     const ak = S.angT != null ? Math.max(0, 1 - (t - S.angT) / 0.8) : 0, th = p.deg * Math.PI / 180;
     c.save(); c.strokeStyle = M.mix('#d07a10', GOLD, ak); c.lineWidth = 3 + ak * 2; if (ak) { c.shadowColor = GOLD; c.shadowBlur = 14 * ak; } c.beginPath(); c.arc(V.P[0], V.P[1], 34, -th, 0); c.stroke(); c.restore();
-    tagv(g, c, M.txt(p.deg + '°'), V.P[0] + 58 * Math.cos(th / 2), V.P[1] - 58 * Math.sin(th / 2), 17, '#a05a08');
+    tagv(g, c, M.txt(p.deg + '°'), V.P[0] + 62 * Math.cos(th / 2), V.P[1] - 62 * Math.sin(th / 2), 20, '#a05a08');
     // the peg in the ground
     c.fillStyle = '#7a4a28'; c.fillRect(V.P[0] - 3, V.P[1] - 6, 6, 16); c.fillStyle = '#5a3418'; c.beginPath(); c.arc(V.P[0], V.P[1] - 6, 4, 0, 7); c.fill();
     // the gold copy of the known side swings onto the unknown side, shrinking or growing to fit
@@ -162,15 +165,15 @@ MG.add({
       const an = a0 + da * k, ln = M.lerp(l0, l1, k), ex = o[0] + Math.cos(an) * ln, ey = o[1] + Math.sin(an) * ln, fade = S.found != null ? Math.max(0, 1 - (t - S.found) / 0.5) : 1;
       if (fade > 0) { c.save(); c.globalAlpha = fade; c.strokeStyle = GOLD; c.lineWidth = 6; c.lineCap = 'round'; c.shadowColor = GOLD; c.shadowBlur = 16; c.beginPath(); c.moveTo(o[0], o[1]); c.lineTo(ex, ey); c.stroke(); c.restore();
         const half = p.deg !== 45, lab = half ? M.row(M.op(p.un === 'H' ? '÷' : '×'), M.frac(M.num(1), M.num(2))) : M.row(M.op('×'), M.num(1));
-        tagv(g, c, lab, M.clamp(ex + 16, 40, 320), ey - 30, 18, '#a06a00', fade * M.clamp(k * 4, 0, 1)); } }
+        tagv(g, c, lab, M.clamp(ex + 16, 40, 320), ey - 32, 21, '#a06a00', fade * M.clamp(k * 4, 0, 1)); } }
     // side labels: the known length, and x (which becomes its value once found)
     for (const s of ['O', 'A', 'H']) { const v = S.len[s]; if (v == null) continue; const [lx, ly] = S.lpos(s);
-      if (v === 'x') { const f = S.found != null && t >= S.found, pk = f ? M.clamp((t - S.found) / 0.35, 0, 1) : 0; tagv(g, c, f ? M.row(M.vr('x'), M.op('='), M.num(p.x)) : M.vr('x'), lx + (f && s === 'O' ? 18 : 0), ly, 20 * (1 + Math.sin(pk * Math.PI) * 0.35), f ? '#b06a00' : INK); }
-      else tagv(g, c, M.num(v), lx, ly, 20, INK); }
+      if (v === 'x') { const f = S.found != null && t >= S.found, pk = f ? M.clamp((t - S.found) / 0.35, 0, 1) : 0; tagv(g, c, f ? M.row(M.vr('x'), M.op('='), M.num(p.x)) : M.vr('x'), lx + (f && s === 'O' ? 18 : 0), ly, 24 * (1 + Math.sin(pk * Math.PI) * 0.35), f ? '#b06a00' : INK); }
+      else tagv(g, c, M.num(v), lx, ly, 24, INK); }
     for (const s of ['O', 'A', 'H']) if (S.badge[s] != null) { const [bx, by] = S.bpos(s); badge(g, c, s, bx, by, COL[s], (t - S.badge[s]) / 0.3); }
     // the kite at the top corner, its tail streaming in the wind
     drawKite(c, V.K[0], V.K[1], t, S.found != null ? t - S.found : -1);
-    M.drawEx(g, c, 'cards');
+    for (const k of S.list) M.drawEx(g, c, 'k' + k);
     const ne = S.mk.ex.note; if (ne) { const b0 = M.box(g, 'nt'), w = ne.node.write, wk = w ? M.easeIO(M.clamp((t - w.t0) / w.dur, 0, 1)) : 1;
       if (b0) { c.save(); c.globalAlpha *= (ne.node.alpha ?? 1) * Math.min(1, wk * 4); c.fillStyle = 'rgba(42,42,82,0.85)'; c.beginPath(); c.roundRect(b0.x - b0.w / 2 - 10, b0.y - b0.h / 2 - 6, Math.max(24, (b0.w + 20) * wk), b0.h + 12, 12); c.fill(); c.restore(); }
       M.drawEx(g, c, 'note'); }

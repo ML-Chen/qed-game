@@ -55,7 +55,7 @@ MG.add({
     S.data = M.row(S.dA, M.gap(14), S.dB, M.gap(14), S.dI);
     S.ans = M.slot('ans', { w: 30, col: '#8a70a0' }); S.terms = [];
     S.work = M.row(bar(), M.vr('A'), { ...M.gap(18), id: 'cupU' }, M.vr('B'), bar(), M.op('=', 'weq'), S.ans);
-    S.placeD = () => M.place(g, 'data', S.data, 180, DY, 26, { col: INK }); S.placeW = () => M.place(g, 'work', S.work, 180, WY, 34, { col: INK });
+    S.placeD = () => M.place(g, 'data', S.data, 180, DY, 28, { col: INK }); S.placeW = () => M.place(g, 'work', S.work, 180, WY, 34, { col: INK });
     S.placeD(); S.placeW();
     M.zone(g, 'zA', { x: CA.x - 34, y: CA.y, w: 100, h: 150 }); M.zone(g, 'zB', { x: CB.x + 34, y: CB.y, w: 100, h: 150 }); M.zone(g, 'zI', { x: 180, y: CA.y, w: 56, h: 120 });
     M.inert(g, ['capI', 'cupU', 'weq', 'tA', 'tB', 'tI', 'mn', 'pl', 'res', 'run']);
@@ -64,14 +64,14 @@ MG.add({
     // count one loop: its shells get a ring each, one after another, while a counter rolls
     const countLoop = (g, L, n) => { const mine = S.sh.filter(q => q.r === L || q.r === 'I'), gap = Math.min(0.13, 0.9 / n) * T, t0 = 0.3 * T, C = L === 'A' ? CA : CB;
       S.loopAt = S.loopAt || {}; S.loopAt[L] = g.t; S.point = true; hop(g, 'wow'); g.sfx('swoosh');
-      const cnt = M.num(1, 'cnt' + L, { alpha: 0, col: COL[L] }); M.place(g, 'cnt', cnt, C.x + (L === 'A' ? -62 : 62), C.y - 84, 30, { col: COL[L] });
+      const cnt = M.num(1, 'cnt' + L, { alpha: 0, col: COL[L] }); M.place(g, 'cnt' + L, cnt, C.x + (L === 'A' ? -62 : 62), C.y - 84, 30, { col: COL[L] });
       M.at(g, mine.map((q, j) => [t0 + j * gap, g => { q.rings.push({ L, t: g.t }); g.sfx('pop', { p: 1 + j * 0.06, vol: 0.5 });
         if (j === 0) { cnt.alpha = 1; M.writeIn(g, cnt, { dur: 0.1 * T }); } else M.roll(g, cnt, j + 1, { dur: 0.1 * T }); cnt.pop = g.t; }]));
       const tf = t0 + n * gap + 0.12 * T;
       // the count flies into the working line
       M.at(g, [[tf, g => { const tn = M.num(n, 't' + L, { col: COL[L], alpha: 0 }); const first = !S.terms.length; S.terms.push(tn);
         if (first) S.work.items.pop(); S.work.items.push(...(first ? [tn] : [M.op('+', 'pl'), tn])); S.placeW(); M.tween(g, cnt, { alpha: 0 }, 0.12 * T);
-        M.fly(g, { node: M.num(n, null, { col: COL[L] }), from: [C.x + (L === 'A' ? -62 : 62), C.y - 94], to: 't' + L, dur: 0.36 * T, arc: -30, s0: 30, s1: 34, then(g) { tn.alpha = 1; tn.pop = g.t; M.sparkle(g, 't' + L, { n: 6 }); delete g.s.mk.ex.cnt; hop(g); } }); }]]);
+        M.fly(g, { node: M.num(n, null, { col: COL[L] }), from: [C.x + (L === 'A' ? -62 : 62), C.y - 94], to: 't' + L, dur: 0.36 * T, arc: -30, s0: 30, s1: 34, then(g) { tn.alpha = 1; tn.pop = g.t; M.sparkle(g, 't' + L, { n: 6 }); delete g.s.mk.ex['cnt' + L]; hop(g); } }); }]]);
       let te = tf + 0.4 * T;
       if (S.order.length === 2) M.at(g, [[te, g => { S.twiceAt = g.t; g.sfx('boing', { vol: 0.35 }); hop(g, 'think');
         M.note(g, { node: M.row(M.op('×'), M.num(2)), at: [180, CA.y - 96], s: 26, col: COL.I, write: 0.2 * T, hold: 0.5 * T, fade: 0.25 * T }); }]]), te += 0.5 * T;
@@ -81,10 +81,10 @@ MG.add({
       moves(g) {
         const out = [];
         for (const L of ['A', 'B']) if (!S.order.includes(L)) out.push({ drag: 'n' + L, to: ['z' + L, 'zI'], busy: 0.1, area: L === 'A' ? [30, 330, 160, 510] : [200, 330, 330, 510],
-          then(g) { S.order.push(L); M.inert(g, ['n' + L]); M.tween(g, 'n' + L, { alpha: 0.4 }, 0.3 * T); M.show(g, countLoop(g, L, L === 'A' ? a : b)); } });
+          then(g) { S.order.push(L); M.inert(g, ['n' + L]); M.tween(g, 'n' + L, { alpha: 0.7 }, 0.3 * T); M.show(g, countLoop(g, L, L === 'A' ? a : b)); } });
         if (S.order.length === 2 && !S.sub) out.push({ drag: 'nI', to: 'zI', busy: 0.1, get askAt() { return S.askT; }, get after() { return S.afterLen || 1.5 * T; },
           ask: { v: S.u, wrong: [a + b, a + b + i, a + b - 2 * i] },
-          then(g) { S.sub = true; M.inert(g, ['nI']); M.tween(g, 'nI', { alpha: 0.4 }, 0.3 * T); S.point = true; hop(g, 'wow'); S.lensAt = g.t;
+          then(g) { S.sub = true; M.inert(g, ['nI']); M.tween(g, 'nI', { alpha: 0.7 }, 0.3 * T); S.point = true; hop(g, 'wow'); S.lensAt = g.t;
             const lens = S.sh.filter(q => q.r === 'I'), gap = Math.min(0.16, 0.6 / i) * T, t0 = 0.3 * T;
             const mn = M.op('-', 'mn', { alpha: 0 }), tI = M.num(0, 'tI', { col: COL.I, alpha: 0 }); let shown = 0;
             S.work.items.push(mn, tI); S.placeW();
@@ -142,7 +142,7 @@ MG.add({
       q.rings.forEach((rg, j) => { if (rg.off != null && t - rg.off > 0.05) return; const k = M.clamp((t - rg.t) / 0.2, 0, 1), rr = (16 + j * 5) * (1 + Math.sin(k * Math.PI) * 0.4);
         c.save(); c.strokeStyle = COL[rg.L]; c.lineWidth = 2.6; c.globalAlpha = k; c.beginPath(); c.arc(q.x, q.y - 2, rr, 0, 7); c.stroke(); c.restore(); });
       shell(c, q.x, q.y + bob, 1.2 + fl * 0.3, q.col, t); }
-    M.drawEx(g, c, 'data'); M.drawEx(g, c, 'work'); M.drawEx(g, c, 'cnt');
+    M.drawEx(g, c, 'data'); M.drawEx(g, c, 'work'); M.drawEx(g, c, 'cntA'); M.drawEx(g, c, 'cntB');
     for (const id of ['capI', 'cupU']) { const b = M.box(g, id), n = M.node(g, id); if (b) capCup(c, { x: b.x + (n && n._ax || 0), y: b.y + (n && n._ay || 0) }, b.s, INK, id === 'cupU'); }
     const hopK = K.lastMove != null && t - K.lastMove < 0.35 ? Math.sin((t - K.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
     const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';

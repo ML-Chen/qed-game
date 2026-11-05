@@ -25,7 +25,7 @@ function cometAngle(g) { const S = g.s, t = g.t; let a = 0;
   return a; }
 
 MG.add({
-  id: 'complex_powers', stage: 'complex', cmd: 'POWERS OF I!', hint: 'drag', time: 8, mood: 'night', winText: 'Round it goes!', hold: 1.4,
+  id: 'complex_powers', stage: 'complex', cmd: 'POWERS OF I!', hint: 'drag', time: 8, mood: 'night', winText: 'Looped!', hold: 1.4,
   card: {
     title: 'Powers of i', ref: 'Algebra 2', kind: 'Complex numbers',
     text: 'The number i is defined so that i² = −1. Its powers repeat in a cycle of four: i¹ = i, i² = −1, i³ = i² · i = −i, and i⁴ = i² · i² = (−1)(−1) = 1. Then the pattern starts again, because i⁵ = i⁴ · i = 1 · i = i.\n\nTo find a big power of i, take 4 away from the exponent as many times as you can. Each 4 you take away is a factor of i⁴, which equals 1, so it changes nothing. For example, i⁷ = i⁴ · i³ = 1 · i³ = −i.\n\nOn the wheel, each factor of i is a quarter turn. Four quarter turns bring you all the way around, back to where you started.',

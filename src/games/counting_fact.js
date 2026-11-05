@@ -21,7 +21,7 @@ function hopArc(g, from, to, dur, linger) {
   M.anim(g, { dur, linger, draw(c, g, k, t) { const a = M.box(g, from), b = M.box(g, to); if (!a || !b) return; const e = M.easeIO(k), y0 = Math.max(a.y + a.h / 2, b.y + b.h / 2) + 4, x0 = a.x, x1 = b.x;
     c.globalAlpha = t > dur ? Math.max(0, 1 - (t - dur) / linger) : 1; c.strokeStyle = HOP; c.fillStyle = HOP; c.lineWidth = 2.5; c.lineCap = 'round'; c.beginPath();
     for (let u = 0; u <= e + 1e-6; u += 0.05) { const x = M.lerp(x0, x1, u), y = y0 + Math.sin(u * Math.PI) * 14; u ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
-    if (e > 0.5) { c.globalAlpha *= Math.min(1, (e - 0.5) * 3); c.font = M.NUMF(16); c.textAlign = 'center'; c.fillText('−1', (x0 + x1) / 2, y0 + 32); } } });
+    if (e > 0.5) { c.globalAlpha *= Math.min(1, (e - 0.5) * 3); c.font = M.NUMF(19); c.textAlign = 'center'; c.fillText('−1', (x0 + x1) / 2, y0 + 36); } } });
 }
 
 MG.add({

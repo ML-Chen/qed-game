@@ -122,7 +122,7 @@ MG.add({
       c.restore();
     }
     // under each written-out term, the k it came from
-    if (S.st === 1) S.ks.forEach((k, i) => { const e = M.box(g, 'e' + i), n = M.node(g, 'e' + i); if (!e || !S.shown[i]) return; c.save(); c.globalAlpha = Math.min(1, n ? n.alpha ?? 1 : 1) * 0.85; c.fillStyle = KC; c.textAlign = 'center'; c.font = `italic 600 13px Georgia, serif`; c.fillText('k=' + k, e.x, e.y + e.h / 2 + 18); c.restore(); });
+    if (S.st === 1) S.ks.forEach((k, i) => { const e = M.box(g, 'e' + i), n = M.node(g, 'e' + i); if (!e || !S.shown[i]) return; c.save(); c.globalAlpha = Math.min(1, n ? n.alpha ?? 1 : 1) * 0.85; c.fillStyle = KC; c.textAlign = 'center'; c.font = `italic 700 18px Georgia, serif`; c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 4; c.fillText('k=' + k, e.x, e.y + e.h / 2 + 22); c.restore(); });
     for (let i = 0; i < S.vals.length; i++) M.drawEx(g, c, 'nt' + i);
     M.drawEx(g, c, 'run');
     M.drawUI(g, c);

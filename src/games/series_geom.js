@@ -21,7 +21,7 @@ function patches(S, n) { const out = []; let R = { ...SQ }; for (let k = 0; k < 
 function sigma(c, b, s, col) { const h = s * 1.05, w = s * 0.72, x0 = b.x - w / 2, y0 = b.y - h / 2 + 2; c.save(); c.strokeStyle = col; c.lineWidth = s * 0.09; c.lineJoin = c.lineCap = 'round';
   c.beginPath(); c.moveTo(x0 + w, y0 + h * 0.14); c.lineTo(x0 + w, y0); c.lineTo(x0, y0); c.lineTo(x0 + w * 0.55, y0 + h / 2); c.lineTo(x0, y0 + h); c.lineTo(x0 + w, y0 + h); c.lineTo(x0 + w, y0 + h * 0.86); c.stroke();
   c.lineWidth = 2.4; const iy = y0 - 12, r = 5.5; c.beginPath(); c.ellipse(b.x - r, iy, r, r * 0.75, 0, 0, 7); c.moveTo(b.x + 2 * r, iy); c.ellipse(b.x + r, iy, r, r * 0.75, 0, 0, 7); c.stroke();
-  c.fillStyle = col; c.textAlign = 'center'; c.font = M.VARF(17); c.fillText('n', b.x - 13, y0 + h + 18); c.font = M.NUMF(17); c.fillText('= 0', b.x + 8, y0 + h + 18); c.restore(); }
+  c.fillStyle = col; c.textAlign = 'center'; c.font = M.VARF(18); c.fillText('n', b.x - 14, y0 + h + 19); c.font = M.NUMF(18); c.fillText('= 0', b.x + 8, y0 + h + 18); c.restore(); }
 
 MG.add({
   id: 'series_geom', stage: 'series', cmd: 'GEOMETRIC SERIES!', hint: 'drag', time: 9, mood: 'bright', winText: 'Summed!', hold: 1.8,

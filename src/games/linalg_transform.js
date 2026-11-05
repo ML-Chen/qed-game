@@ -28,12 +28,12 @@ function pick(g) {
 const kk = (g, a) => a ? M.clamp((g.t - a.t0) / a.dur, 0, 1) : 0;
 function put(g, c, n, cx, cy, s, col, alpha = 1) { const m = M.lay(n, s); c.save(); c.globalAlpha *= alpha; M.draw(c, n, cx - m.w / 2, cy + (m.a - m.d) / 2, s, { t: g.t, col }); c.restore(); }
 // a label on a small white tag so it reads on the gingham
-function tag(g, c, n, cx, cy, s, col, alpha = 1, bg = 'rgba(255,250,240,0.92)') { if (alpha <= 0) return; const m = M.lay(n, s); cx = M.clamp(cx, PIC.x0 + m.w / 2 + 10, PIC.x1 - m.w / 2 - 10); cy = M.clamp(cy, PIC.y0 + s, PIC.y1 - s); c.save(); c.globalAlpha *= alpha; c.fillStyle = 'rgba(60,30,20,0.25)'; c.beginPath(); c.roundRect(cx - m.w / 2 - 6, cy - (m.a + m.d) / 2 - 3, m.w + 12, m.a + m.d + 8, 8); c.fill(); c.fillStyle = bg; c.beginPath(); c.roundRect(cx - m.w / 2 - 6, cy - (m.a + m.d) / 2 - 5, m.w + 12, m.a + m.d + 8, 8); c.fill(); c.restore(); put(g, c, n, cx, cy, s, col, alpha); }
+function tag(g, c, n, cx, cy, s, col, alpha = 1, bg = 'rgba(255,250,240,0.92)') { if (alpha <= 0) return; const m = M.lay(n, s); cx = M.clamp(cx, PIC.x0 + m.w / 2 + 12, PIC.x1 - m.w / 2 - 12); cy = M.clamp(cy, PIC.y0 + s, PIC.y1 - s); c.save(); c.globalAlpha *= alpha; c.fillStyle = 'rgba(60,30,20,0.25)'; c.beginPath(); c.roundRect(cx - m.w / 2 - 6, cy - (m.a + m.d) / 2 - 3, m.w + 12, m.a + m.d + 8, 8); c.fill(); c.fillStyle = bg; c.beginPath(); c.roundRect(cx - m.w / 2 - 6, cy - (m.a + m.d) / 2 - 5, m.w + 12, m.a + m.d + 8, 8); c.fill(); c.restore(); put(g, c, n, cx, cy, s, col, alpha); }
 const pt = (x, y) => M.row(M.txt('('), M.num(x), M.op(','), M.gap(3), M.num(y), M.txt(')'));
 const hat = v => M.txt(v === 'i' ? 'î' : 'ĵ');
 
 MG.add({
-  id: 'transform', stage: 'linalg', cmd: 'TRANSFORM!', hint: 'drag', time: 10, winText: 'Transformed!', hold: 1.8,
+  id: 'transform', stage: 'linalg', cmd: 'TRANSFORM!', hint: 'drag', time: 10, winText: 'Mapped!', hold: 1.8,
   card: {
     title: 'Matrices move the plane', ref: 'College', kind: 'Linear algebra',
     text: 'A 2 × 2 matrix is a recipe for moving every point of the plane at once. Lines stay straight, the grid stays evenly spaced, and the origin stays put.\n\nSo you only need to know where two arrows go: î = (1, 0), one step right, and ĵ = (0, 1), one step up. The first column of the matrix is where î lands, and the second column is where ĵ lands.\n\nFor example, the matrix with columns (0, 1) and (−1, 0) sends î up and ĵ left: a quarter turn. The corner (1, 1) of the unit square is î + ĵ, so it lands on (0, 1) + (−1, 0) = (−1, 1).',
@@ -86,8 +86,8 @@ MG.add({
             M.circle(g, 'corner', { col: SQ, dur: 0.5 * T }); S.tt = { t0: g.t + 0.1 * T, dur: 0.55 * T }; g.sfx('whoosh');
             S.q = M.row(M.txt('('), M.num(a + b), M.op(','), M.gap(3), M.num(c + d), M.txt(')')); S.q.alpha = 0;
             const nt = M.row(pt(a, c), M.op('+'), pt(b, d), M.op('='), S.q); nt.id = 'nt';
-            const cx = S.X(a + b), cy = S.Y(c + d), ny = cy - 46 < PIC.y0 + 20 ? cy + 46 : cy - 46;
-            M.place(g, 'note', nt, 180, ny, 22, { col: NOTE }); const w = M.lay(nt, 22).w; g.s.mk.ex.note.x = M.clamp(cx - w / 2, 12, 348 - w); M.relayout(g, 'note');
+            const cx = S.X(a + b), cy = S.Y(c + d), ny = cy - 50 < PIC.y0 + 22 ? cy + 50 : cy - 50;
+            const ns = Math.min(24, 24 * 300 / M.lay(nt, 24).w); M.place(g, 'note', nt, 180, ny, ns, { col: NOTE }); const w = M.lay(nt, ns).w; g.s.mk.ex.note.x = M.clamp(cx - w / 2, 24, 336 - w); M.relayout(g, 'note');
             M.writeIn(g, nt, { dur: 0.5 * T, delay: 0.35 * T }); },
           resolve(g) { M.show(g, 1.3 * T); S.q.alpha = 1; M.writeIn(g, S.q, { dur: 0.25 * T }); M.indicate(g, S.q, { delay: 0.2 * T, dur: 0.3 * T }); g.sfx('ding');
             M.at(g, [[0.45 * T, g => { S.fill = { t0: g.t, dur: 0.5 * T }; S.cornerT = g.t; g.sfx('magic'); hop(g);
@@ -116,7 +116,9 @@ MG.add({
     c.strokeStyle = 'rgba(90,40,30,0.5)'; c.lineWidth = 2; c.beginPath(); c.moveTo(PIC.x0, Y(0)); c.lineTo(PIC.x1, Y(0)); c.moveTo(X(0), PIC.y0); c.lineTo(X(0), PIC.y1); c.stroke();
     // the moving grid: every line i·î + s·ĵ and s·î + j·ĵ, following î and ĵ as they glide (only once something moves)
     const I = S.cur('i'), J = S.cur('j'), moved = S.mv.i || S.mv.j, P = (x, y) => [X(x * I[0] + y * J[0]), Y(x * I[1] + y * J[1])];
-    if (moved) { c.save(); c.lineWidth = 1.6; const R = 8;
+    // when î and ĵ are nearly parallel (between the two moves of a turn, say) the grid would collapse into a dense band, so it fades
+    const flat = Math.abs(I[0] * J[1] - I[1] * J[0]) / Math.max(1e-6, Math.hypot(...I) * Math.hypot(...J)), ga = M.clamp((flat - 0.12) / 0.3, 0, 1);
+    if (moved && ga > 0) { c.save(); c.globalAlpha *= ga; c.lineWidth = 1.6; const R = 8;
       for (let i = -R; i <= R; i++) for (const [col, f] of [['rgba(232,80,58,0.55)', s => P(i, s)], ['rgba(47,127,216,0.55)', s => P(s, i)]]) { c.strokeStyle = col; c.beginPath(); const A0 = f(-R), B0 = f(R); c.moveTo(A0[0], A0[1]); c.lineTo(B0[0], B0[1]); c.stroke(); }
       c.restore(); }
     // the unit square (stays as a dashed ghost), and its image filling in at the end
@@ -136,13 +138,13 @@ MG.add({
     // labels: the hat letters ride the tips; once landed, the tip also shows its coordinates
     for (const v of ['i', 'j']) { const [x, y] = S.cur(v), col = v === 'i' ? XC : YC, L = Math.hypot(x, y) || 1, nx = x / L, ny = y / L, lt = S['lab' + v];
       const lx = X(x) + nx * 20 + (v === 'i' ? 0 : -6), ly = Y(y) - ny * 20 - (v === 'i' ? 4 : 0);
-      if (lt == null) tag(g, c, hat(v), lx, ly, 20, col);
-      else { const k = M.clamp((t - lt) / 0.3, 0, 1), [tx, ty] = v === 'i' ? [p.a, p.c] : [p.b, p.d]; tag(g, c, M.row(hat(v), M.gap(4), pt(tx, ty)), lx + nx * 22, ly - ny * 6, 17 * (1 + Math.sin(k * Math.PI) * 0.3), col); } }
+      if (lt == null) tag(g, c, hat(v), lx, ly, 22, col);
+      else { const k = M.clamp((t - lt) / 0.3, 0, 1), [tx, ty] = v === 'i' ? [p.a, p.c] : [p.b, p.d]; tag(g, c, M.row(hat(v), M.gap(4), pt(tx, ty)), lx + nx * 26, ly - ny * 6, 19 * (1 + Math.sin(k * Math.PI) * 0.3), col); } }
     // the far corner: a "?" pin until it is worked out, then a gold point with its coordinates
     const cx = X(I[0] + J[0]), cy = Y(I[1] + J[1]);
     if (!S.cornerT) { const pk = 0.5 + 0.5 * Math.sin(t * 5); c.save(); c.fillStyle = 'rgba(255,250,235,0.9)'; c.strokeStyle = SQ; c.lineWidth = 2.5; c.setLineDash([4, 3]); c.beginPath(); c.arc(cx, cy, 12 + pk * 1.5, 0, 7); c.fill(); c.stroke(); c.restore(); put(g, c, M.txt('?'), cx, cy, 16, '#a06a10'); }
     else { const k = M.clamp((t - S.cornerT) / 0.3, 0, 1); c.save(); c.fillStyle = SQ; c.strokeStyle = '#8a5a08'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy, 7 * (1 + Math.sin(k * Math.PI) * 0.7), 0, 7); c.fill(); c.stroke(); c.restore();
-      if (!S.mk.ex.note) tag(g, c, pt(a + b, p.c + p.d), cx + (a + b >= 0 ? 34 : -34), cy + (p.c + p.d >= 0 ? -16 : 16), 18, '#8a5a08', M.clamp((t - S.cornerT - 0.9) / 0.3, 0, 1)); }
+      if (!S.mk.ex.note) tag(g, c, pt(a + b, p.c + p.d), cx + (a + b >= 0 ? 34 : -34), cy + (p.c + p.d >= 0 ? -18 : 18), 20, '#8a5a08', M.clamp((t - S.cornerT - 0.9) / 0.3, 0, 1)); }
     c.restore();
     M.drawEx(g, c, 'm');
     const ne = S.mk.ex.note; if (ne) { const b0 = M.box(g, 'nt'), w = ne.node.write, wk = w ? M.easeIO(M.clamp((t - w.t0) / w.dur, 0, 1)) : 1;

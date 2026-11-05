@@ -19,6 +19,9 @@ function pick(g) {
   const [a, b] = g.rand() < 0.5 ? [p, q] : [q, p];
   return { a, b, s: a * a + b * b, c: Math.round(Math.sqrt(a * a + b * b)) };
 }
+// MK draws an empty slot without starting a new path, so it re-strokes the symbol before it dashed; a zero-width op first
+// starts a fresh path.
+const fresh = (slot, s) => M.row(M.op(''), M.gap(-0.44 * s), slot);
 const kk = (g, a) => a ? M.clamp((g.t - a.t0) / a.dur, 0, 1) : 0;
 // a node drawn centred on (cx, cy)
 function put(g, c, n, cx, cy, s, col, alpha = 1) { const m = M.lay(n, s); c.save(); c.globalAlpha *= alpha; M.draw(c, n, cx - m.w / 2, cy + (m.a - m.d) / 2, s, { t: g.t, col }); c.restore(); }
@@ -43,10 +46,10 @@ MG.add({
     S.va = M.num(a, 'va'); S.vb = M.num(b, 'vb'); S.vec = M.paren(M.row(S.va, M.op(','), M.gap(4), S.vb), 'vec');
     S.bl = M.txt('|', 'bl'); S.br = M.txt('|', 'br'); S.eqN = M.op('=', 'eq');
     S.ans = M.slot('ans', { w: 34 });
-    S.lhs = M.row(S.bl, S.vec, S.br); S.rhs = [S.ans];
+    S.lhs = M.row(S.bl, S.vec, S.br);
     const lhsW = M.lay(M.row(M.gap(20), M.paren(M.row(M.num(a), M.op(','), M.gap(4), M.num(b))), M.op('=')), 40).w;
     const r1 = M.lay(M.row(M.gap(26), M.sup(M.num(a), M.num(2)), M.op('+'), M.sup(M.num(b), M.num(2))), 40).w, r2 = M.lay(M.row(M.gap(26), M.num(a * a), M.op('+'), M.num(b * b)), 40).w;
-    S.fs = Math.min(40, 40 * 318 / (lhsW + Math.max(r1, r2)));
+    S.fs = Math.min(40, 40 * 318 / (lhsW + Math.max(r1, r2))); S.rhs = [fresh(S.ans, S.fs)];
     S.relay = () => M.place(g, 'eq', M.row(S.lhs, S.eqN, S.rhs), 180, EQY, S.fs, { col: INK });
     S.relay(); M.inert(g, ['eq', 'bl', 'br', 'rg', 'nt', 'q', 's1', 's2']);
     S.face = 'happy'; S.faceT = -9; S.hopT = -9; S.point = false;
@@ -110,7 +113,7 @@ MG.add({
           // 5. take the square root: the length of the arrow
           if (S.sum && !S.root) out.push({ tap: ['nA', 'rin', 'rg'], busy: 0.1, askAt: 0.6 * T, after: 1.45 * T, ask: { v: c, wrong: [c + 1, c - 1, a + b] },
             then(g) { S.root = true; M.show(g, 0.6 * T); S.point = true; hop(g, 'think'); M.circle(g, ['rg', 'rin'], { dur: 0.5 * T, col: AC });
-              S.s1 = M.slot('s1', { w: 26 }); S.s2 = M.slot('s2', { w: 26 }); noteAt(g, M.row(S.s1, M.op('×'), S.s2, M.op('='), M.num(s)), 'rin'); },
+              S.s1 = M.slot('s1', { w: 26 }); S.s2 = M.slot('s2', { w: 26 }); noteAt(g, M.row(S.s1, M.op('×'), fresh(S.s2, 26), M.op('='), M.num(s)), 'rin'); },
             resolve(g) { M.show(g, 1.45 * T); for (const sl of [S.s1, S.s2]) { sl.fill = M.num(c, null, { col: '#ffd45a' }); sl.pop = g.t; } g.sfx('ding');
               M.at(g, [[0.25 * T, g => { S.radOut = { t0: g.t, dur: 0.3 * T }; M.roll(g, S.nA, c, { delay: 0.05 * T, dur: 0.35 * T }); g.sfx('sweep'); }],
                 [0.55 * T, g => { S.rhs = [S.nA]; S.relay(); }],

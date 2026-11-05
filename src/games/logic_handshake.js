@@ -28,7 +28,7 @@ function along(e, u) { const a = CEN(e.a), b = CEN(e.b), mx = (a.x + b.x) / 2, m
   return { x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * mx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * my + u * u * b.y }; }
 
 MG.add({
-  id: 'logic_handshake', stage: 'logic', cmd: 'HANDSHAKE!', hint: 'tap', time: 10, mood: 'party', winText: 'Every edge twice!', hold: 1.8,
+  id: 'logic_handshake', stage: 'logic', cmd: 'HANDSHAKE!', hint: 'tap', time: 10, mood: 'party', winText: 'Halved!', hold: 1.8,
   card: {
     title: 'The handshake lemma', ref: 'Discrete math', kind: 'Graphs',
     text: 'A graph is a set of dots, called vertices, joined by lines, called edges. The degree of a vertex is the number of edges that touch it.\n\nThink of a party where each edge is a handshake. Every handshake uses two hands, one from each person. So if every person counts their own handshakes and we add those counts, each handshake gets counted exactly twice.\n\nThat means the sum of all the degrees is twice the number of edges. For degrees 3, 3, 2 and 2 the sum is 10, so there are 10 ÷ 2 = 5 edges.',
@@ -140,9 +140,9 @@ MG.add({
       const ends = [0, 1].filter(u => e.dot[u] != null);
       if (mk < 0.99) for (const u of ends) { const pk = M.clamp((t - e.dot[u]) / 0.2, 0, 1), uu = M.lerp(u ? 0.72 : 0.28, e.mid, M.easeIO(mk)), p = along(e, uu), r = 7 * (1 + Math.sin(pk * Math.PI) * 0.8);
         c.fillStyle = VCOL[u ? e.b : e.a]; c.strokeStyle = '#fff'; c.lineWidth = 2; c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill(); c.stroke(); }
-      else { const p = along(e, e.mid), pk = M.clamp((t - e.merge - 0.22 * T) / 0.25, 0, 1), r = 12 * (1 + Math.sin(pk * Math.PI) * 0.3);
+      else { const p = along(e, e.mid), pk = M.clamp((t - e.merge - 0.22 * T) / 0.25, 0, 1), r = 14 * (1 + Math.sin(pk * Math.PI) * 0.3);
         c.fillStyle = '#ffd45a'; c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.beginPath(); c.arc(p.x, p.y, r, 0, 7); c.fill(); c.stroke();
-        c.fillStyle = INK; c.font = M.NUMF(15); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.k + 1), p.x, p.y + 1); }
+        c.fillStyle = INK; c.font = M.NUMF(18); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(e.k + 1), p.x, p.y + 1); }
       c.restore(); }
     M.drawEx(g, c, 'r1'); M.drawEx(g, c, 'r2'); for (let i = 0; i < 4; i++) { const e = K.ex['c' + i]; if (!e) continue; const nd = e.node, b = M.box(g, 'cnt');
       if (b && (nd.alpha ?? 1) > 0.05) { c.save(); c.globalAlpha = nd.alpha ?? 1; c.fillStyle = 'rgba(255,250,240,0.92)'; c.strokeStyle = VCOL[i]; c.lineWidth = 3; c.beginPath(); c.arc(b.x, b.y, 22, 0, 7); c.fill(); c.stroke(); c.restore(); } M.drawEx(g, c, 'c' + i); }

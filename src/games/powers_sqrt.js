@@ -134,7 +134,7 @@ MG.add({
         return [];
       },
       area(g) { return !S.built ? ['sq', 'pile'] : !S.counted ? ['sideB', 'sideL'] : null; },
-      onWin(g) { if (S.slot.fill) { S.slot.fill.mark = 'good'; S.slot.fill.pop = g.t; } },
+      onWin(g) { if (S.slot.fill) { S.slot.fill.pop = g.t; M.sparkle(g, 'root', { n: 14 }); } },
     });
   },
   update(g, dt) {
@@ -173,9 +173,10 @@ MG.add({
       if (q.lit) { const h = ts * pk / 2 - 1; c.save(); c.strokeStyle = LITC; c.shadowColor = LITC; c.shadowBlur = 8; c.lineWidth = Math.max(2, ts * 0.09); c.beginPath(); c.roundRect(q.gx + wob - h, q.gy - h, h * 2, h * 2, ts * 0.12); c.stroke(); c.restore(); } }
     for (const q of moving) { const k = M.easeIO((t - q.t0) / q.dur), x = M.lerp(q.hx, q.gx, k), y = M.lerp(q.hy, q.gy, k) - Math.sin(k * Math.PI) * 40; tile(c, x, y, M.lerp(S.hs, ts, k) * (1 + Math.sin(k * Math.PI) * 0.25), q.hr * (1 - k), q.col, 0, false); }
     // the counts under the bottom row
-    const fs = Math.min(22, ts * 0.85);
+    const fs = Math.max(18, Math.min(24, ts * 0.95));
     for (const L of S.labels) { if (L.gone != null) continue; const k = M.clamp((t - L.t0) / 0.18, 0, 1), big = L.big != null ? 1 + Math.sin(M.clamp((t - L.big) / 0.3, 0, 1) * Math.PI) * 0.6 : 1;
-      c.save(); c.globalAlpha = k; c.font = M.NUMF(fs * big, 700); c.textAlign = 'center'; c.fillStyle = '#7a2a10'; c.fillText(String(L.v), L.x, CY + SIDE / 2 + 12 + fs * 0.8 - (1 - k) * 6); c.restore(); }
+      if (fs > ts * 1.05 && L.v % 2 === 1 && L.v !== S.n) continue; // too narrow for every count: label the even ones and the last
+      c.save(); c.globalAlpha = k; c.font = M.NUMF(fs * big, 700); c.textAlign = 'center'; c.shadowColor = 'rgba(60,20,0,0.6)'; c.shadowBlur = 3; c.shadowOffsetY = 1; c.fillStyle = '#fff4dc'; c.strokeStyle = '#6a2a10'; c.lineWidth = 3.5; c.lineJoin = 'round'; const yy = CY + SIDE / 2 + 12 + fs * 0.8 - (1 - k) * 6; c.strokeText(String(L.v), L.x, yy); c.fillText(String(L.v), L.x, yy); c.restore(); }
     // the turtle, tiling
     const mk = S.mk, hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0;
     const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';

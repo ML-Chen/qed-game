@@ -11,7 +11,7 @@
 //      left side folds into (x + □)²: the h flies down from the plot's edge into the bracket.
 // Level 0: h = 1..3, c > 0. Level 1: h = 2..5. Level 2: h = 3..6, c may be negative. c + h² is always a perfect square.
 // Medium mode: b ÷ 2, h², the sum and the number in the bracket are picked from the tray.
-const M = MK, INK = '#fdf6e3', CHALK = '#ffe08a', NOTE = '#fff3d6', EQY = 224, OY = 274, X = 100, HX = 296, HY = 604;
+const M = MK, INK = '#fdf6e3', CHALK = '#ffe08a', NOTE = '#fff3d6', EQY = 224, OY = 274, X = 120, HX = 296, HY = 604;
 const LAWN = '#79c257', BED = '#e98aa8', STONE = '#f1dcae', SOIL = '#5a3a24';
 function pick(g) {
   const L = g.level, r = (a, b) => a + Math.floor(g.rand() * (b - a + 1));
@@ -27,6 +27,9 @@ function put(g, c, n, cx, cy, s, col, alpha = 1) { const m = M.lay(n, s); c.save
 // a label with a dark outline, so it reads on soil and on tiles
 function tag(g, c, n, cx, cy, s, col, alpha = 1) { c.save(); c.shadowColor = 'rgba(30,14,6,0.9)'; c.shadowBlur = 5; put(g, c, n, cx, cy, s, col, alpha); put(g, c, n, cx, cy, s, col, alpha); c.restore(); }
 const coefX = v => v === 1 ? M.vr('x') : M.row(M.num(v), M.vr('x'));
+// MK draws an empty slot without starting a new path, so it re-strokes the symbol before it dashed; a zero-width op first
+// starts a fresh path.
+const fresh = (slot, s) => M.row(M.op(''), M.gap(-0.44 * s), slot);
 const kk = (g, a) => a ? M.clamp((g.t - a.t0) / a.dur, 0, 1) : 0;
 
 // the plot's geometry right now (the plot recentres as the bed swings); also records the tap zones
@@ -40,7 +43,7 @@ function geo(g) {
 }
 
 MG.add({
-  id: 'complete_square', stage: 'quadratics', cmd: 'COMPLETE □!', hint: 'tap', time: 9, winText: 'Squared away!', hold: 1.8,
+  id: 'complete_square', stage: 'quadratics', cmd: 'COMPLETE □!', hint: 'tap', time: 9, winText: 'Squared!', hold: 1.8,
   card: {
     title: 'Completing the square', ref: 'Algebra 1–2', kind: 'Algebra',
     text: 'Some quadratics are almost a perfect square. Picture x² + 6x as tiles: an x-by-x square and a strip of area 6x.\n\nCut the strip in half, into two strips of 3x. Put one on the right of the square and one underneath. Now the shape is a square with a 3-by-3 corner missing, worth 3² = 9.\n\nAdd 9 to fill the corner, and add 9 to the other side too, so the equation stays balanced. So x² + 6x = 7 becomes x² + 6x + 9 = 16. The full square has side x + 3, so (x + 3)² = 16.',
@@ -50,7 +53,7 @@ MG.add({
 
   init(g) {
     const S = g.s; M.setup(g); const p = S.p = pick(g), T = M.pace(g), { h, b, c } = p, hh = h * h;
-    S.u = Math.min(30, 72 / h); S.hu = h * S.u;
+    S.u = Math.min(36, 90 / h); S.hu = h * S.u;
     // the equation, built from nodes that are reused so symbols glide when it is rewritten
     S.xv = M.vr('x', 'xv'); S.e2 = M.num(2, 'e2'); S.x2 = M.sup(S.xv, S.e2, 'x2');
     S.p1 = M.op('+', 'p1'); S.bx = M.row(M.num(b, 'bn'), M.vr('x', 'bxv')); S.bx.id = 'bx';
@@ -118,7 +121,7 @@ MG.add({
               M.at(g, [[0.3 * T, g => { S.plus = g.t; g.sfx('pop'); for (const q of [...S.bx.items, S.p2, S.k9]) M.tween(g, q, { alpha: 0, sc: 0.6 }, 0.2 * T); }],
                 [0.5 * T, g => { // x² + bx + h² folds into (x + □)²: the x and the ² glide out to the bracket
                   S.sl = M.slot('sl', { w: S.fs * 0.8 }); S.pin = M.op('+', 'pin'); Object.assign(S.p1, { id: 'p1' });
-                  S.sq = M.sup(M.paren(M.row(S.xv, S.p1, S.sl)), S.e2, 'sqr'); S.x2 = null;
+                  S.sq = M.sup(M.paren(M.row(S.xv, S.p1, fresh(S.sl, S.fs))), S.e2, 'sqr'); S.x2 = null;
                   S.lsItems = [S.sq]; S.relay(); g.sfx('swoosh'); }]]); },
             resolve(g) { M.show(g, 1.0 * T); const G = geo(g);
               S.hin = M.num(h, 'hin', { _born: -1 });
@@ -153,9 +156,9 @@ MG.add({
     const ck = kk(g, S.cut); if (S.cut && !S.swing) { c.save(); c.strokeStyle = '#fff6e0'; c.lineWidth = 3; c.setLineDash([7, 5]); c.shadowColor = CHALK; c.shadowBlur = 8; c.beginPath(); c.moveTo(ox + X + hu, OY - 4); c.lineTo(ox + X + hu, OY - 4 + (X + 8) * M.easeIO(ck)); c.stroke(); c.restore(); }
     // labels inside the tiles
     const halfLbl = S.cut && ck > 0.6;
-    put(g, c, M.sup(M.vr('x'), M.num(2)), ox + X / 2, OY + X / 2, 28, '#24461a');
-    if (!halfLbl) tag(g, c, coefX(p.b), ox + X + hu, OY + X / 2, Math.min(24, hu * 0.7), '#fff6ea');
-    else { const s = Math.min(20, hu * 0.62); tag(g, c, coefX(h), ox + X + hu / 2, OY + X / 2, s, '#fff6ea'); tag(g, c, coefX(h), bcx, bcy, s, '#fff6ea'); }
+    put(g, c, M.sup(M.vr('x'), M.num(2)), ox + X / 2, OY + X / 2, 32, '#24461a');
+    if (!halfLbl) tag(g, c, coefX(p.b), ox + X + hu, OY + X / 2, Math.min(26, hu * 0.8), '#fff6ea');
+    else { const s = Math.min(22, hu * 0.7); tag(g, c, coefX(h), ox + X + hu / 2, OY + X / 2, s, '#fff6ea'); tag(g, c, coefX(h), bcx, bcy, s, '#fff6ea'); }
     // the corner: a dashed hole once the bed has swung, then paving stones that drop in row by row
     const cx0 = ox + X, cy0 = OY + X;
     if (S.hole && !S.tiles) { const pk = 0.5 + 0.5 * Math.sin(t * 5); c.save(); c.fillStyle = 'rgba(40,22,10,0.45)'; c.fillRect(cx0, cy0, hu, hu); c.strokeStyle = `rgba(255,240,200,${0.6 + 0.4 * pk})`; c.lineWidth = 2.5; c.setLineDash([5, 4]); c.strokeRect(cx0 + 1.5, cy0 + 1.5, hu - 3, hu - 3); c.restore();
@@ -164,15 +167,15 @@ MG.add({
       for (let i = 0; i < n; i++) { const row = Math.floor(i / h), col = i % h, at = S.tiles.t0 + S.tiles.dur * (row / h + col / (h * h)), k = M.clamp((t - at) / 0.22, 0, 1); if (k <= 0) continue;
         const e = M.ease(k), x = cx0 + col * u, y = cy0 + row * u - (1 - e) * 46; c.save(); c.globalAlpha = Math.min(1, k * 2.5);
         c.fillStyle = 'rgba(30,14,6,0.3)'; c.fillRect(x + 1.5, y + 2.5, u - 1, u - 1); c.fillStyle = STONE; c.fillRect(x + 0.8, y + 0.8, u - 1.6, u - 1.6); c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(x + 1.5, y + 1.5, u - 3, Math.max(1.5, u * 0.18)); c.restore(); }
-      if (t > S.tiles.t0 + S.tiles.dur + 0.15) tag(g, c, M.num(h * h), cx0 + hu / 2, cy0 + hu / 2, Math.min(24, hu * 0.55), '#fff6e0', M.clamp((t - S.tiles.t0 - S.tiles.dur - 0.15) / 0.2, 0, 1)); }
+      if (t > S.tiles.t0 + S.tiles.dur + 0.15) tag(g, c, M.num(h * h), cx0 + hu / 2, cy0 + hu / 2, Math.min(26, hu * 0.7), '#fff6e0', M.clamp((t - S.tiles.t0 - S.tiles.dur - 0.15) / 0.2, 0, 1)); }
     // edge lengths: x and the bed's width along the top, x along the left; after the swing the second half's width sits on the left
     const eg = S.edgeGlow ? Math.sin(kk(g, S.edgeGlow) * Math.PI) : 0, gl = S.glowAll ? Math.sin(kk(g, S.glowAll) * Math.PI) : 0, ec = M.mix('#fff3d6', CHALK, Math.max(eg, gl)), es = 18 * (1 + 0.25 * Math.max(eg, gl));
-    tag(g, c, M.vr('x'), ox + X / 2, OY - 13, 18, ec); tag(g, c, M.vr('x'), ox - 13, OY + X / 2, 18, ec);
-    if (!halfLbl) tag(g, c, M.num(p.b), ox + X + hu, OY - 13, 17, '#fff3d6');
-    else { tag(g, c, M.num(h), ox + X + hu / 2, OY - 13, 17 * (es / 18), ec);
+    tag(g, c, M.vr('x'), ox + X / 2, OY - 14, 21, ec); tag(g, c, M.vr('x'), ox - 14, OY + X / 2, 21, ec);
+    if (!halfLbl) tag(g, c, M.num(p.b), ox + X + hu, OY - 14, 20, '#fff3d6');
+    else { tag(g, c, M.num(h), ox + X + hu / 2, OY - 14, 20 * (es / 18), ec);
       // the second half's label rides with it: from above it to its left side
       const lx = bcx + Math.sin(ang) * (X / 2 + 13), ly = bcy - Math.cos(ang) * (X / 2 + 13);
-      tag(g, c, M.num(h), lx, ly, 17 * (es / 18), ec); }
+      tag(g, c, M.num(h), lx, ly, 20 * (es / 18), ec); }
     // fold: a glowing outline round the whole square, and "+" signs make each side read x + h
     if (S.fold) { const fk = kk(g, S.fold), L = X + hu, per = 4 * L; c.save(); c.strokeStyle = CHALK; c.shadowColor = CHALK; c.shadowBlur = 14; c.lineWidth = 3.5; c.setLineDash([per * M.easeIO(fk), per * 2]); c.strokeRect(ox - 3, OY - 3, L + 6, L + 6); c.restore();
       if (S.plus) { const a = M.clamp((t - S.plus) / 0.25, 0, 1); tag(g, c, M.op('+'), ox + X, OY - 13, 18 * (1 + Math.sin(a * Math.PI) * 0.4), CHALK, a); tag(g, c, M.op('+'), ox - 13, OY + X, 18 * (1 + Math.sin(a * Math.PI) * 0.4), CHALK, a); } }
