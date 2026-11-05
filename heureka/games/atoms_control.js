@@ -44,11 +44,11 @@
       note: 'A reactor gives steady power when each split causes about one more split.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
-      s.v = SK.variant(g, 4); s.rods = RODSETS[s.v]; s.d = 0.92; s.late = lv >= 2; s.need = lv ? 2.8 : 2.6; s.atoms = ATOMS.map(([x, y]) => ({ x, y, cool: 0 }));
+      s.v = SK.variant(g, 4); s.rods = RODSETS[s.v]; s.d = 1; s.late = lv >= 2; s.need = lv ? 2.8 : 2.6; s.atoms = ATOMS.map(([x, y]) => ({ x, y, cool: 0 }));
       s.ns = []; s.wait = []; s.splits = []; s.absorb = []; s.count = 0; s.P = 0; s.steady = 0; s.src = 0; s.hot = 0; s.lev = { x: LEV.x, y: 0 }; s.lev.y = LEV.t + s.d * (LEV.b - LEV.t);
       g.def.failText = 'Lights out!';
     },
-    down(g, x, y) { const s = g.s; SK.touched(g); if (x > 250 && y > 250 && y < 600) { SK.dragStart(g, s.lev, x, y); this.move(g, x, y); } },
+    down(g, x, y) { const s = g.s; SK.touched(g); if (x > 250 && y > 250 && y < 600) { SK.dragStart(g, s.lev, x, y); this.move(g, x, y); s.moved = true; } },
     move(g, x, y) { const s = g.s; if (!SK.dragging(g)) return; SK.dragMove(g, x, y); s.lev.x = LEV.x; s.lev.y = SK.clamp(s.lev.y, LEV.t, LEV.b); s.d = (s.lev.y - LEV.t) / (LEV.b - LEV.t); },
     up(g) { SK.dragEnd(g); },
     update(g, dt) {
@@ -71,7 +71,7 @@
       // power: splits per second, smoothed; the town's lights follow it
       s.rate = s.rate || []; s.rate.push(g.t); while (s.rate.length && s.rate[0] < g.t - 1) s.rate.shift();
       const inst = s.count / Math.max(dt, 1e-3); s.count = 0; s.P += (inst - s.P) * Math.min(1, dt / 0.7);
-      const ok = s.P > BAND[0] && s.P < BAND[1]; s.ok = ok; s.steady = SK.clamp(s.steady + (ok ? dt : -dt * 0.4), 0, s.need);
+      const ok = s.P > BAND[0] && s.P < BAND[1]; s.ok = ok; s.steady = SK.clamp(s.steady + (ok && s.moved ? dt : -dt * 0.4), 0, s.need); // the town only counts once the player has worked the rods
       if (s.ns.length > MAXN || s.P > 40) { s.hot = g.t; g.def.failText = 'Overheating!'; g.fail(); g.sfx('rumble'); g.shake(10, 0.6); return; }
       if (s.steady >= s.need) { g.win(); g.sfx('cheer'); }
       if (ok && Math.floor(s.steady / s.need * HOUSES) > (s.lit || 0)) { s.lit = Math.floor(s.steady / s.need * HOUSES); g.sfx('ding'); }
