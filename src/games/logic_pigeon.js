@@ -77,7 +77,7 @@ MG.add({
           return [{ drag: src, to, busy: 0.1, then(g) { S.round++; M.show(g, len); S.face(g, 'wow'); g.sfx('whoosh');
             const go = lf.slice(0, k); go.forEach((q, j) => { flyTo(g, q, j, 0.15 * T + j * st, 0.5 * T); M.at(g, [[0.15 * T + j * st + 0.5 * T, g => { M.roll(g, S.cnt[j], S.round, { dur: 0.25 * T }); g.sfx(j % 2 ? 'tap' : 'pop'); g.burst(holeX(k, j), CY + 20, ['#fff', '#d8d8e8'], 4, 50); }]]); });
             const rest = lf.length - k;
-            M.at(g, [[0.15 * T + st * (k - 1) + 0.55 * T, g => { M.note(g, { node: M.row(M.num(lf.length), M.op('−'), M.num(k), M.op('='), M.num(rest), M.gap(8), M.txt('left')), at: [180, WY - 56], s: 30, col: '#ffffff', write: 0.35 * T, hold: 0.5 * T, fade: 0.3 * T }); }]]); } }]; }
+            M.at(g, [[0.15 * T + st * (k - 1) + 0.55 * T, g => { M.note(g, { node: M.row(M.num(lf.length), M.op('−'), M.num(k), M.op('='), M.num(rest), M.gap(8), M.txt('left')), at: [180, WY - 58], s: 26, col: '#ffffff', pill: 'rgba(40,20,50,0.78)', write: 0.35 * T, hold: 0.5 * T, fade: 0.3 * T }); }]]); } }]; }
         // 2. the leftover pigeon goes into any hole at all
         if (!S.extra) { const q = lf[0], to = [...Array(k).keys()].map(j => 'h' + j);
           return [{ drag: 'p' + q.i, to, busy: 0.1, askAt: 0.95 * T, after: 1.1 * T, ask: { v: p.ans, wrong: [p.q, n, k, p.ans + 1] },
@@ -86,7 +86,7 @@ MG.add({
               M.at(g, [[0.45 * T, g => { S.squab = { j, t0: g.t }; g.sfx('boing'); M.roll(g, S.cnt[j], p.ans, { dur: 0.25 * T }); M.circle(g, 'h' + j, { dur: 0.45 * T, col: '#ffe070' });
                 g.burst(holeX(k, j), CY - 10, ['#fff', '#c8cce0', '#9aa0b8'], 12, 110); }],
                 [0.6 * T, g => { S.q = M.num(p.ans, 'nq', { alpha: 0 }); S.note = M.row(M.num(p.q), M.op('+'), M.num(1), M.op('='), S.q);
-                  M.place(g, 'note', S.note, M.clamp(holeX(k, j), 70, 290), CY + 96, 28, { col: '#fff8e0' }); M.writeIn(g, S.note, { dur: 0.3 * T }); }]]); },
+                  M.place(g, 'note', S.note, M.clamp(holeX(k, j), 70, 290), CY + 98, 26, { col: '#fff8e0' }); M.writeIn(g, S.note, { dur: 0.3 * T }); }]]); },
             resolve(g) { M.show(g, 1.1 * T); S.q.alpha = 1; M.writeIn(g, S.q, { dur: 0.2 * T }); g.sfx('ding');
               M.at(g, [[0.3 * T, g => { const bq = { ...M.box(g, 'nq') }; M.tween(g, S.note, { alpha: 0 }, 0.25 * T);
                 M.fly(g, { node: M.num(p.ans, null, { col: '#fff4c0' }), from: [bq.x, bq.y], to: 'ans', dur: 0.45 * T, arc: -40, s0: 26, s1: 36, then(g) { S.ans.fill = M.num(p.ans, null, { pop: g.t }); M.sparkle(g, 'ans', { n: 14 }); g.sfx('coin'); S.face(g, 'laugh'); S.cheer = g.t; } });
@@ -107,8 +107,8 @@ MG.add({
     c.drawImage(g.bake('logic_pigeon_roof', roof), 0, 0, 360, 640);
     // drifting clouds
     for (let i = 0; i < 3; i++) { const x = (t * (6 + i * 3) + i * 140) % 460 - 60, y = 110 + i * 46; c.fillStyle = 'rgba(255,240,240,0.35)'; c.beginPath(); c.ellipse(x, y, 40, 10, 0, 0, 7); c.ellipse(x + 26, y - 6, 26, 9, 0, 0, 7); c.fill(); }
-    SCN.panel(c, 'sign', 180, SIGNY, 240, 74, t);
-    { c.save(); c.font = M.NUMF(16, 600); c.textAlign = 'center'; c.fillStyle = 'rgba(255,244,220,0.92)'; c.fillText(`${p.n} pigeons · ${p.k} holes`, 180, SIGNY + 29); c.restore(); }
+    SCN.panel(c, 'sign', 180, SIGNY + 2, 250, 86, t);
+    { c.save(); c.font = M.NUMF(18, 600); c.textAlign = 'center'; c.fillStyle = 'rgba(255,244,220,0.95)'; c.fillText(`${p.n} pigeons · ${p.k} holes`, 180, SIGNY + 33); c.restore(); }
     coopShape(c, k, t);
     // the wire
     c.save(); c.strokeStyle = '#2a1a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(21, WY - 4); c.quadraticCurveTo(180, WY + 10, 339, WY - 4); c.stroke(); c.restore();
@@ -136,7 +136,7 @@ MG.add({
       else { c.fillStyle = PIG; c.beginPath(); c.arc(x, y - 12, 10, 0, 7); c.fill(); }
     }
     M.drawEx(g, c, 'top');
-    if (K.ex.note) { const e = K.ex.note, m = M.lay(e.node, e.s), wr = e.node.write, wk = wr ? E((t - wr.t0) / wr.dur) : 1; if (wk > 0) { c.save(); c.globalAlpha = (e.node.alpha ?? 1) * 0.55; c.fillStyle = 'rgba(40,20,50,0.9)'; c.beginPath(); c.roundRect(e.x - 10, e.y - m.a - 7, (m.w + 20) * wk, m.a + m.d + 14, 12); c.fill(); c.restore(); } }
+    if (K.ex.note) { const e = K.ex.note, m = M.lay(e.node, e.s), wr = e.node.write, wk = wr ? E((t - wr.t0) / wr.dur) : 1; if (wk > 0) { c.save(); c.globalAlpha = (e.node.alpha ?? 1) * 0.85; c.fillStyle = 'rgba(40,20,50,0.92)'; c.beginPath(); c.roundRect(e.x - 10, e.y - m.a - 7, (m.w + 20) * wk, m.a + m.d + 14, 12); c.fill(); c.restore(); } }
     M.drawEx(g, c, 'note');
     M.drawUI(g, c);
   },

@@ -133,15 +133,15 @@ MG.add({
         for (let i = 1; i <= n; i++) { const at = S.ticks.t0 + S.ticks.dur * i / n, k = M.clamp((t - at) / 0.16, 0, 1); if (k <= 0) continue; last = i;
           const px = ox + ux * L * i / n, py = oy + uy * L * i / n, r = 6 * (1 + Math.sin(k * Math.PI) * 0.6); c.save(); c.strokeStyle = '#fff'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(px - uy * r, py + ux * r); c.lineTo(px + uy * r, py - ux * r); c.stroke(); c.restore(); }
         if (last) { const fade = M.clamp(1 - (t - S.ticks.t0 - S.ticks.dur - 0.5) / 0.3, 0, 1), px = ox + ux * L * last / n, py = oy + uy * L * last / n, pk = M.clamp((t - S.ticks.t0 - S.ticks.dur * last / n) / 0.16, 0, 1);
-          tag(g, c, M.num(last), px - uy * 22, py + ux * 22, 20 * (1 + Math.sin(pk * Math.PI) * 0.3), '#fff', fade); } } }
+          tag(g, c, M.num(last), px - uy * 24, py + ux * 24, 22 * (1 + Math.sin(pk * Math.PI) * 0.3), '#fff', fade); } } }
     c.fillStyle = BRASS; c.beginPath(); c.arc(ox, oy, 4.5, 0, 7); c.fill();
     // leg labels: the component, then the component over c once that leg has shrunk
-    const lab = (key, v, cx, cy, col) => { const q = S.sh[key], done = q && t > q.t0 + q.dur * 0.6; tag(g, c, done ? M.frac(M.num(v), M.num(p.c)) : M.num(v), cx, cy, done ? 22 : 18, col); };
-    lab('A', a, (ox + ex) / 2, oy + (Y >= 0 ? 16 : -16) + (S.sh.A && t > S.sh.A.t0 + S.sh.A.dur * 0.6 ? (Y >= 0 ? 8 : -8) : 0), XC);
-    lab('B', b, ex + (X >= 0 ? 20 : -20), (oy + ey) / 2, YC);
+    const lab = (key, v, cx, cy, col) => { const q = S.sh[key], done = q && t > q.t0 + q.dur * 0.6; tag(g, c, done ? M.frac(M.num(v), M.num(p.c)) : M.num(v), cx, cy, done ? 24 : 21, col); };
+    lab('A', a, (ox + ex) / 2, oy + (Y >= 0 ? 18 : -18) + (S.sh.A && t > S.sh.A.t0 + S.sh.A.dur * 0.6 ? (Y >= 0 ? 10 : -10) : 0), XC);
+    lab('B', b, ex + (X >= 0 ? 24 : -24), (oy + ey) / 2, YC);
     // the "÷ c" note beside the leg that shrinks
     if (S.legNote) { const k = t - S.legNote.t0; if (k < 0.9) { const key = S.legNote.key, al = M.clamp(k / 0.15, 0, 1) * M.clamp((0.9 - k) / 0.2, 0, 1), col = key === 'A' ? XC : YC;
-      const nx = key === 'A' ? (ox + ex) / 2 : ex + (X >= 0 ? 52 : -52), ny = key === 'A' ? oy + (Y >= 0 ? 40 : -40) : (oy + ey) / 2 - 26; tag(g, c, M.row(M.op('÷'), M.num(p.c)), nx, ny, 22, col, al); } }
+      const nx = key === 'A' ? (ox + ex) / 2 : ex + (X >= 0 ? 52 : -52), ny = key === 'A' ? oy + (Y >= 0 ? 40 : -40) : (oy + ey) / 2 - 26; tag(g, c, M.row(M.op('÷'), M.num(p.c)), nx, ny, 24, col, al); } }
     // the length 1 along the finished arrow
     if (S.ringT != null) { const k = M.clamp((t - S.ringT) / 0.3, 0, 1), mx = (ox + ex) / 2, my = (oy + ey) / 2, nx = -(ey - oy) / (L || 1), ny = (ex - ox) / (L || 1), sd = (a * b >= 0) ? 1 : -1;
       tag(g, c, M.num(1), mx - nx * 20 * sd, my - ny * 20 * sd, 24 * (1 + Math.sin(k * Math.PI) * 0.4), '#fff', k); }

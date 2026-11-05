@@ -41,7 +41,7 @@ MG.add({
     const relay = () => { const items = [S.lhs, S.eq]; const tl = S.terms.slice().sort((a, b) => b.p - a.p);
       if (!tl.length) items.push(M.slot('rs', { col: '#7aa8c8' }));
       tl.forEach((q, i) => { if (i) items.push(q.plus); items.push(q.node); });
-      const row = M.row(...items), s = Math.min(40, 40 * 300 / Math.max(1, M.lay(row, 40).w)); M.place(g, 'row', row, 180, RY, s, { col: INK }); M.inert(g, ['rs']); };
+      const row = M.row(...items), s = Math.min(40, 40 * 318 / Math.max(1, M.lay(row, 40).w)); M.place(g, 'row', row, 180, RY, s, { col: INK }); M.inert(g, ['rs']); };
     relay();
     const hop = (g, e) => { S.mk.lastMove = g.t; if (e) { S.face = e; S.faceT = g.t; } };
     M.play(g, {

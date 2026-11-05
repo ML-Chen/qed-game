@@ -91,7 +91,7 @@ MG.add({
         // 2. ÷ σ: count σ-sized hops
         if (!S.div) { const go = { busy: 0.1, askAt: (0.3 + H) * T, after: ((hops - 1) * H + 0.85) * T, ask: { v: p.z, wrong: [Math.round(diff / (p.s * p.s) * 100) / 100, diff * p.s, p.z + (p.z > 0 ? 1 : -1), -p.z] },
           then(g) { S.div = true; M.show(g, (0.3 + H) * T); S.face(g, 'think'); M.circle(g, 'sv', { dur: 0.5 * T, col: TAPE }); M.indicate(g, 'sv', { dur: 0.4 * T, col: TAPE });
-            S.stick = g.t; M.at(g, [[0.3 * T, g => hop(g, 0)]]); },
+            S.stick = g.t; S.jump = { x0: S.ax(p.mu) - dir * 26, x1: S.ax(p.mu), t0: g.t, dur: 0.22 * T, h: 5 }; M.at(g, [[0.22 * T, g => { S.jump = null; S.landX = S.ax(p.mu); }], [0.3 * T, g => hop(g, 0)]]); },
           resolve(g) { M.show(g, ((hops - 1) * H + 0.85) * T);
             for (let k = 1; k < hops; k++) M.at(g, [[(k - 1) * H * T, g => hop(g, k)]]);
             M.at(g, [[((hops - 1) * H + 0.15) * T, g => { const zr = M.num(fmt(p.z), 'zr', { pop: g.t, col: '#fff4c0' }); S.top.items[2] = zr; relay(); g.sfx('coin'); M.sparkle(g, 'zr', { n: 14 }); S.face(g, 'laugh'); S.cheer = g.t; }]]); } };
@@ -118,12 +118,12 @@ MG.add({
     // the track: a painted line with a tick every σ, values under it
     c.save(); c.strokeStyle = 'rgba(60,20,10,0.35)'; c.lineWidth = 7; c.beginPath(); c.moveTo(20, AY + 3); c.lineTo(340, AY + 3); c.stroke();
     c.strokeStyle = '#fff0dc'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(20, AY); c.lineTo(340, AY); c.stroke();
-    c.font = M.NUMF(13, 600); c.textAlign = 'center'; c.fillStyle = '#fff0dc'; c.lineWidth = 2.5;
-    for (let k = -3; k <= 3; k++) { const x = 180 + k * PX, v = p.mu + k * p.s; c.beginPath(); c.moveTo(x, AY - 7); c.lineTo(x, AY + 7); c.stroke(); if (v >= 0) c.fillText(v, x, AY + 24); }
+    c.font = M.NUMF(16, 600); c.textAlign = 'center'; c.fillStyle = '#fff0dc'; c.lineWidth = 2.5;
+    for (let k = -3; k <= 3; k++) { const x = 180 + k * PX, v = p.mu + k * p.s; c.beginPath(); c.moveTo(x, AY - 7); c.lineTo(x, AY + 7); c.stroke(); if (v >= 0) c.fillText(v, x, AY + 26); }
     // one σ, shown on the side away from x
-    { const sx = -S.dir, a = xm, b = xm + sx * PX, y = AY + 38, hl = S.stick ? Math.max(0, 1 - (t - S.stick) / (0.8 * T)) : 0; c.strokeStyle = M.mix('#ffe9a0', '#ffffff', hl); c.lineWidth = 2 + hl * 2; if (hl) { c.shadowColor = TAPE; c.shadowBlur = 12 * hl; }
+    { const sx = -S.dir, a = xm, b = xm + sx * PX, y = AY + 42, hl = S.stick ? Math.max(0, 1 - (t - S.stick) / (0.8 * T)) : 0; c.strokeStyle = M.mix('#ffe9a0', '#ffffff', hl); c.lineWidth = 2 + hl * 2; if (hl) { c.shadowColor = TAPE; c.shadowBlur = 12 * hl; }
       c.beginPath(); c.moveTo(a, y - 6); c.lineTo(a, y); c.lineTo(b, y); c.lineTo(b, y - 6); c.stroke(); c.shadowBlur = 0;
-      const nd = M.row(M.vr('σ'), M.op('='), M.num(p.s)), mm = M.lay(nd, 17); M.draw(c, nd, (a + b) / 2 - mm.w / 2, y + 20, 17, { t, col: '#ffe9a0' }); }
+      const nd = M.row(M.vr('σ'), M.op('='), M.num(p.s)), mm = M.lay(nd, 21); M.draw(c, nd, (a + b) / 2 - mm.w / 2, y + 24, 21, { t, col: '#ffe9a0' }); }
     c.restore();
     // the tape from μ to x, then hop trails
     if (S.tape && t > S.tape.t0) { const k = E((t - S.tape.t0) / S.tape.dur), y = AY - 12, a = xm, b = M.lerp(xm, xx, k); c.save(); c.fillStyle = TAPE; c.strokeStyle = '#a8701a'; c.lineWidth = 1.5;
@@ -138,7 +138,7 @@ MG.add({
       const fw = id === 'mp' ? -1 : 1, side = (id === 'mp' ? -S.dir : S.dir) || 1; c.fillStyle = col; c.beginPath(); c.moveTo(fx, top); c.quadraticCurveTo(fx + side * 16, top + 2 + wv, fx + side * 32, top + 4 + wv); c.lineTo(fx + side * 32, top + 22 + wv); c.quadraticCurveTo(fx + side * 16, top + 20, fx, top + 22); c.fill();
       const nd = M.vr(sym), mm = M.lay(nd, 18); M.draw(c, nd, fx + side * 16 - mm.w / 2, top + 18 + wv * 0.5, 18, { t, col: '#fff' }); c.restore(); }
     // the kangaroo
-    const won = g.done && g.result === 'win'; let rx = S.landX ?? xm, ry = AY, cr = 0;
+    const won = g.done && g.result === 'win'; let rx = S.landX ?? (xm - (S.dir || 1) * 26), ry = AY, cr = 0;
     if (S.jump) { const k = M.clamp((t - S.jump.t0) / S.jump.dur, 0, 1), e = E(k); rx = M.lerp(S.jump.x0, S.jump.x1, e); ry = AY - Math.sin(k * Math.PI) * S.jump.h * 2; }
     else if (S.landAt && t - S.landAt < 0.15) cr = 1 - (t - S.landAt) / 0.15;
     const cheer = won || (S.cheer && t - S.cheer < 1), bounce = cheer ? Math.abs(Math.sin(t * 9)) * 8 : 0;

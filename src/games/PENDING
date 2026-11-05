@@ -7,9 +7,6 @@ counting_arith.js
 counting_geom.js
 integrals_parts.js
 series_ratio.js
-logic_pigeon.js
-chance_expected.js
-fractions_multiply.js
 decimals_convert.js
 lines_plot.js
 counting_binom.js
@@ -25,3 +22,13 @@ geometry_reflect.js
 derivs_partial.js
 matrices_mult.js
 modular_fermat.js
+longway_breakapart.js
+longway_areamodel.js
+longway_remainder.js
+fractions_add.js
+geometry_circum.js
+ratios_proportion.js
+ratios_discount.js
+twostep_bothsides.js
+geometry_cone.js
+stats_twoway.js

@@ -65,10 +65,13 @@ MG.add({
     S.xr = S.kind === 'quad' ? [R - 3, R + 3] : [-R * 1.9, R * 1.9];
     { let lo = 1e9, hi = -1e9; for (let i = 0; i <= 80; i++) { const v = fval(S.terms, S.xr[0] + (S.xr[1] - S.xr[0]) * i / 80); lo = Math.min(lo, v); hi = Math.max(hi, v); } S.yr = [lo, hi]; }
     S.marks = []; S.walk = null;
-    const relay = () => { M.place(g, 'top', S.top, 196, L1Y, 34, { col: INK }); M.place(g, 'tok', S.tok, 44, L1Y - 8, 40, { col: '#4a2410' }); if (S.work) M.place(g, 'work', S.work, 180, L2Y, 40, { col: INK }); };
+    S.topS = Math.min(34, 34 * 244 / M.lay(S.top, 34).w);
+    // the working line's size: its widest forms (the first copy, and f′(x) = ... = 0) fit the width
+    { const fp = () => M.row(M.vr('f′'), M.paren(M.vr('x')), M.op('=')), w = Math.max(M.lay(M.row(fp(), plain(S.terms)), 40).w, M.lay(M.row(fp(), plain(S.dT), M.op('='), M.num(0)), 40).w); S.ws = Math.min(40, 40 * 316 / w); }
+    const relay = () => { M.place(g, 'top', S.top, 206, L1Y, S.topS, { col: INK }); M.place(g, 'tok', S.tok, 44, L1Y - 8, 40, { col: '#4a2410' }); if (S.work) M.place(g, 'work', S.work, 180, L2Y, S.ws, { col: INK }); };
     S.relay = relay; relay(); M.inert(g, ['eq1', 'eq2', 'fp', 'zero', 'pm']);
     M.zone(g, 'ridge', { x: 180, y: (GT + RUL) / 2, w: GX1 - GX0, h: RUL - GT + 20 });
-    g.dur *= (2.6 + 1.05 * (2 + S.roots.length)) / 8;
+    g.dur *= (2.6 + 1.05 * (3 + S.roots.length)) / 8;
     const react = (g, e) => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
 
     // the working line's terms: { sg, cf, pw } per term, re-synced as the work goes on
@@ -84,7 +87,7 @@ MG.add({
       const ex = Q.pw.exp, from = { ...M.box(g, Q.pw.id) }, eb = M.box(g, ex.id || '') || from, c2 = Math.abs(c) * p;
       if (!Q.cf) { Q.cf = M.num(c2, 'wc' + Q.i, { alpha: 0 }); Q.sync(); relay(); Q.fresh = true; }
       M.light(g, ex, { col: GOLD });
-      M.fly(g, { node: M.num(p, null, { col: GOLD }), from: [from.x + from.w * 0.3, from.y - from.h * 0.3], to: Q.cf.id, dur: 0.32 * T, arc: -40, s0: 26, s1: 40, col: GOLD,
+      M.fly(g, { node: M.num(p, null, { col: GOLD }), from: [from.x + from.w * 0.3, from.y - from.h * 0.3], to: Q.cf.id, dur: 0.32 * T, arc: -40, s0: 26, s1: S.ws, col: GOLD,
         then(g) { if (Q.fresh) { Q.cf.alpha = 1; Q.cf.pop = g.t; } else { M.roll(g, Q.cf, c2, { dur: 0.26 * T }); M.note(g, { node: M.row(M.num(p), M.op('×'), M.num(Math.abs(c))), at: Q.cf.id, off: [0, -44], s: 22, col: GOLD, write: 0.2 * T, hold: 0.25 * T, fade: 0.15 * T }); }
           M.sparkle(g, Q.cf.id, { n: 6 }); g.sfx('ding'); } });
       M.roll(g, ex, p - 1, { delay: 0.35 * T, dur: 0.25 * T }); M.unlight(g, ex, { delay: 0.6 * T });
@@ -106,23 +109,27 @@ MG.add({
             M.circle(g, 'fx', { dur: 0.5 * T, col: GOLD }); g.sfx('swoosh'); },
           resolve(g) { M.show(g, 1.5 * T); const list = S.WQ.slice(); list.forEach((Q, k) => M.at(g, [[k * 0.45 * T, g => { dTerm(g, Q); react(g, k % 2 ? 'happy' : 'wow'); }]]));
             M.at(g, [[1.4 * T, g => { M.indicate(g, S.wR, { dur: 0.3 * T, sc: 1.08 }); S.point = false; }]]); } }];
-        // 2. set f′(x) = 0 and solve
-        if (!S.solved) return [{ tap: ['fd', 'fp', ...idsIn(S.wR)], busy: 0.1, askAt: 1.5 * T, after: (S.m === 2 ? 1.3 : 0.75) * T, ask: rootAsk(),
-          then(g) { S.solved = true; M.show(g, 1.5 * T); S.point = true; react(g, 'think'); const [Q0, Q1] = S.WQ;
+        // 2. set f′(x) = 0: "= 0" writes itself, the f′(x) fades, and the constant hops over the = (its sign flips)
+        if (!S.zeroed) return [{ tap: ['fd', 'fp', ...idsIn(S.wR)], busy: 0.1,
+          then(g) { S.zeroed = true; M.show(g, 1.55 * T); S.point = true; react(g, 'think'); const [Q0, Q1] = S.WQ;
             S.zero = M.num(0, 'zero', { _born: -1 }); S.eq3 = M.op('=', 'eq3', { _born: -1 }); S.rhs = M.row(S.zero);
             S.work.items = [S.fp, S.eq2, S.wR, S.eq3, S.rhs]; relay(); M.writeIn(g, M.node(g, 'eq3')); M.writeIn(g, S.zero, { delay: 0.12 * T, dur: 0.25 * T }); g.sfx('tap');
             M.at(g, [
-              [0.4 * T, g => { M.tween(g, S.fp, { alpha: 0 }, 0.18 * T); M.tween(g, S.eq2, { alpha: 0 }, 0.18 * T); for (const q of kids(S.fp)) M.tween(g, q, { alpha: 0 }, 0.18 * T); }],
-              [0.6 * T, g => { hideAll(S.fp); hideAll(S.eq2); S.work.items = [S.wR, S.eq3, S.rhs]; relay(); M.tween(g, Q1.row, { dy: -32 }, 0.12 * T, { delay: 0.1 * T }); M.circle(g, Q1.row, { dur: 0.3 * T }); }],
-              [0.78 * T, g => { // the constant hops over the = and its sign flips
+              [0.45 * T, g => { M.tween(g, S.fp, { alpha: 0 }, 0.18 * T); M.tween(g, S.eq2, { alpha: 0 }, 0.18 * T); for (const q of kids(S.fp)) M.tween(g, q, { alpha: 0 }, 0.18 * T); }],
+              [0.65 * T, g => { hideAll(S.fp); hideAll(S.eq2); S.work.items = [S.wR, S.eq3, S.rhs]; relay(); }],
+              [0.95 * T, g => { M.tween(g, Q1.row, { dy: 30 }, 0.12 * T); M.circle(g, Q1.row, { dur: 0.25 * T }); }],
+              [1.1 * T, g => { // the constant, lifted, hops over the = and its sign flips
                 const b = { ...M.box(g, Q1.row.id) }, v = -Q1.c; hideAll(Q1.row); Q1.row.dy = 0; M.tween(g, S.zero, { alpha: 0 }, 0.1 * T);
                 S.WQ = [Q0]; S.syncW(); S.cst = M.num(v, 'cst', { alpha: 0 }); S.rhs.items = [S.cst]; relay(); g.sfx('swoosh'); react(g, 'wow');
-                M.fly(g, { node: M.row(M.op('-'), M.num(Math.abs(Q1.c))), from: [b.x, b.y - 32], to: 'cst', dur: 0.36 * T, arc: -36, s0: 40, s1: 40,
-                  then(g) { S.cst.alpha = 1; S.cst.pop = g.t; S.cst.hl = 1; S.cst.hlc = GOLD; M.unlight(g, S.cst, { delay: 0.2 * T }); M.sparkle(g, 'cst', { n: 8 }); g.sfx('pop'); } }); }],
-              [1.2 * T, g => { // divide both sides by the leading number
-                M.circle(g, Q0.cf, { col: '#2a9ad8', dur: 0.3 * T }); M.note(g, { node: M.row(M.op('÷'), M.num(K)), at: 'work', off: [0, 40], s: 30, col: '#1a5a9a', write: 0.18 * T, hold: 0.5 * T, fade: 0.2 * T });
-                M.strike(g, Q0.cf, { delay: 0.1 * T, dur: 0.15 * T, col: BLUE }); }],
-            ]); },
+                M.fly(g, { node: M.row(M.op('-'), M.num(Math.abs(Q1.c))), from: [b.x, b.y + 30], to: 'cst', dur: 0.36 * T, arc: 26, s0: S.ws, s1: S.ws,
+                  then(g) { S.cst.alpha = 1; S.cst.pop = g.t; S.cst.hl = 1; S.cst.hlc = GOLD; M.unlight(g, S.cst, { delay: 0.2 * T }); M.sparkle(g, 'cst', { n: 8 }); g.sfx('pop'); react(g, 'happy'); } }); }],
+              [1.5 * T, g => { S.point = false; }],
+            ]); } }];
+        // 3. tap the leading number to divide both sides by it (and, for x², take the square root)
+        if (!S.solved) return [{ tap: ['wc0', 'w0', 'fd', 'cst', ...idsIn(S.wR)], busy: 0.1, askAt: 0.5 * T, after: (S.m === 2 ? 1.3 : 0.75) * T, ask: rootAsk(),
+          then(g) { S.solved = true; M.show(g, 0.5 * T); S.point = true; react(g, 'think'); const Q0 = S.WQ[0];
+            M.circle(g, Q0.cf, { col: '#2a9ad8', dur: 0.3 * T }); M.note(g, { node: M.row(M.op('÷'), M.num(K)), at: 'work', off: [0, 40], s: 30, col: '#1a5a9a', write: 0.18 * T, hold: 0.5 * T, fade: 0.2 * T });
+            M.strike(g, Q0.cf, { delay: 0.2 * T, dur: 0.15 * T, col: BLUE }); g.sfx('tap'); },
           resolve(g) { const Q0 = S.WQ[0], two = S.m === 2; M.show(g, (two ? 1.3 : 0.75) * T); react(g, 'happy');
             M.tween(g, Q0.cf, { alpha: 0, sc: 0.4 }, 0.15 * T); M.roll(g, S.cst, Math.pow(R, m), { dur: 0.28 * T }); g.sfx('ding');
             M.at(g, [[0.25 * T, g => { hideAll(Q0.cf); Q0.cf = null; Q0.sync(); relay(); M.sparkle(g, 'cst'); }]]);
@@ -135,15 +142,15 @@ MG.add({
               [0.9 * T, g => { // ±a splits into −a and a
                 const b = { ...M.box(g, 'cst') }; hideAll(S.cst); S.chips = [M.num(-R, 'r0', { alpha: 0 }), M.num(R, 'r1', { alpha: 0 })];
                 S.rhs.items = [S.chips[0], M.op(',', 'cm', { _born: -1 }), S.chips[1]]; relay(); M.inert(g, ['cm']); g.sfx('pop');
-                for (const ch of S.chips) M.fly(g, { node: M.num(+ch.v.replace('−', '-')), from: [b.x, b.y], to: ch.id, dur: 0.25 * T, arc: -20, s0: 40, s1: 40, col: INK, then(g) { ch.alpha = 1; ch.pop = g.t; M.sparkle(g, ch.id, { n: 5 }); } }); }],
+                for (const ch of S.chips) M.fly(g, { node: M.num(+ch.v.replace('−', '-')), from: [b.x, b.y], to: ch.id, dur: 0.25 * T, arc: -20, s0: S.ws, s1: S.ws, col: INK, then(g) { ch.alpha = 1; ch.pop = g.t; M.sparkle(g, ch.id, { n: 5 }); } }); }],
               [1.25 * T, g => { S.point = false; }],
             ]); } }];
         // 3. drop each root onto the ridge: the goat trots there and its plank lies level
         return S.chips.filter(ch => !ch.used).map(ch => ({ drag: ch.id, to: 'ridge', area: [GX0 - 10, GT - 20, GX1 + 10, RUL + 30], busy: 0.1,
           then(g) { ch.used = true; M.show(g, 1.35 * T); S.point = true; react(g, 'think'); M.inert(g, [ch.id]); const r = +ch.v.replace('−', '-');
-            M.circle(g, ch, { dur: 0.3 * T, col: GOLD }); M.tween(g, ch, { alpha: 0.35 }, 0.3 * T, { delay: 0.2 * T });
+            M.circle(g, ch, { dur: 0.3 * T, col: GOLD }); ch.col = '#8a4a10';
             const b = M.box(g, ch.id); g.sfx('swoosh');
-            M.fly(g, { node: M.num(r), from: [b.x, b.y], to: [S.X(r), RUL + 16], dur: 0.4 * T, arc: -50, s0: 40, s1: 18, col: '#7a3a10',
+            M.fly(g, { node: M.num(r), from: [b.x, b.y], to: [S.X(r), RUL + 16], dur: 0.4 * T, arc: -50, s0: S.ws, s1: 18, col: '#7a3a10',
               then(g) { const mk = { x: r, t0: g.t, max: dval(S.terms, r - 0.01) > 0 }; S.marks.push(mk); g.sfx('pop'); } });
             M.at(g, [
               [0.6 * T, g => { const from = S.goatX(g.t); S.walk = { from, to: r, t0: g.t, dur: 0.55 * T }; react(g, 'wow'); g.sfx('tweet'); }],
@@ -151,7 +158,7 @@ MG.add({
               [1.3 * T, g => { S.point = false; }],
             ]); } }));
       },
-      area(g) { return !S.work ? ['tok', 'fx'] : !S.solved ? ['fd'] : S.chips.filter(ch => !ch.used).map(ch => ch.id).concat('ridge'); },
+      area(g) { return !S.work ? ['tok', 'fx'] : !S.zeroed ? ['fd'] : !S.solved ? ['wc0'] : S.chips.filter(ch => !ch.used).map(ch => ch.id).concat('ridge'); },
     });
     S.X = x => GX0 + 14 + (x - S.xr[0]) / (S.xr[1] - S.xr[0]) * (GX1 - GX0 - 28);
     S.Y = v => GB - (v - S.yr[0]) / (S.yr[1] - S.yr[0]) * (GB - GT);
