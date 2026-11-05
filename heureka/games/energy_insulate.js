@@ -6,7 +6,7 @@
 // Variants: an old roof, single-glazed windows, hollow walls, or a cold floor is the big leak. Level 2: windows take
 // two rolls' worth (double glazing costs more).
 (() => {
-  const CS = 12, X0 = 36, Y0 = 192, NX = 24, NY = 30, BR = 21, APEX = [180, 196], EAVE = 332, WALL = [58, 302], FLOOR = [522, 540];
+  const CS = 12, X0 = 36, Y0 = 192, NX = 24, NY = 30, BR = 20, APEX = [180, 196], EAVE = 332, WALL = [58, 302], FLOOR = [522, 540];
   const WINS = [[78, 368, 56, 52], [226, 368, 56, 52]], DOOR = [154, 430, 52, 92];
   const RATES = [ // heat lost per patch: roof, walls, windows, floor
     { roof: 3.0, walls: 0.7, windows: 2.6, floor: 0.6 }, { roof: 1.0, walls: 0.7, windows: 5.2, floor: 0.6 },
@@ -46,7 +46,7 @@
     let best = null;
     for (let j = 0; j < NY; j++) { const row = s.cells.filter(k => k.j === j && !k.cov).sort((p, q) => p.i - q.i); let run = [];
       const flush = () => { if (run.length) { const sc = Math.round(run[0].rate / run[0].cost * 100) * 1000 + run.length; if (!best || sc > best.sc) best = { sc, a: [run[0].x + CS / 2, run[0].y + CS / 2], b: [run[run.length - 1].x + CS / 2, run[0].y + CS / 2] }; } run = []; };
-      for (const k of row) { if (run.length && (k.i !== run[run.length - 1].i + 1 || Math.abs(k.rate - run[0].rate) > 0.01)) flush(); run.push(k); } flush(); }
+      for (const k of row) { if (run.length && Math.abs(k.rate - run[0].rate) > 0.01) { if (k.rate > run[0].rate) flush(); else continue; } if (run.length && k.i > run[run.length - 1].i + 14) flush(); run.push(k); } flush(); }
     if (best && best.b[0] - best.a[0] < 30) { const m = (best.a[0] + best.b[0]) / 2; best.a[0] = m - 15; best.b[0] = m + 15; } return best;
   }
   function lay(g, ax, ay, bx, by) { // insulation goes on every patch the finger passes over, while there are rolls left
