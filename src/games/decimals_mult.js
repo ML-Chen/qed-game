@@ -1,7 +1,8 @@
 // decimals_mult.js — DECIMAL PLACES! Multiplying decimals: multiply as whole numbers, then count the decimal places.
 // A frog pond at night. The problem (2.4 × 0.3) glows in the sky over the water; the answer will sit on lily pads.
 //   1. Tap the × sign: both decimal points lift out of their numbers and hover as fireflies, the digits close up
-//      (2.4 × 0.3 reads 24 × 03, the 0 going faint), each number pulses, and 72 writes itself onto the lily pads.
+//      (2.4 × 0.3 reads 24 × 03, the 0 going faint), each number pulses, the note "24 × 3 = 72" writes itself
+//      between the sky and the pond, and 72 writes itself onto the lily pads.
 //   2-3. Drag each firefly down to the pond, in either order. It lands at the right end of 72 and hops left one digit
 //      for every digit that came after it in its own number: the counted digit lights up in the firefly's colour, the
 //      hopped-over digit lights up too, and a little arc with a running count (1, 2, ...) draws over it. When the point
@@ -74,16 +75,20 @@ MG.add({
       M.at(g, list); return 0.75 * T; };
     M.play(g, {
       moves(g) {
-        if (!S.mult) return [{ tap: 'x', busy: 0.1, askAt: 0.8 * T, after: 0.7 * T, ask: { v: S.P, wrong: [S.P + 10, S.P - 10, S.F[0].m + S.F[1].m, S.P * 10] },
+        if (!S.mult) return [{ tap: 'x', busy: 0.1, askAt: 0.8 * T, after: 1.4 * T, ask: { v: S.P, wrong: [S.P + 10, S.P - 10, S.F[0].m + S.F[1].m, S.P * 10] },
           then(g) { S.mult = true; M.show(g, 0.8 * T); hop(g, 'think'); M.indicate(g, 'x', { dur: 0.4 * T, col: '#ffe27a' }); g.sfx('swoosh');
             // the points lift out and hover; the digits close up; leading zeros go faint (024 is just 24)
             for (const F of S.F) { const b = M.box(g, F.gap.id); F.home = { x: b.x, y: PY - 4 }; F.hov = { x: b.x, y: PY - HOV }; F.st = 'lift'; F.t0 = g.t; }
             M.at(g, [[0.3 * T, g => { relayP(); for (const F of S.F) for (const q of F.zero) M.tween(g, q, { alpha: 0.28 }, 0.25 * T); }],
               [0.5 * T, g => { S.F.forEach((F, i) => F.digits.forEach(q => { if (!F.zero.includes(q)) M.indicate(g, q, { delay: i * 0.12 * T, dur: 0.3 * T, sc: 1.15 }); })); }]]); },
-          resolve(g) { M.show(g, 0.7 * T); S.cells = [...String(S.P)].map((ch, j) => M.num(ch, 'ac' + j)); S.gaps = []; for (let j = 0; j <= S.cells.length; j++) S.gaps.push(newGap(j === 0 || j === S.cells.length ? 12 : 14)); relayA();
-            S.cells.forEach((q, j) => { q._born = -1; M.writeIn(g, q, { delay: j * 0.14 * T, dur: 0.2 * T }); M.sparkle(g, q, { delay: j * 0.14 * T + 0.18 * T, n: 5 }); });
-            S.padT = g.t; g.sfx('ding'); hop(g);
-            M.at(g, [[0.5 * T, g => { S.F.forEach((F, i) => M.zone(g, 'p' + i, { x: F.hov.x, y: F.hov.y, w: 46, h: 46 })); }]]); } }];
+          resolve(g) { M.show(g, 1.4 * T);
+            // the whole-number product is written out between the problem and the pond ("15 × 3 = 45"); its digits then
+            // write themselves onto the lily pads while the note is still there
+            M.note(g, { node: M.row(M.num(S.F[0].m), M.op('×'), M.num(S.F[1].m), M.op('='), M.num(S.P)), at: [180, 320], s: 28, col: '#ffe9a8', pill: true, write: 0.3 * T, hold: 0.8 * T, fade: 0.3 * T });
+            M.at(g, [[0.4 * T, g => { S.cells = [...String(S.P)].map((ch, j) => M.num(ch, 'ac' + j)); S.gaps = []; for (let j = 0; j <= S.cells.length; j++) S.gaps.push(newGap(j === 0 || j === S.cells.length ? 12 : 14)); relayA();
+                S.cells.forEach((q, j) => { q._born = -1; M.writeIn(g, q, { delay: j * 0.14 * T, dur: 0.2 * T }); M.sparkle(g, q, { delay: j * 0.14 * T + 0.18 * T, n: 5 }); });
+                S.padT = g.t; g.sfx('ding'); hop(g); }],
+              [1.3 * T, g => { S.F.forEach((F, i) => M.zone(g, 'p' + i, { x: F.hov.x, y: F.hov.y, w: 46, h: 46 })); }]]); } }];
         if (S.won || !S.cells.length) return [];
         const left = S.F.filter(F => !F.dropped);
         return left.map(F => { const last = left.length === 1, rest = F.d * HT + 0.16 * T + (last ? 0.8 * T : 0.1 * T);

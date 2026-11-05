@@ -78,14 +78,17 @@ MG.add({
         [1.0 * T, g => { S.point = false; }]]); } };
     M.play(g, {
       moves(g) {
-        if (S.st === 0) return [{ tap: 'top', busy: 0.1, then(g) { S.st = 1; M.show(g, 1.2 * T); react(g, 'think'); S.point = true;
-          // the top is circled and rewritten as two factors, one written after the other; then the factor it shares with
-          // the bottom lights up in the bottom's colour
+        if (S.st === 0) return [{ tap: 'top', busy: 0.1, then(g) { S.st = 1; M.show(g, 1.45 * T); react(g, 'think'); S.point = true;
+          // the top is circled; its reason is written under the fraction first (the two numbers multiply to the constant and
+          // add to the middle coefficient), then the top is rewritten as two factors, one written after the other; then the
+          // factor it shares with the bottom lights up in the bottom's colour
           M.circle(g, 'top', { col: SUB, dur: 0.45 * T }); M.indicate(g, 'top', { dur: 0.4 * T, sc: 1.05, col: SUB }); g.sfx('tap');
-          M.at(g, [[0.36 * T, g => M.tween(g, S.topQ, { alpha: 0, sc: 0.8 }, 0.12 * T)],
-            [0.46 * T, g => { hideAll(S.topQ); S.main.items[0].n = M.row(S.f1, S.f2); build(g); M.writeIn(g, S.f1, { dur: 0.22 * T }); M.writeIn(g, S.f2, { dur: 0.22 * T, delay: 0.18 * T }); g.sfx('pop'); }],
-            [0.98 * T, g => { for (const q of [S.f1, S.den]) M.indicate(g, q, { dur: 0.4 * T, sc: 1.15, col: CUT }); g.sfx('ding'); react(g); }],
-            [1.15 * T, g => { S.point = false; }]]); } }];
+          const sg = v => v < 0 ? M.paren(M.num(v)) : M.num(v), why = M.row(M.num(-R), M.op('×'), sg(Q), M.op('='), M.num(-R * Q), M.gap(18), M.num(-R), M.op('+'), sg(Q), M.op('='), M.num(Q - R));
+          M.note(g, { node: why, at: [180, 300 + S.size * 1.72], s: 24, col: SUB, write: 0.4 * T, hold: 1.0 * T, delay: 0.05 * T });
+          M.at(g, [[0.5 * T, g => M.tween(g, S.topQ, { alpha: 0, sc: 0.8 }, 0.12 * T)],
+            [0.6 * T, g => { hideAll(S.topQ); S.main.items[0].n = M.row(S.f1, S.f2); build(g); M.writeIn(g, S.f1, { dur: 0.22 * T }); M.writeIn(g, S.f2, { dur: 0.22 * T, delay: 0.18 * T }); g.sfx('pop'); }],
+            [1.15 * T, g => { for (const q of [S.f1, S.den]) M.indicate(g, q, { dur: 0.4 * T, sc: 1.15, col: CUT }); g.sfx('ding'); react(g); }],
+            [1.4 * T, g => { S.point = false; }]]); } }];
         if (S.st === 1) return [{ drag: 'f1', to: 'den', reach: 70, ...cancel }, { drag: 'den', to: 'f1', reach: 70, ...cancel }];
         if (S.st === 2) return [{ drag: 'a', to: 'xr', reach: 80, area: [0, 180, 360, 400], busy: 0.1, then(g) { S.st = 3; M.show(g, 0.8 * T); react(g, 'think'); S.point = true; g.sfx('whoosh');
           // now it is safe to substitute: a copy of r flies into the x
@@ -93,12 +96,14 @@ MG.add({
           M.fly(g, { node: M.num(R, null, { col: SUB }), from: 'a', to: 'xr', delay: 0.12 * T, dur: 0.42 * T, arc: -60, s1: S.size, col: SUB });
           M.at(g, [[0.56 * T, g => { S.av = Anode(R, { col: SUB }); S.av.id = 'av'; S.av._born = -1; if (S.av.inner) S.av.inner._born = -1; S.av.pop = g.t; S.xr.alpha = 0; S.rest.items[0] = S.av; build(g); M.sparkle(g, 'av', { n: 8, cols: [SUB, '#fff'] }); g.sfx('pop'); react(g); }],
             [0.8 * T, g => { S.point = false; }]]); } }];
-        if (S.st === 3 && !S.tapped) return [{ tap: ['rest', ...idsIn(S.rest)], busy: 0.1, ask: { v: R + Q, wrong: [R - Q, Q - R, R * Q, 0, -(R + Q)] }, askAt: 0.4 * T, after: 1.0 * T,
+        if (S.st === 3 && !S.tapped) return [{ tap: ['rest', ...idsIn(S.rest)], busy: 0.1, ask: { v: R + Q, wrong: [R - Q, Q - R, R * Q, 0, -(R + Q)] }, askAt: 0.4 * T, after: 1.5 * T,
           then(g) { S.tapped = true; M.show(g, 0.4 * T); M.indicate(g, S.rest, { dur: 0.4 * T, sc: 1.1, col: '#e07a1a' }); g.sfx('tap'); },
-          resolve(g) { M.show(g, 1.0 * T); S.st = 4;
-            M.at(g, [[0, g => { const b = M.box(g, 'rest'); for (const q of S.rest.items) { const qb = q.id ? M.box(g, q.id) : null; M.tween(g, q, { alpha: 0, sc: 0.5, dx: qb && b ? (b.x - qb.x) * 0.6 : 0 }, 0.14 * T); } }],
-              [0.12 * T, g => { hideAll(S.rest); S.res = M.num(R + Q, 'res', { col: M.GOOD, pop: g.t }); S.main.items = [S.res]; build(g); g.sfx('coin'); react(g); M.sparkle(g, 'res', { n: 12, cols: ['#ffd45a', '#9ae07a', '#fff'] }); }],
-              [0.6 * T, g => { // and the line becomes the true statement about the original limit
+          resolve(g) { M.show(g, 1.5 * T); S.st = 4;
+            // the sum is written out under the line, then r + q closes up into its value
+            M.note(g, { node: M.row(Anode(R), M.op(Q < 0 ? '-' : '+'), M.num(Math.abs(Q)), M.op('='), M.num(R + Q)), at: [180, 300 + S.size * 1.1], s: 26, col: '#e07a1a', write: 0.35 * T, hold: 0.75 * T });
+            M.at(g, [[0.5 * T, g => { const b = M.box(g, 'rest'); for (const q of S.rest.items) { const qb = q.id ? M.box(g, q.id) : null; M.tween(g, q, { alpha: 0, sc: 0.5, dx: qb && b ? (b.x - qb.x) * 0.6 : 0 }, 0.24 * T); } }],
+              [0.72 * T, g => { hideAll(S.rest); S.res = M.num(R + Q, 'res', { col: M.GOOD, pop: g.t }); S.main.items = [S.res]; build(g); g.sfx('coin'); react(g); M.sparkle(g, 'res', { n: 12, cols: ['#ffd45a', '#9ae07a', '#fff'] }); }],
+              [1.2 * T, g => { // and the line becomes the true statement about the original limit
                 const o = orig(); o._born = g.t; S.main.items = [o, M.op('='), S.res]; build(g); g.sfx('chime'); react(g, 'laugh'); }]]); } }];
         return [];
       },

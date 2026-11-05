@@ -49,41 +49,41 @@ MG.add({
         if (S.st === 0) return [{ drag: 'B', to: 'Hh', busy: 0.1, then: join }, { drag: 'Hh', to: 'B', busy: 0.1, then: join }];
         if (S.st === 1 || S.st === 4) {
           // 2. tap 8 × 5: "8 × 5 = 40" is written beside the rectangle, which fills with light, and 40 flies down into the plate
-          const out = [{ tap: 'mul', busy: 0.1, askAt: 0.75 * T, after: 0.75 * T, ask: { v: S.p * S.q, wrong: [S.p + S.q, S.p * S.q / 2, S.p * S.q + S.p, S.p * (S.q - 1)].filter(v => v !== S.p * S.q) },
+          const out = [{ tap: 'mul', busy: 0.1, askAt: 0.75 * T, after: 1.3 * T, ask: { v: S.p * S.q, wrong: [S.p + S.q, S.p * S.q / 2, S.p * S.q + S.p, S.p * (S.q - 1)].filter(v => v !== S.p * S.q) },
             then(g) { M.show(g, 0.75 * T); M.indicate(g, 'mul', { dur: 0.4 * T, sc: 1.1 }); hop(g);
-              S.prodNote = M.row(M.num(S.p), M.op('×'), M.num(S.q), M.op('='), S.pq = M.num(S.p * S.q, null, { alpha: 0 }));
+              S.prodNote = M.row(M.num(S.p), M.op('×'), M.num(S.q), M.op('='), S.pq = M.num(S.p * S.q, 'pqv', { alpha: 0 }));
               M.place(g, 'pn', S.prodNote, 180, S.y0 - 18, 28, { col: '#5a2a10' }); M.writeIn(g, S.prodNote, { dur: 0.4 * T, delay: 0.1 * T });
               S.rectAt = S.rectAt ?? g.t + 0.3 * T; if (S.st === 4) S.cutAt = g.t; },
-            resolve(g) { M.show(g, 0.75 * T); S.pq.alpha = 1; M.writeIn(g, S.pq, { dur: 0.2 * T }); M.indicate(g, S.pq, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
+            resolve(g) { M.show(g, 1.3 * T); S.pq.alpha = 1; M.writeIn(g, S.pq, { dur: 0.2 * T }); M.indicate(g, S.pq, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
               const v = S.p * S.q, fin = S.st === 4;
-              M.at(g, [[0.4 * T, g => { const from = { ...M.box(g, 'pn') }; M.tween(g, S.prodNote, { alpha: 0 }, 0.25 * T); for (const q of M.node(g, 'mul').items) M.tween(g, q, { alpha: 0 }, 0.15 * T);
-                const res = M.num(v, fin ? 'res' : 'prod', { alpha: 0 });
-                M.fly(g, { node: M.num(v, null, { col: INK }), from: [from.x + from.w / 2 - 14, from.y], to: 'mul', dur: 0.32 * T, arc: -30, s0: 28, s1: 38,
+              M.at(g, [[0.9 * T, g => { const from = { ...M.box(g, 'pqv') }; M.tween(g, S.prodNote, { alpha: 0 }, 0.25 * T); for (const q of M.node(g, 'mul').items) M.tween(g, q, { alpha: 0 }, 0.15 * T, { delay: 0.15 * T }); // 8 × 5 gives way as 40 lands
+                const res = M.num(v, fin ? 'res' : 'prod', { alpha: 0, _born: -1 });
+                M.fly(g, { node: M.num(v, null, { col: INK }), from: [from.x, from.y], to: 'mul', dur: 0.32 * T, arc: -30, s0: 28, s1: 38,
                   then(g) { S.st = fin ? 3 : 2; if (fin) { S.halfAt = g.t; setRow(res); g.sfx('sparkle'); } else setRow(S.hf, S.x, res); res.alpha = 1; res.pop = g.t; delete S.mk.ex.pn; g.sfx('coin'); M.sparkle(g, res, { n: 10 }); hop(g); } }); }]]); } }];
           // halving an even factor first is just as valid: ½ × 8 × 5 = 4 × 5 (the ½ lands on the 8 and a "÷ 2" note splits it)
           if (S.st === 1) for (const [id, v] of [['fp', S.p], ['fq', S.q]]) if (v % 2 === 0) out.push({ drag: 'half', to: id, busy: 0.1, askAt: 0.6 * T, after: 0.6 * T, ask: { v: v / 2, wrong: [v * 2, v - 2, v + 1] },
-            then(g) { M.show(g, 0.6 * T); hop(g); S.hf.alpha = 0; M.circle(g, id, { dur: 0.45 * T });
+            then(g) { M.show(g, 0.6 * T); hop(g); M.light(g, S.hf); M.circle(g, id, { dur: 0.45 * T });
               M.note(g, { node: M.row(M.num(v), M.op('÷'), M.num(2)), at: id, off: [0, -44], s: 26, col: '#7a3a10', write: 0.35 * T, hold: 0.5 * T, fade: 0.2 * T }); },
-            resolve(g) { const nd = M.node(g, id); M.roll(g, nd, v / 2, { dur: 0.3 * T }); M.sparkle(g, id, { delay: 0.25 * T }); g.sfx('pop'); M.show(g, 0.6 * T);
+            resolve(g) { const nd = M.node(g, id); M.roll(g, nd, v / 2, { dur: 0.3 * T }); M.tween(g, S.hf, { alpha: 0 }, 0.25 * T); M.sparkle(g, id, { delay: 0.25 * T }); g.sfx('pop'); M.show(g, 0.6 * T);
               M.at(g, [[0.45 * T, g => { S.st = 4; if (id === 'fp') S.p = v / 2; else S.q = v / 2; const r = M.node(g, 'mul'); setRow(r); hop(g); }]]); } });
           return out;
         }
         // 3. drag the ½ onto 40: the triangle's two outside corners are cut off and swing over onto the triangle, covering
         //    it exactly, so the triangle is half the rectangle; "40 ÷ 2 = 20" is written and 20 lands in the plate
-        if (S.st === 2) return [{ drag: 'half', to: 'prod', busy: 0.1, area: [20, S.rowY - 50, 340, S.rowY + 20], askAt: 0.9 * T, after: 0.8 * T, ask: { v: b * h / 2, wrong: [b * h * 2, b * h - 2, b + h, b * h / 2 + 2] },
-          then(g) { S.st = 5; M.show(g, 0.9 * T); hop(g); S.hf.alpha = 0; M.circle(g, 'prod', { dur: 0.45 * T }); S.cutAt = g.t; g.sfx('swoosh');
-            S.halfNote = M.row(M.num(b * h), M.op('÷'), M.num(2), M.op('='), S.hq = M.num(b * h / 2, null, { alpha: 0 }));
+        if (S.st === 2) return [{ drag: 'half', to: 'prod', busy: 0.1, area: [20, S.rowY - 50, 340, S.rowY + 20], askAt: 0.9 * T, after: 1.3 * T, ask: { v: b * h / 2, wrong: [b * h * 2, b * h - 2, b + h, b * h / 2 + 2] },
+          then(g) { S.st = 5; M.show(g, 0.9 * T); hop(g); M.light(g, S.hf); M.circle(g, 'prod', { dur: 0.45 * T }); // the ½ stays in the line, lit, while the corners flip S.cutAt = g.t; g.sfx('swoosh');
+            S.halfNote = M.row(M.num(b * h), M.op('÷'), M.num(2), M.op('='), S.hq = M.num(b * h / 2, 'hqv', { alpha: 0 }));
             M.place(g, 'pn', S.halfNote, 180, S.y0 - 18, 28, { col: '#5a2a10' }); M.writeIn(g, S.halfNote, { dur: 0.4 * T, delay: 0.4 * T }); },
-          resolve(g) { M.show(g, 0.8 * T); S.hq.alpha = 1; M.writeIn(g, S.hq, { dur: 0.2 * T }); M.indicate(g, S.hq, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
-            M.at(g, [[0.4 * T, g => { const from = { ...M.box(g, 'pn') }; M.tween(g, S.halfNote, { alpha: 0 }, 0.25 * T); M.tween(g, 'prod', { alpha: 0 }, 0.15 * T); M.tween(g, S.x, { alpha: 0 }, 0.15 * T);
-              const res = M.num(b * h / 2, 'res', { alpha: 0 });
-              M.fly(g, { node: M.num(b * h / 2, null, { col: INK }), from: [from.x + from.w / 2 - 14, from.y], to: 'prod', dur: 0.32 * T, arc: -30, s0: 28, s1: 38,
+          resolve(g) { M.show(g, 1.3 * T); S.hq.alpha = 1; M.writeIn(g, S.hq, { dur: 0.2 * T }); M.indicate(g, S.hq, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
+            M.at(g, [[0.9 * T, g => { const from = { ...M.box(g, 'hqv') }; M.tween(g, S.halfNote, { alpha: 0 }, 0.25 * T); for (const q of [M.node(g, 'prod'), S.x, S.hf]) M.tween(g, q, { alpha: 0 }, 0.15 * T, { delay: 0.15 * T }); // ½ × 40 gives way as 20 lands
+              const res = M.num(b * h / 2, 'res', { alpha: 0, _born: -1 });
+              M.fly(g, { node: M.num(b * h / 2, null, { col: INK }), from: [from.x, from.y], to: 'prod', dur: 0.32 * T, arc: -30, s0: 28, s1: 38,
                 then(g) { S.st = 3; S.halfAt = g.t; setRow(res); res.alpha = 1; res.pop = g.t; delete S.mk.ex.pn; g.sfx('coin'); g.sfx('sparkle'); M.sparkle(g, res, { n: 12 }); hop(g); } }); }]]); } }];
         return [];
       },
       area(g) { return S.st === 0 ? ['B', 'Hh'] : S.st === 2 ? ['half', 'prod'] : 'mul'; },
     });
-    M.inert(g, ['res']);
+    M.inert(g, ['res', 'pqv', 'hqv']);
   },
   update(g, dt) { M.update(g, dt); },
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },

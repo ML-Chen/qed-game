@@ -1,277 +1,356 @@
-// modular_fermat.js — FERMAT! Find 3¹⁰⁰ mod 7 with Fermat's little theorem.
-// Like the algebra games, there is ONE expression, "3¹⁰⁰ mod 7", and every move rewrites it in place (symbols glide,
-// numbers roll). Every new number either flies in from something already on screen or arrives with its one-line reason
-// written beside it, and at most one note is on screen at a time. A pond at twilight seen from above; a frog sits on
-// its lily pad in the corner. Every move's working plays by itself (the fuse stands still meanwhile):
-//   1. Tap the 7: a ring of lily pads 0 … 6 fades in and the frog jumps onto pad 1. It hops "× 3" again and again
-//      (pad k → pad 3k mod 7) while the ring's centre counts 3¹, 3², …; after six hops it is back on pad 1. The centre
-//      becomes the fact chip "3⁶ ≡ 1" (the 1 flies in from pad 1) with its reason "7 is prime: 7 − 1 = 6", the ring
-//      fades away and the chip stays pinned under the expression.
-//   2. Tap the exponent 100 (or drag the chip onto it): the chip's 6 flies down to start the note
-//      "6 · 16 = 96, and 96 + 4 = 100"; then 96 and 4 fly up and the exponent rewrites 100 → 96 + 4, and then 6 · 16
-//      flies up and it rewrites 96 + 4 → 6 · 16 + 4.
-//   3. Tap the exponent: "3ᵃ⁺ᵇ = 3ᵃ · 3ᵇ" writes itself and the line glides to 3^(6·16) · 3⁴; then
-//      "3ᵃᵇ = (3ᵃ)ᵇ" and it glides to (3⁶)¹⁶ · 3⁴.
-//   4. Drag the chip onto 3⁶ (or tap 3⁶): the chip's 1 flies onto 3⁶, which becomes 1: (1)¹⁶ · 3⁴; "1¹⁶ = 1" writes
-//      itself and the line glides to 1 · 3⁴, then to 3⁴.
-//   5. Tap 3⁴: "3⁴ = 3 · 3 · 3 · 3 = 81" writes itself and 81 flies up in place of 3⁴; then "81 = 77 + 4 = 7 · 11 + 4"
-//      and 81 becomes (77 + 4); 77 is crossed out (a multiple of 7 leaves nothing), and the line ends 3¹⁰⁰ mod 7 = 4.
-// Level 0: p = 5. Level 1: p = 7. Level 2: p = 11 or 13. The base is always a primitive root, so the frog is home
-// exactly after p − 1 hops. Medium mode: where the frog lands (1), the remainder of the exponent, 1¹⁶, and the final
-// residue are picked from the tray (wrong tiles: dividing by p instead of p − 1, 81 itself, 3 · 4 mod 7).
+// modular_fermat.js — FERMAT! Find 2¹⁰ mod 5 the way you would on paper: build a table of powers and their
+// remainders, see it come back to 1 and repeat, then use that to cut the big power down. Built from the owner's
+// storyboard. Two rules for the whole game: nothing disappears on its own, and each tap adds exactly one thing.
+// A dark slate in a candle-lit study (Fermat wrote his notes in the margins of a book); a hedgehog watches and reacts.
+// Layout: the problem "2¹⁰ mod 5 = ?" and what it means at the top, the table of powers under it (remainders in one
+// column), and the working lines under the table. Every row and every line stays on screen until the game ends.
+//   Rows (tap the glowing 2, once per row): "2¹ = 2 → 2", "2² = 4 → 4", "2³ = 8 = 5 + 3 → 3" (the "5 +" is ringed with
+//     "one 5 taken out" under it, and the 3 flies from "+ 3" into the remainder column), "2⁴ = 16 = 15 + 1 → 1" (the 1
+//     turns gold: "back to 1!"). The row's base flies down from the problem. A row's label stays until the next tap.
+//     Bigger powers (mod 7) use the row above: "3⁴ ≡ 6 · 3 = 18 = 14 + 4 → 4", the 6 flying down from row 3.
+//   Why it repeats (tap the 2 again): "2⁵ = 2⁴ · 2 → 1 · 2 = 2"; 2⁴ is copied from its row, the gold 1 flies in, an
+//     arrow joins this 2 to row 1's 2 and a brace over the rows reads "repeats every 4".
+//   Tap the exponent 10: "2¹⁰ = 2⁴ · 2⁴ · 2²" with "4 + 4 + 2 = 10" beside it; dotted lines join each 2⁴ to the gold row.
+//   Tap a 2⁴: a new line "≡ 1 · 1 · 2²", both 1s flying down the dotted lines from the gold row.
+//   Tap 2²: "≡ 4", the 4 flying in from row 2; it flies on up into the answer box, and the theorem's card slides in.
+// Level 0: 2 mod 5, exponent 9–11 (4 + 4 + r). Level 1: 3 or 5 mod 7 (seven rows), exponent 13–17 (6 + 6 + r).
+// Level 2: 2 or 3 mod 5 with a big exponent: "2¹⁰² = 2^(4·25 + 2)" with "102 ÷ 4 = 25 R 2" and a brace "25 groups of 4";
+// then "= (2⁴)²⁵ · 2²", "≡ 1²⁵ · 2²", "≡ 1 · 2²" with "1²⁵ = 1 · 1 · … · 1 = 1", and "≡ 4", one tap each.
+// The base is always a primitive root, so the table first comes back to 1 exactly at the power p − 1 (as the theorem says).
+// Medium mode: the tray asks for each row's remainder and for the final answer.
 const M = MK;
-const INK = '#f4fff4', GOLD = '#ffd86a', PAD = '#6ac46a', PADD = '#3a8a44', EY = 252, NY = 334, RC = 486, RR = 96, CHY = 408, HX = 54, HY = 596;
+const INK = '#f4f1ff', GOLD = '#ffd36a', SOFT = '#b9c4e6', REM = '#9ee6ff', CUT = '#ff9f80', HX = 66, HY = 604;
+const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+// a power whose exponent stays readable (at least 18 px) at small sizes: the exponent is drawn at a larger share of
+// the base's size than MK.sup's 0.62 (scaled about its centre and raised), so table rows and working lines stay legible
+function sp(base, exp, id, o, s) { const r = Math.min(1, Math.max(0.62, 18.5 / s)); if (r <= 0.62) return MK.sup(base, exp, id, o);
+  const w = MK.lay(exp, s).w; Object.assign(exp, { sc: r, dy: -0.4 * s + 0.34 * s * (1 - r) });
+  return { k: 'row', items: [base, MK.gap(0.04 * s - (1 - r) * w / 2), exp, MK.gap(-(1 - r) * w / 2)], id, ...o }; }
 const pw = (a, k, p) => { let v = 1; for (let i = 0; i < k; i++) v = v * a % p; return v; };
+// per level: where the table rows and the working lines go, and their sizes
+const LAY = [
+  { rowY: 292, step: 33, rs: 25, ls: 26, L: [474, 514] },
+  { rowY: 282, step: 25, rs: 22, ls: 22, L: [484, 518] },
+  { rowY: 284, step: 27, rs: 22, ls: 22, l1s: 26, L: [430, 486, 518] },
+];
+const X0 = 20, TOPY = 202, SUBY = 230, HEADY = 258;
 
 function pick(g) {
-  const L = g.level, r = k => Math.floor(g.rand() * k), one = a => a[r(a.length)];
-  // the base is a primitive root of p, so the frog visits every pad once and is home exactly after p − 1 hops
-  const p = L === 0 ? 5 : L === 1 ? 7 : one([11, 13]), a = L === 0 ? one([2, 3]) : L === 1 ? one([3, 5]) : 2;
-  const q = L === 0 ? 3 + r(4) : L === 1 ? 5 + r(12) : 3 + r(6), rr = L === 0 ? 2 + r(2) : L === 1 ? (a === 5 ? 2 + r(2) : 2 + r(3)) : 2 + r(3);
-  const N = (p - 1) * q + rr;
-  return { p, a, q, r: rr, N, big: Math.pow(a, rr), ans: pw(a, rr, p) };
+  const L = g.level, r = k => Math.floor(g.rand() * k), one = q => q[r(q.length)];
+  const p = L === 1 ? 7 : 5, a = L === 0 ? 2 : L === 1 ? one([3, 5]) : one([2, 3]);
+  const rr = 1 + r(p === 5 ? 3 : 5), q = L === 2 ? 10 + r(21) : 2, N = (p - 1) * q + rr;
+  return { p, a, r: rr, q, N, ans: pw(a, rr, p) };
 }
-// the ring holds the pads 1, a, a², … (mod p) in the order the frog visits them, so every hop goes to the next pad round
-const padXY = (j, n) => { const an = -Math.PI / 2 + 2 * Math.PI * j / n; return [180 + Math.cos(an) * RR, RC + Math.sin(an) * RR * 0.92]; };
 
 MG.add({
   id: 'fermat', stage: 'modular', cmd: 'FERMAT!', hint: 'tap', time: 10, winText: 'Fermat!', hold: 1.9,
   card: {
     title: "Fermat's little theorem", ref: 'Number theory', kind: 'Number theory',
-    text: 'If p is a prime and a is not a multiple of p, then a to the power p − 1 leaves remainder 1 when divided by p. Mathematicians write a^(p−1) ≡ 1 (mod p).\n\nThat makes huge powers easy. For 3¹⁰⁰ mod 7: here p − 1 = 6, so 3⁶ ≡ 1. Write 100 = 6 · 16 + 4. Then 3¹⁰⁰ = (3⁶)¹⁶ · 3⁴, and every 3⁶ is worth 1, so only 3⁴ = 81 is left. 81 = 7 · 11 + 4, so the answer is 4.\n\nYou can watch it on a ring of 7 lily pads: hopping to "3 times the pad number, mod 7" brings the frog home after 6 hops.',
-    note: 'For a prime p, a^(p−1) ≡ 1 (mod p). Divide the exponent by p − 1 and keep only the remainder.',
-    ask: 'What is 2²³ mod 11? What is 3²² mod 5?',
+    text: 'If p is a prime and a is not a multiple of p, then a to the power p − 1 leaves remainder 1 when divided by p.\n\nThat makes huge powers easy. For 2¹⁰ mod 5, list the powers of 2 and their remainders when divided by 5: 2 → 2, 4 → 4, 8 = 5 + 3 → 3, 16 = 15 + 1 → 1. Back to 1 at 2⁴, so the remainders repeat every 4. Write 2¹⁰ = 2⁴ · 2⁴ · 2². Each 2⁴ leaves remainder 1, so 2¹⁰ leaves the same remainder as 1 · 1 · 2² = 4. The answer is 4.',
+    note: 'For a prime p, a^(p−1) leaves remainder 1, so the remainders of a, a², a³, … repeat every p − 1 steps. Divide the exponent by p − 1 and keep only the remainder.',
+    ask: 'What is 2²³ mod 5? What is 3¹⁴ mod 7?',
   },
 
   init(g) {
-    const S = g.s; M.setup(g); Object.assign(S, pick(g)); const { p, a, q, r, N, big, ans } = S, T = M.pace(g);
-    const ES = g.level === 2 ? 40 : 44;
-    // the one expression: a^N mod p
-    S.b = M.num(a, 'b'); S.e = M.num(N, 'e'); S.pw = M.sup(S.b, S.e, 'pw'); S.modT = M.txt('mod', 'mod'); S.pN = M.num(p, 'p');
-    S.tail = [M.gap(12), S.modT, M.gap(8), S.pN];
-    S.line = M.row(S.pw, ...S.tail);
-    S.relay = () => M.place(g, 'L', S.line, 180, EY, ES, { col: INK }); S.relay();
-    M.inert(g, ['mod', 'pw', 'why', 'why2', 'n6', 'n16', 'n96', 'nr', 'n81', 'n7k', 'nrr', 'mul', 'ceq']);
-    S.ring = { alpha: 0 }; S.lit = {}; S.frog = { x: HX, y: HY }; S.notes = 0;
-    const hop = e => { g.s.mk.lastMove = g.t; S.face = e; S.faceT = g.t; };
-    // one working note at a time, written just under the expression; each note has its own key
-    const note = (node, o = {}) => { S.notes++; const key = 'n' + S.notes; S.noteKey = key; const m = M.lay(node, 24);
-      M.place(g, key, node, M.clamp(o.x ?? 180, m.w / 2 + 12, 348 - m.w / 2), NY, 24, { col: GOLD }); M.writeIn(g, node, { dur: o.dur ?? 0.6 * T, delay: o.delay || 0 }); return node; };
-    const dropNote = (g, d = 0.25 * T) => { const key = S.noteKey; if (!key || !g.s.mk.ex[key]) return; M.tween(g, g.s.mk.ex[key].node, { alpha: 0 }, d); M.at(g, [[d + 0.02, g => { delete g.s.mk.ex[key]; }]]); };
-    const fade = (nodes, d) => { for (const n of nodes) if (n) M.tween(g, n, { alpha: 0 }, d); };
-    const leaves = n => { const q = []; (function w(x) { if (!x) return; if (/^(num|var|txt|op)$/.test(x.k)) q.push(x); [x.base, x.exp, x.inner, ...(x.items || [])].forEach(w); })(n); return q; };
-    // a frog hop from (x0, y0) to (x1, y1), with an optional label over the arc
-    const leap = (g, x0, y0, x1, y1, dur, label) => { S.hopA = { x0, y0, x1, y1, t0: g.t, dur, label }; S.frog = { x: x1, y: y1 }; };
-    const HOP = (p > 7 ? 0.42 : 0.52) * T, AIR = (p > 7 ? 0.3 : 0.36) * T;
+    const S = g.s; M.setup(g); Object.assign(S, pick(g)); const { p, a, r, q, N, ans } = S, T = M.pace(g), LV = LAY[g.level] || LAY[0];
+    const big = g.level === 2, n1 = p - 1, inert = [], rs = LV.rs, ls = LV.ls;
+    const H = o => ({ alpha: 0, hide: true, ...o }); // a symbol that is not there yet
+    const id = (s, tap) => { if (!tap) { inert.push(s); if (S.ready) M.inert(g, [s]); } return s; };
+    S.k = 0; S.ph = 0; S.marks = []; S.labs = []; S.nl = 0;
+    const hop = e => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
+    // a symbol writes itself in (or several, one after another)
+    const write = (n, d, dur) => M.at(g, [[d, g => { n.hide = false; n.alpha = 1; M.writeIn(g, n, { dur }); }]]);
+    const writeAll = (list, d, each) => list.forEach((n, i) => write(n, d + i * each * 0.8, each));
+    // a copy flies from a symbol already on screen into its new place, which appears when it lands
+    const copy = (src, dst, mk, d, dur, o = {}) => M.at(g, [[d, g => { dst.hide = false; dst.alpha = 0;
+      M.fly(g, { node: mk(), from: src, to: dst.id, dur, arc: o.arc ?? -30, col: o.col || INK, then(g) { dst.alpha = 1; dst.pop = g.t; g.sfx('pop', { pitch: o.pitch || 1 }); if (o.then) o.then(g); } }); }]]);
+    // labels (the reason for one tap) stay until the next tap
+    const label = (node, x, y, s, col, o = {}) => { const key = 'lab' + (++S.nl), m = M.lay(node, s), cx = M.clamp(x, m.w / 2 + 12, 348 - m.w / 2);
+      M.place(g, key, node, o.left ? Math.min(x, 348 - m.w) : cx, y, s, { col, left: o.left }); node.alpha = 1; M.writeIn(g, node, { dur: o.dur || 0.35 * T, delay: o.delay || 0 }); if (!o.keep) S.labs.push(key); return key; };
+    const clearLabels = () => { for (const key of S.labs) { const e = g.s.mk.ex[key]; if (e) M.tween(g, e.node, { alpha: 0 }, 0.22 * T); } const ks = S.labs; S.labs = [];
+      for (const m of S.marks) if (m.temp && !m.fade) { m.fade = g.t; }
+      M.at(g, [[0.25 * T, g => { for (const key of ks) delete g.s.mk.ex[key]; }]]); };
 
-    // ---- 1. why a^(p−1) ≡ 1: the frog makes one lap of the ring, multiplying by a at every hop ----
-    const n = p - 1; S.order = [...Array(n)].map((_, j) => pw(a, j, p));
-    const HOPT = (p > 7 ? 0.58 : 0.78) * T, f = HOPT / (0.9 * T), t1 = 0.6 * T, ask1 = t1 + (n - 1) * HOPT + 0.61 * f * T + 0.3 * T, R1 = 3.0 * T;
-    const ringTrip = {
-      busy: 0.1, askAt: ask1, after: R1, ask: { v: 1, wrong: [a, p - 1, 0] },
-      then(g) { S.st = 1; S.point = true; hop('wow'); M.show(g, ask1); g.sfx('swoosh');
-        M.circle(g, 'p', { col: GOLD, dur: 0.6 * T }); M.tween(g, S.ring, { alpha: 1 }, 0.45 * T, { delay: 0.1 * T });
-        M.at(g, [[0.3 * T, g => { const [x, y] = padXY(0, n); leap(g, S.frog.x, S.frog.y, x, y, 0.38 * T); g.sfx('swoosh', { pitch: 1.3 }); }]]);
-        for (let k = 1; k <= n; k++) { const j0 = k - 1, j1 = k % n, v0 = S.order[j0], prod = v0 * a, res = prod % p, t0 = t1 + (k - 1) * HOPT;
-          M.at(g, [
-            // the hop's arithmetic writes itself first: "2 × 3 = 6", or "6 × 3 = 18 = 14 + 4 → 4"
-            [t0, g => { dropNote(g, 0.12 * T); }],
-            [t0 + 0.13 * f * T, g => { note(M.row(M.num(v0), M.op('×'), M.num(a), M.op('='), M.num(prod), ...(prod >= p ? [M.op('='), M.num(prod - res), M.op('+'), M.num(res), M.txt(' →  '), M.num(res)] : [])), { dur: 0.3 * f * T }); }],
-            [t0 + 0.25 * f * T, g => { const [x0, y0] = padXY(j0, n), [x1, y1] = padXY(j1, n); leap(g, x0, y0, x1, y1, 0.36 * f * T, '× ' + a); }],
-            [t0 + 0.61 * f * T, g => { S.lit[j1] = g.t; g.sfx('tap', { pitch: 0.9 + k * 0.06 });
-              // the ring's centre counts the hops as a power: after k hops of × a the frog sits on a^k mod p
-              if (!S.chip) { S.ck = M.num(1, 'c6'); S.csup = M.sup(M.num(a, 'ca'), S.ck); S.chip = M.row(S.csup); S.chip.id = 'chip'; M.place(g, 'chip', S.chip, 180, RC + 10, 34, { col: GOLD }); M.writeIn(g, S.chip, { dur: 0.25 * T }); }
-              else { M.roll(g, S.ck, k, { dur: 0.22 * T }); M.place(g, 'chip', S.chip, 180, RC + 10, 34, { col: GOLD }); M.indicate(g, S.chip, { sc: 1.12, dur: 0.3 * T, col: '#fff' }); } }]]); }
-      },
-      resolve(g) { M.show(g, R1); const [hx, hy] = padXY(0, n);
-        S.home = g.t; M.sparkle(g, [hx, hy], { n: 14 }); g.sfx('coin'); hop('laugh'); dropNote(g, 0.3 * T);
-        M.at(g, [
-          // one full lap: the centre becomes the fact chip a^(p−1) ≡ 1, the 1 flying in from pad 1
-          [0.35 * T, g => { S.c1 = M.num(1, 'c1', { alpha: 0 }); S.chip.items.push(M.op('≡', 'ceq'), S.c1); M.place(g, 'chip', S.chip, 180, RC + 10, 34, { col: GOLD });
-            M.fly(g, { node: M.num(1, null, { col: GOLD }), from: [hx, hy], to: 'c1', dur: 0.45 * T, arc: -30, s0: 22, s1: 34, then(g) { S.c1.alpha = 1; S.c1.pop = g.t; g.sfx('pop'); } }); }],
-          // the direct check, once: a^(p−1) = A = p · k + 1, so it leaves remainder 1
-          [0.8 * T, g => { const A = Math.pow(a, p - 1); note(M.row(M.sup(M.num(a), M.num(p - 1)), M.op('='), M.num(A), M.op('='), M.num(p), M.op('·'), M.num((A - 1) / p), M.op('+'), M.num(1)), { dur: 0.5 * T }); }],
-          // the ring fades away, the frog goes home to its corner pad, and the chip moves up under the expression
-          [1.45 * T, g => { M.tween(g, S.ring, { alpha: 0 }, 0.4 * T); leap(g, hx, hy, HX, HY, 0.45 * T); M.place(g, 'chip', S.chip, 180, CHY, 34, { col: GOLD }); M.tween(g, S.card, { alpha: 1 }, 0.35 * T, { delay: 0.2 * T }); }],
-          [1.95 * T, g => dropNote(g)],
-          // the chip's reason: first what the frog just did, then the theorem
-          [2.05 * T, g => { S.why = M.txt((p - 1) + ' hops: back to 1', 'why'); M.place(g, 'why', S.why, 180, CHY + 38, 22, { col: '#f4fff0' }); M.writeIn(g, S.why, { dur: 0.4 * T }); }],
-          [2.5 * T, g => { S.why2 = M.txt('always p − 1 hops when p is prime', 'why2'); M.place(g, 'why2', S.why2, 180, CHY + 64, 20, { col: '#c8e8c0' }); M.writeIn(g, S.why2, { dur: 0.45 * T }); }],
-          [R1 - 0.03, g => { S.point = false; }]]);
-      },
+    // ---- the problem, what it means, and the table's header ----
+    S.b = M.num(a, id('b', true)); S.e = M.num(N, id('e', true)); S.tp = M.sup(S.b, S.e, id('tp'));
+    S.ansN = M.txt('?', id('ans', true)); S.top = M.row(S.tp, M.gap(12), M.txt('mod', id('mod', true)), M.gap(8), M.num(p, id('p', true)), M.op('=', id('teq')), M.gap(4), S.ansN);
+    M.place(g, 'top', S.top, 180, TOPY, 38, { col: INK });
+    const sub = M.num('the remainder after dividing by ' + p); // what "mod" asks, in words
+    M.place(g, 'sub', sub, 180, SUBY, 19, { col: SOFT });
+    M.place(g, 'head', M.row(M.num('powers of ' + a + '  →  remainder ÷ ' + p)), X0, HEADY, 18, { col: SOFT, left: true });
+
+    // ---- the table rows (built now so the remainder column can line up; each row appears on its tap) ----
+    S.rows = [];
+    for (let k = 1; k <= p; k++) {
+      const R = { k, y: LV.rowY + (k - 1) * LV.step, r: pw(a, k, p) }, I = s => id('r' + k + s);
+      R.base = M.num(a, I('b'), H()); R.ex = M.num(k, I('x'), H()); R.pow = sp(R.base, R.ex, I('p'), {}, rs);
+      const items = [R.pow]; let last;
+      if (k === p) { // why it repeats: a^p = a^(p−1) · a, and a^(p−1) leaves 1
+        R.eq = M.op('=', I('e'), H()); R.pp = sp(M.num(a), M.num(n1), I('pp'), H(), rs); R.d1 = M.op('·', I('d1'), H()); R.a1 = M.num(a, I('a1'), H());
+        R.arr = M.op('→', I('ar'), H()); R.one = M.num(1, I('o'), H({ col: GOLD })); R.d2 = M.op('·', I('d2'), H()); R.a2 = M.num(a, I('a2'), H());
+        items.push(R.eq, R.pp, R.d1, R.a1, R.arr, R.one, R.d2, R.a2); R.last = M.op('=', I('e2'), H()); R.rv = a;
+      } else {
+        const prev = k > 1 ? pw(a, k - 1, p) : null; R.direct = Math.pow(a, k) <= (p === 5 ? 100 : 30);
+        R.V = R.direct ? Math.pow(a, k) : prev * a;
+        if (!R.direct) { R.eq = M.op('≡', I('e'), H()); R.prev = M.num(prev, I('pr'), H({ col: REM })); R.d1 = M.op('·', I('d1'), H()); R.a1 = M.num(a, I('a1'), H()); items.push(R.eq, R.prev, R.d1, R.a1); }
+        R.eqV = M.op('=', I('ev'), H()); R.Vn = M.num(R.V, I('v'), H()); items.push(R.eqV, R.Vn);
+        if (R.V >= p) { R.eqM = M.op('=', I('em'), H()); R.mult = M.num(R.V - R.r, I('m'), H()); R.plus = M.op('+', I('pl'), H()); R.rr = M.num(R.r, I('rr'), H()); items.push(R.eqM, R.mult, R.plus, R.rr); }
+        R.last = M.op('→', I('ar'), H()); R.rv = R.r;
+      }
+      R.rm = M.num(R.rv, id('rm' + k, true), H({ col: k === n1 ? GOLD : REM }));
+      R.items = items; R.wA = M.lay(M.row(...items), rs).w; R.wL = M.lay(R.last, rs).w; R.wR = M.lay(R.rm, rs).w; S.rows[k] = R;
+    }
+    S.xr = Math.max(...S.rows.slice(1).map(R => X0 + R.wA + R.wL + R.wR / 2)) + 4; // the remainder column's centre
+    for (let k = 1; k <= p; k++) { const R = S.rows[k]; R.node = M.row(...R.items, k === p ? null : M.gap(Math.max(0, S.xr - X0 - R.wA - R.wL - R.wR / 2)), R.last, R.rm); } // the repeat row reads on naturally
+    const RW = k => S.rows[k];
+
+    // ---- one row per tap ----
+    const rowMove = k => {
+      const R = RW(k), takes = R.V >= p && k < p;
+      const flyBase = (d = 0) => { M.indicate(g, S.b, { dur: 0.4 * T, sc: 1.2, col: GOLD, delay: d });
+        copy('b', R.base, () => M.num(a), d + 0.05 * T, 0.38 * T, { arc: -20 }); write(R.ex, d + 0.4 * T, 0.16 * T); };
+      const start = g => { S.k = k; S.point = true; clearLabels(); hop('think'); g.sfx('swoosh');
+        M.place(g, 'row' + k, R.node, X0, R.y, rs, { col: INK, left: true }); R.pow.alpha = 1; flyBase(); };
+      if (k === p) return { busy: 0.1, then(g) { start(g); const R4 = RW(n1), L = 2.95 * T; M.show(g, L);
+        write(R.eq, 0.5 * T, 0.14 * T);
+        // a^(p−1) is copied from its own row; the gold 1 that it leaves flies in from that row's remainder
+        M.at(g, [[0.6 * T, g => M.indicate(g, R4.pow, { dur: 0.45 * T, col: GOLD })]]);
+        copy(R4.pow.id, R.pp, () => M.sup(M.num(a), M.num(n1)), 0.62 * T, 0.4 * T, { arc: 10 });
+        writeAll([R.d1, R.a1], 1.05 * T, 0.14 * T); write(R.arr, 1.3 * T, 0.14 * T);
+        M.at(g, [[1.38 * T, g => M.indicate(g, R4.rm, { dur: 0.4 * T, col: GOLD })]]);
+        copy(R4.rm.id, R.one, () => M.num(1), 1.42 * T, 0.38 * T, { col: GOLD, arc: 14, pitch: 1.2 });
+        writeAll([R.d2, R.a2], 1.85 * T, 0.14 * T); writeAll([R.last, R.rm], 2.1 * T, 0.14 * T);
+        // this remainder is row 1's remainder again: an arrow joins them, and a brace over the rows says it repeats
+        M.at(g, [[2.3 * T, g => { M.indicate(g, R.rm, { dur: 0.4 * T }); M.indicate(g, RW(1).rm, { dur: 0.4 * T, delay: 0.3 * T });
+            S.marks.push({ kind: 'arrow', from: R.rm.id, to: RW(1).rm.id, t0: g.t, dur: 0.45 * T }); g.sfx('swoosh', { pitch: 1.2 }); hop('wow'); }],
+          [2.62 * T, g => { const top = RW(1).y - rs * 0.9, bot = RW(n1).y + rs * 0.2, l1 = M.num('repeats'), l2 = M.row(M.num('every '), M.num(n1, 'cyc'));
+            const lw = Math.max(M.lay(l1, 18).w, M.lay(l2, 18).w), lx = S.xr + 46;
+            if (lx + lw <= 348) { // room beside the remainders: the brace and its two-line label sit there
+              S.marks.push({ kind: 'vbrace', x: lx - 13, y0: top, y1: bot, t0: g.t, dur: 0.3 * T });
+              label(l1, lx, (top + bot) / 2 - 3, 18, GOLD, { left: true, keep: true, delay: 0.15 * T }); label(l2, lx, (top + bot) / 2 + 18, 18, GOLD, { left: true, keep: true, delay: 0.3 * T }); }
+            else { // no room (mod 7): the brace at the edge, and the label in one line under the last row
+              S.marks.push({ kind: 'vbrace', x: 340, y0: top, y1: bot, t0: g.t, dur: 0.3 * T });
+              const one = M.row(M.num('repeats every '), M.num(n1, 'cyc')), w1 = M.lay(one, 18).w; label(one, 348 - w1, R.y + 21, 18, GOLD, { left: true, keep: true, delay: 0.15 * T }); }
+            g.sfx('ding'); }],
+          [L - 0.03, g => { S.point = false; }]]); } };
+      // the plan of a row: its working writes itself, then the remainder goes into the column
+      let t = 0.5 * T;
+      const pre = [];
+      if (!R.direct) { pre.push([t, () => write(R.eq, 0, 0.14 * T)]); const t1 = t + 0.08 * T;
+        pre.push([t1, () => { M.indicate(g, RW(k - 1).rm, { dur: 0.4 * T }); copy(RW(k - 1).rm.id, R.prev, () => M.num(R.prev.v), 0, 0.36 * T, { col: REM, arc: 12 }); }]);
+        t += 0.5 * T; pre.push([t, () => writeAll([R.d1, R.a1], 0, 0.14 * T)]); t += 0.3 * T; }
+      pre.push([t, () => writeAll([R.eqV, R.Vn], 0, 0.16 * T)]); t += 0.32 * T;
+      if (takes) { pre.push([t, () => writeAll([R.eqM, R.mult, R.plus, R.rr], 0, 0.14 * T)]); t += 0.55 * T;
+        // the multiple of p is ringed, with the reason under it ("one 5 taken out")
+        const nn = (R.V - R.r) / p, txt = (WORDS[nn] || String(nn)) + ' ' + p + (nn > 1 ? 's' : '') + ' taken out';
+        pre.push([t, () => { S.marks.push({ kind: 'ring', ids: [R.mult.id, R.plus.id], t0: g.t, dur: 0.3 * T, temp: true }); g.sfx('tap');
+          const b = M.unionBox([M.box(g, R.mult.id), M.box(g, R.plus.id)]); label(M.num(txt), b ? b.x : 180, R.y + Math.round(LV.step * 0.78), 18, CUT, { delay: 0.12 * T }); }]); t += 0.5 * T; }
+      pre.push([t, () => write(R.last, 0, 0.14 * T)]); t += 0.22 * T;
+      const askAt = t, src = takes ? R.rr : R.Vn, isOne = R.r === 1, after = isOne ? 1.0 * T : 0.55 * T;
+      const wrong = [R.V, R.V - R.r, p - R.r, R.r + 1, R.r - 1, 0].filter(v => v !== R.r && v >= 0);
+      return { busy: 0.1, askAt, after, ask: { v: R.r, wrong },
+        then(g) { start(g); M.show(g, askAt); M.at(g, pre.map(([tt, f]) => [tt, g => f()])); },
+        resolve(g) { M.show(g, after); M.indicate(g, src, { dur: 0.35 * T, col: R.r === 1 ? GOLD : REM });
+          copy(src.id, R.rm, () => M.num(R.r), 0.08 * T, 0.36 * T, { col: isOne ? GOLD : REM, arc: -24, pitch: 1 + k * 0.06, then(g) { hop(isOne ? 'laugh' : 'happy'); M.sparkle(g, R.rm, { n: isOne ? 14 : 6 });
+            if (isOne) { S.marks.push({ kind: 'gold', k, t0: g.t }); g.sfx('coin'); const b = M.box(g, R.rm.id); label(M.num('back to 1!'), b.x + b.w / 2 + 12, R.y, 18, GOLD, { left: true }); } } });
+          M.at(g, [[after - 0.03, g => { S.point = false; }]]); } };
     };
-    // ---- 2. the exponent: N = (p − 1)·q + r, rewritten in place ----
-    const ask2 = 1.35 * T, R2 = 2.25 * T;
-    const split = {
-      busy: 0.1, askAt: ask2, after: R2, ask: { v: r, wrong: [q, N % p, p - 1, r + 1] },
-      then(g) { S.st = 2; S.point = true; hop('think'); M.show(g, ask2); g.sfx('swoosh');
-        M.circle(g, 'e', { col: GOLD, dur: 0.6 * T }); M.indicate(g, 'c6', { col: '#fff', dur: 0.45 * T });
-        S.n6 = M.num(p - 1, 'n6', { alpha: 0 }); S.nr = M.num(r, 'nr', { alpha: 0 });
-        S.note2 = M.row(S.n6, M.op('·'), M.num(q, 'n16'), M.op('='), M.num((p - 1) * q), M.txt(','), M.gap(6), M.txt('and'), M.gap(6), M.num((p - 1) * q, 'n96'), M.op('+'), S.nr, M.op('='), M.num(N));
-        note(S.note2, { delay: 0.52 * T, dur: 0.72 * T });
-        // the 6 of the note comes from the chip
-        M.fly(g, { node: M.num(p - 1, null, { col: GOLD }), from: 'c6', to: 'n6', delay: 0.15 * T, dur: 0.42 * T, arc: 40, s0: 22, s1: 24, then(g) { S.n6.alpha = 1; S.n6.pop = g.t; } });
-      },
-      resolve(g) { M.show(g, R2); S.nr.alpha = 1; M.writeIn(g, S.nr, { dur: 0.2 * T }); M.indicate(g, S.nr, { delay: 0.15 * T, dur: 0.4 * T, col: '#fff' }); g.sfx('ding');
-        M.at(g, [
-          // 100 → 96 + 4: both numbers fly up from the note
-          [0.4 * T, g => fade([S.e], 0.18 * T)],
-          [0.6 * T, g => { S.x96 = M.num((p - 1) * q, 'x96', { alpha: 0 }); S.xp = M.op('+', null, { alpha: 0 }); S.x4 = M.num(r, 'x4', { alpha: 0 });
-            S.pw.exp = M.row(S.x96, S.xp, S.x4); S.pw.exp.id = 'ex'; S.relay(); M.tween(g, S.xp, { alpha: 1 }, 0.3 * T, { delay: 0.15 * T }); hop('wow');
-            for (const [src, n] of [['n96', S.x96], ['nr', S.x4]]) M.fly(g, { node: M.num(n.v, null, { col: GOLD }), from: src, to: n.id, dur: 0.45 * T, arc: 30, s0: 24, s1: 27, then(g) { n.alpha = 1; n.pop = g.t; g.sfx('pop'); } }); }],
-          // 96 → 6 · 16: both numbers fly up from the note
-          [1.25 * T, g => fade([S.x96], 0.18 * T)],
-          [1.45 * T, g => { S.x6 = M.num(p - 1, 'x6', { alpha: 0 }); S.xd = M.op('·', null, { alpha: 0 }); S.x16 = M.num(q, 'x16', { alpha: 0 });
-            S.pw.exp = M.row(S.x6, S.xd, S.x16, S.xp, S.x4); S.pw.exp.id = 'ex'; S.relay(); M.tween(g, S.xd, { alpha: 1 }, 0.3 * T, { delay: 0.15 * T });
-            for (const [src, n] of [['n6', S.x6], ['n16', S.x16]]) M.fly(g, { node: M.num(n.v, null, { col: GOLD }), from: src, to: n.id, dur: 0.45 * T, arc: 30, s0: 24, s1: 27, then(g) { n.alpha = 1; n.pop = g.t; g.sfx('pop'); } }); }],
-          [2.02 * T, g => dropNote(g)],
-          [R2 - 0.03, g => { S.point = false; }]]);
-      },
+
+    // ---- the working lines ----
+    const Ly = LV.L, mkPow = (e) => () => M.sup(M.num(a), M.num(e)), goldRm = () => RW(n1).rm;
+    const eqUnder = (lineKey, eqId, node) => { const b = M.box(g, eqId), w0 = M.lay(node.items[0], ls).w; return b.x - w0 / 2; };
+    S.lines = {};
+    // the exponent splits into whole cycles: a^N = a^(p−1) · a^(p−1) · a^r (levels 0 and 1)
+    const L1s = () => { const o = {};
+      o.pw = sp(M.num(a), M.num(N), id('l1p'), H(), ls); o.eq = M.op('=', id('leq'), H());
+      o.g1 = sp(M.num(a, id('g1b')), M.num(n1, id('g1x')), id('g1', true), H(), ls); o.d1 = M.op('·', id('ld1'), H());
+      o.g2 = sp(M.num(a, id('g2b')), M.num(n1, id('g2x')), id('g2', true), H(), ls); o.d2 = M.op('·', id('ld2'), H());
+      o.g3 = sp(M.num(a, id('g3b')), M.num(r, id('g3x')), id('g3', true), H(), ls);
+      o.node = M.row(o.pw, o.eq, o.g1, o.d1, o.g2, o.d2, o.g3); return o; };
+    const expSum = { busy: 0.1, then(g) { S.ph = 1; S.point = true; clearLabels(); hop('think'); g.sfx('swoosh'); const L = 2.3 * T; M.show(g, L);
+      const o = S.lines.l1 = L1s(); M.place(g, 'L1', o.node, X0, Ly[0], ls, { col: INK, left: true });
+      M.indicate(g, S.e, { dur: 0.45 * T, col: GOLD }); copy('tp', o.pw, mkPow(N), 0.1 * T, 0.42 * T, { arc: -10 });
+      write(o.eq, 0.55 * T, 0.14 * T);
+      // the reason first: whole cycles of p − 1 and what is left over, adding up to the exponent
+      M.at(g, [[0.7 * T, g => { M.indicate(g, 'cyc', { dur: 0.45 * T, col: GOLD }); const why = M.row(M.num(n1), M.op('+'), M.num(n1), M.op('+'), M.num(r), M.op('='), M.num(N));
+        const b = M.box(g, 'g3'); label(why, b.x + b.w / 2 + 16, Ly[0], 19, SOFT, { left: true, keep: true, dur: 0.5 * T }); }]]);
+      writeAll([o.g1, o.d1, o.g2, o.d2, o.g3], 1.3 * T, 0.16 * T);
+      // each a^(p−1) is joined to the gold row by a dotted line
+      M.at(g, [[1.9 * T, g => { S.marks.push({ kind: 'dots', from: ['g1', 'g2'], to: goldRm().id, t0: g.t, dur: 0.35 * T, line: true }); M.indicate(g, goldRm(), { dur: 0.4 * T, col: GOLD, delay: 0.2 * T }); hop('wow'); }],
+        [L - 0.03, g => { S.point = false; }]]); } };
+    const lineOnes = { busy: 0.1, then(g) { S.ph = 2; S.point = true; hop('think'); g.sfx('swoosh'); const L = 1.5 * T; M.show(g, L); const l1 = S.lines.l1;
+      // the new line lines up under the old one: ≡ under =, each 1 under its a^(p−1)
+      const o = S.lines.l2 = {}; o.eq = M.op('≡', id('meq'), H()); o.o1 = M.num(1, id('m1'), H({ col: GOLD })); o.d1 = M.op('·', id('md1'), H()); o.o2 = M.num(1, id('m2'), H({ col: GOLD })); o.d2 = M.op('·', id('md2'), H());
+      o.t3 = sp(M.num(a), M.num(r), id('h3', true), H(), ls); o.eq2 = M.op('≡', id('meq2'), H()); o.res = M.num(ans, id('mres'), H({ col: REM }));
+      const x0 = eqUnder('L1', 'leq', { items: [o.eq] }); let cur = x0 + M.lay(o.eq, ls).w; const its = [o.eq];
+      for (const [nd, tid] of [[o.o1, 'g1'], [o.d1, 'ld1'], [o.o2, 'g2'], [o.d2, 'ld2'], [o.t3, 'g3']]) { const b = M.box(g, tid), w = M.lay(nd, ls).w, gp = b ? b.x - w / 2 - cur : 0; if (gp > 0) its.push(M.gap(gp)); its.push(nd); cur += Math.max(0, gp) + w; }
+      o.node = M.row(...its, o.eq2, o.res); M.place(g, 'L2', o.node, x0, Ly[1], ls, { col: INK, left: true });
+      M.indicate(g, l1.g1, { dur: 0.4 * T, col: GOLD }); M.indicate(g, l1.g2, { dur: 0.4 * T, col: GOLD, delay: 0.1 * T });
+      write(o.eq, 0.15 * T, 0.14 * T);
+      M.at(g, [[0.3 * T, g => M.indicate(g, goldRm(), { dur: 0.4 * T, col: GOLD })]]);
+      copy(goldRm().id, o.o1, () => M.num(1), 0.35 * T, 0.45 * T, { col: GOLD, arc: 0, pitch: 1.1 }); copy(goldRm().id, o.o2, () => M.num(1), 0.45 * T, 0.45 * T, { col: GOLD, arc: 0, pitch: 1.2 });
+      M.at(g, [[0.95 * T, g => { for (const m of S.marks) if (m.kind === 'dots' && !m.fade) m.fade = g.t; hop('wow'); }]]);
+      writeAll([o.d1, o.d2], 1.0 * T, 0.12 * T); copy('g3', o.t3, mkPow(r), 1.05 * T, 0.36 * T, { arc: 0 });
+      M.at(g, [[L - 0.03, g => { S.point = false; }]]); } };
+    // the end: a^r leaves the remainder in row r; it goes into the answer box, and the theorem's card slides in
+    const finish = (o, srcId) => { const R = RW(r), wrong = [Math.pow(a, r), 1, r, p - ans, ans % n1 + 1, 0].filter(v => v !== ans), A = 0.4 * T, AF = 5.2 * T;
+      return { busy: 0.1, askAt: A, after: AF, ask: { v: ans, wrong },
+        then(g) { S.ph++; S.point = true; clearLabels(); hop('think'); g.sfx('swoosh'); M.show(g, A); M.indicate(g, srcId, { dur: 0.4 * T, col: GOLD }); write(o.eq2, 0.15 * T, 0.14 * T); },
+        resolve(g) { M.show(g, AF); M.indicate(g, R.rm, { dur: 0.4 * T, col: REM });
+          copy(R.rm.id, o.res, () => M.num(ans), 0.1 * T, 0.42 * T, { col: REM, arc: 20, then(g) { M.sparkle(g, o.res); hop('wow'); } });
+          M.at(g, [[0.7 * T, g => { M.indicate(g, o.res, { dur: 0.4 * T, col: GOLD }); M.tween(g, S.ansN, { alpha: 0 }, 0.15 * T); }],
+            [0.85 * T, g => { const nn = M.num(ans, id('ansv'), { alpha: 0, col: GOLD }); S.top.items[S.top.items.length - 1] = nn; S.ansN = nn; M.place(g, 'top', S.top, 180, TOPY, 38, { col: INK }); S.ansDone = g.t;
+              M.fly(g, { node: M.num(ans), from: o.res.id, to: nn.id, dur: 0.5 * T, arc: -40, col: GOLD, then(g) { nn.alpha = 1; nn.pop = g.t; M.sparkle(g, nn, { n: 16 }); g.sfx('coin'); hop('laugh'); S.boxGold = g.t; } }); }],
+            [1.6 * T, g => { S.cardT = g.t; g.sfx('swoosh', { pitch: 0.8 }); }],
+            [AF - 0.03, g => { S.point = false; }]]); } };
     };
-    // ---- 3. the power splits: a^(mn + r) = a^(mn) · a^r = (a^m)^n · a^r ----
-    const R3 = 2.6 * T;
-    const powers = {
-      busy: 0.1,
-      then(g) { S.st = 3; S.point = true; hop('think'); M.show(g, R3); g.sfx('swoosh');
-        M.circle(g, 'ex', { col: GOLD, dur: 0.6 * T });
-        note(M.row(M.sup(M.num(a), M.row(M.vr('m'), M.op('+'), M.vr('n'))), M.op('='), M.sup(M.num(a), M.vr('m')), M.op('·'), M.sup(M.num(a), M.vr('n'))), { delay: 0.1 * T, dur: 0.55 * T });
-        M.at(g, [
-          [0.75 * T, g => fade([S.xp], 0.18 * T)],
-          [0.95 * T, g => { S.b2 = M.num(a, 'b2', { alpha: 0 }); S.mul = M.op('·', 'mul', { alpha: 0 }); S.big = M.sup(S.b, M.row(S.x6, S.xd, S.x16), 'big'); S.small = M.sup(S.b2, S.x4, 'small');
-            S.line = M.row(S.big, S.mul, S.small, ...S.tail); S.relay(); M.inert(g, ['mul']); M.tween(g, S.mul, { alpha: 1 }, 0.25 * T, { delay: 0.15 * T }); hop('wow');
-            M.fly(g, { node: M.num(a, null, { col: INK }), from: 'b', to: 'b2', dur: 0.4 * T, arc: -30, s0: S.ES, s1: S.ES, then(g) { S.b2.alpha = 1; S.b2.pop = g.t; g.sfx('pop'); } }); }],
-          [1.5 * T, g => dropNote(g)],
-          [1.65 * T, g => note(M.row(M.sup(M.num(a), M.row(M.vr('m'), M.vr('n'))), M.op('='), M.sup(M.paren(M.sup(M.num(a), M.vr('m'))), M.vr('n'))), { dur: 0.5 * T })],
-          [2.15 * T, g => fade([S.xd], 0.15 * T)],
-          [2.3 * T, g => { S.in6 = M.sup(S.b, S.x6, 'in6'); S.big = M.sup(M.paren(S.in6), S.x16, 'big'); S.line.items[0] = S.big; S.relay(); hop('laugh'); g.sfx('pop'); }],
-          [2.45 * T, g => dropNote(g)],
-          [R3 - 0.03, g => { S.point = false; }]]);
-      },
-    };
-    // ---- 4. a^(p−1) becomes 1, and 1 to any power is 1 ----
-    const ask4 = 1.5 * T, R4 = 1.85 * T;
-    const toOne = {
-      busy: 0.1, askAt: ask4, after: R4, ask: { v: 1, wrong: [q, 0, a] },
-      then(g) { S.st = 4; S.point = true; hop('think'); M.show(g, ask4); g.sfx('swoosh');
-        M.circle(g, 'in6', { col: GOLD, dur: 0.6 * T }); M.indicate(g, 'chip', { sc: 1.15, dur: 0.5 * T, col: '#fff' });
-        M.at(g, [[0.35 * T, g => M.fly(g, { node: M.num(1, null, { col: GOLD }), from: 'c1', to: 'in6', dur: 0.5 * T, arc: 40, s0: 34, s1: S.ES })],
-          [0.7 * T, g => fade([S.b, S.x6], 0.15 * T)],
-          [0.86 * T, g => { S.one = M.num(1, 'one', { _born: -1, col: GOLD, pop: g.t }); S.lp = M.txt('('); S.rp = M.txt(')'); S.big.base = M.row(S.lp, S.one, S.rp); S.relay(); M.sparkle(g, 'one', { n: 8 }); g.sfx('pop'); hop('wow'); }],
-          [1.05 * T, g => { S.n1v = M.num(1, null, { alpha: 0 }); note(M.row(M.sup(M.num(1), M.num(q)), M.op('='), S.n1v), { dur: 0.4 * T }); }]]);
-      },
-      resolve(g) { M.show(g, R4); S.n1v.alpha = 1; M.writeIn(g, S.n1v, { dur: 0.18 * T }); M.indicate(g, S.n1v, { delay: 0.12 * T, dur: 0.35 * T, col: '#fff' }); g.sfx('ding');
-        M.at(g, [[0.55 * T, g => fade([S.lp, S.rp, S.x16], 0.22 * T)],
-          [0.8 * T, g => { S.line = M.row(S.one, S.mul, S.small, ...S.tail); S.relay(); }],
-          [1.1 * T, g => { fade([S.one, S.mul], 0.22 * T); dropNote(g); }],
-          [1.35 * T, g => { S.line = M.row(S.small, ...S.tail); S.relay(); hop('laugh'); }],
-          [R4 - 0.03, g => { S.point = false; }]]);
-      },
-    };
-    // ---- 5. a^r = big, big = p·k + residue, and the line ends a^N mod p = residue ----
-    const k5 = Math.floor(big / p), ask5 = 2.15 * T, R5 = big >= p ? 2.6 * T : 1.8 * T;
-    const reduce = {
-      busy: 0.1, askAt: ask5, after: R5, ask: { v: ans, wrong: [big, a * r % p, (ans + 1) % p] },
-      then(g) { S.st = 5; S.point = true; hop('think'); M.show(g, ask5); g.sfx('swoosh');
-        M.circle(g, 'small', { col: GOLD, dur: 0.6 * T });
-        const fs = []; for (let i = 0; i < r; i++) fs.push(i ? M.op('·') : null, M.num(a));
-        note(M.row(M.sup(M.num(a), M.num(r)), M.op('='), ...fs.filter(Boolean), M.op('='), M.num(big, 'n81')), { delay: 0.1 * T, dur: 0.6 * T });
-        M.at(g, [[0.95 * T, g => fade([S.b2, S.x4], 0.18 * T)],
-          [1.12 * T, g => { S.v81 = M.num(big, 'v81', { alpha: 0 }); S.line = M.row(S.v81, ...S.tail); S.relay();
-            M.fly(g, { node: M.num(big, null, { col: GOLD }), from: 'n81', to: 'v81', dur: 0.4 * T, arc: 30, s0: 24, s1: S.ES, then(g) { S.v81.alpha = 1; S.v81.pop = g.t; g.sfx('pop'); hop('wow'); } }); }],
-          [1.5 * T, g => dropNote(g)],
-          [1.65 * T, g => { S.nrr = M.num(ans, 'nrr', { alpha: 0 });
-            if (big >= p) { S.n7k = M.row(M.num(p), M.op('·'), M.num(k5)); S.n7k.id = 'n7k'; note(M.row(M.num(big), M.op('='), S.n7k, M.op('+'), S.nrr), { dur: 0.5 * T }); }
-            else { S.nrr.alpha = 1; note(M.row(M.num(big), M.op('<'), M.num(p)), { dur: 0.4 * T }); } }]]);
-      },
-      resolve(g) { M.show(g, R5);
-        if (S.nrr) { S.nrr.alpha = 1; M.writeIn(g, S.nrr, { dur: 0.18 * T }); M.indicate(g, S.nrr, { delay: 0.12 * T, dur: 0.35 * T, col: '#fff' }); } g.sfx('ding');
-        // the recap: the original problem writes itself back to the left of the answer
-        const recap = (g) => { const nb = M.sup(M.num(a), M.num(N)), nm = M.txt('mod'), np = M.num(p), eq = M.op('='); const fresh = [nb, nm, np, eq];
-          S.line = M.row(nb, M.gap(12), nm, M.gap(8), np, eq, S.vr); S.relay(); for (const n of fresh) M.writeIn(g, n, { dur: 0.5 * T }); S.vr.col = GOLD; S.vr.pop = g.t + 0.5 * T; M.sparkle(g, S.vr, { n: 14, delay: 0.5 * T }); g.sfx('coin'); hop('laugh'); };
-        if (big >= p) M.at(g, [
-          // big → (p·k + residue): 77 flies up from "7 · 11", the residue from the note
-          [0.45 * T, g => fade([S.v81], 0.18 * T)],
-          [0.65 * T, g => { S.l77 = M.num(p * k5, 'v77', { alpha: 0 }); S.lplus = M.op('+', null, { alpha: 0 }); S.vr = M.num(ans, 'vr', { alpha: 0 }); S.lpL = M.txt('(', null, { alpha: 0 }); S.lpR = M.txt(')', null, { alpha: 0 });
-            S.line = M.row(S.lpL, S.l77, S.lplus, S.vr, S.lpR, ...S.tail); S.relay(); for (const n of [S.lplus, S.lpL, S.lpR]) M.tween(g, n, { alpha: 1 }, 0.25 * T, { delay: 0.15 * T });
-            M.fly(g, { node: M.num(p * k5, null, { col: GOLD }), from: 'n7k', to: 'v77', dur: 0.45 * T, arc: 30, s0: 24, s1: S.ES, then(g) { S.l77.alpha = 1; S.l77.pop = g.t; g.sfx('pop'); } });
-            M.fly(g, { node: M.num(ans, null, { col: GOLD }), from: 'nrr', to: 'vr', dur: 0.45 * T, delay: 0.05 * T, arc: 30, s0: 24, s1: S.ES, then(g) { S.vr.alpha = 1; S.vr.pop = g.t; } }); }],
-          // a multiple of p leaves nothing: it is crossed out
-          [1.3 * T, g => { M.strike(g, S.l77, { dur: 0.3 * T, col: '#ff8a7a' }); g.sfx('tap'); }],
-          [1.65 * T, g => { fade([S.lpL, S.l77, S.lplus, S.lpR, S.modT, S.pN], 0.25 * T); dropNote(g); }],
-          [1.92 * T, g => { S.line = M.row(S.vr); S.relay(); }],
-          [2.15 * T, g => recap(g)],
-          [R5 - 0.03, g => { S.point = false; }]]);
-        else M.at(g, [[0.5 * T, g => { S.vr = S.v81; fade([S.modT, S.pN], 0.25 * T); dropNote(g); }],
-          [0.8 * T, g => { S.line = M.row(S.vr); S.relay(); }],
-          [1.1 * T, g => recap(g)],
-          [R5 - 0.03, g => { S.point = false; }]]);
-      },
-    };
-    S.ES = ES; S.card = { alpha: 0 };
-    const chipIds = ['chip', 'ca', 'c6', 'c1'];
+    const finSum = () => finish(S.lines.l2, 'h3');
+
+    // level 2: a^N = a^((p−1)·q + r) = (a^(p−1))^q · a^r ≡ 1^q · a^r ≡ 1 · a^r ≡ answer
+    const expGroups = { busy: 0.1, then(g) { S.ph = 1; S.point = true; clearLabels(); hop('think'); g.sfx('swoosh'); const L = 2.5 * T; M.show(g, L);
+      const o = S.lines.l1 = {}; o.pw = sp(M.num(a), M.num(N), id('l1p'), H(), LV.l1s || ls); o.eq = M.op('=', id('leq'), H()); o.b = M.num(a, id('kb'), H());
+      o.x4 = M.num(n1, id('k4'), H()); o.xd = M.op('·', id('kd'), H()); o.xq = M.num(q, id('kq'), H()); o.xp = M.op('+', id('kp'), H()); o.xr = M.num(r, id('kr'), H());
+      o.ex = M.row(o.x4, o.xd, o.xq, o.xp, o.xr); o.ex.id = id('x1', true); o.sp = sp(o.b, o.ex, id('ksp'), {}, LV.l1s || ls);
+      o.node = M.row(o.pw, o.eq, o.sp); M.place(g, 'L1', o.node, X0, Ly[0], LV.l1s || ls, { col: INK, left: true });
+      M.indicate(g, S.e, { dur: 0.45 * T, col: GOLD }); copy('tp', o.pw, mkPow(N), 0.1 * T, 0.42 * T, { arc: -10 }); write(o.eq, 0.55 * T, 0.14 * T);
+      // the reason: how many whole cycles of p − 1 fit in the exponent, and what is left over
+      o.wq = M.num(q, id('wq')); o.wr = M.num(r, id('wr')); const why = M.row(M.num(N), M.op('÷'), M.num(n1, id('w4')), M.op('='), o.wq, M.num(' R '), o.wr);
+      M.at(g, [[0.7 * T, g => { M.indicate(g, 'cyc', { dur: 0.45 * T, col: GOLD }); const bw = M.lay(o.node, LV.l1s || ls).w; label(why, X0 + bw + 18, Ly[0], 19, SOFT, { left: true, keep: true, dur: 0.55 * T }); }]]);
+      write(o.b, 1.35 * T, 0.12 * T); copy('cyc', o.x4, () => M.num(n1), 1.4 * T, 0.36 * T, { col: GOLD, arc: 10 }); write(o.xd, 1.5 * T, 0.1 * T);
+      copy('wq', o.xq, () => M.num(q), 1.55 * T, 0.36 * T, { arc: -20 }); write(o.xp, 1.75 * T, 0.1 * T); copy('wr', o.xr, () => M.num(r), 1.75 * T, 0.36 * T, { arc: -20 });
+      // a brace under the whole cycles: q groups of p − 1
+      M.at(g, [[2.15 * T, g => { S.marks.push({ kind: 'hbrace', ids: ['k4', 'kq'], y: Ly[0] + 6, t0: g.t, dur: 0.25 * T }); const b = M.unionBox([M.box(g, 'k4'), M.box(g, 'kq')]);
+        label(M.row(M.num(q + ' groups of ' + n1)), b.x, Ly[0] + 27, 18, GOLD, { keep: true, delay: 0.1 * T }); hop('wow'); }], [L - 0.03, g => { S.point = false; }]]); } };
+    const regroup = { busy: 0.1, then(g) { S.ph = 2; S.point = true; hop('think'); g.sfx('swoosh'); const L = 1.6 * T; M.show(g, L); const l1 = S.lines.l1;
+      const o = S.lines.l2 = {}; o.eq = M.op('=', id('neq'), H()); o.in4 = M.num(n1, id('n4'), H()); o.inb = sp(M.num(a), o.in4, null, {}, ls); o.par = M.paren(o.inb, id('q4', true), H());
+      o.oq = M.num(q, id('nq'), H()); o.grp = sp(o.par, o.oq, id('yq', true), {}, ls); o.d = M.op('·', id('nd'), H()); o.rr = M.num(r, id('nr'), H()); o.rb = M.num(a, id('nrb'), H()); o.t3 = sp(o.rb, o.rr, id('nt3'), {}, ls);
+      o.eq2 = M.op('≡', id('neq2'), H()); o.one = M.num(1, id('z1'), H({ col: GOLD })); o.zq = M.num(q, id('zq'), H()); o.o25 = sp(o.one, o.zq, id('o25', true), {}, ls); o.d2 = M.op('·', id('nd2'), H()); o.z3 = sp(M.num(a), M.num(r), id('z3'), H(), ls);
+      o.node = M.row(o.eq, o.grp, o.d, o.t3, o.eq2, o.o25, o.d2, o.z3); const x0 = eqUnder('L1', 'leq', o.node); M.place(g, 'L2', o.node, x0, Ly[1], ls, { col: INK, left: true });
+      M.indicate(g, l1.ex, { dur: 0.4 * T, col: GOLD }); write(o.eq, 0.12 * T, 0.12 * T); write(o.par, 0.3 * T, 0.2 * T); M.at(g, [[0.3 * T, g => { o.in4.hide = true; }]]);
+      copy('k4', o.in4, () => M.num(n1), 0.45 * T, 0.38 * T, { col: GOLD, arc: -10 }); copy('kq', o.oq, () => M.num(q), 0.6 * T, 0.38 * T, { arc: -10 });
+      write(o.d, 0.95 * T, 0.1 * T); write(o.rb, 1.0 * T, 0.12 * T); M.at(g, [[1.0 * T, g => { o.rr.hide = true; }]]); copy('kr', o.rr, () => M.num(r), 1.05 * T, 0.36 * T, { arc: -10, then() { hop('wow'); } });
+      M.at(g, [[L - 0.03, g => { S.point = false; }]]); } };
+    const toOneQ = { busy: 0.1, then(g) { S.ph = 3; S.point = true; clearLabels(); hop('think'); g.sfx('swoosh'); const L = 1.75 * T; M.show(g, L); const o = S.lines.l2;
+      M.indicate(g, o.par, { dur: 0.4 * T, col: GOLD });
+      M.at(g, [[0.15 * T, g => { S.marks.push({ kind: 'dots', from: ['q4'], to: goldRm().id, t0: g.t, dur: 0.3 * T }); M.indicate(g, goldRm(), { dur: 0.4 * T, col: GOLD, delay: 0.2 * T }); }]]);
+      write(o.eq2, 0.55 * T, 0.12 * T); M.at(g, [[0.6 * T, g => { o.o25.hide = false; o.o25.alpha = 1; o.one.hide = true; o.zq.hide = true; }]]);
+      copy(goldRm().id, o.one, () => M.num(1), 0.65 * T, 0.45 * T, { col: GOLD, arc: 0, pitch: 1.2, then(g) { for (const m of S.marks) if (m.kind === 'dots' && !m.fade) m.fade = g.t; hop('wow'); } });
+      copy('nq', o.zq, () => M.num(q), 1.1 * T, 0.32 * T, { arc: -14 }); write(o.d2, 1.2 * T, 0.1 * T); copy('nt3', o.z3, mkPow(r), 1.25 * T, 0.36 * T, { arc: -14 });
+      M.at(g, [[L - 0.03, g => { S.point = false; }]]); } };
+    const oneQ = { busy: 0.1, then(g) { S.ph = 4; S.point = true; hop('think'); g.sfx('swoosh'); const L = 1.75 * T; M.show(g, L); const l2 = S.lines.l2;
+      const o = S.lines.l3 = {}; o.eq = M.op('≡', id('peq'), H()); o.one = M.num(1, id('p1'), H({ col: GOLD })); o.d = M.op('·', id('pd'), H()); o.t3 = sp(M.num(a), M.num(r), id('f2', true), H(), ls);
+      o.eq2 = M.op('≡', id('peq2'), H()); o.res = M.num(ans, id('pres'), H({ col: REM }));
+      o.node = M.row(o.eq, o.one, o.d, o.t3, o.eq2, o.res); const x0 = eqUnder('L1', 'leq', o.node); M.place(g, 'L3', o.node, x0, Ly[2], ls, { col: INK, left: true });
+      M.indicate(g, l2.o25, { dur: 0.4 * T, col: GOLD });
+      // the reason: 1 times itself any number of times is still 1
+      o.w1 = M.num(1, id('w1')); const why = M.row(sp(M.num(1), M.num(q), null, {}, 22), M.op('='), o.w1);
+      const ww = M.lay(why, 22).w, xw = Math.min(x0 + M.lay(o.node, ls).w + 18, 348 - ww);
+      M.at(g, [[0.15 * T, g => label(why, xw, Ly[2], 22, SOFT, { left: true, keep: true, dur: 0.55 * T })]]);
+      write(o.eq, 0.75 * T, 0.12 * T); copy('w1', o.one, () => M.num(1), 0.85 * T, 0.4 * T, { col: GOLD, arc: -24, pitch: 1.2, then() { hop('wow'); } });
+      write(o.d, 1.2 * T, 0.1 * T); copy('z3', o.t3, mkPow(r), 1.25 * T, 0.36 * T, { arc: -14 });
+      M.at(g, [[L - 0.03, g => { S.point = false; }]]); } };
+    const finG = () => finish(S.lines.l3, 'f2');
+
+    S.phases = big
+      ? [() => [{ ...expGroups, tap: 'e' }], () => [{ ...regroup, tap: ['x1', 'k4', 'kq'] }], () => [{ ...toOneQ, tap: ['q4', 'yq'] }], () => [{ ...oneQ, tap: 'o25' }], () => [{ ...finG(), tap: 'f2' }]]
+      : [() => [{ ...expSum, tap: 'e' }], () => [{ ...lineOnes, tap: ['g1', 'g2'] }], () => [{ ...finSum(), tap: ['h3', 'g3'] }]];
+    S.taps = p + S.phases.length; g.dur *= Math.max(1, S.taps / 8);
+
+    // the theorem's card, built now: a title and a few short lines
+    const v = s => M.vr(s), t = s => M.txt(s);
+    S.cardLines = [
+      M.row(t('If '), v('p'), t(' is a prime and '), v('a'), t(' is not a multiple')),
+      M.row(t('of '), v('p'), t(', then '), sp(v('a'), M.row(v('p'), M.op('−'), M.num(1)), null, {}, 18), t(' leaves remainder 1')),
+      M.row(t('when divided by '), v('p'), t('.')),
+      M.row(t('Here '), v('p'), t(' = ' + p + ' and '), v('a'), t(' = ' + a + ', so '), sp(M.num(a), M.num(n1), null, {}, 18), t(' = ' + Math.pow(a, n1) + ' leaves')),
+      M.row(t('remainder 1 when divided by ' + p + '.')),
+    ];
+    M.inert(g, inert); S.ready = true;
     M.play(g, {
-      moves(g) {
-        switch (S.st || 0) {
-          case 0: return [{ ...ringTrip, tap: 'p' }, { ...ringTrip, drag: 'p', to: 'b' }];
-          case 1: return [{ ...split, tap: 'e' }, { ...split, drag: chipIds, to: 'e' }];
-          case 2: return [{ ...powers, tap: ['ex', 'x6', 'x16', 'x4'] }];
-          case 3: return [{ ...toOne, drag: chipIds, to: 'in6' }, { ...toOne, tap: ['in6', 'big'] }];
-          case 4: return [{ ...reduce, tap: 'small' }];
-          default: return [];
-        }
-      },
-      area(g) { return [['p'], ['e', 'chip'], ['ex'], ['chip', 'in6'], ['small']][S.st || 0] || null; },
+      moves(g) { if (S.k < p) { const mv = rowMove(S.k + 1), taps = ['b']; if (S.k >= 1) taps.push('rm' + S.k); return [{ ...mv, tap: taps }]; }
+        const f = S.phases[S.ph]; return f ? f() : []; },
+      area(g) { if (S.k < p) return ['b']; return [[], ['e'], big ? ['x1'] : ['g1', 'g2'], big ? ['q4'] : ['h3'], ['o25'], ['f2']][S.ph + 1] || null; },
     });
   },
-  update(g, dt) { const S = g.s, K = S.mk; M.update(g, dt); if (K.missAt >= 0 && K.missAt !== S.seenMiss) { S.seenMiss = K.missAt; S.face = 'sad'; S.faceT = g.t; S.splash = g.t; } },
+  update(g, dt) { const S = g.s, K = S.mk; M.update(g, dt); if (K.missAt >= 0 && K.missAt !== S.seenMiss) { S.seenMiss = K.missAt; S.face = 'sad'; S.faceT = g.t; } },
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
-    const S = g.s, t = g.t, p = S.p;
-    c.drawImage(g.bake('modular_fermat_pond', pond), 0, 0, W, H);
-    // only a slow ripple or two moves in the background
-    c.save(); for (let i = 0; i < 2; i++) { const k = (t * 0.2 + i / 2) % 1, x = [300, 70][i], y = [600, 420][i]; c.strokeStyle = `rgba(200,255,230,${0.22 * (1 - k)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(x, y, 8 + k * 30, 3 + k * 10, 0, 0, 7); c.stroke(); } c.restore();
-    // a soft dark band behind the expression and its note, so they read over the water
-    c.save(); c.fillStyle = 'rgba(10,30,40,0.38)'; c.beginPath(); c.roundRect(14, EY - 56, 332, NY + 22 - (EY - 56), 18); c.fill(); c.restore();
-    // the frog's home pad in the corner
-    c.save(); c.fillStyle = 'rgba(0,30,30,0.35)'; c.beginPath(); c.ellipse(HX + 3, HY + 3, 34, 12, 0, 0, 7); c.fill(); c.fillStyle = PAD; c.beginPath(); c.ellipse(HX, HY, 34, 12, 0, 0.4, 2 * Math.PI); c.lineTo(HX, HY); c.closePath(); c.fill(); c.strokeStyle = PADD; c.lineWidth = 1.5; c.stroke(); c.restore();
-    // the ring of lily pads, in the order the frog visits them (only during the first move)
-    const ra = S.ring.alpha, nn = p - 1, pr = nn > 6 ? 19 : 24;
-    if (ra > 0.01) { c.save(); c.globalAlpha = ra * 0.35; c.strokeStyle = '#d8ffd0'; c.setLineDash([3, 7]); c.lineWidth = 2; c.beginPath(); c.ellipse(180, RC, RR, RR * 0.92, 0, 0, 7); c.stroke(); c.restore(); }
-    if (ra > 0.01) for (let j = 0; j < nn; j++) { const [x, y] = padXY(j, nn), lit = S.lit[j] != null ? Math.max(0, 1 - (t - S.lit[j]) / 1.2) : 0, home = j === 0 && S.home != null && t - S.home < 1.4 ? 0.6 + 0.4 * Math.sin((t - S.home) * 9) : 0, L = Math.max(lit, home);
-      c.save(); c.globalAlpha = ra; c.fillStyle = 'rgba(0,30,30,0.35)'; c.beginPath(); c.ellipse(x + 2, y + 4, pr, pr * 0.8, 0, 0, 7); c.fill();
-      const gr = c.createRadialGradient(x - pr * 0.3, y - pr * 0.3, 2, x, y, pr); gr.addColorStop(0, P.mix('#9ae08a', '#ffe680', L)); gr.addColorStop(1, P.mix(PAD, '#e8b830', L * 0.8)); c.fillStyle = gr;
-      const a0 = 0.9 + j * 0.7; c.beginPath(); c.moveTo(x + Math.cos(a0 + 0.22) * pr * 0.55, y + Math.sin(a0 + 0.22) * pr * 0.55); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.closePath(); c.fill(); c.strokeStyle = PADD; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.stroke();
-      c.font = M.NUMF(pr > 20 ? 22 : 19, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#163a1a'; c.fillText(String(S.order[j]), x, y + 1); c.restore(); }
-    // the fact chip's card
-    const cb = M.unionBox([M.box(g, 'chip'), S.why ? M.box(g, 'why') : null, S.why2 ? M.box(g, 'why2') : null]);
-    if (S.chip && cb) { const q = S.cbS || (S.cbS = { ...cb }), kk = 0.25; for (const k of ['x', 'y', 'w', 'h']) q[k] += (cb[k] - q[k]) * kk; const al = S.card.alpha;
-      if (al > 0.01) { c.save(); c.globalAlpha = al; c.fillStyle = 'rgba(14,40,40,0.85)'; c.strokeStyle = GOLD; c.lineWidth = 2; const w = Math.max(q.w, 150) + 28;
-        c.beginPath(); c.roundRect(q.x - w / 2, q.y - q.h / 2 - 10, w, q.h + 20, 14); c.fill(); c.stroke(); c.restore(); } }
-    if (S.chip) M.drawEx(g, c, 'chip'); if (S.why) M.drawEx(g, c, 'why'); if (S.why2) M.drawEx(g, c, 'why2');
-    // the frog (on the ring, mid-hop, or home in its corner)
-    let fx = S.frog.x, fy = S.frog.y, air = 0; const HA = S.hopA;
-    if (HA && t < HA.t0 + HA.dur) { const k = M.easeIO(M.clamp((t - HA.t0) / HA.dur, 0, 1)); fx = M.lerp(HA.x0, HA.x1, k); fy = M.lerp(HA.y0, HA.y1, k) - Math.sin(k * Math.PI) * 34; air = Math.sin(k * Math.PI);
-      c.save(); c.globalAlpha = Math.max(ra, 0.4); c.strokeStyle = 'rgba(255,240,170,0.6)'; c.setLineDash([4, 5]); c.lineWidth = 2; c.beginPath(); c.moveTo(HA.x0, HA.y0); c.quadraticCurveTo((HA.x0 + HA.x1) / 2, (HA.y0 + HA.y1) / 2 - 50, HA.x1, HA.y1); c.stroke(); c.restore();
-      if (HA.label) { c.save(); c.globalAlpha = Math.min(1, k * 4) * Math.min(1, (1 - k) * 6 + 0.3); c.font = M.NUMF(20, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 5; c.fillStyle = GOLD; c.fillText(HA.label, (HA.x0 + HA.x1) / 2, (HA.y0 + HA.y1) / 2 - 38); c.restore(); } }
-    const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', sad = S.splash != null && t - S.splash < 0.6;
-    const expr = won ? 'laugh' : lost || sad ? 'sad' : S.faceT != null && t - S.faceT < 0.7 ? S.face : 'happy';
-    const pose = won || (S.home != null && t - S.home < 0.9 && air === 0) ? 'cheer' : air > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
-    if (typeof ANI !== 'undefined') ANI.draw(c, 'frog', fx, fy + 8, 0.7, { t, pose, expr, noShadow: air > 0.1 }); else SCN.host(g, c, 'frog', fx, fy, 0.7);
-    M.drawEx(g, c, 'L'); for (const key of Object.keys(S.mk.ex)) if (/^n\d+$/.test(key)) M.drawEx(g, c, key);
+    const S = g.s, t = g.t, T = M.pace(g), LV = LAY[g.level] || LAY[0];
+    c.drawImage(g.bake('modular_fermat_study', study), 0, 0, W, H);
+    // the candle flickers and its glow breathes
+    const fl = 0.85 + 0.15 * Math.sin(t * 9) * Math.sin(t * 5.3 + 1);
+    c.save(); const cg = c.createRadialGradient(322, 566, 4, 322, 566, 120); cg.addColorStop(0, `rgba(255,200,120,${0.32 * fl})`); cg.addColorStop(1, 'rgba(255,200,120,0)'); c.fillStyle = cg; c.fillRect(190, 440, 170, 200);
+    c.translate(322, 572); c.scale(1, 0.9 + 0.12 * fl); c.fillStyle = '#ffb648'; c.beginPath(); c.moveTo(0, -24); c.quadraticCurveTo(9, -6, 0, 2); c.quadraticCurveTo(-9, -6, 0, -24); c.fill();
+    c.fillStyle = '#fff2c0'; c.beginPath(); c.moveTo(0, -15); c.quadraticCurveTo(4, -4, 0, 0); c.quadraticCurveTo(-4, -4, 0, -15); c.fill(); c.restore();
+    // the slate
+    c.save(); c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.roundRect(10, 170, 344, 380, 16); c.fill();
+    c.fillStyle = '#6a4228'; c.beginPath(); c.roundRect(4, 162, 352, 384, 16); c.fill(); c.strokeStyle = '#8a5a36'; c.lineWidth = 2; c.stroke();
+    const sg = c.createLinearGradient(0, 170, 0, 540); sg.addColorStop(0, '#1d2436'); sg.addColorStop(1, '#161c2c'); c.fillStyle = sg; c.beginPath(); c.roundRect(11, 169, 338, 370, 10); c.fill(); c.restore();
+    // the answer box at the top
+    const ab = M.box(g, S.ansN.id); if (ab) { const gold = S.boxGold != null ? Math.min(1, (t - S.boxGold) / 0.3) : 0, w = Math.max(ab.w, 24) + 18, h = 46;
+      c.save(); c.lineWidth = 2.5; c.strokeStyle = gold ? GOLD : 'rgba(185,196,230,0.8)'; if (!gold) c.setLineDash([6, 5]); c.fillStyle = gold ? 'rgba(255,211,106,0.16)' : 'rgba(255,255,255,0.06)';
+      c.beginPath(); c.roundRect(ab.x - w / 2, TOPY - 36, w, h, 10); c.fill(); c.stroke(); c.restore(); }
+    // the gold row (the power that leaves 1) keeps a soft band behind it
+    for (const m of S.marks) if (m.kind === 'gold') { const R = S.rows[m.k], k = Math.min(1, (t - m.t0) / (0.3 * T)); c.save(); c.globalAlpha = 0.2 * k; c.fillStyle = GOLD; c.beginPath(); c.roundRect(X0 - 7, R.y - LV.rs * 0.92, S.xr - X0 + 22, LV.rs * 1.18, 8); c.fill(); c.restore(); }
+    // the host watches from the desk, points while work is shown, hops when something lands
+    const mk = S.mk, hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
+    const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.7 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
+    if (typeof ANI !== 'undefined') ANI.draw(c, 'hedgehog', HX, HY - hopK * 18, 0.95, { t, pose, expr }); else SCN.host(g, c, 'hedgehog', HX, HY, 0.95);
+    M.drawEx(g, c, 'top'); M.drawEx(g, c, 'sub'); M.drawEx(g, c, 'head');
+    for (let k = 1; k <= S.p; k++) M.drawEx(g, c, 'row' + k);
+    for (const key of ['L1', 'L2', 'L3']) M.drawEx(g, c, key);
+    for (const key of Object.keys(S.mk.ex)) if (/^lab/.test(key)) M.drawEx(g, c, key);
+    drawMarks(g, c, S, T);
+    // the theorem's card slides in last, over the table (the problem, its answer and the working stay in view)
+    if (S.cardT != null) drawCard(g, c, S, Math.min(1, (t - S.cardT) / (0.45 * T)), LV);
     M.drawUI(g, c);
   },
 });
 
-// the pond at twilight, seen from above: deep teal water with the sky's colours in it, reeds and stones at the edges
-function pond(c, W, H) {
-  const wg = c.createLinearGradient(0, 0, 0, H); wg.addColorStop(0, '#2a2a5a'); wg.addColorStop(0.35, '#1e4a6a'); wg.addColorStop(1, '#0e3a42'); c.fillStyle = wg; c.fillRect(0, 0, W, H);
-  // reflected sunset glow and stars in the water
-  const rg = c.createRadialGradient(260, 120, 10, 260, 120, 260); rg.addColorStop(0, 'rgba(255,150,170,0.35)'); rg.addColorStop(1, 'rgba(255,150,170,0)'); c.fillStyle = rg; c.fillRect(0, 0, W, H);
-  const R = P.rng(19); for (let i = 0; i < 60; i++) { c.fillStyle = `rgba(255,255,230,${0.15 + R() * 0.35})`; c.fillRect(R() * W, R() * 300, 1.5, 1.5); }
-  c.strokeStyle = 'rgba(180,230,255,0.08)'; c.lineWidth = 2; for (let i = 0; i < 18; i++) { const y = 40 + i * 34 + R() * 10; c.beginPath(); c.moveTo(R() * 60, y); c.lineTo(80 + R() * 220, y + (R() - 0.5) * 4); c.stroke(); }
-  // reeds and stones at the left and right edges
-  for (const [x0, dir] of [[0, 1], [W, -1]]) { for (let i = 0; i < 9; i++) { const x = x0 + dir * (6 + R() * 26), y = 120 + i * 60 + R() * 30; c.fillStyle = '#2a4a30'; c.beginPath(); c.ellipse(x, y, 14 + R() * 10, 9 + R() * 6, R() * 3, 0, 7); c.fill(); c.strokeStyle = '#4a7a3a'; c.lineWidth = 3; c.lineCap = 'round'; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + dir * (8 + k * 6), y - 10 - k * 4); c.stroke(); } } }
-  // the frog's home lily pad at the bottom left, and a lotus
-  c.fillStyle = '#ffc0d8'; for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; c.beginPath(); c.ellipse(312 + Math.cos(a) * 8, 600 + Math.sin(a) * 6, 9, 5, a, 0, 7); c.fill(); } c.fillStyle = '#ffe680'; c.beginPath(); c.arc(312, 600, 4, 0, 7); c.fill();
+// persistent marks: the ring round a multiple (until the next tap), the arrow and brace of the repeat, the dotted
+// lines to the gold row (until the 1s fly down them), the brace under the whole cycles
+function drawMarks(g, c, S, T) {
+  const t = g.t;
+  for (const m of S.marks) {
+    const k = M.easeIO(Math.min(1, (t - m.t0) / m.dur)), fa = m.fade != null ? 1 - Math.min(1, (t - m.fade) / (0.25 * T)) : 1; if (fa <= 0 || k <= 0) continue;
+    c.save(); c.globalAlpha = fa; c.lineCap = 'round'; c.lineJoin = 'round';
+    if (m.kind === 'ring') { const b = M.unionBox(m.ids.map(i => M.box(g, i))); if (b) { const w = b.w + 10, h = b.h + 10, per = 2 * (w + h); c.strokeStyle = CUT; c.lineWidth = 2.5; c.setLineDash([per * k, per * 2]); c.beginPath(); c.roundRect(b.x - w / 2, b.y - h / 2, w, h, h / 2); c.stroke(); } }
+    else if (m.kind === 'arrow') { const a = M.box(g, m.from), b = M.box(g, m.to); if (a && b) { const x0 = a.x + a.w / 2 + 4, y0 = a.y, x1 = b.x + b.w / 2 + 4, y1 = b.y, xo = S.xr + 38; // out to the right of the remainder column, up, and back in
+      const P = u => { const v = 1 - u; return [v * v * v * x0 + 3 * v * v * u * xo + 3 * v * u * u * xo + u * u * u * x1, v * v * v * y0 + 3 * v * v * u * y0 + 3 * v * u * u * y1 + u * u * u * y1]; };
+      c.strokeStyle = GOLD; c.fillStyle = GOLD; c.lineWidth = 2.5; c.beginPath(); for (let i = 0; i <= 30; i++) { const [x, y] = P(k * i / 30); i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+      const [px, py] = P(k), [qx, qy] = P(Math.max(0, k - 0.04)), an = Math.atan2(py - qy, px - qx); c.beginPath(); c.moveTo(px + Math.cos(an) * 7, py + Math.sin(an) * 7); c.lineTo(px + Math.cos(an + 2.5) * 8, py + Math.sin(an + 2.5) * 8); c.lineTo(px + Math.cos(an - 2.5) * 8, py + Math.sin(an - 2.5) * 8); c.fill(); } }
+    else if (m.kind === 'vbrace') { const x = m.x, y0 = m.y0, y1 = m.y1, mid = (y0 + y1) / 2, ym = mid + (y1 - mid) * 0; c.strokeStyle = GOLD; c.lineWidth = 2.5; const yk = y => mid + (y - mid) * k;
+      c.beginPath(); c.moveTo(x - 8, yk(y0)); c.quadraticCurveTo(x, yk(y0), x, yk(y0) + 8 * k); c.lineTo(x, ym - 6 * k); c.quadraticCurveTo(x, ym, x + 7, ym); c.quadraticCurveTo(x, ym, x, ym + 6 * k); c.lineTo(x, yk(y1) - 8 * k); c.quadraticCurveTo(x, yk(y1), x - 8, yk(y1)); c.stroke(); }
+    else if (m.kind === 'hbrace') { const b = M.unionBox(m.ids.map(i => M.box(g, i))); if (b) { const x0 = b.x - b.w / 2 - 2, x1 = b.x + b.w / 2 + 2, mx = (x0 + x1) / 2, y = m.y, xk = x => mx + (x - mx) * k; c.strokeStyle = GOLD; c.lineWidth = 2.2;
+      c.beginPath(); c.moveTo(xk(x0), y - 5); c.quadraticCurveTo(xk(x0), y, xk(x0) + 5 * k, y); c.lineTo(mx - 5, y); c.quadraticCurveTo(mx, y, mx, y + 5); c.quadraticCurveTo(mx, y, mx + 5, y); c.lineTo(xk(x1) - 5 * k, y); c.quadraticCurveTo(xk(x1), y, xk(x1), y - 5); c.stroke(); } }
+    else if (m.kind === 'dots') { const b = M.box(g, m.to); if (b) for (const f of m.from) { const a = M.box(g, f); if (!a) continue; const x0 = a.x, y0 = a.y - a.h / 2 - 2, x1 = b.x - b.w / 2 - 2, y1 = b.y + b.h / 2;
+      c.strokeStyle = 'rgba(255,211,106,0.75)'; c.lineWidth = 2; c.setLineDash([3, 6]); c.beginPath(); c.moveTo(x0, y0); c.lineTo(M.lerp(x0, x1, k), M.lerp(y0, y1, k)); c.stroke(); } }
+    c.restore();
+  }
+}
+function drawCard(g, c, S, k, LV) {
+  const e = M.ease(k), ls = 18, bot = LV.L[0] - (LV.l1s || LV.ls) - 8, top = SUBY + 9, h = bot - top, lh = Math.min(24, (h - 50) / S.cardLines.length), x = 10 + (1 - e) * 360, w = 340;
+  c.save(); c.globalAlpha = Math.min(1, k * 2); c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 14; c.fillStyle = '#2a2140'; c.beginPath(); c.roundRect(x, top, w, h, 14); c.fill(); c.shadowBlur = 0;
+  c.strokeStyle = GOLD; c.lineWidth = 2.5; c.stroke();
+  c.font = M.NUMF(20, 700); c.fillStyle = GOLD; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; const y0 = top + (h - 44 - lh * S.cardLines.length) / 2; c.fillText("Fermat's little theorem", x + 14, y0 + 26);
+  S.cardLines.forEach((ln, i) => { const m = M.lay(ln, ls), sc = Math.min(1, (w - 24) / m.w); c.save(); c.translate(x + 13, y0 + 52 + i * lh); c.scale(sc, sc); M.draw(c, ln, 0, 0, ls, { t: g.t, col: INK }); c.restore(); });
+  c.restore();
+}
+
+// a candle-lit study at night: plum walls, a moonlit window, a shelf of old books, a desk with a candle and an open book
+function study(c, W, H) {
+  const wg = c.createLinearGradient(0, 0, 0, H); wg.addColorStop(0, '#3a2440'); wg.addColorStop(0.6, '#2a1a30'); wg.addColorStop(1, '#1e1222'); c.fillStyle = wg; c.fillRect(0, 0, W, H);
+  // the window with the moon
+  c.fillStyle = '#16203e'; c.fillRect(250, 18, 86, 120); const mg = c.createRadialGradient(300, 60, 4, 300, 60, 60); mg.addColorStop(0, 'rgba(255,246,210,0.5)'); mg.addColorStop(1, 'rgba(255,246,210,0)'); c.fillStyle = mg; c.fillRect(250, 18, 86, 120);
+  c.fillStyle = '#fff4d0'; c.beginPath(); c.arc(300, 58, 13, 0, 7); c.fill(); c.fillStyle = '#16203e'; c.beginPath(); c.arc(306, 53, 12, 0, 7); c.fill();
+  c.strokeStyle = '#5a3a2a'; c.lineWidth = 6; c.strokeRect(250, 18, 86, 120); c.beginPath(); c.moveTo(293, 18); c.lineTo(293, 138); c.moveTo(250, 78); c.lineTo(336, 78); c.stroke();
+  // a shelf of old books at the top left
+  c.fillStyle = '#4a2a1c'; c.fillRect(0, 128, 220, 8); const R = P.rng(31); for (let x = 8; x < 210;) { const w = 9 + R() * 9, h = 30 + R() * 22; c.fillStyle = ['#7a2a2a', '#2a4a6a', '#8a6a2a', '#3a5a3a', '#5a2a5a'][Math.floor(R() * 5)]; c.fillRect(x, 128 - h, w, h); c.fillStyle = 'rgba(255,220,150,0.35)'; c.fillRect(x + 2, 128 - h + 6, w - 4, 2); x += w + 2; }
+  // the desk
+  const dg = c.createLinearGradient(0, 548, 0, H); dg.addColorStop(0, '#6a4026'); dg.addColorStop(1, '#3a2214'); c.fillStyle = dg; c.fillRect(0, 548, W, H - 548); c.fillStyle = 'rgba(255,220,160,0.12)'; c.fillRect(0, 548, W, 3);
+  // an open book with scribbled margins, and the candle's stick
+  c.fillStyle = '#e8dcc0'; c.beginPath(); c.moveTo(150, 600); c.lineTo(205, 590); c.lineTo(260, 600); c.lineTo(260, 628); c.lineTo(205, 620); c.lineTo(150, 628); c.closePath(); c.fill(); c.strokeStyle = '#8a7a5a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(205, 590); c.lineTo(205, 620); c.stroke();
+  c.strokeStyle = 'rgba(80,60,40,0.5)'; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(158, 604 + i * 5); c.lineTo(198, 597 + i * 5); c.moveTo(212, 597 + i * 5); c.lineTo(252, 604 + i * 5); c.stroke(); }
+  c.fillStyle = '#efe6d0'; c.fillRect(315, 572, 14, 36); c.fillStyle = '#c8a050'; c.beginPath(); c.ellipse(322, 610, 20, 6, 0, 0, 7); c.fill(); c.strokeStyle = '#2a1a10'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(322, 572); c.lineTo(322, 566); c.stroke();
 }

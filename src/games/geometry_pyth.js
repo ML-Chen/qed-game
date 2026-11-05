@@ -55,7 +55,7 @@ MG.add({
       if (k === 'a') { const s = Math.max(22, Math.min(26, 26 * (350 - ox - a * u - 12) / w0)), x0 = Math.min(ox + a * u + 12, 350 - w0 * s / 26); M.place(g, 'nt' + k, row, x0, oy + a * u / 2 + s * 0.34, s, { col: NOTE, left: true }); }
       else { const s = Math.max(22, Math.min(26, 26 * (ox - 4) / w0)), w = w0 * s / 26, x = Math.max(10 + w / 2, Math.min(ox - b * u / 2, ox + 4 - w / 2)); M.place(g, 'nt' + k, row, x, oy - b * u - 20 + s * 0.34, s, { col: NOTE }); } };
     const legMove = k => { const P = S.pool[k], n = P.n, num = k === 'a' ? S.na : S.nb;
-      return { tap: ['l' + k, 'e' + k], busy: 0.1, askAt: 0.85 * T, after: 0.7 * T, ask: { v: n * n, wrong: [2 * n, n * (n + 1), n + 2] },
+      return { tap: ['l' + k, 'e' + k], busy: 0.1, askAt: 0.85 * T, after: 1.2 * T, ask: { v: n * n, wrong: [2 * n, n * (n + 1), n + 2] },
         then(g) { P.built = true; gone(g, 'e' + k); num.id = 'q' + k; S.point = true; M.show(g, 0.85 * T); hop(g, 'think'); g.sfx('tap');
           S.edge = { k, t0: g.t }; M.indicate(g, num, { dur: 0.35 * T, sc: 1.3 });
           // tiles pop in one by one along the leg, then sweep out row by row until the square is full
@@ -64,13 +64,13 @@ MG.add({
           M.at(g, [[0.4 * T, g => { // the side length glides into the square and gains its ²
               const s = Math.max(18, Math.min(30, P.side * 0.34)); P.ls = s; P.lab = M.row(M.sup(num, M.num(2, 'q2'))); put('l' + k, P.lab, ...P.cen, s); g.sfx('swoosh'); }],
             [0.7 * T, g => { P.blank = M.num(n * n, 'nv' + k, { alpha: 0 }); P.note = M.row(M.num(n), M.op('×'), M.num(n), M.op('='), P.blank); notePlace(k, P.note); M.writeIn(g, P.note, { dur: 0.3 * T }); M.indicate(g, P.lab, { dur: 0.3 * T, sc: 1.15 }); }]]); },
-        resolve(g) { M.show(g, 0.7 * T); P.blank.alpha = 1; M.writeIn(g, P.blank, { dur: 0.15 * T }); M.indicate(g, P.blank, { delay: 0.12 * T, dur: 0.3 * T, col: '#ffcf3a' }); g.sfx('ding');
-          M.at(g, [[0.25 * T, g => { P.blank.alpha = 0;
+        resolve(g) { M.show(g, 1.2 * T); P.blank.alpha = 1; M.writeIn(g, P.blank, { dur: 0.15 * T }); M.indicate(g, P.blank, { delay: 0.12 * T, dur: 0.3 * T, col: '#ffcf3a' }); g.sfx('ding');
+          M.at(g, [[0.75 * T, g => { P.blank.alpha = 0; // the note stays readable a moment, then its result flies into the square
               M.fly(g, { node: M.num(n * n, null, { col: NOTE }), from: 'nv' + k, to: 'q' + k, dur: 0.3 * T, arc: -26, s0: 26, s1: P.ls,
                 then(g) { P.sq = M.num(n * n, 'q' + k); P.lab = M.row(P.sq); put('l' + k, P.lab, ...P.cen, P.ls); P.sq.pop = g.t; P.glow = g.t; M.sparkle(g, P.cen.concat([30]), { n: 10, cols: [TILE[k], '#fff'] }); g.sfx('pop'); hop(g, 'wow');
                   M.zone(g, 'p' + k, { x: P.cen[0], y: P.cen[1], w: P.side, h: P.side }); } });
               M.tween(g, P.note, { alpha: 0 }, 0.25 * T, { delay: 0.15 * T }); }],
-            [0.68 * T, g => { if (S.point && !(S.pool.a.sq && S.pool.b.sq)) S.point = false; }]]); } };
+            [1.18 * T, g => { if (S.point && !(S.pool.a.sq && S.pool.b.sq)) S.point = false; }]]); } };
     };
     M.play(g, {
       moves(g) {
@@ -78,7 +78,7 @@ MG.add({
         if (!A.built || !B.built) return [A, B].filter(P => !P.built).map(P => legMove(P.k));
         if (!S.poured) { const xs = [0, 1, 2, 3].map(i => C.pt(i % 2 ? C.n : 0, i > 1 ? C.n : 0));
           return [{ drag: ['pa', 'pb'], to: ['pc', 'cl', 'lc'], area: [Math.min(...xs.map(p => p[0])), Math.min(...xs.map(p => p[1])), Math.max(...xs.map(p => p[0])), Math.max(...xs.map(p => p[1]))], busy: 0.1,
-            askAt: 1.05 * T, after: 0.6 * T, ask: { v: c * c, wrong: [a + b, (a + b) * (a + b), c * c + a] },
+            askAt: 1.05 * T, after: 1.25 * T, ask: { v: c * c, wrong: [a + b, (a + b) * (a + b), c * c + a] },
             then(g) { S.poured = true; gone(g, 'pa'); gone(g, 'pb'); M.show(g, 1.05 * T); S.point = true; hop(g, 'wow'); g.sfx('splash');
               // every tile lifts out and pours across, filling the big square row by row from the long side
               const N = c * c, st = 0.55 * T / N, fd = 0.32 * T; let q = 0; S.flyT = [];
@@ -89,18 +89,22 @@ MG.add({
               M.at(g, [[0.12 * T, g => { relayC(S.items); g.sfx('swoosh'); }],
                 [S.pool.a.doneAt, g => { S.items.push(S.pool.a.sq); delete g.s.mk.ex.la; relayC(S.items); S.pool.a.sq.pop = g.t; g.sfx('pop'); }],
                 [S.pool.b.doneAt, g => { S.items.push(M.op('+', 'cp'), S.pool.b.sq); delete g.s.mk.ex.lb; relayC(S.items); S.pool.b.sq.pop = g.t; g.sfx('pop'); hop(g); }]]); },
-            resolve(g) { M.show(g, 0.6 * T); S.c2 = M.num(c * c, 'c25'); S.items = [S.items[0], S.items[1], S.c2]; relayC(S.items); S.c2.pop = g.t; C.glow = g.t;
-              M.sparkle(g, C.cen.concat([40]), { n: 14, cols: ['#78c8ee', '#86dcae', '#fff'] }); g.sfx('ding'); hop(g, 'laugh'); M.at(g, [[0.5 * T, g => { S.point = false; }]]); } }];
+            // c² = 9 + 16 stays up, its terms light up, then the + 16 slides into the 9 and it rolls over to 25
+            resolve(g) { M.show(g, 1.25 * T); const [, , keep, ...rest] = S.items; for (const q of S.items.slice(2)) M.indicate(g, q, { dur: 0.3 * T, sc: 1.15, col: '#ffcf3a' });
+              M.at(g, [[0.4 * T, g => { const bk = M.box(g, keep.id); for (const q of rest) { const bq = M.box(g, q.id); if (bk && bq) M.tween(g, q, { dx: bk.x - bq.x, alpha: 0, sc: 0.5 }, 0.28 * T); } M.roll(g, keep, c * c, { delay: 0.12 * T, dur: 0.3 * T }); g.sfx('swoosh'); }],
+                [0.85 * T, g => { S.c2 = keep; keep.id = 'c25'; S.items = [S.items[0], S.items[1], keep]; relayC(S.items); keep.pop = g.t; C.glow = g.t;
+                  M.sparkle(g, C.cen.concat([40]), { n: 14, cols: ['#78c8ee', '#86dcae', '#fff'] }); g.sfx('ding'); hop(g, 'laugh'); }],
+                [1.2 * T, g => { S.point = false; }]]); } }];
         }
         if (!S.root) { const st = Math.min(0.14 * T, 0.6 * T / c), ask = 0.2 * T + c * st + 0.1 * T;
-          return [{ tap: ['cl', 'pc'], busy: 0.1, askAt: ask, after: 0.8 * T, ask: { v: c, wrong: [c * c / 2, a + b, c + 1, 2 * c] },
+          return [{ tap: ['cl', 'pc'], busy: 0.1, askAt: ask, after: 1.35 * T, ask: { v: c, wrong: [c * c / 2, a + b, c + 1, 2 * c] },
             then(g) { S.root = true; M.show(g, ask); S.point = true; hop(g, 'think'); M.circle(g, 'cl', { dur: 0.5 * T, col: '#ffcf3a' }); S.edge = { k: 'c', t0: g.t, long: true };
               S.count = { t0: g.t + 0.2 * T, st }; for (let i = 0; i < c; i++) M.at(g, [[0.2 * T + i * st, g => { g.sfx('tap'); }]]); },
-            resolve(g) { M.show(g, 0.8 * T);
+            resolve(g) { M.show(g, 1.35 * T);
               S.note = M.row(M.num(c, 'r5'), M.op('×'), M.num(c), M.op('='), M.num(c * c)); const wn = M.lay(S.note, 26).w, sn = Math.max(22, Math.min(26, 26 * (338 - S.ox - S.a * u) / wn)), x0 = Math.min(S.ox + S.a * u + 12, 350 - wn * sn / 26); M.place(g, 'ntc', S.note, x0, S.oy + 30, sn, { col: NOTE, left: true }); M.writeIn(g, S.note, { dur: 0.3 * T }); g.sfx('ding');
               M.at(g, [[0.32 * T, g => { M.fly(g, { node: M.num(c, null, { col: NOTE }), from: 'r5', to: 'c25', dur: 0.2 * T, arc: -20, s0: M.box(g, 'r5') ? M.box(g, 'r5').s : 24, s1: S.cs }); }],
                 [0.52 * T, g => { S.items = [S.cv, S.items[1], M.num(c, 'cf')]; relayC(S.items); M.indicate(g, 'cf', { dur: 0.35 * T, col: '#ffcf3a', sc: 1.4 }); M.sparkle(g, 'cf', { n: 14 }); g.sfx('coin'); hop(g, 'laugh'); S.count.fade = g.t; }],
-                [0.6 * T, g => { M.tween(g, S.note, { alpha: 0 }, 0.2 * T); S.point = false; }]]); } }];
+                [1.1 * T, g => { M.tween(g, S.note, { alpha: 0 }, 0.2 * T); S.point = false; }]]); } }];
         }
         return [];
       },

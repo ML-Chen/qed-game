@@ -1,8 +1,8 @@
 // modular_mod.js — MODULO! Find a mod n by walking a clock hand a steps around an n-hour clock.
 // A moonlit clock with n hours, 0 at the top. The player spins the hand clockwise (anywhere on the dial works) and lets
 // go; the hand then walks on by itself, one tick per hour (show your work). Every time it passes 0 a full turn is done:
-// 0 flashes, a ring of light is added round the dial, and a "− 5" note writes itself under "17 mod 5" and flies in, so
-// the 17 rolls down to 12, 7, 2. The hand stops after a steps, on the remainder; "17 = 3 × 5 + ?" writes itself under
+// 0 flashes, a ring of light is added round the dial, and a "17 − 5 = 12" note writes itself under "17 mod 5" and stays
+// while the 17 rolls down to 12 (then 7, then 2). The hand stops after a steps, on the remainder; "17 = 3 × 5 + ?" writes itself under
 // the clock, and the hour the hand points at lifts off the dial and flies up into "= ?". A drag backwards walks it back.
 // Level 0: n = 4 or 5, two turns and a bit. Level 1: n = 5 or 6, two or three turns. Level 2: n = 6 or 7.
 // Medium mode: when the hand stops, the player picks the remainder from the tray.
@@ -28,14 +28,16 @@ function setSteps(g, k) {
   if (after !== before) {
     S.shown = S.a - S.n * after; const nd = M.node(g, 'a'), v = S.shown;
     if (after > before) { S.turnAt = g.t; S.wrapAt = g.t; g.sfx('coin'); S.mk.lastMove = g.t;
-      M.note(g, { node: M.row(M.op('-'), M.num(S.n)), at: 'a', off: [0, 42], s: 26, col: GOLD, write: 0.16 * T, hold: 0.06 * T, fly: 0.2 * T, to: 'a', arc: 14, s1: 30,
-        then(g) { M.roll(g, nd, v, { dur: 0.2 * T }); placeProb(g); M.sparkle(g, 'a', { n: 6, cols: [GOLD, '#fff'] }); } }); }
+      // the reason is written out beside the number ("13 − 5 = 8"), and the number rolls down while it is still there
+      const prev = S.a - S.n * before;
+      M.note(g, { node: M.row(M.num(prev), M.op('−'), M.num(S.n), M.op('='), M.num(v)), at: 'a', off: [0, 48], s: 26, col: GOLD, pill: true, write: 0.3 * T, hold: 0.85 * T, fade: 0.25 * T });
+      M.at(g, [[0.4 * T, g => { M.indicate(g, nd, { dur: 0.3 * T, col: GOLD }); M.roll(g, nd, S.shown, { dur: 0.3 * T }); placeProb(g); M.sparkle(g, 'a', { n: 6, cols: [GOLD, '#fff'] }); }]]); }
     else { M.roll(g, nd, v, { dur: 0.16 }); placeProb(g); }
   }
   if (k === S.a) land(g);
 }
 // once spun, the hand walks on by itself, one hour per tick, pausing a moment at every full turn
-const ST = 0.068, PT = 0.2;
+const ST = 0.1, PT = 1.4; // PT: the pause at 0 while "13 − 5 = 8" is written and read
 function walkTime(S, from) { let t = 0; for (let k = from + 1; k <= S.a; k++) t += ST + (k % S.n === 0 ? PT : 0); return t; }
 function startWalk(g) { const S = g.s, T = M.pace(g); S.walk = { next: g.t + 0.05 * T }; M.show(g, walkTime(S, S.steps) * T + 0.2 * T); }
 function land(g) {
@@ -70,7 +72,7 @@ MG.add({
     const S = g.s; M.setup(g); Object.assign(S, pick(g)); S.steps = 0; S.cont = 0; S.shown = S.a; S.drag = null;
     S.prob = M.row(M.num(S.a, 'a'), M.gap(10), M.txt('mod', 'md'), M.gap(10), M.num(S.n, 'n'), M.op('=', 'eq'), clr(46), M.slot('ans'));
     placeProb(g); M.inert(g, ['md', 'eq', 'ans']);
-    S.key = M.txt(`${S.a} mod ${S.n} = the remainder of ${S.a} ÷ ${S.n}`, 'key'); M.place(g, 'key', S.key, 180, 512, 15, { col: '#c8d0ff' }); M.inert(g, ['key']);
+    S.key = M.txt(`${S.a} mod ${S.n} = the remainder of ${S.a} ÷ ${S.n}`, 'key'); M.place(g, 'key', S.key, 180, 512, 18, { col: '#c8d0ff' }); M.inert(g, ['key']);
     g.dur *= (2.6 + 1.05 * (S.turns + 1)) / 8;
     M.play(g, { moves(g) { return S.answered ? [] : [{ drag: 'hand', to: 'hand' }]; }, area(g) { return 'hand'; } });
   },

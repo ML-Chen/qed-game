@@ -63,13 +63,15 @@ MG.add({
       moves(g) {
         if (!S.merged) return [{ drag: 'o1', to: 'neg', busy: 0.1, then: merge }, { drag: 'neg', to: 'o1', busy: 0.1, then: merge }];
         if (S.done) return [];
-        return [{ tap: ['o2', 'a', 'b2'], busy: 0.1, askAt: 0.75 * T, after: 0.9 * T, ask: { v: S.v, wrong: [S.naive, -S.v, S.v + 1, S.v - 1] },
+        return [{ tap: ['o2', 'a', 'b2'], busy: 0.1, askAt: 0.75 * T, after: 1.45 * T, ask: { v: S.v, wrong: [S.naive, -S.v, S.v + 1, S.v - 1] },
           then(g) { S.done = true; M.show(g, 0.75 * T); g.sfx('swoosh'); hop(g); M.indicate(g, 'o2', { dur: 0.4 * T, col: GOLD });
             // copies of both terms' bubbles lift off and drift together above the sum
             const A = { ...M.box(g, 'a') }, B = { ...M.box(g, 'b2') }, mid = { x: (A.x + B.x) / 2, y: 224 };
             S.blob = { A, B, mid, t0: g.t + 0.1 * T, dur: 0.6 * T, av: S.a, bv: S.s === '+' ? S.b : -S.b }; },
-          resolve(g) { M.show(g, 0.9 * T); S.blob.res = g.t; g.sfx('ding'); hop(g);
-            M.at(g, [[0.4 * T, g => { const bl = S.blob; bl.gone = g.t; g.sfx('bubble');
+          resolve(g) { M.show(g, 1.45 * T); S.blob.res = g.t; g.sfx('ding'); hop(g);
+            // the sum is written out above the merged bubble, so the new number comes with its reason
+            M.note(g, { node: M.row(M.num(S.a), M.op(S.s), M.num(S.b), M.op('='), M.num(S.v)), at: [S.blob.mid.x, S.blob.mid.y - 50], s: 26, col: GOLD, pill: true, write: 0.35 * T, hold: 0.75 * T });
+            M.at(g, [[0.95 * T, g => { const bl = S.blob; bl.gone = g.t; g.sfx('bubble');
               M.fly(g, { node: M.num(S.v, null, { col: GOLD }), from: [bl.mid.x, bl.mid.y], to: 'ans', dur: 0.42 * T, arc: 20, s0: 34, s1: 44,
                 then(g) { S.slot.fill = M.num(S.v, null, { pop: g.t, col: GOLD, _born: -1 }); place(); g.sfx('coin'); hop(g); const b = M.box(g, 'ans'); if (b) g.burst(b.x, b.y, [GOLD, '#7ad8ff', '#fff'], 14, 140); } }); }]]); } }];
       },

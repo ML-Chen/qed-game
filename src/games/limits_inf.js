@@ -1,7 +1,7 @@
 // limits_inf.js — LIMIT AT INF! The limit of a rational function as x → ∞ when the top and bottom have the same
 // degree: only the leading terms matter, so lim (3x² + 1)/(x² + 5) = lim 3x²/x² = 3.
 // Moves, each acted out (show your work): tap the top (any of its terms) and the bottom, in either order: the highest
-// power lights up gold, the smaller terms fade and drift off into space, and only the leading term stays. Then tap the
+// power lights up gold, a note shows how big it already is at x = 100 ("x = 100: 3x² = 30,000"), the smaller terms fade and drift off into space, and only the leading term stays. Then tap the
 // fraction of leading terms: the two equal powers are circled, joined by an arrow and crossed out, the numbers divide in
 // a note ("6 ÷ 2 = 3"), and the line becomes the true statement lim (original) = L.
 // Under the problem, a comet flies along the graph to the right, settling toward the dashed line y = L.
@@ -71,12 +71,16 @@ MG.add({
     g.dur *= (2.6 + 1.05 * 3) / 8;
     const react = (g, e) => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
     // one side: the highest power lights up gold, the smaller terms fade and drift off into space, the leading term stays
-    const side = (k, Q, R, flag) => ({ tap: [k, ...idsIn(R)], busy: 0.1, then(g) { S[flag] = true; M.show(g, 1.0 * T); react(g, 'think'); S.point = true; const lead = Q[0];
+    // the reason is written beside the side: at x = 100 the leading term is already huge, so the small terms hardly count
+    const big = v => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const side = (k, Q, R, flag) => ({ tap: [k, ...idsIn(R)], busy: 0.1, then(g) { S[flag] = true; M.show(g, 1.6 * T); react(g, 'think'); S.point = true; const lead = Q[0];
       M.light(g, lead.pw, { col: GOLD, dur: 0.2 * T }); M.indicate(g, lead.row, { dur: 0.45 * T, sc: 1.2, col: GOLD }); M.sparkle(g, lead.pw.id, { n: 8, cols: [GOLD, '#fff'] }); g.sfx('ding');
-      for (const q of Q.slice(1)) M.tween(g, q.row, { alpha: 0.35, sc: 0.8 }, 0.25 * T, { delay: 0.3 * T });
-      M.at(g, [[0.6 * T, g => { Q.slice(1).forEach((q, i) => { const b = M.box(g, q.row.id); if (b) M.fly(g, { node: M.row(q.co ? M.num(q.cf) : null, q.p === 0 ? null : q.p === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(q.p))), from: [b.x, b.y], to: [330 - i * 26, 60 + i * 16], dur: 0.6 * T, arc: -30, s0: b.s * 0.8, s1: 6, col: SUB });
+      const [cf, p] = [lead.cf, lead.p], why = M.row(M.vr('x'), M.op('='), M.num(100), M.txt(':'), M.gap(10), M.row(cf === 1 ? null : M.num(cf), M.sup(M.vr('x'), M.num(p))), M.op('='), M.num(big(cf * Math.pow(100, p))));
+      const top = k === 'top', fb = M.box(g, 'fr'); M.note(g, { node: why, at: [180, top ? (fb ? fb.y - fb.h / 2 - 22 : 230) : (fb ? fb.y + fb.h / 2 + 22 : 360)], s: 22, col: GOLD, pill: true, write: 0.4 * T, hold: 0.75 * T, delay: 0.15 * T });
+      for (const q of Q.slice(1)) M.tween(g, q.row, { alpha: 0.35, sc: 0.8 }, 0.25 * T, { delay: 0.6 * T });
+      M.at(g, [[1.0 * T, g => { Q.slice(1).forEach((q, i) => { const b = M.box(g, q.row.id); if (b) M.fly(g, { node: M.row(q.co ? M.num(q.cf) : null, q.p === 0 ? null : q.p === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(q.p))), from: [b.x, b.y], to: [330 - i * 26, 60 + i * 16], dur: 0.6 * T, arc: -30, s0: b.s * 0.8, s1: 6, col: SUB });
           hideAll(q.row); }); R.items = [lead.row]; build(g); g.sfx('whoosh'); react(g); }],
-        [0.95 * T, g => { S.point = false; }]]); } });
+        [1.5 * T, g => { S.point = false; }]]); } });
     const cancelT = 1.0 * T, tail = (gcd(a, c) === 1 ? 0.85 : 1.05) * T;
     M.play(g, {
       moves(g) {
