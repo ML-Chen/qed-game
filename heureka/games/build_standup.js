@@ -89,7 +89,7 @@ MG.add({
       hold: won ? null : o => { o.fillStyle = '#a06a3a'; o.strokeStyle = '#4a2a18'; o.lineWidth = 2; o.beginPath(); o.roundRect(-34, -9, 68, 18, 8); o.fill(); o.stroke(); o.fillStyle = '#e8c08a'; o.beginPath(); o.ellipse(34, 0, 5, 9, 0, 0, 7); o.fill(); o.stroke(); } });
     if (s.wet) { c.fillStyle = 'rgba(122,208,224,0.85)'; c.fillRect(s.bx - 30, SU_WATER - 2, 60, 6); }
     if (!g.done && !s.walkT) { const nu = s.pl.filter(q => q.r > 1.3).length; SK.tag(c, nu + ' / ' + s.pl.length + ' on edge', 180, 560, 18, nu === s.pl.length ? '#9affb0' : '#fff6ea'); }
-    const q0 = s.pl.find(q => q.r < 1.3); if (q0 && !s.walkT) B5.hint(c, g, [q0.x0 + 24, SU_TOP + 10], [q0.x0 + 24, SU_TOP - 78], { ra: 22, rb: 20 });
+    const q0 = s.pl.find(q => q.r < 1.3); if (q0 && !s.walkT) B5.hint(c, g, [q0.x0 + 24, SU_TOP + 10], [q0.x0 + 24, SU_TOP - 78], { ra: 22, rb: 20, col: '#e8563a', acol: '#c0502a' });
     if (q0) SK.demo(g, c, 'drag', [q0.x0 + 24, SU_TOP + 12], [q0.x0 + 24, SU_TOP - 80]);
   },
   auto(g, dt, synth) { const s = g.s; s.pl.forEach((q, k) => SK.bot.drag(g, synth, 'p' + k, 0.9 + k * 0.32, [q.x0 + 24, SU_TOP + 10], [q.x0 + 24, SU_TOP + 10 - 140], 0.2)); },

@@ -76,7 +76,7 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail', px = Math.max(30, f - 120);
     SK.animal(c, 'penguin', px, PO_G - lift - 112 + 18 * SK.clamp((px - (f - 160)) / 160, -1, 1) * 0 , 0.62, { t, noShadow: true, pose: won ? 'cheer' : lost ? 'sad' : s.grab ? 'balance' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     // what moves (the cold air's nose), where it goes (the town under the warm air), and the way there
-    if (!s.stormT && !s.drop) B5.hint(c, g, [f - 30, PO_G - 50], [L.xt + 10, PO_G - 40], { ra: 30, rb: 30 });
+    if (!s.stormT && !s.drop) B5.hint(c, g, [f - 30, PO_G - 50], [L.xt + 10, PO_G - 40], { ra: 30, rb: 30, col: '#e8563a', acol: '#c0502a' });
     SK.demo(g, c, 'drag', [s.f - 30, PO_G - 40], [L.xt - 10, PO_G - 40], { never: !!s.stormT });
     c.restore();
     // labels, drawn unmirrored

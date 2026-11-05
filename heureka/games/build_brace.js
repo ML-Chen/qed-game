@@ -108,7 +108,7 @@ MG.add({
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 348, BR_YT - 8, 0.5, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     if (!g.done && !s.goT) { const nb = s.sq.filter(q => q.brace).length; SK.tag(c, nb + ' / ' + s.n + ' braced', 180, BR_YT + s.S + 40, 18, nb === s.n ? '#9affb0' : '#fff6ea'); }
-    const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0 && !s.goT) B5.hint(c, g, T[k0], B[k0 + 1], { ra: 16, rb: 16 });
+    const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0 && !s.goT) B5.hint(c, g, T[k0], B[k0 + 1], { ra: 16, rb: 16, col: '#e8563a', acol: '#c0502a' });
     if (k0 >= 0) SK.demo(g, c, 'drag', T[k0], B[k0 + 1], { never: !!s.goT });
   },
   auto(g, dt, synth) { const s = g.s; s.sq.forEach((q, k) => SK.bot.drag(g, synth, 'b' + k, 0.9 + k * 0.3, [q.x + 8, BR_YT + 8], [q.x + s.S - 8, BR_YT + s.S - 8], 0.18)); },
