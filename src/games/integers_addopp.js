@@ -53,10 +53,10 @@ MG.add({
           else { c.beginPath(); c.moveTo(ax - sz, ay); c.lineTo(ax + sz, ay); c.stroke(); c.globalAlpha = 1 - f; c.beginPath(); c.moveTo(ax, ay - sz + f * 40); c.lineTo(ax, ay + sz + f * 40); c.stroke(); }
         } }); }],
         // the brackets fall away
-        [0.75 * T, g => { S.par.col = 'rgba(0,0,0,0)'; g.sfx('pop');
+        [0.2 * T, g => { S.par.col = 'rgba(0,0,0,0)'; g.sfx('pop');
           M.anim(g, { dur: 0.45 * T, draw(c, g, k) { c.globalAlpha = 1 - k; c.fillStyle = INK; c.font = M.NUMF(44, 500); c.textAlign = 'center';
             for (const [x, d] of [[pb.x - pb.w / 2 + 7, -1], [pb.x + pb.w / 2 - 7, 1]]) { c.save(); c.translate(x + d * k * 14, pb.y + 15 + k * k * 80); c.rotate(d * k * 1.2); c.fillText(d < 0 ? '(' : ')', 0, 0); c.restore(); } } }); }],
-        [0.95 * T, g => { S.o2 = M.op(S.s, 'o2', { _born: -1, pop: g.t, col: GOLD }); S.old = { a: { ...M.box(g, 'a') }, b2: { ...M.box(g, 'b') } }; S.relaidAt = g.t; S.bN.id = 'b2';
+        [0.95 * T, g => { S.o2 = M.op(S.s, 'o2', { _born: -1, pop: g.t, col: GOLD }); S.old = { a: { ...M.box(g, 'a') }, b2: { ...M.box(g, 'b') }, ans: { ...M.box(g, 'ans') } }; S.fresh = true; S.bN.id = 'b2';
           S.ex.items.splice(2, 3, S.o2, M.gap(12), S.bN); place(); M.sparkle(g, 'o2', { n: 10, cols: ['#bfeaff', GOLD, '#fff'] }); g.sfx('magic'); hop(g); }]]);
     };
     M.play(g, {
@@ -87,7 +87,7 @@ MG.add({
     // every number floats in its own bubble
     for (const id of ['a', 'b', 'b2', 'ans']) {
       const b = M.box(g, id), n = M.node(g, id); if (!b || !n || n.hide) continue;
-      const o = glideOff(n, t), q = t === S.relaidAt && S.old[id] ? S.old[id] : { x: b.x + o.x, y: b.y + o.y }; bubble(c, q.x, q.y + Math.sin(t * 1.8 + b.x * 0.03) * 2.5, Math.max(b.w, b.h) / 2 + (id === 'ans' ? 6 : 3));
+      const o = glideOff(n, t), q = S.fresh && S.old[id] ? S.old[id] : { x: b.x + o.x, y: b.y + o.y }; bubble(c, q.x, q.y + Math.sin(t * 1.8 + b.x * 0.03) * 2.5, Math.max(b.w, b.h) / 2 + (id === 'ans' ? 6 : 3));
     }
     // move 2: two bubble copies drift up and merge into one, which shows the sum, then the sum floats down into the answer
     const bl = S.blob; if (bl && t >= bl.t0 && !(bl.gone && t > bl.gone + 0.05)) { const k = M.clamp((t - bl.t0) / bl.dur, 0, 1), e = M.easeIO(k), T = M.pace(g);
@@ -97,7 +97,7 @@ MG.add({
       if (mk > 0) { const rk = bl.res != null ? M.clamp((t - bl.res) / (0.3 * T), 0, 1) : 0, r = r0 * (1 + 0.35 * M.ease(mk)) * (1 + Math.sin(rk * Math.PI) * 0.15);
         bubble(c, bl.mid.x, bl.mid.y, r); if (bl.res != null) { c.save(); c.globalAlpha = rk; txt(c, S.v, bl.mid.x, bl.mid.y, 32, GOLD); c.restore(); } }
     }
-    M.drawEx(g, c, 'ex');
+    M.drawEx(g, c, 'ex'); S.fresh = false; // the first frame after the rewrite: the bubbles stay put until the glide starts
     M.drawUI(g, c);
   },
 });

@@ -9,8 +9,6 @@ stats_mean.js
 longway_array.js
 decimals_round.js
 decimals_tofrac.js
-decimals_mult.js
-decimals_expand.js
 geometry_pyth.js
 geometry_angles.js
 integers_zeropairs.js
@@ -19,12 +17,7 @@ integers_sign.js
 integers_line.js
 integers_order.js
 ratios_table.js
-ratios_scale.js
-lines_slope.js
 lines_intercept.js
-lines_subst.js
-lines_elim.js
-lines_eval.js
 lines_graph.js
 quadratics_factor.js
 quadratics_zero.js
@@ -42,9 +35,6 @@ counting_sigma.js
 counting_fact.js
 counting_perm.js
 counting_comb.js
-limits_sub.js
-limits_factor.js
-limits_inf.js
 derivs_quotient.js
 derivs_trig.js
 integrals_ftc.js
@@ -53,13 +43,11 @@ integrals_riemann.js
 integrals_parts.js
 series_geom.js
 series_ratio.js
-linalg_cross.js
 linalg_inverse.js
 arrows_magnitude.js
 arrows_unit.js
 linalg_transform.js
 modular_mod.js
-modular_binary.js
 modular_inverse.js
 logic_and.js
 logic_demorgan.js
@@ -67,7 +55,6 @@ logic_intersect.js
 logic_union.js
 logic_handshake.js
 logic_pigeon.js
-stats_median.js
 stats_range.js
 stats_sd.js
 chance_z.js
@@ -83,3 +70,8 @@ numbers_prime.js
 lines_pointslope.js
 fractions_divide.js
 derivs_lhopital.js
+carry_time.js
+longway_skip.js
+fractions_equiv.js
+decimals_convert.js
+lines_plot.js

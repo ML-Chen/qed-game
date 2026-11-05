@@ -4,8 +4,9 @@
 // one less is written above it (5 → 4), and a small 1 makes this column's top 12. Then 12 − 7 = 5 drops into the
 // answer. Right to left is the only valid order; a swipe on a column further left only wobbles.
 // Level 0: 2-digit, one borrow. Level 1: 3-digit, one borrow. Level 2: 3-digit, two borrows.
-// Medium mode: the swipe writes the column's subtraction ("12 − 7") in its answer place and the tray asks for it.
-const M = MK, PANEL = 'chalk', INK = SCN.ink(PANEL), BOR = '#ffb070', Y_BOR = 222, Y_TOP = 276, Y_BOT = 336, Y_LINE = 356, Y_ANS = 408, SZ = 48, CW = 66;
+// The working note ("12 − 7 = 5") writes itself on its own row under the answers, then its answer flies up into place.
+// Medium mode: the swipe writes the column's subtraction ("12 − 7") and the tray asks for it.
+const M = MK, PANEL = 'chalk', INK = SCN.ink(PANEL), BOR = '#ffb070', Y_BOR = 198, Y_TOP = 252, Y_BOT = 312, Y_LINE = 332, Y_ANS = 386, Y_NOTE = 442, NS = 40, SZ = 48, CW = 66; // NS: the working note, nearly the size of the column digits
 const colX = (n, j) => 180 + 14 + ((n - 1) / 2 - j) * CW;
 function pick(g) {
   const L = g.level, n = L === 0 ? 2 : 3, r = k => Math.floor(g.rand() * k), want = L === 0 ? [0] : L === 1 ? [g.rand() < 0.5 ? 0 : 1] : [0, 1];
@@ -29,7 +30,7 @@ MG.add({
   },
   init(g) {
     const S = g.s; M.setup(g); Object.assign(S, pick(g)); const n = S.n;
-    S.top = S.A.slice(); S.next = 0; S.swipe = null; S.note = null; S.point = false;
+    S.top = S.A.slice(); S.next = 0; S.swipe = null; S.point = false;
     S.topNode = j => { const r = M.node(g, 'r' + j); return r && !r.hide ? r : M.node(g, 't' + j); }; // the column's current top digit
     const inert = ['minus'];
     M.place(g, 'minus', M.op('-', 'minus'), colX(n, n - 1) - 54, Y_BOT, SZ, { col: INK });
@@ -71,22 +72,23 @@ MG.add({
                       M.sparkle(g, 'o' + j, { n: 10, cols: [BOR, '#fff2b0', '#fff'] }); g.sfx('ding'); hop('laugh'); tn.hlc = null; M.indicate(g, M.node(g, 'o' + j), { sc: 1.25, dur: 0.3 * T }); M.tween(g, tn, { sc: 1.25 }, 0.3 * T, { yoyo: true }); } }); }],
               ]);
             }
-            // the working note writes itself in the answer row: "12 − 7", then (resolve) "= 5"
-            M.at(g, [[t0 * T, g => { S.note = M.row(M.num(top, 'nt'), M.op('-', 'nm'), M.num(b, 'nb'), M.op('=', 'neq', { alpha: 0 }), M.num(diff, 'nd', { alpha: 0 })); S.note.id = 'note';
-              const w = M.lay(S.note, 26).w, x = colX(n, j), cx = j ? Math.min(x, x + 26 - w / 2) : Math.min(x, 334 - w / 2);
-              M.place(g, 'note', S.note, cx, Y_ANS - 4, 26, { col: '#ffe9a8' }); M.inert(g, ['note', 'nt', 'nm', 'nb', 'neq', 'nd']); M.writeIn(g, S.note, { dur: 0.24 * T }); }]]);
+            // the working note writes itself on its own row under the column: "12 − 7", then (resolve) "= 5".
+            // Each column's note has its own key and ids, so a note still fading out never mixes with the next one.
+            M.at(g, [[t0 * T, g => { const nt = M.row(M.num(top, 'nt' + j), M.op('-', 'nm' + j), M.num(b, 'nb' + j), M.op('=', 'neq' + j, { alpha: 0 }), M.num(diff, 'nd' + j, { alpha: 0 })); nt.id = 'note' + j;
+              const w = M.lay(nt, NS).w, x = colX(n, j), cx = M.clamp(x + 10, 26 + w / 2, 334 - w / 2);
+              M.place(g, 'note' + j, nt, cx, Y_NOTE, NS, { col: '#ffe9a8' }); M.inert(g, ['note' + j, 'nt' + j, 'nm' + j, 'nb' + j, 'neq' + j, 'nd' + j]); M.writeIn(g, nt, { dur: 0.24 * T }); }]]);
           },
           resolve(g) {
             const T = M.pace(g), K = g.s.mk; M.show(g, 0.78 * T); delete K.zones['col' + j]; delete K.box['col' + j]; S.next = j + 1;
-            const eq = M.node(g, 'neq'), nd = M.node(g, 'nd'); for (const q of [eq, nd]) { q.alpha = 1; M.writeIn(g, q, { dur: 0.16 * T }); }
+            const eq = M.node(g, 'neq' + j), nd = M.node(g, 'nd' + j), nt = M.node(g, 'note' + j); for (const q of [eq, nd]) { q.alpha = 1; M.writeIn(g, q, { dur: 0.16 * T }); }
             M.indicate(g, nd, { delay: 0.14 * T, dur: 0.24 * T, sc: 1.35 }); g.sfx('ding'); hop();
-            M.at(g, [[0.36 * T, g => { const fb = M.box(g, 'nd'); nd.alpha = 0; g.sfx('swoosh');
-                M.fly(g, { node: M.num(diff), from: [fb.x, fb.y], to: 'a' + j, dur: 0.24 * T, arc: 26, s0: 26, s1: SZ, col: '#fff2b0',
+            M.at(g, [[0.36 * T, g => { const fb = M.box(g, 'nd' + j); nd.alpha = 0; g.sfx('swoosh');
+                M.fly(g, { node: M.num(diff), from: [fb.x, fb.y], to: 'a' + j, dur: 0.24 * T, arc: -20, s0: NS, s1: SZ, col: '#fff2b0',
                   then(g) { const a = M.node(g, 'a' + j); a.v = String(diff); a.hide = j === n - 1 && diff === 0; a.pop = g.t; M.relayout(g, 'aa' + j); M.sparkle(g, 'a' + j, { n: 12, cols: ['#fff2b0', BOR, '#fff'] });
                     g.sfx('coin'); hop('laugh'); g.burst(colX(n, j), Y_ANS - 16, ['#fff2b0', '#ffb070', '#fff'], 10, 120);
                     for (const id of ['t' + j, 'b' + j, 'r' + j, 'o' + j]) { const q = M.node(g, id); if (q) { M.unlight(g, q, { dur: 0.2 * T }); M.tween(g, q, { alpha: 0.6 }, 0.25 * T); } } } }); }],
-              [0.4 * T, g => { M.tween(g, S.note, { alpha: 0 }, 0.2 * T); }],
-              [0.7 * T, g => { delete K.ex.note; S.point = false; }]]);
+              [0.4 * T, g => { if (nt) M.tween(g, nt, { alpha: 0 }, 0.2 * T); }],
+              [0.7 * T, g => { delete K.ex['note' + j]; if (S.swipe && S.swipe.j === j) S.point = false; }]]);
           } }];
       },
       area(g) { return S.next < S.n ? 'col' + S.next : null; },
@@ -104,7 +106,7 @@ MG.add({
   },
   draw(g, c) {
     const S = g.s, t = g.t, n = S.n, K = S.mk;
-    SCN.std(g, c, { scene: 'snow', panel: PANEL, panelY: 316, panelH: 262 });
+    SCN.std(g, c, { scene: 'snow', panel: PANEL, panelY: 316, panelH: 316 });
     // the penguin points at the board while the work is shown, scratches its head at a too-small digit, hops when a step lands
     const hopK = K.lastMove != null && t - K.lastMove < 0.35 ? Math.sin((t - K.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
     const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 && S.face !== 'think' ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
@@ -115,7 +117,7 @@ MG.add({
     const P0 = K.press; if (P0 && /^col/.test(P0.id)) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 10; c.lineCap = 'round'; c.beginPath(); c.moveTo(P0.x0, P0.y0); c.lineTo(P0.x0, Math.max(P0.y0, P0.y)); c.stroke(); c.restore(); }
     const q = S.swipe; if (q && t - q.t0 < 0.3) { const k = M.ease((t - q.t0) / 0.3), x = colX(n, q.j); c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(120,110,70,${0.5 * (1 - k)})`; c.fillRect(x - 28, Y_BOR - 24, 56, (Y_ANS + 14 - Y_BOR + 24) * k); c.restore(); }
     for (let j = 0; j < n; j++) { M.drawEx(g, c, 'tt' + j); M.drawEx(g, c, 'bb' + j); M.drawEx(g, c, 'rr' + j); M.drawEx(g, c, 'oo' + j); M.drawEx(g, c, 'aa' + j); }
-    M.drawEx(g, c, 'note');
+    for (let j = 0; j < n; j++) M.drawEx(g, c, 'note' + j);
     M.drawEx(g, c, 'minus');
     M.drawUI(g, c);
   },

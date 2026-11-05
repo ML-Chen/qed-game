@@ -1,8 +1,13 @@
 // integrals_ftc.js — FTC! Evaluate a definite integral with the Fundamental Theorem of Calculus.
 // A chalkboard in a spring meadow shows ∫ₐᵇ p·x^(p−1) dx = [x^p]ₐᵇ = □ − □, and under the board the area under the
-// graph is shaded between a and b. The player drags the bracket's top limit b into x^p (the first box fills with b^p)
-// and the bottom limit a into x^p (the second box fills with a^p), in either order, then taps the subtraction.
-// Level 0: 2x. Level 1: 2x or 3x². Level 2: 3x² or 4x³. Medium mode: each power and the subtraction open a tray.
+// graph is shaded between a and b. Every move is acted out (show your work):
+//   - Drag the bracket's top limit b (or the bottom limit a, in either order) into F: F = x^p is circled and a copy of it
+//     flies into its box, then b flies onto the x (the box reads b^p) and the graph's edge at b lights up; a note above
+//     the box multiplies it out ("3 · 3 = 9") and the box rolls into the value.
+//   - Tap the subtraction: both values light up, the one taken away is crossed out, the first rolls down to the
+//     answer, and the answer flies down into the shaded area under the graph, which fills in.
+// Level 0: 2x. Level 1: 2x or 3x². Level 2: 3x² or 4x³. Medium mode: each power (once it reads b^p) and the
+// subtraction (once it is crossed out) open a tray.
 const M = MK;
 function pick(g) {
   const R = a => a[Math.floor(g.rand() * a.length)], L = g.level;
@@ -36,6 +41,7 @@ function drawGraph(g, c, S) {
   c.fillStyle = '#3a3050'; c.font = M.NUMF(15); c.textAlign = 'center';
   for (const v of new Set([0, S.a, S.b])) c.fillText(String(v), X(v), yb + 15);
   c.font = M.VARF(15); c.fillStyle = '#2a7ab0'; c.textAlign = 'right'; c.fillText(`y = ${S.p}x` + (S.p > 2 ? ['', '', '²', '³'][S.p - 1] : ''), x1 + 8, yt + 4);
+  S.areaPt = [X((S.a + S.b) / 2) + (S.p > 2 ? 10 : 6), yb - 16];
   if (k > 0) { c.globalAlpha = k; c.fillStyle = '#5a2a10'; c.font = M.NUMF(18 + 8 * k); c.textAlign = 'center'; c.fillText(String(S.Fb - S.Fa), X((S.a + S.b) / 2) + (S.p > 2 ? 10 : 6), yb - 10); }
   c.restore();
 }
@@ -65,19 +71,45 @@ MG.add({
     relay();
     M.inert(g, ['int', 'pa', 'pb', 'eq1', 'eq2', 'brk']);
     g.dur *= (2.6 + 1.05 * 3) / 8;
-    const sq = v => M.sup(M.num(v), M.num(p));
+    const T = M.pace(g), SUB = '#9ad0ff', NOTE = '#ffd27a';
+    const react = (g, e) => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
+    // put one limit into F: a copy of x^p flies out of the bracket into its box, then the limit flies onto its x;
+    // the power is worked out in a note right above the box ("3 · 3 = 9") and collapses into its value
+    const limit = (key, v, slot, Fv, done, wrong) => ({ drag: key, to: ['Fx', slot.id], busy: 0.1, askAt: 0.95 * T, after: 0.85 * T, ask: { v: Fv, wrong },
+      then(g) { S[done] = true; M.show(g, 0.95 * T); S.point = true; react(g, 'think'); g.sfx('whoosh');
+        M.inert(g, [key]); M.circle(g, 'Fx', { col: NOTE, dur: 0.45 * T }); M.tween(g, key === 'hi' ? S.hiN : S.loN, { alpha: 0.35 }, 0.3 * T);
+        M.fly(g, { node: M.sup(M.vr('x'), M.num(p)), from: 'Fx', to: slot.id, delay: 0.08 * T, dur: 0.36 * T, arc: -34, col: '#fff6e0' });
+        M.at(g, [
+          [0.44 * T, g => { slot.xv = M.vr('x', slot.id + 'x', { _born: -1 }); slot.fill = M.sup(slot.xv, M.num(p, null, { _born: -1 }), null, { _born: -1 }); relay(); g.sfx('pop'); }],
+          [0.5 * T, g => { M.circle(g, slot.id + 'x', { col: SUB, dur: 0.4 * T }); M.indicate(g, key === 'hi' ? S.hiN : S.loN, { dur: 0.3 * T, col: '#fff' });
+            M.fly(g, { node: M.num(v, null, { col: SUB }), from: key, to: slot.id + 'x', dur: 0.34 * T, arc: -50, s1: S2, col: SUB }); }],
+          [0.85 * T, g => { slot.fill.base = M.num(v, slot.id + 'b', { col: SUB, _born: -1, pop: g.t }); slot.xv = null; relay(); M.sparkle(g, slot.id + 'b', { n: 8, cols: [SUB, '#fff'] });
+            if (key === 'hi') S.edgeB = g.t; else S.edgeA = g.t; g.sfx('chime'); react(g); }],
+        ]); },
+      resolve(g) { M.show(g, 0.85 * T); M.indicate(g, slot.fill, { dur: 0.35 * T, sc: 1.15, col: NOTE });
+        // the note sits right above the box, kept on the board
+        const nd = M.row(...Array.from({ length: p }, (_, i) => [i ? M.op('·') : null, M.num(v)]).flat(), M.op('='), M.num(Fv)), nw = M.lay(nd, 24).w, bx = M.box(g, slot.id) || { x: 180, y: Y2 };
+        M.note(g, { node: nd, at: [M.clamp(bx.x, 30 + nw / 2, 332 - nw / 2), bx.y - S2 * 1.05], s: 24, col: NOTE, write: 0.28 * T, hold: 0.32 * T, fade: 0.18 * T });
+        M.at(g, [[0.5 * T, g => { slot.fill = M.num(Fv, slot.id + 'v', { pop: g.t }); relay(); M.sparkle(g, slot.id + 'v', { n: 10 }); g.sfx('pop'); react(g, 'wow'); }],
+          [0.85 * T, g => { S[done === 'f1' ? 'r1' : 'r2'] = true; if (S.r1 && S.r2) S.point = false; }]]); } });
     M.play(g, {
       moves(g) {
         const out = []; if (S.done) return out;
-        if (!S.f1) out.push({ drag: 'hi', to: ['Fx', 's1'], busy: 0.1, ask: { v: S.Fb, wrong: [b * p, b + p, b, S.Fb + 1] },
-          then(g) { S.f1 = true; S.s1.fill = sq(b); S.hiN.alpha = 0.4; M.inert(g, ['hi']); S.edgeB = g.t; g.sfx('chime'); relay(); },
-          resolve(g) { S.r1 = true; S.s1.fill = M.num(S.Fb, null, { pop: g.t }); relay(); } });
-        if (!S.f2) out.push({ drag: 'lo', to: ['Fx', 's2'], busy: 0.1, ask: { v: S.Fa, wrong: [a * p, a + p, a + 1, 2] },
-          then(g) { S.f2 = true; S.s2.fill = sq(a); S.loN.alpha = 0.4; M.inert(g, ['lo']); S.edgeA = g.t; g.sfx('chime'); relay(); },
-          resolve(g) { S.r2 = true; S.s2.fill = M.num(S.Fa, null, { pop: g.t }); relay(); } });
-        if (S.r1 && S.r2) out.push({ tap: ['diff', 's1', 's2'], busy: 0.1, ask: { v: S.Fb - S.Fa, wrong: [S.Fb + S.Fa, S.Fa - S.Fb, b - a, S.Fb - S.Fa - 1] },
-          then(g) {}, resolve(g) { S.done = true; S.resAt = g.t; S.diff.items = [M.num(S.Fb - S.Fa, 'res', { pop: g.t })]; M.inert(g, ['res']); relay(); g.sfx('coin');
-            const r = M.box(g, 'res'); if (r) g.burst(r.x, r.y, ['#ffd45a', '#fff', '#9ae07a'], 12, 140); } });
+        if (!S.f1) out.push(limit('hi', b, S.s1, S.Fb, 'f1', [b * p, b + p, b, S.Fb + 1]));
+        if (!S.f2) out.push(limit('lo', a, S.s2, S.Fa, 'f2', [a * p, a + p, a + 1, 2]));
+        // subtract: the two values light up, the one taken away is crossed out, and the first rolls down to the answer,
+        // which then flies down into the shaded area: the integral is that area
+        if (S.r1 && S.r2) out.push({ tap: ['diff', 's1', 's2', 's1v', 's2v'], busy: 0.1, askAt: 0.7 * T, after: 1.25 * T, ask: { v: S.Fb - S.Fa, wrong: [S.Fb + S.Fa, S.Fa - S.Fb, b - a, S.Fb - S.Fa - 1] },
+          then(g) { S.tapped = true; M.show(g, 0.7 * T); S.point = true; react(g, 'think'); M.circle(g, 'diff', { col: NOTE, dur: 0.45 * T });
+            M.indicate(g, S.s1.fill, { delay: 0.15 * T, dur: 0.3 * T, col: NOTE }); M.indicate(g, S.s2.fill, { delay: 0.3 * T, dur: 0.3 * T, col: NOTE });
+            M.strike(g, S.s2.fill, { delay: 0.45 * T, dur: 0.22 * T }); M.strike(g, S.diff.items[1], { delay: 0.45 * T, dur: 0.22 * T }); },
+          resolve(g) { M.show(g, 1.25 * T); const top = S.s1.fill;
+            if (S.Fa) M.roll(g, top, S.Fb - S.Fa, { dur: 0.35 * T }); else M.indicate(g, top, { dur: 0.35 * T });
+            M.tween(g, S.diff.items[1], { alpha: 0 }, 0.25 * T); M.tween(g, S.s2.fill, { alpha: 0 }, 0.25 * T); g.sfx('ding');
+            M.at(g, [[0.4 * T, g => { S.done = true; S.res = M.num(S.Fb - S.Fa, 'res', { pop: g.t }); S.diff.items = [S.res]; M.inert(g, ['res']); relay(); g.sfx('coin'); react(g, 'wow');
+                const r = M.box(g, 'res'); if (r) g.burst(r.x, r.y, ['#ffd45a', '#fff', '#9ae07a'], 12, 140); }],
+              [0.62 * T, g => { const ap = S.areaPt || [150, 520]; M.fly(g, { node: M.num(S.Fb - S.Fa, null, { col: '#ffd45a' }), from: 'res', to: ap, dur: 0.42 * T, arc: -40, s1: 22,
+                then(g) { S.resAt = g.t; S.point = false; react(g, 'laugh'); g.sfx('sparkle'); g.burst(ap[0], ap[1], ['#ffd45a', '#fff', '#ff9a3a'], 12, 120); } }); }]]); } });
         return out;
       },
       area(g) { return !S.f1 ? ['hi', 'Fx'] : !S.f2 ? ['lo', 'Fx'] : ['diff']; },
@@ -87,7 +119,11 @@ MG.add({
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
-    const S = g.s, col = SCN.std(g, c, { scene: 'meadow', panel: 'chalk', panelY: 292, panelH: 196, host: 'beaver', hostX: 316, hostY: 604, hostS: 1.1 });
+    const S = g.s, t = g.t, col = SCN.std(g, c, { scene: 'meadow', panel: 'chalk', panelY: 292, panelH: 196 });
+    // the beaver points at the board while the work is shown, and hops when a step lands
+    const mk = S.mk, hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
+    const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
+    if (typeof ANI !== 'undefined') ANI.draw(c, 'beaver', 316, 604 - hopK * 22, 1.1, { t, pose, expr, facing: -1 }); else SCN.host(g, c, 'beaver', 316, 604, 1.1);
     drawGraph(g, c, S);
     const ib = M.box(g, 'int'); if (ib) intSign(c, ib.x - ib.w / 2 + ib.s * 0.2, Y1 - ib.s * 0.98, Y1 + ib.s * 0.3, col);
     for (const k of ['prob', 'phi', 'plo', 'work', 'hi', 'lo']) M.drawEx(g, c, k);

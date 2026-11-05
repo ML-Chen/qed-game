@@ -6,8 +6,9 @@
 // and the power on the glass panel rolls up with it (e, r, r², r³...). When the bird lands on its star the counter
 // reads a whole number of full turns, "= e" writes itself after the power, and the exponent flies down into |r| = ?.
 // Tapping the tile itself (instead of the button) only wobbles.
-// Level 0: a square turned 90° (order 4). Level 1: a square turned 180° (2) or a triangle turned 120° (3).
-// Level 2: a hexagon turned 120° or 240° (3), or 180° (2): the order depends on the turn, not on the number of sides.
+// Level 0: a square turned 90° (order 4), a triangle turned 120° (3) or a pentagon turned 72° (5). Level 1: a square turned
+// 180° (2), a triangle turned 240° (3), a hexagon turned 120° (3) or an octagon turned 90° (4). Level 2: a hexagon turned
+// 240° (3), 180° (2) or 60° (6), a pentagon turned 144° (5) or an octagon turned 270° (4): the order depends on the turn.
 // Medium mode: once the bird is home, the tray asks for |r|.
 const M = MK, PANEL = 'glass', INK = SCN.ink(PANEL), CX = 180, CY = 448, RAD = 80, BTN = { x: 290, y: 556, r: 34 }, OWL = [40, 620];
 const GOLD = '#ffd23a', ARC = '#ffe27a', DEG = '#1d3a7a';
@@ -22,7 +23,9 @@ MG.add({
   },
   init(g) {
     const S = g.s; M.setup(g); const R = a => a[Math.floor(g.rand() * a.length)], T = M.pace(g);
-    [S.sides, S.deg] = g.level === 0 ? [4, 90] : g.level === 1 ? R([[4, 180], [3, 120]]) : R([[6, 120], [6, 240], [6, 180]]);
+    // [sides, turn]; the order is 360 / gcd(360, turn) and stays at 6 taps or fewer. Levels 1 and 2 mix in turns that are not
+    // the shape's smallest one, so the order depends on the turn, not on the number of sides.
+    [S.sides, S.deg] = g.level === 0 ? R([[4, 90], [3, 120], [5, 72]]) : g.level === 1 ? R([[4, 180], [3, 240], [6, 120], [8, 90]]) : R([[6, 240], [6, 180], [5, 144], [8, 270], [6, 60]]);
     S.ord = 360 / gcd(S.deg, 360); S.k = 0; S.ang = 0; S.spin = null; S.home = -9; S.pips = []; S.hopAt = -9; S.face = 'happy'; S.faceT = -9;
     function gcd(a, b) { return b ? gcd(b, a % b) : a; }
     // the same node objects are kept between rewrites, so the kit glides them instead of fading them in again

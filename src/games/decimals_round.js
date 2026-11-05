@@ -10,7 +10,8 @@
 // Level 0: one number, to the nearest tenth. Level 1: two numbers, to tenths, ones or hundredths.
 // Level 2: two numbers, one where a 9 rounds up and carries (4.97 to 5.0), and deciding digits of 5.
 // Medium mode: after the ball rolls, the player picks the rounded number from a tray.
-const M = MK, INK = SCN.ink('glass'), TAG = '#d8702a', X0 = 62, X1 = 298, SZ = 54;
+const M = MK, INK = SCN.ink('glass'), TAG = '#d8702a', X0 = 62, X1 = 298, SZ = 54, STEP = 0.6; // STEP: seconds per rolled place
+const rollLen = n => Math.max(0.35, (n - 1) * STEP + (n > 1 ? 0.46 : 0) + 0.4); // how long n rolled places take (in units of T)
 const clean = (m, d) => d <= 0 ? String(m) + '0'.repeat(-d) : (s => s.slice(0, -d) + '.' + s.slice(-d))(String(m).padStart(d + 1, '0'));
 const PLACE = ['ones', 'tenths', 'hundredths'], WORD = ['the nearest whole number', 'the nearest tenth', 'the nearest hundredth'];
 function gen(g, q, carry, five) {
@@ -28,15 +29,15 @@ function roundRow(g, R, T, build) {
   const kept = R.nodes.slice(0, R.keepEnd), drop = R.nodes.slice(R.keepEnd), k = R.k; g.sfx(R.up ? 'magic' : 'coin');
   // line the new digits up with the old ones from the right; a change rolls, right to left, one place per beat
   const ch = []; for (let j = 1; j <= k.length; j++) { const n = kept[kept.length - j], v = k[k.length - j]; if (!n) ch.push({ add: v }); else if (n.v !== v) ch.push({ n, v }); }
-  ch.forEach((c, j) => M.at(g, [[j * 0.42 * T, g => {
+  ch.forEach((c, j) => M.at(g, [[j * STEP * T, g => {
     // a carried 1: a small "+1" lifts off the digit that rolled to 0 and hops onto the place to its left
-    if (j > 0 && ch[j - 1].n) M.note(g, { node: M.row(M.op('+'), M.num(1)), at: ch[j - 1].n, off: [0, -40], s: 20, col: '#c8501a', write: 0.1 * T, hold: 0, fly: 0.15 * T, to: ch[j - 1].n, toOff: [-34, -40], s1: 18 });
-    const go = g => { if (c.add) { const nn = M.num(c.add, `d${R.i}_n`, { col: '#1e7a4a' }); R.nodes.unshift(nn); R.keepEnd++; build(R); M.writeIn(g, nn, { dur: 0.22 * T }); M.sparkle(g, nn, { n: 8 }); }
+    if (j > 0 && ch[j - 1].n) { M.indicate(g, ch[j - 1].n, { dur: 0.25 * T, sc: 1.15, col: '#c8501a' }); M.note(g, { node: M.row(M.op('+'), M.num(1)), at: ch[j - 1].n.id, off: [0, 34], s: 26, col: '#c8501a', write: 0.14 * T, hold: 0.08 * T, fly: 0.24 * T, arc: 26, to: (c.n || ch[j - 1].n).id, toOff: c.n ? [0, 34] : [-30, 34], s1: 24 }); }
+    const go = g => { if (c.add) { const nn = M.num(c.add, `d${R.i}_n`, { col: '#1e7a4a' }); R.nodes.unshift(nn); R.keepEnd++; build(R); M.writeIn(g, nn, { dur: 0.22 * T }); M.sparkle(g, nn.id, { n: 8 }); }
       else { M.roll(g, c.n, c.v, { dur: 0.28 * T }); M.indicate(g, c.n, { dur: 0.32 * T, sc: 1.2, col: '#ffb21f' }); } g.sfx('tap'); };
-    if (j > 0) M.at(g, [[0.25 * T, go]]); else go(g);
+    if (j > 0) M.at(g, [[0.46 * T, go]]); else go(g);
     g.s.mk.lastMove = g.t; }]]));
   if (!ch.length) M.indicate(g, R.tag, { dur: 0.35 * T, sc: 1.15, col: '#2a6ab0' }); // rounding down keeps the digit
-  const t1 = Math.max(0.35, (ch.length - 1) * 0.42 + 0.4) * T;
+  const t1 = rollLen(ch.length) * T;
   drop.forEach((n, j) => M.tween(g, n, { alpha: 0, dy: 14 }, 0.3 * T, { delay: t1 - 0.25 * T + j * 0.05 * T }));
   M.at(g, [[t1 + 0.12 * T, g => { R.nodes = R.nodes.slice(0, R.keepEnd); for (const n of R.nodes) { if (n.id) n.col = '#1e7a4a'; } R.done = g.t; build(R);
     M.inert(g, R.nodes.map(n => n.id).filter(Boolean)); g.burst(180, R.y - 6, ['#ffd45a', '#ff9a5a', '#fff'], 12, 120); g.sfx('ding'); g.s.mk.lastMove = g.t; }]]);
@@ -72,18 +73,18 @@ MG.add({
           // 1. the deciding digit: it is circled, the number line between the two neighbours draws itself, and a ball
           //    drops from the digit to where the number really sits on the line
           if (!R.open) out.push({ tap: `d${R.i}_${R.di}`, busy: 0.1, then(g) { M.show(g, 0.95 * T); R.open = g.t + 0.15 * T; R.ballAt = g.t + 0.55 * T; g.sfx('pop'); hop(g);
-            const dn = R.nodes[R.di]; M.circle(g, dn, { dur: 0.55 * T, col: TAG }); M.indicate(g, dn, { dur: 0.45 * T, col: TAG, sc: 1.25 });
+            const dn = R.nodes[R.di]; M.circle(g, dn.id, { dur: 0.55 * T, col: TAG }); M.indicate(g, dn, { dur: 0.45 * T, col: TAG, sc: 1.25 });
             M.at(g, [[0.55 * T, g => g.sfx('tap')], [0.85 * T, g => { g.sfx('coin'); const x = X0 + R.frac * (X1 - X0); g.burst(x, ly(R) - 4, ['#ffe0a0', '#fff'], 6, 60); }]]);
             M.zone(g, 'ball' + R.i, { x: X0 + R.frac * (X1 - X0), y: ly(R) - 16, w: 40, h: 40 }); M.zone(g, 'lo' + R.i, { x: X0, y: ly(R) + 8, w: 64, h: 50 }); M.zone(g, 'hi' + R.i, { x: X1, y: ly(R) + 8, w: 64, h: 50 }); } });
           else if (!R.rolled) {
             const k = R.k, other = clean(R.up ? R.lo : R.lo + 1, R.q), cut = clean(Math.floor(R.m / 10 ** (R.d - R.q - 1)), R.q + 1);
-            const nch = (() => { const kept = R.s.slice(0, R.keepEnd); let n = 0; for (let j = 1; j <= R.k.length; j++) if (kept[kept.length - j] !== R.k[R.k.length - j]) n++; return n; })(), after = (Math.max(0.35, (nch - 1) * 0.42 + 0.4) + 0.5) * T;
+            const nch = (() => { const kept = R.s.slice(0, R.keepEnd); let n = 0; for (let j = 1; j <= R.k.length; j++) if (kept[kept.length - j] !== R.k[R.k.length - j]) n++; return n; })(), after = (rollLen(nch) + 0.5) * T;
             out.push({ drag: 'ball' + R.i, to: (R.up ? 'hi' : 'lo') + R.i, busy: 0.1, area: R.up ? [180, ly(R) - 70, 350, ly(R) + 50] : [10, ly(R) - 70, 180, ly(R) + 50],
               askAt: 0.65 * T, after, ask: { v: M.num(k), wrong: [M.num(other), M.num(cut), M.num(clean(R.m, R.d))] },
               // 2. the ball rolls to the nearer end while "6 ≥ 5" (or "4 < 5") writes itself under the deciding digit
               then(g) { R.rolled = g.t; R.from = M.clamp(g.s.mk.dropX ?? (X0 + R.frac * (X1 - X0)), X0, X1); g.sfx('whoosh'); M.show(g, 0.65 * T); hop(g);
                 const dv = +R.s[R.di], col = R.up ? '#c8501a' : '#2a6ab0';
-                M.note(g, { node: M.row(M.num(dv), M.op(R.up ? '≥' : '<'), M.num(5)), at: `d${R.i}_${R.di}`, off: [0, 44], s: 22, col, write: 0.3 * T, hold: 0.7 * T, fade: 0.25 * T });
+                M.note(g, { node: M.row(M.num(dv), M.op(R.up ? '≥' : '<'), M.num(5)), at: `d${R.i}_${R.di}`, off: [0, 46], s: 26, col, write: 0.3 * T, hold: 0.7 * T, fade: 0.25 * T });
                 M.at(g, [[0.55 * T, g => { const x = R.up ? X1 : X0; g.burst(x, ly(R) - 14, ['#ffd45a', '#fff'], 8, 90); g.sfx('tap'); }]]); },
               // 3. the rounding digit rolls over (a 9 rolls to 0 and carries a 1 into the place on its left), the dropped
               //    digits fall away, and the kept digits glide together and turn green

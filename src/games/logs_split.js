@@ -16,14 +16,16 @@ function gen(g) {
 function build(g) {
   const S = g.s;
   const xn = () => S.k > 1 && !S.pw ? M.sup(S.xv, S.kn, 'xk') : S.xv;
-  S.lg.id = S.split ? 'lx' : 'log'; S.lg2.id = 'ln';
+  // the original log stays with the first factor; the copy that peels off goes to the second
+  const nFirst = S.form === 'mul' || !S.xTop; S.lgN = S.split && !nFirst ? S.lg2 : S.lg; S.lgX = S.lgN === S.lg ? S.lg2 : S.lg;
+  if (S.split) { S.lgN.id = 'ln'; S.lgX.id = 'lx'; } else { S.lg.id = 'log'; S.lg2.id = 'ln2'; }
   const mk = () => {
     if (!S.split) {
       const inner = S.form === 'mul' ? M.row(S.Nn, xn()) : S.xTop ? M.frac(xn(), S.Nn) : M.frac(S.Nn, xn());
       return M.row(S.lg, M.paren(inner, 'par'));
     }
-    const LN = S.nv ? S.nvN : Object.assign(M.row(S.lg2, M.gap(6), S.Nn), { id: 'LN' });
-    const LX = S.pw ? M.row(S.kn, M.gap(12), S.lg, M.gap(6), S.xv) : M.row(S.lg, M.gap(6), xn());
+    const LN = S.nv ? S.nvN : Object.assign(M.row(S.lgN, M.gap(6), S.Nn), { id: 'LN' });
+    const LX = S.pw ? M.row(S.kn, M.gap(12), S.lgX, M.gap(6), S.xv) : M.row(S.lgX, M.gap(6), xn());
     if (S.form === 'mul') return M.row(LN, S.op, LX);
     return S.xTop ? M.row(LX, S.op, LN) : M.row(LN, S.op, LX);
   };
@@ -53,7 +55,7 @@ MG.add({
     const S = g.s; M.setup(g); Object.assign(S, gen(g));
     S.lg = M.txt('log', 'log', { col: LOGC }); S.lg2 = M.txt('log', 'ln', { col: LOGC }); S.Nn = M.num(S.N, 'N'); S.xv = M.vr(S.v, 'x', { col: XC });
     S.kn = M.num(S.k, 'k'); S.op = M.op(S.form === 'mul' ? '+' : '-', 'opr'); S.n = Math.round(Math.log10(S.N)); S.nvN = M.num(S.n, 'nv', { _born: -1 });
-    build(g); M.inert(g, ['par', 'opr', 'ln', 'xk', 'nv']);
+    build(g); M.inert(g, ['par', 'opr', 'ln', 'ln2', 'xk', 'nv']);
     g.dur *= (2.6 + 1.05 * (S.k > 1 ? 3 : 2)) / 8;
     M.play(g, {
       moves(g) {
@@ -65,19 +67,20 @@ MG.add({
           M.indicate(g, S.Nn, { col: NC, dur: 0.3 * T }); M.indicate(g, S.xv, { col: XC, dur: 0.3 * T, delay: 0.18 * T }); M.at(g, [[0.18 * T, g => g.sfx('tap')]]);
           M.at(g, [[0.55 * T, g => { // the brackets melt, the factors move apart and each gets its own log
               const from = { ...M.box(g, 'log') }; S.split = true; S.lg2.alpha = 0; S.op.alpha = 0; build(g); g.sfx('swoosh'); hop(g);
-              M.fly(g, { node: M.txt('log', null, { col: LOGC }), from: [from.x, from.y], to: 'ln', dur: 0.4 * T, arc: -46, s0: from.s, s1: (M.box(g, 'ln') || {}).s,
-                then(g) { S.lg2.alpha = 1; S.lg2.pop = g.t; M.sparkle(g, 'ln', { cols: [LOGC, '#fff'], n: 8 }); g.sfx('pop'); } }); }],
+              const to = S.lg2.id; // the second log (on whichever factor comes second)
+              M.fly(g, { node: M.txt('log', null, { col: LOGC }), from: [from.x, from.y], to, dur: 0.4 * T, arc: -46, s0: from.s, s1: (M.box(g, to) || {}).s,
+                then(g) { S.lg2.alpha = 1; S.lg2.pop = g.t; M.sparkle(g, to, { cols: [LOGC, '#fff'], n: 8 }); g.sfx('pop'); } }); }],
             [1.0 * T, g => { S.op.alpha = 1; M.writeIn(g, S.op, { dur: 0.25 * T }); M.indicate(g, S.op, { delay: 0.1 * T, dur: 0.3 * T, sc: 1.4 }); g.sfx('tap'); hop(g, 'happy'); }]]); } });
         else {
           // log 10ⁿ = n, because 10ⁿ = N: the note asks "10^? = 100" and the answer flies up into the line
           if (!S.nv) out.push({ tap: 'LN', busy: 0.1, askAt: 0.6 * T, after: 1.0 * T, ask: { v: n, wrong: [S.N / 10, S.N, n + 1, 10] },
             then(g) { M.show(g, 0.6 * T); hop(g, 'think'); M.circle(g, 'LN', { col: LOGC, dur: 0.45 * T });
-              const b = M.box(g, 'LN'); S.q = M.num(n, 'nq', { alpha: 0, col: LOGC }); S.qs = M.slot('nqs', { w: 22 });
-              S.note = M.row(M.sup(M.num(10), S.qs), M.op('='), M.num(S.N)); S.note.id = 'note';
-              M.place(g, 'note', S.note, M.clamp(b.x, 100, 260), 386, 34, { col: INK }); M.writeIn(g, S.note, { dur: 0.4 * T, delay: 0.1 * T }); },
-            resolve(g) { M.show(g, 1.0 * T); S.qs.fill = S.q; S.q.alpha = 1; M.relayout(g, 'note'); M.writeIn(g, S.q, { dur: 0.2 * T }); M.indicate(g, S.q, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
+              const b = M.box(g, 'LN'); S.q = M.num('?', 'nq', { col: LOGC }); // the ? rolls over to the answer
+              S.note = M.row(M.sup(M.num(10), S.q), M.op('='), M.num(S.N)); S.note.id = 'note';
+              M.place(g, 'note', S.note, M.clamp(b.x, 100, 236), 386, 34, { col: INK }); M.writeIn(g, S.note, { dur: 0.4 * T, delay: 0.1 * T }); },
+            resolve(g) { M.show(g, 1.0 * T); M.roll(g, S.q, n, { dur: 0.25 * T }); M.relayout(g, 'note'); M.indicate(g, S.q, { delay: 0.2 * T, dur: 0.3 * T, sc: 1.5 }); g.sfx('ding');
               M.at(g, [[0.4 * T, g => { const from = { ...M.box(g, 'nq') }, lb = M.box(g, 'LN');
-                  M.tween(g, S.lg2, { alpha: 0, sc: 0.6 }, 0.25 * T); M.tween(g, S.Nn, { alpha: 0, sc: 0.6 }, 0.25 * T); S.q.alpha = 0; S.nvN.alpha = 0;
+                  M.tween(g, S.lgN, { alpha: 0, sc: 0.6 }, 0.25 * T); M.tween(g, S.Nn, { alpha: 0, sc: 0.6 }, 0.25 * T); S.q.alpha = 0; S.nvN.alpha = 0;
                   M.fly(g, { node: M.num(n, null, { col: LOGC }), from: [from.x, from.y], to: lb ? [lb.x, lb.y] : 'LN', dur: 0.35 * T, arc: 30, s0: from.s, s1: lb ? lb.s : 40,
                     then(g) { S.nv = true; S.nvN.alpha = 1; build(g); S.nvN.pop = g.t; M.sparkle(g, 'nv', { n: 12 }); g.sfx('coin'); hop(g, 'laugh'); } }); }],
                 [0.6 * T, g => { M.tween(g, S.note, { alpha: 0 }, 0.25 * T); }], [0.9 * T, g => { delete g.s.mk.ex.note; }]]); } });
@@ -85,8 +88,8 @@ MG.add({
           if (S.k > 1 && !S.pw) out.push({ drag: 'k', to: ['lx'], busy: 0.1, then(g) {
             M.show(g, 0.95 * T); hop(g, 'think'); M.circle(g, 'k', { dur: 0.35 * T }); const from = { ...M.box(g, 'k') };
             M.at(g, [[0.3 * T, g => { S.pw = true; S.kn.alpha = 0; build(g); g.sfx('swoosh'); const to = { ...M.box(g, 'k') };
-              M.fly(g, { node: M.num(S.k), from: [from.x, from.y], to: [to.x, to.y], dur: 0.45 * T, arc: -70, s0: from.s, s1: to.s,
-                then(g) { S.kn.alpha = 1; S.kn.pop = g.t; M.indicate(g, S.lg, { delay: 0.05 * T, dur: 0.3 * T }); M.sparkle(g, 'k', { n: 10 }); g.sfx('pop'); hop(g, 'laugh'); } }); }]]); } });
+              M.fly(g, { node: M.num(S.k, null, { col: INK }), from: [from.x, from.y], to: [to.x, to.y], dur: 0.45 * T, arc: -70, s0: from.s, s1: to.s,
+                then(g) { S.kn.alpha = 1; S.kn.pop = g.t; M.indicate(g, S.lgX, { delay: 0.05 * T, dur: 0.3 * T }); M.sparkle(g, 'k', { n: 10 }); g.sfx('pop'); hop(g, 'laugh'); } }); }]]); } });
         }
         return out;
       },

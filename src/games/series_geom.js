@@ -8,7 +8,7 @@
 //   tap: "3 ÷ ½ = 6" writes itself under the formula, the 6 flies up into "= ?", and the full quilt glows with its total.
 // Level 0: r = ½ (with small a and r tags under the parts). Level 1: r = ½ or ⅓. Level 2: r = ¼, ⅓ or ⅔.
 // Medium mode: 1 − r and the final quotient are picked from the tray. Wrong moves: a dropped on r, r dropped on a.
-const M = MK, TY = 222, FY = 302, SQ = { x: 92, y: 352, w: 176, h: 176 }, INK = '#1e3050', HX = 304, HY = 608, NOTE = '#2a62b0';
+const M = MK, TY = 222, FY = 302, SQ = { x: 92, y: 366, w: 170, h: 170 }, INK = '#1e3050', HX = 304, HY = 608, NOTE = '#2a62b0';
 const PATCH = ['#e8604a', '#f2a03a', '#f2cc3a', '#7ac060', '#3aa8c8', '#8a70d0', '#e070a0', '#e8604a', '#f2a03a'];
 const POOL = [[[2, 1, 2], [3, 1, 2], [4, 1, 2], [5, 1, 2]], [[3, 1, 2], [5, 1, 2], [2, 1, 3], [4, 1, 3], [6, 1, 3]], [[3, 1, 4], [6, 1, 4], [4, 1, 3], [2, 2, 3], [3, 2, 3]]];
 const gcd = (a, b) => b ? gcd(b, a % b) : a;
@@ -39,7 +39,7 @@ MG.add({
     S.top = M.row({ ...M.gap(40), id: 'sig' }, M.gap(6), S.ta, S.tr, M.op('=', 'teq'), S.ans);
     S.fa = M.vr('a', 'fa'); S.fr = M.vr('r', 'fr'); S.den = M.row(M.num(1, 'one'), M.op('-', 'mn'), S.fr); S.den.id = 'den';
     S.ff = M.frac(S.fa, S.den, 'ff'); S.form = M.row(M.op('=', 'feq'), S.ff);
-    S.placeTop = () => M.place(g, 'top', S.top, 180, TY, 40, { col: INK }); S.placeForm = () => M.place(g, 'form', S.form, 180, FY, 42, { col: INK });
+    S.placeTop = () => M.place(g, 'top', S.top, 180, TY, 40, { col: INK }); S.fx = 180; S.placeForm = () => M.place(g, 'form', S.form, S.fx, FY, 42, { col: INK });
     S.placeTop(); S.placeForm();
     M.inert(g, ['sig', 'tn', 'teq', 'ans', 'feq', 'one', 'mn', 'den', 'q', 'res', 'na']);
     const hop = (g, e) => { S.mk.lastMove = g.t; if (e) { S.face = e; S.faceT = g.t; } };
@@ -67,23 +67,23 @@ MG.add({
             M.fly(g, { node: fr(p, q), from: 'tr', to: 'nr', delay: 0.15 * T, dur: 0.4 * T, arc: -30, s0: 40, s1: 34, col: INK, then(g) { nr.alpha = 1; nr.pop = g.t; M.sparkle(g, 'nr', { n: 8 }); g.sfx('tap'); } });
             let t = 0.55 * T; if (S.aIn) t += cascade(g, t);
             // then 1 − r: "= ½" writes itself beside the denominator
-            M.at(g, [[Math.max(0.6 * T, t - 0.2 * T), g => { M.circle(g, 'den', { dur: 0.45 * T }); M.light(g, 'den', { col: '#ffe08a' }); }]]);
+            M.at(g, [[Math.max(0.6 * T, t - 0.2 * T), g => { M.circle(g, 'den', { dur: 0.45 * T }); M.light(g, 'den', { col: '#e8802a' }); }]]);
             S.askT = Math.max(0.6 * T, t - 0.2 * T) + 0.4 * T; M.show(g, S.askT); },
           resolve(g) { M.show(g, 0.75 * T); const q1 = fr(q - p, q, 'q', { alpha: 0 });
               M.note(g, { node: M.row(M.op('='), fr(q - p, q)), at: 'den', off: [76, 4], s: 28, col: NOTE, write: 0.22 * T, hold: 0.15 * T, fly: 0.28 * T, to: 'den', s1: 28, arc: 20,
                 then(g) { M.unlight(g, 'den'); S.ff.d = q1; q1.alpha = 1; q1.pop = g.t; q1.id = 'q'; S.placeForm(); M.sparkle(g, 'q', { n: 8 }); g.sfx('ding'); hop(g); } }); } });
-        if (S.aIn && S.rIn && !S.done) out.push({ tap: ['ff', 'na', 'q'], busy: 0.1, askAt: 0.7 * T, after: 1.5 * T,
+        if (S.aIn && S.rIn && !S.done) out.push({ tap: ['ff', 'na', 'q'], busy: 0.1, askAt: 0.8 * T, after: 1.5 * T,
           ask: { v: S.sum, wrong: [fr(a * q, q + p), fr(a * (q - p), q), fr(a * p, q), S.sum + a] }, // a/(1 + r), a·(1 − r), a·r
-          then(g) { S.done = true; M.show(g, 0.7 * T); hop(g, 'think'); S.point = true;
-            M.circle(g, 'ff', { dur: 0.55 * T }); S.res = M.num(S.sum, 'res', { alpha: 0, col: '#1a7a4a' });
-            S.note = M.row(M.num(a), M.op('÷'), fr(q - p, q), M.op('='), S.res); M.place(g, 'note', S.note, 180, FY + 62, 30, { col: NOTE }); M.writeIn(g, S.note, { dur: 0.45 * T, delay: 0.1 * T }); },
+          then(g) { S.done = true; M.show(g, 0.8 * T); hop(g, 'think'); S.point = true;
+            S.fx = 116; S.placeForm(); M.circle(g, 'ff', { dur: 0.55 * T, delay: 0.2 * T }); S.res = M.num(S.sum, 'res', { alpha: 0, col: '#1a7a4a' });
+            S.note = M.row(M.num(a), M.op('÷'), fr(q - p, q), M.op('='), S.res); M.place(g, 'note', S.note, 174, FY, 30, { col: NOTE, left: true }); M.writeIn(g, S.note, { dur: 0.45 * T, delay: 0.3 * T }); },
           resolve(g) { M.show(g, 1.5 * T); S.res.alpha = 1; M.writeIn(g, S.res, { dur: 0.2 * T }); M.indicate(g, S.res, { delay: 0.15 * T, dur: 0.3 * T, sc: 1.35 }); g.sfx('ding');
             M.at(g, [[0.4 * T, g => { const v = M.num(S.sum, 'sv', { alpha: 0, col: '#1a7a4a' }); S.ans.fill = v; S.placeTop(); g.sfx('swoosh');
                 M.fly(g, { node: M.num(S.sum, null, { col: '#1a7a4a' }), from: 'res', to: 'sv', dur: 0.45 * T, arc: -40, s0: 30, s1: 40, then(g) { v.alpha = 1; v.pop = g.t; M.sparkle(g, 'sv', { n: 14 }); g.sfx('coin'); hop(g, 'laugh'); } });
                 M.tween(g, S.note, { alpha: 0 }, 0.3 * T, { delay: 0.3 * T }); }],
               // the whole quilt glows: its total is the sum
               [0.9 * T, g => { S.glowAt = g.t; g.sfx('sparkle'); g.burst(SQ.x + SQ.w / 2, SQ.y + SQ.h / 2, ['#fff', '#ffe08a', '#9ad0ff'], 18, 160); }],
-              [1.45 * T, g => { delete g.s.mk.ex.note; S.point = false; }]]); } });
+              [1.2 * T, g => { delete g.s.mk.ex.note; S.fx = 180; S.placeForm(); S.point = false; }]]); } });
         return out;
       },
       area(g) { return !S.aIn || !S.rIn ? ['ta', 'tr', 'ff'] : ['ff']; },
@@ -96,9 +96,9 @@ MG.add({
     const S = g.s, t = g.t, K = S.mk;
     SCN.bg(g, c, 'snow');
     // a slab of clear ice for the math
-    c.save(); c.fillStyle = 'rgba(30,50,90,0.18)'; c.beginPath(); c.roundRect(22, 172, 316, 172, 18); c.fill();
-    const ig = c.createLinearGradient(0, 166, 0, 340); ig.addColorStop(0, 'rgba(240,250,255,0.92)'); ig.addColorStop(1, 'rgba(200,225,245,0.88)'); c.fillStyle = ig;
-    c.beginPath(); c.roundRect(18, 166, 324, 172, 18); c.fill(); c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 2.5; c.stroke();
+    c.save(); c.fillStyle = 'rgba(30,50,90,0.18)'; c.beginPath(); c.roundRect(22, 172, 316, 186, 18); c.fill();
+    const ig = c.createLinearGradient(0, 166, 0, 352); ig.addColorStop(0, 'rgba(240,250,255,0.92)'); ig.addColorStop(1, 'rgba(200,225,245,0.88)'); c.fillStyle = ig;
+    c.beginPath(); c.roundRect(18, 166, 324, 186, 18); c.fill(); c.strokeStyle = 'rgba(255,255,255,0.95)'; c.lineWidth = 2.5; c.stroke();
     c.strokeStyle = 'rgba(150,190,230,0.35)'; c.lineWidth = 1.5; for (const [x0, y0, x1, y1] of [[40, 190, 70, 210], [300, 300, 326, 318], [292, 182, 318, 196]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); } c.restore();
     // the quilt: a wooden frame in the snow, filling patch by patch
     const glow = S.glowAt != null ? M.clamp((t - S.glowAt) / 0.5, 0, 1) : 0;
