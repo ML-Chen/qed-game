@@ -36,7 +36,7 @@
   }
   function newRound(g) { const s = g.s; s.loop = LOOPS[s.order[s.r]]; s.val = s.loop.start; s.card = s.loop.v + (s.loop.step > 0 ? ' += 1' : ' -= 1'); s.ins = null; s.pc = 1; s.pt = g.t; s.cx = HOME.x; s.cy = HOME.y; s.drag = false; s.res = ''; s.laps = 0; s.dizzy = 0; s.born = g.t; s.last = null; }
   MG.add({
-    id: 'stoploop', stage: 'programs', cmd: 'MAKE THE LOOP STOP!', time: 7, mood: 'bright', winText: 'The loop stopped!', failText: 'Still looping!',
+    id: 'stoploop', stage: 'programs', cmd: 'MAKE THE LOOP STOP!', time: 9, mood: 'bright', winText: 'The loop stopped!', failText: 'Still looping!',
     card: { title: 'A loop needs a way to stop', kind: 'Computer science', ref: 'While loops and infinite loops',
       text: 'A while loop checks its test, here i < 3, and if it is True it runs the indented lines underneath, then checks again.\n\nIf nothing inside the loop ever changes i, the test stays True forever. That is an infinite loop: the program never moves on.\n\nAdding i += 1 inside the loop makes i grow by one each time round. After three laps the test is False and the loop ends. Put that line below the loop instead and it is never reached, because the loop never finishes.',
       note: 'A loop must change something each time round, so that its test eventually becomes False and it stops.' },
