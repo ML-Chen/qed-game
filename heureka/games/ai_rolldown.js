@@ -66,7 +66,7 @@ MG.add({
     c.fillStyle = fg; c.fillRect(0, 270, 360, 370); c.restore();
     for (let i = 0; i < 5; i++) { const fx = ((t * 12 + i * 90) % 460) - 50, fy = 300 + i * 60; c.fillStyle = `rgba(255,255,255,${0.18 * (1 - lift)})`; c.beginPath(); c.ellipse(fx, fy, 70, 16, 0, 0, 7); c.fill(); }
     // the model's guess: a line through the data; the red sticks are its errors, and they shrink as the penguin goes down
-    { const C = CH, w = C.x1 - C.x0, h = C.y1 - C.y0, m = 0.62 + (kk - s.kmin) * 0.11, b0 = 0.13, px = u => C.x0 + 12 + u * (w - 24), py = v => C.y1 - 8 - v * (h - 16);
+    { const C = CH, w = C.x1 - C.x0, h = C.y1 - C.y0, m = 0.62 + Math.sign(kk - s.kmin || 1) * Math.max(0, errAt(s, kk) - 0.12) * 1.6, b0 = 0.13 - Math.sign(kk - s.kmin || 1) * Math.max(0, errAt(s, kk) - 0.12) * 0.25, px = u => C.x0 + 12 + u * (w - 24), py = v => C.y1 - 8 - v * (h - 16);
       c.save(); c.fillStyle = 'rgba(255,255,255,0.92)'; c.beginPath(); c.roundRect(C.x0, C.y0, w, h, 10); c.fill(); c.beginPath(); c.roundRect(C.x0, C.y0, w, h, 10); c.clip();
       c.strokeStyle = 'rgba(60,70,120,0.25)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(C.x0, C.y0 + i * h / 4); c.lineTo(C.x1, C.y0 + i * h / 4); c.stroke(); }
       for (const [u, v] of DOTS) { const lv = b0 + (u - 0.5) * m + 0.35; c.strokeStyle = '#e83a5a'; c.lineWidth = 3; c.beginPath(); c.moveTo(px(u), py(v)); c.lineTo(px(u), py(lv)); c.stroke(); }

@@ -21,7 +21,7 @@ function paintStage(o) {
   }
 }
 MG.add({
-  id: 'howl', stage: 'robots', cmd: 'MOVE MICS AWAY FROM SPEAKERS!', time: 6, mood: 'party', winText: 'Feedback!', failText: 'SCREECH!',
+  id: 'howl', stage: 'robots', cmd: 'MOVE MICS AWAY FROM SPEAKERS!', time: 6, mood: 'party', winText: 'Howl gone!', failText: 'SCREECH!',
   card: { title: 'When each echo comes back bigger', kind: 'Control', ref: 'Positive feedback (audio feedback)',
     text: 'A microphone picks up sound, an amplifier makes it louder, and a loudspeaker plays it. If the speaker\'s sound reaches the microphone again, it goes round the loop again. That is called feedback.\n\nWhen the microphone is close, each trip round comes back louder than the last, and in a moment it becomes a howl. Move the microphone away and each trip comes back quieter, so the sound dies out. The test is whether one trip round the loop makes the sound bigger or smaller. The same rule decides whether any feedback loop, in a robot, a market or a climate, settles down or runs away.',
     note: 'A feedback loop runs away when each trip round makes the signal bigger, and dies down when it makes it smaller.' },
@@ -62,9 +62,9 @@ MG.add({
       // speaker, louder each lap while the loop gain is over 1, softer each lap once it is under 1
       const ang = Math.atan2(m.y - best[1], m.x - best[0]);
       for (let i = 0; i < 5; i++) {
-        const k = ((t * 1.8 + i / 5) % 1), lap = run ? 0.55 + 0.45 * k : 1 - 0.6 * k, x = SK.lerp(best[0], m.x - 10, k), y = SK.lerp(best[1], m.y - 40, k), r = 12 + k * 14 + a * 34 * lap;
-        c.strokeStyle = run ? `rgba(255,${200 - 160 * a},${120 - 100 * a},${0.3 + 0.65 * a})` : `rgba(140,220,255,${0.25 + 0.5 * a})`; c.lineWidth = 3 + a * 7 * lap;
-        c.beginPath(); c.arc(x, y, r, ang - 0.8, ang + 0.8); c.stroke();
+        const k = ((t * 1.6 + i / 5) % 1), r = 26 + k * (bd + 20 + 50 * a), fade = (1 - k) * (0.35 + 0.65 * Math.min(1, a * 1.5));
+        c.strokeStyle = run ? `rgba(255,${190 - 150 * a},${110 - 90 * a},${fade})` : `rgba(140,220,255,${fade * 0.8})`; c.lineWidth = 2.5 + a * 8;
+        c.beginPath(); c.arc(best[0], best[1], r, ang - 1.3, ang + 1.3); c.stroke();
         const kb = ((t * 1.8 + i / 5 + 0.5) % 1), bx = SK.lerp(m.x + 16, best[0], kb), by = SK.lerp(m.y - 4, best[1] + 24, kb) + Math.sin(kb * Math.PI) * 24;
         c.fillStyle = run ? `rgba(255,${180 - 120 * a},90,${0.4 + 0.5 * a})` : 'rgba(140,220,255,0.5)'; c.beginPath(); c.arc(bx, by, 3 + a * 5, 0, 7); c.fill();
       }

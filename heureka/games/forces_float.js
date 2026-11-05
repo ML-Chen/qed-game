@@ -36,7 +36,7 @@
     c.restore();
   }
   MG.add({
-    id: 'float', stage: 'forces', cmd: 'SHAPE THE CLAY INTO A BOAT!', time: 7, mood: 'sea', winText: 'Buoyancy!', failText: 'Glug!',
+    id: 'float', stage: 'forces', cmd: 'SHAPE THE CLAY INTO A BOAT!', time: 7, mood: 'sea', winText: 'It floats!', failText: 'Glug!',
     card: { title: 'A boat shape floats', kind: 'Physics', ref: 'Buoyancy',
       text: 'Anything in water pushes some water out of the way, and the water pushes back up on it. That push up is called buoyancy.\n\nA lump of clay pushes aside only a little water, less than its own weight, so it sinks. Spread the same clay into a wide bowl and it pushes aside much more water before the rim goes under, so it floats.\n\nThe heavier the load, the lower the boat sits. Spread the clay too thin and the walls are so low that water pours in.',
       note: 'A thing floats when the water it pushes aside weighs as much as the thing itself.' },

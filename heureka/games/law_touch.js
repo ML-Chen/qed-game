@@ -60,7 +60,7 @@ function stamp(c, x, y, rot) { // the copyright stamp: a red rubber stamp with a
   c.restore();
 }
 MG.add({
-  id: 'addtouch', stage: 'law', cmd: 'ADD YOUR TOUCH!', time: 6, mood: 'desert', winText: 'Human author!', failText: 'No author!',
+  id: 'addtouch', stage: 'law', cmd: 'PAINT YOUR OWN PARTS IN!', time: 6, mood: 'desert', winText: 'Human author!', failText: 'No author!',
   card: { title: 'A person has to make it', kind: 'Law', ref: 'Copyright and AI (US Copyright Office, 2025; Thaler v. Perlmutter)',
     text: 'US copyright protects works made by people. The US Copyright Office says that a picture made by an AI on its own, even from a person\'s prompt, can\'t be copyrighted. A federal appeals court agreed in 2025, in a case called Thaler v. Perlmutter.\n\nThe parts a person creatively adds, changes, selects or arranges can be protected, so the stamp landed only on the penguin\'s pieces. The robot\'s mountains stay free for anyone to use. The rules are still being worked out, and other countries differ.\n\nGeneral information about US law, not legal advice.',
     note: 'In the US, work made by AI alone can\'t be copyrighted; the parts a person creatively made or arranged can be.' },
@@ -104,6 +104,10 @@ MG.add({
     if (held) part(c, held.kind, held.x, held.y, 1.05);
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'penguin', 36, 620, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
+    // labels: the robot (an AI), its picture, the stamp, and your own pieces
+    SK.tag(c, 'AI', 40, 336, 18); SK.tag(c, 'AI picture', 180, CV.y + CV.h + 22, 18);
+    if (!s.bonk) SK.tag(c, 'Copyright', sx, sy - 64, 18, '#ffd0d0');
+    if (s.parts.some(p => p.st === 'tray')) SK.tag(c, 'Your art', 212, 498, 18, '#d0ffd8');
     const nx = s.parts.find(p => p.st === 'tray');
     if (nx && !held && !g.done) { SK.glow(c, g, nx.x, nx.y, 30); SK.glow(c, g, nx.slot[0], nx.slot[1], 30, '#fff6ea'); }
     if (nx && !held) SK.demo(g, c, 'drag', [nx.x, nx.y], nx.slot);

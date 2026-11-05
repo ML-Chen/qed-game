@@ -64,7 +64,7 @@ function robot(c, b, t) { // a squat delivery robot: body, wheels, a face screen
 }
 const btnPos = b => [b.x, b.y - 32 * RS];
 MG.add({
-  id: 'estop', stage: 'robots', cmd: 'SLAM EVERY RED STOP BUTTON!', time: 6, mood: 'party', winText: 'Power cut!', failText: 'Splat!',
+  id: 'estop', stage: 'robots', cmd: 'SLAM EVERY RED STOP BUTTON!', time: 6, mood: 'party', winText: 'Cake saved!', failText: 'Splat!',
   card: { title: 'The big red button', kind: 'Robotics', ref: 'Emergency stop (e-stop)',
     text: 'Every real robot has a big red emergency stop button. Pressing it cuts the power to the motors directly, through its own wires, so the robot stops whatever its software is doing.\n\nThese robots\' software has frozen: their screens show a spinning wheel. A pause button on that screen would be handled by the same stuck software, so it might do nothing. The emergency stop does not ask the software. That is why factory robots, many machines and even treadmills have one, and why people who work near robots learn where it is first.',
     note: "An emergency stop cuts the motors' power directly, so it works even when the robot's software is stuck." },

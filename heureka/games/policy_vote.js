@@ -39,9 +39,9 @@ function flag(c, f, t, h, o = {}) { // a pole planted at (f.x, BASE), its flag r
   if (o.crown) { c.save(); c.translate(x + 27, fy - 32 - Math.abs(Math.sin(t * 6)) * 4); c.fillStyle = '#f6c445'; c.strokeStyle = '#a8701a'; c.lineWidth = 2; c.beginPath(); c.moveTo(-14, 8); c.lineTo(-14, -6); c.lineTo(-7, 2); c.lineTo(0, -10); c.lineTo(7, 2); c.lineTo(14, -6); c.lineTo(14, 8); c.closePath(); c.fill(); c.stroke(); c.restore(); }
   c.restore();
 }
-function spot(f, k) { return [f.x + 16 + ((k % 3) - 1) * 28 + (Math.floor(k / 3) % 2) * 12, BASE + 30 + Math.floor(k / 3) * 28]; }
+function spot(f, k) { return [f.x + 18 + ((k % 3) - 1) * 30 + (Math.floor(k / 3) % 2) * 12, BASE + 34 + Math.floor(k / 3) * 32]; }
 MG.add({
-  id: 'splitvote', stage: 'policy', cmd: 'SPLIT THE VOTE!', time: 6, mood: 'bright', winText: 'Spoiler effect!', failText: 'Pizza wins!',
+  id: 'splitvote', stage: 'policy', cmd: 'MAKE TACOS WIN THE VOTE!', time: 6, mood: 'bright', winText: 'Pizza split, tacos win!', failText: 'Pizza wins!',
   card: { title: 'Look-alikes split the vote', kind: 'Civics', ref: 'The spoiler effect in plurality voting',
     text: 'In this vote, the flag with the most fans wins, even with less than half. That rule is called plurality voting, or "first past the post."\n\nThe pizza fans were the biggest group. When similar choices joined, the pizza fans spread out across pizza, pasta and ravioli, and tacos won with a smaller crowd. A similar choice that pulls votes away like this is called a spoiler.\n\nSome places use other counting rules, such as runoffs or ranked-choice voting, partly to avoid spoilers. Each rule has its own trade-offs, and people disagree about which is best.',
     note: 'When the most votes wins, similar candidates can split their supporters and let a less popular one win.' },
@@ -91,11 +91,19 @@ MG.add({
     const cnt = s.flags.map((f, i) => s.voters.filter(v => v.f === i).length), best = Math.max(...cnt), lead = cnt.filter(x => x === best).length === 1 ? cnt.indexOf(best) : -1;
     const held = SK.dragging(g);
     for (const [i, f] of s.flags.entries()) if (f.planted) flag(c, f, t, s.h[i], { crown: (g.done || !s.check) && i === lead });
+    // name each planted flag at the top of its pole, and the crowd
+    const NAMES = { pizza: 'Pizza', tacos: 'Tacos', pasta: 'Pasta', ravioli: 'Ravioli', lasagne: 'Lasagne' };
+    for (const f of s.flags) if (f.planted) { const slot = Math.round((f.x - 34) / 54); SK.tag(c, NAMES[f.kind] + ' ' + s.voters.filter(v => s.flags[v.f] === f).length, SK.clamp(f.x + 14, 40, 320), BASE - 168 - (slot % 2) * 28, 18, f.kind === 'tacos' ? '#c8f0d0' : '#fff6ea'); }
+    SK.tag(c, 'Voters', 180, 524, 18);
     const vs = s.voters.slice().sort((a, b) => a.y - b.y);
-    for (const v of vs) { const mine = v.f === lead; SK.animal(c, v.kind, v.x, v.y, 0.52, { t, phase: v.ph, pose: g.done && mine ? 'cheer' : 'idle', expr: g.done && mine ? 'laugh' : 'happy', facing: v.x < s.flags[v.f].x + 20 ? 1 : -1 }); }
+    for (const v of vs) { const mine = v.f === lead; SK.animal(c, v.kind, v.x, v.y, 0.64, { t, phase: v.ph, pose: g.done && mine ? 'cheer' : 'idle', expr: g.done && mine ? 'laugh' : 'happy', facing: v.x < s.flags[v.f].x + 20 ? 1 : -1 }); }
     // the fox on the blanket with the spare flags
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'fox', 120, 602, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', hold: c2 => food(c2, 'tacos', 0, -4, 1) });
+    // the fox wants tacos: a thought bubble over its head
+    c.save(); c.fillStyle = 'rgba(255,255,255,0.92)'; c.beginPath(); c.ellipse(70, 488, 30, 22, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(96, 516, 6, 0, TAU); c.fill(); c.beginPath(); c.arc(106, 530, 3.5, 0, TAU); c.fill(); c.restore(); food(c, 'tacos', 70, 490, 1.3);
+    // where a look-alike flag can go: a dashed ring by the pizza crowd
+    const nf = s.flags.find(f => !f.planted); if (nf && !g.done) { const free = [88, 142, 196].find(x => !s.flags.some(o => o.planted && Math.abs(o.x - x) < 20)); if (free != null) { c.save(); c.strokeStyle = 'rgba(255,246,234,0.8)'; c.lineWidth = 3; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.ellipse(free, BASE, 22, 8, 0, 0, TAU); c.stroke(); c.restore(); } }
     for (const f of s.flags) if (!f.planted && f !== held) flag(c, f, t, 60, { tilt: 0.25 });
     if (held) flag(c, held, t, 60, { tilt: 0.1 });
     const nx = s.flags.find(f => !f.planted); if (nx && !held && !g.done) { SK.glow(c, g, nx.x + 40, nx.y - 96, 32); SK.demo(g, c, 'drag', [nx.x + 40, nx.y - 96], [110, BASE - 96]); }

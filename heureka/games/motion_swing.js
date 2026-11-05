@@ -63,7 +63,7 @@
   const SNOW = { x: 306, y: 542 };
   const cur = s => s.tg.find(b => !b.hit);
   MG.add({
-    id: 'swing', stage: 'motion', cmd: 'LET GO TO HIT THE TARGETS!', time: 6, mood: 'bright', winText: 'Centripetal!', failText: 'Whoops!',
+    id: 'swing', stage: 'motion', cmd: 'LET GO TO HIT THE TARGETS!', time: 6, mood: 'bright', winText: 'Straight off!', failText: 'Whoops!',
     card: { title: 'Going round needs a pull', kind: 'Physics', ref: 'Centripetal force',
       text: 'A moving ball wants to go straight. To make it go round in a circle, something has to pull it toward the middle all the time. Here the string does the pulling. That pull toward the centre is called centripetal force.\n\nWhen you let go, the pull stops. The ball then flies off in a straight line in the direction it was moving at that moment. That line just touches the circle. The ball does not fly straight outward.\n\nSpin faster and the string has to pull much harder, until it snaps.',
       note: 'Going round in a circle needs a pull toward the centre. Without the pull, the ball goes straight on.' },

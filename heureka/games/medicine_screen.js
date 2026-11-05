@@ -22,7 +22,7 @@ function paintFair(o) {
 const pos = i => [X0 + (i % COLS) * DX + (Math.floor(i / COLS) % 2 ? 10 : -10), Y0 + Math.floor(i / COLS) * DY];
 
 MG.add({
-  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST ALL 40 ANIMALS!', time: 6, mood: 'party', winText: 'False alarms!', failText: 'Missed some!',
+  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST ALL 40 ANIMALS!', time: 6, mood: 'party', winText: 'Only one was sick!', failText: 'Missed some!',
   card: { title: 'Most alarms can be false', kind: 'Medicine', ref: 'Screening tests and false positives',
     text: 'No test is perfect. A good test still lights up for a few healthy people by mistake. That is called a false positive.\n\nWhen an illness is rare, almost everyone tested is healthy, so a few mistakes among them add up to more lit-up people than there are sick ones. Here, one animal in 40 was sick, but five lit up. A second, more careful test showed that four of them were fine. When an illness is common, most of the lit-up people really are sick.\n\nThat is why doctors confirm a positive screening result with a second test before treating.',
     note: 'When an illness is rare, most positive results from a screening test are false alarms.' },

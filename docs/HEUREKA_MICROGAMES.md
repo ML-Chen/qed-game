@@ -45,6 +45,7 @@ MG.add({
 - `SK.dragStart(g, obj, x, y)`, `SK.dragMove(g, x, y)` (moves `obj` with the finger), `SK.dragEnd(g)` → `{ obj, vx, vy, x, y }` (release velocity in px/s), `SK.dragging(g)`, `SK.pick(items, x, y, r)`.
 - `SK.holdStart(g)`, `SK.held(g)` (seconds so far), `SK.holdEnd(g)` (seconds held).
 - `SK.step(body, dt, { gy, floor, left, right, drag, mu })`: gravity, bounces (`body.e`) and floor friction (`body.mu`); returns 'floor' or 'wall' on a bounce.
+- Drags (the owner: "if you want me to drag something, that has to be obvious"): `SK.grab(c, g, x, y, r)` on the thing you move, `SK.target(c, g, x, y, r, { w, h })` on where it goes, `SK.arrow(c, g, ax, ay, bx, by)` between them; `SK.glow` only for "tap this". All shown at levels 0–1 until the drag starts, at level 2 when idle.
 - `SK.tag(c, text, x, y, size)`: a short label on a dark pill (at least 18 px). `SK.shadow`, `SK.ball(c, x, y, r, col)`, `SK.animal(c, kind, x, y, s, o)`, `SK.hand`.
 - `SK.clamp`, `SK.lerp`, `SK.easeOut`, `SK.easeInOut`, `SK.dist`.
 - Bot: `SK.bot.tap(g, synth, key, t, x, y)`, `SK.bot.drag(g, synth, key, t, [x0, y0], [x1, y1], dur)`, `SK.bot.hold(g, synth, key, t, x, y, dur)`; call them every frame from `auto`, each acts once at time `t`.

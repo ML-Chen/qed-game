@@ -31,7 +31,7 @@ function lamp(c, x, y, r, on, col = '#ffd24a', off = '#2a2a34') {
   else { c.fillStyle = off; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
 }
 MG.add({
-  id: 'latch', stage: 'circuits', cmd: 'TAP TO STORE THE CODE!', time: 7, mood: 'night', winText: 'Memory!', failText: 'Not stored!',
+  id: 'latch', stage: 'circuits', cmd: 'TAP TO STORE THE CODE!', time: 7, mood: 'night', winText: 'Code stored!', failText: 'Not stored!',
   card: { title: 'Memory that copies on the tick', kind: 'Engineering', ref: 'The D flip-flop',
     text: 'A flip-flop is a tiny memory that holds one bit: a 1 (lit) or a 0 (dark). It has a data input and a clock input. Whatever the data says at the instant the clock ticks is copied into the memory. Between ticks, the data can wiggle all it likes and the memory stays the same.\n\nHere you are the clock: each tap is one tick. Chips are full of flip-flops, and a real clock ticks billions of times a second, so every bit moves along in step. A row of flip-flops filled one tick at a time, like this one, is called a shift register.',
     note: 'A flip-flop copies its input only at the tick of the clock and holds it until the next tick.' },

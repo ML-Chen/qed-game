@@ -1,97 +1,120 @@
-// CONTROL! (physics PHS-38) — a reactor core in a pool: yellow fuel rods, and dark control rods that hang from a bar.
-// Drag the bar up to pull the rods out, down to push them in. Every split frees 2 or 3 neutrons; the rods soak up the
-// extras. With the rods just right, each split causes exactly one more and the neutron counter holds steady in the green
-// band, which fills the ring. Pull them all out and the count runs away: alarms flash and the beaver dives under the
-// desk. Level 2: the reaction answers the rods only after a delay, so you have to move early and gently.
+// CONTROL (physics PHS-38) — a reactor that powers a little town. Inside the core you see the chain reaction itself:
+// a neutron (blue dot) hits a uranium atom, the atom splits with a flash and throws out 2 or 3 new neutrons, which fly
+// straight on and split more atoms. Control rods (dark bars) soak up the neutrons that touch them. Drag the lever beside
+// the core to push the rods in or pull them out. Too far in: the chain dies out and the town goes dark. Too far out:
+// splits multiply, the core glows red, alarms ring and steam pours out. Just right: each split causes about one more,
+// the power stays steady and the town's houses light up one by one. Level 2: some neutrons come out late, so the
+// reaction answers the rods only after a delay.
 (() => {
-  const CORE = { l: 62, r: 258, t: 330, b: 556 }, ROD = 232, TIP_OUT = 346, TIP_IN = 548, BAR = { x: 300, t: 196, b: 520 };
-  const NMIN = Math.log(0.02), NMAX = Math.log(20), BAND = [Math.log(0.7), Math.log(1.45)];
-  const barY = ln => SK.lerp(BAR.b, BAR.t, (SK.clamp(ln, NMIN, NMAX) - NMIN) / (NMAX - NMIN));
-  const FUEL = [86, 136, 184, 234], CTRL = [111, 160, 209];
-  function paintHall(o) {
-    const bg = o.createLinearGradient(0, 0, 0, 640); bg.addColorStop(0, '#1a2440'); bg.addColorStop(1, '#2a3a58'); o.fillStyle = bg; o.fillRect(0, 0, 360, 640);
-    o.strokeStyle = 'rgba(160,190,230,0.08)'; o.lineWidth = 2; for (let x = 0; x < 360; x += 45) { o.beginPath(); o.moveTo(x, 0); o.lineTo(x, 640); o.stroke(); }
-    o.fillStyle = 'rgba(255,210,90,0.15)'; for (let x = -20; x < 380; x += 40) { o.beginPath(); o.moveTo(x, 600); o.lineTo(x + 20, 600); o.lineTo(x + 40, 640); o.lineTo(x + 20, 640); o.fill(); }
-    // the pool and the core vessel
-    o.fillStyle = '#3a4a68'; o.beginPath(); o.roundRect(CORE.l - 22, CORE.t - 14, CORE.r - CORE.l + 44, CORE.b - CORE.t + 34, 16); o.fill();
-    o.fillStyle = '#0a2a48'; o.beginPath(); o.roundRect(CORE.l - 10, CORE.t - 4, CORE.r - CORE.l + 20, CORE.b - CORE.t + 14, 10); o.fill();
-    o.fillStyle = '#5a6a88'; o.fillRect(CORE.l - 26, CORE.t - 20, CORE.r - CORE.l + 52, 12); o.fillStyle = '#8a9ab8'; o.fillRect(CORE.l - 26, CORE.t - 20, CORE.r - CORE.l + 52, 3);
-    // the counter's bar: dark track, green band
-    o.fillStyle = '#121a2a'; o.beginPath(); o.roundRect(BAR.x - 20, BAR.t - 10, 40, BAR.b - BAR.t + 20, 12); o.fill();
-    o.fillStyle = '#3aa85a'; o.fillRect(BAR.x - 16, barY(BAND[1]), 32, barY(BAND[0]) - barY(BAND[1]));
-    o.fillStyle = 'rgba(232,74,58,0.45)'; o.fillRect(BAR.x - 16, BAR.t - 6, 32, barY(Math.log(6)) - BAR.t + 6);
-    o.strokeStyle = 'rgba(255,255,255,0.2)'; o.lineWidth = 1; for (let y = BAR.t; y <= BAR.b; y += 20) { o.beginPath(); o.moveTo(BAR.x - 16, y); o.lineTo(BAR.x - 8, y); o.stroke(); }
-    // the control desk the beaver works at
-    o.fillStyle = '#4a5a7a'; o.fillRect(250, 566, 110, 74); o.fillStyle = '#6a7a9a'; o.fillRect(246, 560, 118, 10);
-    for (let i = 0; i < 4; i++) { o.fillStyle = ['#ff6a5a', '#ffd45a', '#6ae07a', '#6ac8ff'][i]; o.beginPath(); o.arc(268 + i * 22, 584, 5, 0, 7); o.fill(); }
+  const CORE = { l: 34, r: 286, t: 300, b: 548 }, LEV = { x: 322, t: 300, b: 548 }, RODS = [92, 160, 228], RW = 14;
+  const ATOMS = []; for (let j = 0; j < 6; j++) for (let i = 0; i < 6; i++) ATOMS.push([56 + i * 42 - (i >= 3 ? 0 : 0), 322 + j * 42]);
+  const SPEED = 230, LIFE = 1.5, HIT = 8, COOL = 1.0, BAND = [7, 17], MAXN = 70, HOUSES = 6;
+  const town = [[150, 214], [182, 206], [214, 216], [246, 204], [278, 212], [310, 202]];
+  function paintPlant(o) {
+    const sky = o.createLinearGradient(0, 0, 0, 290); sky.addColorStop(0, '#0c1236'); sky.addColorStop(1, '#2a2a5a'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
+    const rnd = P.rng(8); for (let i = 0; i < 40; i++) { o.fillStyle = `rgba(255,250,220,${0.3 + rnd() * 0.5})`; o.beginPath(); o.arc(rnd() * 360, rnd() * 180, 0.6 + rnd() * 1.2, 0, 7); o.fill(); }
+    o.fillStyle = '#1e2a3a'; o.beginPath(); o.moveTo(0, 250); o.quadraticCurveTo(120, 200, 230, 214); o.quadraticCurveTo(300, 222, 360, 196); o.lineTo(360, 290); o.lineTo(0, 290); o.fill();
+    // the plant building that holds the core, and its cooling tower
+    o.fillStyle = '#2a3a58'; o.fillRect(0, 262, 360, 378); o.fillStyle = '#3a4a6a'; o.fillRect(0, 262, 360, 6);
+    o.fillStyle = '#4a5a7a'; o.beginPath(); o.moveTo(40, 262); o.quadraticCurveTo(52, 220, 44, 182); o.lineTo(96, 182); o.quadraticCurveTo(88, 220, 100, 262); o.fill();
+    // the core: a thick steel tank with water inside
+    o.fillStyle = '#5a6a88'; o.beginPath(); o.roundRect(CORE.l - 12, CORE.t - 12, CORE.r - CORE.l + 24, CORE.b - CORE.t + 24, 14); o.fill();
+    o.fillStyle = '#0a2440'; o.beginPath(); o.roundRect(CORE.l, CORE.t, CORE.r - CORE.l, CORE.b - CORE.t, 8); o.fill();
+    // the lever's track
+    o.fillStyle = '#121a2a'; o.beginPath(); o.roundRect(LEV.x - 9, LEV.t - 6, 18, LEV.b - LEV.t + 12, 9); o.fill();
+    o.fillStyle = 'rgba(255,255,255,0.25)'; for (let y = LEV.t; y <= LEV.b; y += 31) o.fillRect(LEV.x + 12, y - 1, 8, 2);
+  }
+  function house(c, x, y, b, i, t) {
+    c.fillStyle = '#3a3048'; c.beginPath(); c.moveTo(x - 13, y); c.lineTo(x, y - 12); c.lineTo(x + 13, y); c.lineTo(x + 13, y + 18); c.lineTo(x - 13, y + 18); c.fill();
+    const glow = b * (0.85 + 0.15 * Math.sin(t * 3 + i)); c.fillStyle = b > 0.05 ? `rgba(255,${200 + 30 * glow},${90 + 60 * glow},${0.25 + 0.75 * glow})` : '#1a1626';
+    c.fillRect(x - 8, y + 3, 6, 6); c.fillRect(x + 2, y + 3, 6, 6);
+    if (b > 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,210,120,${0.18 * b})`; c.beginPath(); c.arc(x, y + 6, 22, 0, 7); c.fill(); c.restore(); }
+  }
+  function splitAt(g, s, a, x, y) {
+    a.cool = COOL; s.splits.push({ x, y, t: g.t }); s.count++;
+    const k = g.rand() < 0.5 ? 2 : 3;
+    for (let i = 0; i < k; i++) { const ang = g.rand() * Math.PI * 2, n = { x, y, vx: Math.cos(ang) * SPEED, vy: Math.sin(ang) * SPEED, age: 0 }; if (s.late && i === 0) s.wait.push({ n, at: g.t + 0.9 }); else s.ns.push(n); }
   }
   MG.add({
-    id: 'atoms_control', stage: 'atoms', cmd: 'KEEP THE REACTOR STEADY!', time: 6, mood: 'night', winText: 'Critical!', failText: 'Runaway!',
-    card: { title: 'A steady chain reaction', kind: 'Physics', ref: 'Nuclear reactor control',
-      text: 'In a reactor, each uranium nucleus that splits frees two or three neutrons. If more than one of them goes on to split another nucleus, the count grows faster and faster. If fewer than one does, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Pushing them in slows the reaction, and pulling them out speeds it up. Operators keep them where each split causes exactly one more, so the reactor gives steady heat. Engineers call this steady state critical. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
-      note: 'A reactor runs steadily when each split causes exactly one more split.' },
+    id: 'atoms_control', stage: 'atoms', cmd: 'MOVE THE RODS TO KEEP THE LIGHTS ON!', time: 7, mood: 'night', winText: 'Steady power!', failText: 'Lights out!',
+    card: { title: 'A chain reaction under control', kind: 'Physics', ref: 'Nuclear reactor control',
+      text: 'When a neutron hits a uranium atom, the atom splits, gives off heat, and throws out two or three new neutrons. Those can split more atoms: a chain reaction. If each split leads to more than one new split, the reaction grows faster and faster. If it leads to fewer than one, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Operators move them so each split causes about one more, and the heat stays steady. That heat boils water to drive generators. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
+      note: 'A reactor gives steady power when each split causes about one more split.' },
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
-      s.d = 1; s.de = 1; s.ln = Math.log(0.05); s.steady = 0; s.need = lv ? 2.8 : 2.4; s.lag = lv >= 2 ? 0.9 : 0.12; s.amp = [0.08, 0.11, 0.11][lv];
-      s.ph = g.rand() * 6; s.bar = { x: 160, y: TIP_IN - ROD }; s.boom = 0; s.splits = [];
+      s.d = 0.92; s.late = lv >= 2; s.need = lv ? 3.2 : 2.6; s.atoms = ATOMS.map(([x, y]) => ({ x, y, cool: 0 }));
+      s.ns = []; s.wait = []; s.splits = []; s.absorb = []; s.count = 0; s.P = 0; s.steady = 0; s.src = 0; s.hot = 0; s.lev = { x: LEV.x, y: 0 }; s.lev.y = LEV.t + s.d * (LEV.b - LEV.t);
+      g.def.failText = 'Lights out!';
     },
-    down(g, x, y) { const s = g.s; SK.touched(g); if (y > 120 && y < 600 && x < 280) SK.dragStart(g, s.bar, x, y); },
-    move(g, x, y) { const s = g.s, b = SK.dragMove(g, x, y); if (!b) return; b.x = 160; b.y = SK.clamp(b.y, TIP_OUT - ROD, TIP_IN - ROD); s.d = (b.y - (TIP_OUT - ROD)) / (TIP_IN - TIP_OUT); },
+    down(g, x, y) { const s = g.s; SK.touched(g); if (x > 250 && y > 250 && y < 600) { SK.dragStart(g, s.lev, x, y); this.move(g, x, y); } },
+    move(g, x, y) { const s = g.s; if (!SK.dragging(g)) return; SK.dragMove(g, x, y); s.lev.x = LEV.x; s.lev.y = SK.clamp(s.lev.y, LEV.t, LEV.b); s.d = (s.lev.y - LEV.t) / (LEV.b - LEV.t); },
     up(g) { SK.dragEnd(g); },
     update(g, dt) {
-      const s = g.s; if (s.boom) return;
-      s.de += (s.d - s.de) * Math.min(1, dt / s.lag); // the reaction feels the rods (after a delay at level 2)
-      const d0 = 0.5 + s.amp * Math.sin(g.t * 0.9 + s.ph), rho = 3 * (d0 - s.de); // how many more (or fewer) than one split each split causes
-      s.ln += (rho + 0.04 * Math.exp(-s.ln)) * dt; s.ln = Math.max(NMIN, s.ln);
-      const inBand = s.ln > BAND[0] && s.ln < BAND[1]; s.steady = SK.clamp(s.steady + (inBand ? dt : -dt * 0.5), 0, s.need); s.inBand = inBand;
-      if (s.ln >= NMAX && !g.done) { s.boom = g.t; g.fail(); g.sfx('rumble'); g.sfx('fail'); g.shake(10, 0.6); }
-      if (s.steady >= s.need && !g.done) { g.win(); g.sfx('cheer'); }
-      // a few visible splits, more of them the higher the count
-      if (g.rand() < Math.min(0.9, Math.exp(s.ln) * 0.25) * dt * 30) s.splits.push({ x: CORE.l + 10 + g.rand() * (CORE.r - CORE.l - 20), y: CORE.t + 20 + g.rand() * (CORE.b - CORE.t - 40), t: g.t });
-      s.splits = s.splits.filter(p => g.t - p.t < 0.5);
+      const s = g.s; if (g.done) return;
+      const tip = CORE.t + s.d * (CORE.b - CORE.t);
+      // a weak neutron source keeps a few strays coming, so a dead core can always be restarted
+      s.src -= dt; if (s.src <= 0) { s.src = 0.45; const a = g.rand() * Math.PI * 2; s.ns.push({ x: 80 + g.rand() * 160, y: 330 + g.rand() * 180, vx: Math.cos(a) * SPEED, vy: Math.sin(a) * SPEED, age: 0 }); }
+      for (const w of s.wait) if (g.t >= w.at) s.ns.push(w.n); s.wait = s.wait.filter(w => g.t < w.at);
+      for (const a of s.atoms) a.cool = Math.max(0, a.cool - dt);
+      const keep = [];
+      for (const n of s.ns) {
+        n.x += n.vx * dt; n.y += n.vy * dt; n.age += dt;
+        if (n.age > LIFE || n.x < CORE.l || n.x > CORE.r || n.y < CORE.t || n.y > CORE.b) continue; // escaped or slowed away
+        if (n.y < tip && RODS.some(rx => Math.abs(n.x - rx) < RW / 2 + 1)) { s.absorb.push({ x: n.x, y: n.y, t: g.t }); continue; } // soaked up by a rod
+        const a = s.atoms.find(q => !q.cool && Math.abs(q.x - n.x) < HIT && Math.abs(q.y - n.y) < HIT);
+        if (a) { splitAt(g, s, a, a.x, a.y); continue; }
+        keep.push(n);
+      }
+      s.ns = keep; s.splits = s.splits.filter(p => g.t - p.t < 0.45); s.absorb = s.absorb.filter(p => g.t - p.t < 0.3);
+      // power: splits per second, smoothed; the town's lights follow it
+      s.rate = s.rate || []; s.rate.push(g.t); while (s.rate.length && s.rate[0] < g.t - 1) s.rate.shift();
+      const inst = s.count / Math.max(dt, 1e-3); s.count = 0; s.P += (inst - s.P) * Math.min(1, dt / 0.7);
+      const ok = s.P > BAND[0] && s.P < BAND[1]; s.ok = ok; s.steady = SK.clamp(s.steady + (ok ? dt : -dt * 0.4), 0, s.need);
+      if (s.ns.length > MAXN || s.P > 40) { s.hot = g.t; g.def.failText = 'Overheating!'; g.fail(); g.sfx('rumble'); g.shake(10, 0.6); return; }
+      if (s.steady >= s.need) { g.win(); g.sfx('cheer'); }
+      if (ok && Math.floor(s.steady / s.need * HOUSES) > (s.lit || 0)) { s.lit = Math.floor(s.steady / s.need * HOUSES); g.sfx('ding'); }
     },
     draw(g, c) {
-      const s = g.s, t = g.t, n = Math.exp(s.ln), glow = SK.clamp(n / 1.6, 0, 1.4);
-      c.drawImage(g.bake('control_hall', paintHall), 0, 0, 360, 640);
-      // the blue glow of the water (it brightens with the neutron count)
-      c.save(); c.beginPath(); c.roundRect(CORE.l - 10, CORE.t - 4, CORE.r - CORE.l + 20, CORE.b - CORE.t + 14, 10); c.clip();
-      const gg = c.createRadialGradient(160, 450, 10, 160, 450, 170); gg.addColorStop(0, `rgba(120,200,255,${0.15 + 0.6 * Math.min(1, glow)})`); gg.addColorStop(1, `rgba(40,120,255,${0.05 + 0.25 * Math.min(1, glow)})`); c.fillStyle = gg; c.fillRect(0, 0, 360, 640);
-      for (const x of FUEL) { const fg = c.createLinearGradient(x - 9, 0, x + 9, 0); fg.addColorStop(0, '#8a8a3a'); fg.addColorStop(0.5, '#e8e07a'); fg.addColorStop(1, '#8a8a3a'); c.fillStyle = fg; c.beginPath(); c.roundRect(x - 9, CORE.t + 6, 18, CORE.b - CORE.t - 4, 6); c.fill(); }
-      // neutrons zipping between the rods, and flashes where nuclei split
-      const k = Math.round(SK.clamp(8 + 9 * s.ln, 0, 60));
-      for (let i = 0; i < k; i++) { const a = i * 2.39996, sp = 120 + (i * 37) % 80, q = (t * sp / 200 + i * 0.137) % 1; const x0 = CORE.l + ((i * 71) % 180), y0 = CORE.t + 20 + ((i * 113) % 190); const x = CORE.l + ((x0 - CORE.l + Math.cos(a) * q * 200) % 190 + 190) % 190, y = CORE.t + ((y0 - CORE.t + Math.sin(a) * q * 200) % 220 + 220) % 220; c.fillStyle = 'rgba(220,240,255,0.9)'; c.beginPath(); c.arc(x, y, 2.2, 0, 7); c.fill(); }
-      for (const p of s.splits) { const q = (t - p.t) / 0.5; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#fff6c0'; c.beginPath(); c.arc(p.x, p.y, 3 + q * 12, 0, 7); c.fill(); c.restore(); }
+      const s = g.s, t = g.t, tip = CORE.t + s.d * (CORE.b - CORE.t), heat = SK.clamp((s.P - BAND[1]) / 20, 0, 1) + (s.hot ? 1 : 0);
+      c.drawImage(g.bake('control_plant', paintPlant), 0, 0, 360, 640);
+      // the town: its houses light up one by one while the power holds steady, and dim when it fails
+      const supply = SK.clamp(s.P / BAND[0], 0, 1), lit = s.steady / s.need * HOUSES;
+      town.forEach(([x, y], i) => house(c, x, y, supply * SK.clamp(lit - i + 0.35, 0.15, 1), i, t));
+      c.strokeStyle = s.P > 1 ? `rgba(255,220,120,${0.4 + 0.5 * supply})` : '#3a3a50'; c.lineWidth = 2; c.beginPath(); c.moveTo(110, 262); c.quadraticCurveTo(130, 230, 140, 222); c.stroke();
+      SK.tag(c, 'Power', 120, 242, 18);
+      // steam from the cooling tower: a little when running, a lot when overheating
+      for (let i = 0; i < 5; i++) { const q = (t * (0.4 + heat) + i / 5) % 1, a = (0.1 + 0.3 * supply + 0.4 * heat) * (1 - q); c.fillStyle = `rgba(230,235,250,${a})`; c.beginPath(); c.arc(70 + Math.sin(q * 5 + i) * 10, 182 - q * 70, 10 + q * 20 + heat * 10, 0, 7); c.fill(); }
+      // inside the core: water glow, uranium atoms, neutrons, splits
+      c.save(); c.beginPath(); c.roundRect(CORE.l, CORE.t, CORE.r - CORE.l, CORE.b - CORE.t, 8); c.clip();
+      const wg = c.createRadialGradient(160, 424, 10, 160, 424, 180); wg.addColorStop(0, heat > 0 ? `rgba(255,${120 - 80 * Math.min(1, heat)},60,${0.3 + 0.4 * Math.min(1, heat)})` : `rgba(90,170,255,${0.1 + 0.35 * supply})`); wg.addColorStop(1, 'rgba(20,60,140,0)'); c.fillStyle = wg; c.fillRect(0, 0, 360, 640);
+      for (const a of s.atoms) { if (a.cool > 0) { const k = a.cool / COOL; c.fillStyle = `rgba(120,140,90,${0.5 - 0.3 * k})`; c.beginPath(); c.arc(a.x - 4 * k, a.y, 4, 0, 7); c.arc(a.x + 4 * k, a.y, 4, 0, 7); c.fill(); } else SK.ball(c, a.x, a.y, 8, '#b8d84a', { lw: 1.2 }); }
+      for (const p of s.splits) { const q = (t - p.t) / 0.45; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#fff2a0'; c.beginPath(); c.arc(p.x, p.y, 6 + q * 16, 0, 7); c.fill(); c.restore(); }
+      for (const n of s.ns) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(n.x, n.y, 3.4, 0, 7); c.fill(); c.strokeStyle = 'rgba(154,216,255,0.35)'; c.lineWidth = 2; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(n.x - n.vx * 0.04, n.y - n.vy * 0.04); c.stroke(); }
+      // the control rods, hanging from the top down to their tips
+      for (const rx of RODS) { const rg = c.createLinearGradient(rx - RW / 2, 0, rx + RW / 2, 0); rg.addColorStop(0, '#22222c'); rg.addColorStop(0.5, '#5a5a6a'); rg.addColorStop(1, '#22222c'); c.fillStyle = rg; c.fillRect(rx - RW / 2, CORE.t, RW, tip - CORE.t); }
+      for (const p of s.absorb) { const q = (t - p.t) / 0.3; c.fillStyle = `rgba(255,255,255,${0.8 * (1 - q)})`; c.beginPath(); c.arc(p.x, p.y, 3 + q * 5, 0, 7); c.fill(); }
       c.restore();
-      // the control rods and the bar they hang from
-      const by = s.bar.y; c.save(); c.beginPath(); c.rect(0, 0, 360, CORE.b + 6); c.clip();
-      for (const x of CTRL) { const rg = c.createLinearGradient(x - 7, 0, x + 7, 0); rg.addColorStop(0, '#2a2a34'); rg.addColorStop(0.5, '#6a6a7a'); rg.addColorStop(1, '#2a2a34'); c.fillStyle = rg; c.fillRect(x - 7, by, 14, ROD); }
-      c.restore();
-      c.fillStyle = '#5a6a88'; c.fillRect(CORE.l - 26, CORE.t - 20, CORE.r - CORE.l + 52, 12); // the lid in front of the rods
-      for (const x of CTRL) { c.fillStyle = '#2a3048'; c.fillRect(x - 9, CORE.t - 22, 18, 16); }
-      c.fillStyle = '#e8b83a'; c.strokeStyle = '#7a5a1a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(82, by - 16, 156, 20, 8); c.fill(); c.stroke();
-      c.fillStyle = '#f2d27a'; c.fillRect(90, by - 12, 140, 4); c.fillStyle = '#7a5a1a'; c.beginPath(); c.roundRect(146, by - 30, 28, 18, 6); c.fill();
-      // the counter: a bead that rides up and down the bar, and the ring that fills while it holds in the green
-      const cy = barY(s.ln); SK.ball(c, BAR.x, cy, 13, s.inBand ? '#7aff9a' : s.ln > BAND[1] ? '#ff7a5a' : '#9ab8e0');
-      const rk = s.steady / s.need; c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 8; c.beginPath(); c.arc(BAR.x, 150, 18, 0, 7); c.stroke();
-      c.strokeStyle = '#7aff9a'; c.lineCap = 'round'; c.beginPath(); c.arc(BAR.x, 150, 18, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
-      SK.tag(c, 'Control rods', 160, by - 50, 18); SK.tag(c, 'Neutrons', BAR.x - 8, BAR.t - 22, 18);
-      // alarms when it runs away
-      const hot = s.ln > Math.log(6); if (hot || s.boom) { const on = Math.sin(t * 18) > 0; c.fillStyle = on ? 'rgba(255,60,40,0.28)' : 'rgba(255,60,40,0.08)'; c.fillRect(0, 0, 360, 640); for (const x of [26, 334]) { c.fillStyle = on ? '#ff4a3a' : '#6a1a1a'; c.beginPath(); c.arc(x, 150, 12, Math.PI, 0); c.fill(); } }
-      // the beaver at the desk, diving under it when things run away
-      const won = g.result === 'win', hide = !!s.boom || hot;
-      SK.animal(c, 'beaver', 306, hide ? 640 : 560, 0.72, { t, pose: won ? 'cheer' : hide ? 'sad' : 'idle', expr: won ? 'laugh' : hide ? 'wow' : 'happy', facing: -1 });
-      c.fillStyle = '#4a5a7a'; c.fillRect(250, 572, 110, 68); c.fillStyle = '#6a7a9a'; c.fillRect(246, 566, 118, 8);
-      for (let i = 0; i < 4; i++) { c.fillStyle = ['#ff6a5a', '#ffd45a', '#6ae07a', '#6ac8ff'][i]; c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 3 + i); c.beginPath(); c.arc(268 + i * 22, 592, 5, 0, 7); c.fill(); } c.globalAlpha = 1;
-      if (!s.touched) SK.glow(c, g, 160, by - 12, 34);
-      const up = s.ln < BAND[0]; SK.demo(g, c, 'drag', [160, by - 10], [160, by - 10 + (up ? -90 : 70)], { period: 2, never: s.inBand });
+      if (heat > 0) { const on = Math.sin(t * 16) > 0; c.fillStyle = on ? 'rgba(255,50,30,0.22)' : 'rgba(255,50,30,0.06)'; c.fillRect(0, 262, 360, 378); for (const x of [16, 344]) { c.fillStyle = on ? '#ff4a3a' : '#6a1a1a'; c.beginPath(); c.arc(x, 280, 10, Math.PI, 0); c.fill(); } }
+      // the lever that moves the rods: its handle sits level with the rods' tips
+      c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(CORE.r - 4, tip); c.lineTo(LEV.x - 12, tip); c.stroke(); c.setLineDash([]);
+      SK.ball(c, LEV.x, s.lev.y, 15, '#e8b83a'); c.fillStyle = '#7a5a1a'; c.fillRect(LEV.x - 8, s.lev.y - 2, 16, 4);
+      // labels
+      SK.tag(c, 'Control rods', 120, 282, 18); SK.tag(c, 'soak up neutrons', 120, 576, 18);
+      SK.tag(c, 'Uranium', 270, 576, 18); if (s.ns.length) { const n = s.ns[0]; if (n.y > 330) SK.tag(c, 'Neutrons', SK.clamp(n.x, 70, 250), n.y - 22, 18); }
+      // the town's progress: houses lit
+      const won = g.result === 'win', lost = g.result === 'fail';
+      SK.animal(c, 'beaver', 334, 626, 0.5, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost || heat > 0 ? 'wow' : 'happy', facing: -1 });
+      if (!SK.dragging(g)) SK.glow(c, g, LEV.x, s.lev.y, 22);
+      const tooLow = s.P < BAND[0];
+      SK.demo(g, c, 'drag', [LEV.x, s.lev.y], [LEV.x, SK.clamp(s.lev.y + (tooLow ? -80 : 60), LEV.t, LEV.b)], { period: 2, never: s.ok });
     },
-    // the bot: a gentle controller that steers the count toward the middle of the band
+    // the bot: watch the power and nudge the rods out when it's low, in when it's high
     auto(g, dt, synth) {
-      const s = g.s; if (g.done || g.t < 1) return;
-      if (!s.botOn) { s.botOn = true; s.botY = s.bar.y + 10; synth('down', 160, s.botY); return; }
-      const d0 = 0.5 + s.amp * Math.sin(g.t * 0.9 + s.ph), err = s.ln - (BAND[0] + BAND[1]) / 2, slope = (s.d - s.de);
-      const want = SK.clamp(d0 + 0.32 * err + (s.lag > 0.5 ? 0.6 * slope : 0), 0, 1);
-      s.botY = (TIP_OUT - ROD) + want * (TIP_IN - TIP_OUT) + 10; synth('move', 160, s.botY);
+      const s = g.s; if (g.done || g.t < 1) return; const B = s.bot = s.bot || { on: false };
+      if (!B.on) { B.on = true; B.d = s.d; synth('down', LEV.x, s.lev.y); return; }
+      const mid = (BAND[0] + BAND[1]) / 2, err = (s.P - mid) / mid, nz = s.ns.length;
+      B.d = SK.clamp(B.d + (err * 0.32 + (nz > 40 ? 0.4 : 0)) * dt, 0.05, 1);
+      synth('move', LEV.x, LEV.t + B.d * (LEV.b - LEV.t));
     },
   });
 })();

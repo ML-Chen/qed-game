@@ -26,7 +26,7 @@ function paintStreet(o) {
 }
 function cup(c, x, y, s = 1) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = 'rgba(255,255,255,0.8)'; c.strokeStyle = '#8a6a3a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-8, -18); c.lineTo(8, -18); c.lineTo(6, 0); c.lineTo(-6, 0); c.closePath(); c.fill(); c.stroke(); c.fillStyle = '#f8e050'; c.beginPath(); c.moveTo(-7, -13); c.lineTo(7, -13); c.lineTo(6, -1); c.lineTo(-6, -1); c.closePath(); c.fill(); c.restore(); }
 MG.add({
-  id: 'setprice', stage: 'startups', cmd: 'STOP THE DIAL AT A GOOD PRICE!', time: 6, mood: 'party', winText: 'Pricing!', failText: 'Jar\'s short!', hold: 1.6,
+  id: 'setprice', stage: 'startups', cmd: 'STOP THE DIAL AT A GOOD PRICE!', time: 6, mood: 'party', winText: 'Best price!', failText: 'Not enough sales!', hold: 1.6,
   card: { title: 'Not too high, not too low', kind: 'Business', ref: 'Pricing',
     text: 'A low price brings lots of buyers, but each cup earns only a little. A high price earns a lot per cup, but most people walk past. Somewhere in the middle, the money coming in is biggest.\n\nThe money from sales is called revenue. What matters in the end is profit: the money left after paying for the lemons and cups. When each cup costs more to make, the best price moves up, and selling too cheaply can even lose money.',
     note: 'The best price balances how many people buy against how much each one pays.' },

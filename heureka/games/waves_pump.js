@@ -25,7 +25,7 @@
     for (let i = 0; i < 10; i++) { o.fillStyle = '#ff8ab0'; o.beginPath(); o.arc(rnd() * 360, 110 + rnd() * 80, 3 + rnd() * 2, 0, 7); o.fill(); }
   }
   MG.add({
-    id: 'pump', stage: 'waves', cmd: 'PUSH THE SWING IN TIME!', time: 6, mood: 'party', winText: 'Resonance!', failText: 'Too low!',
+    id: 'pump', stage: 'waves', cmd: 'PUSH THE SWING IN TIME!', time: 6, mood: 'party', winText: 'Pushed in time!', failText: 'Too low!',
     card: { title: 'Push in time', kind: 'Physics', ref: 'Resonance',
       text: 'A swing goes back and forth at its own steady rhythm. That rhythm depends on the length of the rope, not on how hard you push.\n\nA push just as the swing turns round and starts to move away adds energy, so the next swing goes higher. Push at the same moment every time, matching the swing\'s own rhythm, and the swing climbs higher and higher. This is resonance.\n\nA push while the swing is still coming toward you works against it and takes energy away, so the swing slows down.',
       note: 'Small pushes at a thing\'s own rhythm add up to a big motion. This is resonance.' },

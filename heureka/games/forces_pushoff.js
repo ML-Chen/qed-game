@@ -35,7 +35,7 @@
     c.beginPath(); c.moveTo(0, -5); c.lineTo(L - 14, -5); c.lineTo(L - 14, -12); c.lineTo(L, 0); c.lineTo(L - 14, 12); c.lineTo(L - 14, 5); c.lineTo(0, 5); c.closePath(); c.fill(); c.stroke(); c.restore();
   }
   MG.add({
-    id: 'pushoff', stage: 'forces', cmd: 'PUSH OFF TO REACH THE IGLOO!', time: 6, mood: 'sea', winText: 'Reaction!', failText: 'Wrong way!',
+    id: 'pushoff', stage: 'forces', cmd: 'PUSH OFF TO REACH THE IGLOO!', time: 6, mood: 'sea', winText: 'Home safe!', failText: 'Wrong way!',
     card: { title: 'Every push pushes back', kind: 'Physics', ref: "Newton's third law",
       text: 'When the little penguin pushes the big one, the big one pushes back on the little one just as hard, at the same moment, the opposite way. You cannot push something without being pushed back.\n\nThe same push moves a light thing more than a heavy thing. So the little penguin zooms away fast while the big one drifts off slowly.\n\nOn ice nothing rubs on them, so both keep sliding. To go one way, push something the other way. Rockets work like this: they push gas out of the back and are pushed forward.',
       note: 'When you push on something, it pushes back on you just as hard in the opposite direction.' },

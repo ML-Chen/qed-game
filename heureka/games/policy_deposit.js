@@ -30,17 +30,17 @@ function bottle(c, x, y, rot, col, coin, sc = 1) { // coin: 0 none, 1 small, 2 f
   c.restore();
 }
 MG.add({
-  id: 'adddeposit', stage: 'policy', cmd: 'ADD A DEPOSIT!', time: 6, mood: 'bright', winText: 'Deposit!', failText: 'Litter!',
+  id: 'adddeposit', stage: 'policy', cmd: 'STAMP A DEPOSIT ON EACH BOTTLE!', time: 6, mood: 'bright', winText: 'Bottles come back!', failText: 'Litter!',
   card: { title: 'A price on throwing away', kind: 'Policy', ref: 'Container deposits (bottle bills)',
-    text: 'A deposit adds a small amount to the price of each bottle, and you get it back when you return the bottle. Nobody is forced to return it, but many people do, because the empty bottle is now worth a coin. Some people even pick up bottles that others dropped.\n\nThe size matters: if the deposit is tiny, many people don\'t bother. Deposits have costs too, because shops and buyers have to handle the returns. Taxes and fees work the same way: a price on something makes people do less of it without banning it.',
+    text: 'A deposit adds a small amount to the price of each bottle, and you get it back when you return the bottle. Nobody is forced to return it, but many people do, because the empty bottle is now worth a coin. The bottles without a deposit ended up as litter in the park.\n\nThe size matters: if the deposit is tiny, many people don\'t bother. Deposits have costs too, because shops and buyers have to handle the returns. Taxes and fees work the same way: a price on something makes people do less of it without banning it.',
     note: 'Putting a price on a behaviour, such as a deposit or a tax, makes people do less of it without banning it.' },
   init(g) {
     const s = g.s, L = LV[Math.min(2, g.level)]; s.L = L; s.v = L.v * (1 + ((g.speed || 1) - 1) * 0.35); s.b = []; let x = 10;
     for (let i = 0; i < L.n; i++) { s.b.push({ x, st: 'belt', coin: 0, col: ['#8ad0a0', '#a8c8f0', '#f0b8c8', '#f6d880', '#c8a8f0'][i % 5] }); x -= 105 + g.rand() * 60; }
-    s.press = -1; s.litter = [[70, 300, 1.2], [250, 340, -1.4], [150, 250, 1.6], [300, 360, 0.9], [210, 230, -1.1]].map(([x, y, r]) => ({ x, y, r, old: true }));
+    s.press = -1; s.litter = [];
   },
   down(g, x, y) {
-    const s = g.s; SK.touched(g); if (g.done || g.t - s.press < 0.16) return; s.press = g.t; g.sfx('click');
+    const s = g.s; SK.touched(g); if (g.done || g.t - s.press < 0.16) return; s.press = g.t; g.sfx('click'); // a tap anywhere works the stamp
     const b = s.b.find(q => q.st === 'belt' && Math.abs(q.x - SX) < 28);
     if (b && b.coin < s.L.stamps) { b.coin++; g.sfx(b.coin >= s.L.stamps ? 'coin' : 'tap'); g.burst(SX, BELT.y - 30, ['#f6c445', '#fff6ea'], 8, 100); } else g.sfx('thud');
   },
@@ -68,10 +68,11 @@ MG.add({
     const pk = SK.clamp(1 - (t - s.press) / 0.16, 0, 1), py = BELT.y - 120 + pk * 40;
     c.fillStyle = '#8a8a98'; c.fillRect(SX - 4, 400, 8, py - 400); c.fillStyle = '#6a6a78'; c.beginPath(); c.roundRect(SX - 22, py, 44, 18, 5); c.fill(); B9.coin(c, SX, py + 22, 10);
     c.save(); c.strokeStyle = 'rgba(255,240,170,0.5)'; c.lineWidth = 2; c.setLineDash([4, 5]); c.beginPath(); c.moveTo(SX - 28, BELT.y - 80); c.lineTo(SX - 28, BELT.y + 18); c.moveTo(SX + 28, BELT.y - 80); c.lineTo(SX + 28, BELT.y + 18); c.stroke(); c.restore();
+    SK.tag(c, 'Deposit stamp', SX + 98, BELT.y - 104, 18, '#ffe9a0'); SK.tag(c, 'Return bin', BIN[0] + 18, BIN[1] - 20, 18); SK.tag(c, 'Park', 300, 214, 18);
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'duck', 300, 618, 0.9, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     const nb = s.b.find(b => b.st === 'belt' && b.coin < s.L.stamps && b.x < SX + 28);
-    if (nb && !g.done) { SK.glow(c, g, SX, BELT.y - 34, 40); if (Math.abs(nb.x - SX) < 40) SK.demo(g, c, 'tap', [SX, BELT.y + 40], null, { delay: 0, period: 0.6 }); }
+    if (nb && !g.done) { SK.glow(c, g, SX, BELT.y - 34, 40); if (Math.abs(nb.x - SX) < 40) SK.demo(g, c, 'tap', [SX, BELT.y - 70], null, { delay: 0, period: 0.6 }); }
   },
   auto(g, dt, synth) {
     const s = g.s; if (g.done || g.t - s.press < 0.17) return;

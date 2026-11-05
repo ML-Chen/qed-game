@@ -18,7 +18,7 @@ function paintVault(o) {
   o.fillStyle = '#7a5a8a'; o.fillRect(0, BAGY - 46, 360, 6);
 }
 MG.add({
-  id: 'payout', stage: 'startups', cmd: 'PAY THE INVESTORS FIRST!', time: 6, mood: 'party', winText: 'Preference!', failText: 'Unpaid!', hold: 1.8,
+  id: 'payout', stage: 'startups', cmd: 'PAY THE INVESTORS FIRST!', time: 6, mood: 'party', winText: 'Investors paid first!', failText: 'Money still in the bag!', hold: 1.8,
   card: { title: 'Who gets paid first', kind: 'Startups', ref: 'Liquidation preference',
     text: 'When a startup is sold, the money does not always split by slices of the pie. Investors usually buy shares with a liquidation preference: they get their money back first, before founders and staff see anything. A common deal is 1x: back what they put in.\n\nSo the sale money fills the investors\' bucket first, and only what overflows reaches the founders. In a big sale everyone is paid. In a small sale, the investors\' bucket can take it all.',
     note: 'Investors with a preference are paid back first; founders get only what is left.' },

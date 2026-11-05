@@ -53,7 +53,7 @@ function cell(c, x, y, t, i, awake, badge, K) {
 }
 
 MG.add({
-  id: 'medicine_remember', stage: 'medicine', cmd: 'SHOW THE VACCINE POSTER FIRST!', time: 8, mood: 'party', winText: 'Immunity!', failText: 'Spreading!',
+  id: 'medicine_remember', stage: 'medicine', cmd: 'SHOW THE VACCINE POSTER FIRST!', time: 8, mood: 'party', winText: 'Germs stopped fast!', failText: 'Germ spread!',
   card: { title: 'Practise on a poster', kind: 'Medicine', ref: 'Vaccines and immune memory',
     text: 'A vaccine shows your immune system a harmless copy or piece of a germ, like a wanted poster. Immune cells learn its shape, and some stay on as memory cells, often for years.\n\nIf the real germ arrives later, the memory cells recognise it and quickly make lots of antibodies, Y-shaped proteins that stick to the germ and help destroy it. Without that practice, the body needs a week or more to build its defence, and the germ has time to spread.\n\nSome germs, like flu viruses, keep changing their outside, so their vaccines are updated every year.',
     note: 'A vaccine teaches the immune system a germ\'s shape ahead of time, so the real germ is stopped quickly.' },

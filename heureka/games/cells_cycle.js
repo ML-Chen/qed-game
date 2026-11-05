@@ -40,7 +40,7 @@ function slots(k) {
 }
 
 MG.add({
-  id: 'cells_cycle', stage: 'cells', cmd: 'HEAT AND COOL TO COPY DNA!', time: 7, mood: 'sea', winText: 'Doubling!', failText: 'No copies!',
+  id: 'cells_cycle', stage: 'cells', cmd: 'HEAT AND COOL TO COPY DNA!', time: 7, mood: 'sea', winText: 'DNA doubled!', failText: 'No copies!',
   card: { title: 'Copy DNA by heating and cooling', kind: 'Biology', ref: 'PCR (polymerase chain reaction)',
     text: 'PCR makes millions of copies of a piece of DNA from just a little. It needs a tiny tube with the right ingredients, and a machine that heats and cools it.\n\nHeating to about 95 °C pulls apart the two strands of each DNA molecule. Cooling to about 60 °C lets short starter pieces called primers stick on, and at about 72 °C an enzyme called a polymerase builds a new partner strand along each one.\n\nEach heat-and-cool cycle doubles the DNA: 1, 2, 4, 8, 16. Thirty cycles make about a billion copies, enough to test for a virus.',
     note: 'Heating separates the DNA strands and cooling lets each one be copied, so every cycle doubles the DNA.' },

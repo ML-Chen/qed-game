@@ -34,7 +34,7 @@ function mol(c, kind, x, y, t, s = 1) {
 }
 
 MG.add({
-  id: 'cells_slip', stage: 'cells', cmd: 'GET EVERY MOLECULE INSIDE!', time: 7, mood: 'sea', winText: 'Membrane transport!', failText: 'Bounced!',
+  id: 'cells_slip', stage: 'cells', cmd: 'GET EVERY MOLECULE INSIDE!', time: 7, mood: 'sea', winText: 'All inside!', failText: 'Still outside!',
   card: { title: 'Ways into a cell', kind: 'Biology', ref: 'Membrane transport',
     text: "A cell is wrapped in a membrane, a thin double layer of fatty molecules. Small molecules that mix with fat, like oxygen, slip straight through it.\n\nSugar (glucose) and charged particles called ions can't cross the fatty layer. They go through protein doors in the membrane. A carrier lets glucose through when there is more of it outside than inside. A pump uses ATP, the cell's energy molecule, to push potassium in even when the cell already has more inside.\n\nWater crosses slowly on its own, and much faster through water channels called aquaporins.",
     note: 'Oxygen slips through the membrane itself; glucose, ions and most water need protein doors, and a pump needs energy.' },

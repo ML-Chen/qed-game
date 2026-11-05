@@ -48,7 +48,7 @@
   const vWin = (s, H) => { const d = H - BX, lo = Math.sqrt(2 * MU * d); return [lo, Math.sqrt(lo * lo + s.cap * s.cap)]; }; // the starting speeds that sink it
   function newBall(s) { s.b = { x: BX, y: GY - BR, v: 0, vy: 0, rot: 0, hopped: false }; s.phase = 'ready'; s.snail = -40; s.splashT = 0; s.bushT = 0; s.sinkT = 0; }
   MG.add({
-    id: 'putt', stage: 'motion', cmd: 'PUTT INTO THE HOLE!', time: 7, mood: 'bright', winText: 'Friction!', failText: 'Missed!',
+    id: 'putt', stage: 'motion', cmd: 'PUTT INTO THE HOLE!', time: 7, mood: 'bright', winText: 'All sunk!', failText: 'Missed!',
     card: { title: 'A harder push goes farther', kind: 'Physics', ref: 'Force and friction',
       text: 'The putter pushes the ball. A harder push makes the ball start faster.\n\nAs the ball rolls, the grass rubs against it and slows it down a little every moment. That rubbing is called friction. A fast ball takes longer to slow to a stop, so it rolls farther.\n\nA gentle push stops short of the hole. A hard push is still fast when it reaches the hole, so it hops over. To sink it, push just hard enough to arrive slowly.',
       note: 'The harder you push a ball, the faster it starts and the farther it rolls before friction stops it.' },

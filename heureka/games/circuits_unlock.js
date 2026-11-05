@@ -42,7 +42,7 @@ function pad(c, x, down, t, live) { // a big red floor switch in the wire
   c.restore();
 }
 MG.add({
-  id: 'unlock', stage: 'circuits', cmd: 'PRESS BOTH SWITCHES AT ONCE!', time: 6, mood: 'night', winText: 'AND gate!', failText: 'Locked!',
+  id: 'unlock', stage: 'circuits', cmd: 'PRESS BOTH SWITCHES AT ONCE!', time: 6, mood: 'night', winText: 'Loop complete!', failText: 'Locked!',
   card: { title: 'Switches in a row make AND', kind: 'Engineering', ref: 'Logic gates (AND and OR)',
     text: 'This lock is wired through two switches in a row, one after the other. Electricity flows only around a complete loop, so current reaches the lock only when the first switch AND the second switch are both pressed. With one pressed, the loop is still broken at the other, and nothing flows.\n\nEngineers call this an AND gate. Wire the two switches side by side instead, and either one alone completes the loop: that is an OR gate. Computer chips are built from billions of tiny gates like these, made of transistors instead of buttons.',
     note: 'Switches in a row make an AND: every one must be closed before any current flows.' },

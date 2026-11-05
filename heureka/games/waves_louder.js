@@ -37,7 +37,7 @@
   function zzz(c, x, y, t, s) { c.save(); c.strokeStyle = 'rgba(220,230,255,0.85)'; c.lineWidth = 2 * s; c.lineCap = 'round'; for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1, zx = x + q * 22 * s, zy = y - q * 34 * s, z = (5 + q * 5) * s; c.globalAlpha = Math.min(1, (1 - q) * 2.5); c.beginPath(); c.moveTo(zx - z, zy - z); c.lineTo(zx + z, zy - z); c.lineTo(zx - z, zy + z); c.lineTo(zx + z, zy + z); c.stroke(); } c.restore(); }
   const BANDS = [[1.0, 1.75], [1.0, 1.65], [1.0, 1.45]]; // the sound reaching a sleeper must land in this band
   MG.add({
-    id: 'louder', stage: 'waves', cmd: 'WAKE THEM WITH A LOUDER SOUND!', time: 7, mood: 'night', winText: 'Amplitude!', failText: 'Still asleep!',
+    id: 'louder', stage: 'waves', cmd: 'WAKE THEM WITH A LOUDER SOUND!', time: 7, mood: 'night', winText: 'All awake!', failText: 'Still asleep!',
     card: { title: 'A taller wave is a louder sound', kind: 'Physics', ref: 'Amplitude and loudness',
       text: 'A sound is the air being pushed back and forth. The screen draws that push as a wave.\n\nThe height of the wave is called its amplitude. A taller wave means the speaker pushes the air harder, so the sound is louder. The note stays the same.\n\nSpacing the crests closer or farther apart changes the pitch, how high or low the note is, but not how loud it is.\n\nSound spreads out as it travels, so it is fainter far away. To wake a far sleeper you need a louder sound.',
       note: 'The taller the sound wave, the louder the sound. The spacing of the crests sets the pitch.' },

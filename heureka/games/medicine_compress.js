@@ -29,7 +29,7 @@ function paintMat(o) {
 }
 
 MG.add({
-  id: 'medicine_compress', stage: 'medicine', cmd: 'PRESS THE CHEST ON EVERY BEAT!', time: 7, mood: 'party', winText: 'CPR!', failText: 'Too slow!',
+  id: 'medicine_compress', stage: 'medicine', cmd: 'PRESS THE CHEST ON EVERY BEAT!', time: 7, mood: 'party', winText: 'Blood reached the brain!', failText: 'No blood flow!',
   card: { title: 'Pump for the heart', kind: 'Medicine', ref: 'CPR: chest compressions',
     text: "When someone's heart stops, blood stops carrying oxygen to the brain, and brain cells start to die within minutes. Pressing hard and fast on the middle of the chest squeezes the heart and the chest, which pushes blood out to the brain and body.\n\nCompressions work best at 100 to 120 presses a minute, about 5 to 6 cm deep for an adult, letting the chest come all the way back up each time. Call the emergency number first.\n\nThis game is not training. Take a real first-aid course to learn CPR.",
     note: 'Pressing hard and fast on the chest, 100 to 120 times a minute, pumps blood to the brain when the heart has stopped.' },

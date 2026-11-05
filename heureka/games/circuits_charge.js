@@ -39,7 +39,7 @@ function paintStudio(o) {
 }
 function lvlY(k, y0, y1) { return y1 - (y1 - y0 - 8) * k; }
 MG.add({
-  id: 'charge', stage: 'circuits', cmd: 'CHARGE UP, LET GO TO SNAP!', time: 6, mood: 'party', winText: 'Capacitor!', failText: 'Too dark!',
+  id: 'charge', stage: 'circuits', cmd: 'CHARGE UP, LET GO TO SNAP!', time: 6, mood: 'party', winText: 'Flash charged!', failText: 'Too dark!',
   card: { title: 'A capacitor fills fast, then slowly', kind: 'Engineering', ref: 'Charging a capacitor (RC circuit)',
     text: 'A capacitor stores electric charge, like a jar stores water. Here the battery is a full tank, and charge flows into the capacitor through a narrow pipe, which is a resistor.\n\nAt first the jar is empty and the push from the tank is strong, so it fills fast. As the jar fills, its own level pushes back, the difference shrinks, and the flow slows down. It creeps closer and closer to the tank\'s level but never quite gets there. A narrower pipe makes the whole thing slower. A camera flash charges a capacitor like this, then empties it all at once into the lamp.',
     note: 'A capacitor charges quickly at first and then more and more slowly, as it nears the battery\'s voltage.' },

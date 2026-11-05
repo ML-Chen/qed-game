@@ -36,7 +36,7 @@ function cast(S, tail, x, y, a) { // nearest hit of a ray from (x, y) at angle a
 }
 function tailBalls(L) { const [x, y] = L.tail; return [[x, y + 12, 5.5], [x - 6, y + 4, 6], [x - 14, y, 6], [x - 22, y + 2, 5]]; }
 MG.add({
-  id: 'lidar', stage: 'robots', cmd: 'SPIN THE LIDAR, FIND THE CAT!', time: 7, mood: 'night', winText: 'Lidar map!', failText: 'Pounce!',
+  id: 'lidar', stage: 'robots', cmd: 'SPIN THE LIDAR, FIND THE CAT!', time: 7, mood: 'night', winText: 'Cat found!', failText: 'Pounce!',
   card: { title: 'Seeing with a spinning laser', kind: 'Robotics', ref: 'Lidar (light detection and ranging)',
     text: 'A lidar sends out a quick flash of laser light and times how long the light takes to bounce back. Light is so fast that the time is tiny, but it tells the robot exactly how far away the thing it hit is.\n\nSpin the laser all the way round and you get a ring of distances, one in every direction. Drawn as dots, they show the walls, the doorways and the furniture, even in the dark. Robot vacuums, warehouse robots and many self-driving cars build their maps this way. Glass and mirrors fool it, because the light passes through or bounces away.',
     note: 'Lidar measures the distance in every direction with a spinning laser, so a robot can map a room even in the dark.' },

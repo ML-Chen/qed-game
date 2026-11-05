@@ -44,7 +44,7 @@ function easel(c, x, y, kind, t) {
   comic(c, x - EW / 2, y - EH / 2, EW, EH, kind, t);
 }
 MG.add({
-  id: 'catchcopies', stage: 'law', cmd: 'CATCH COPIES!', time: 6, mood: 'desert', winText: 'Copyright!', failText: 'Objection!',
+  id: 'catchcopies', stage: 'law', cmd: 'SWIPE AWAY THE COPYCATS!', time: 6, mood: 'desert', winText: 'Copyright!', failText: 'Objection!',
   card: { title: 'You own your drawing, not the idea', kind: 'Law', ref: 'Copyright: expression, not ideas (17 U.S.C. 102(b))',
     text: 'Copyright protects a creative work, such as a comic, from the moment it is written down or drawn. The frog owns its own pictures and the way it put them together. Nobody owns the idea of a duck in space.\n\nThe copiers traced the frog\'s pages, and changing only the colours still copies the drawing. The other artists drew their own space-duck comics, which the law allows. Copyright also has exceptions, such as fair use for things like reviews and teaching.\n\nGeneral information about US law, not legal advice.',
     note: 'Copyright protects the way an idea is expressed, not the idea itself.' },
@@ -77,10 +77,11 @@ MG.add({
     const s = g.s, t = g.t;
     c.drawImage(g.bake('catchcopies', paintStudio), 0, 0, 360, 640);
     comic(c, PAGE.x, PAGE.y, PAGE.w, PAGE.h, 'orig', t);
+    SK.tag(c, "Frog's comic", 180, PAGE.y - 14, 18);
     // a little picket fence along the frame: the frog's copyright on its own pages
     c.fillStyle = '#fff6ea'; for (let x = PAGE.x - 8; x <= PAGE.x + PAGE.w + 4; x += 14) { c.beginPath(); c.moveTo(x, PAGE.y + PAGE.h + 26); c.lineTo(x, PAGE.y + PAGE.h + 12); c.lineTo(x + 4, PAGE.y + PAGE.h + 8); c.lineTo(x + 8, PAGE.y + PAGE.h + 12); c.lineTo(x + 8, PAGE.y + PAGE.h + 26); c.closePath(); c.fill(); } c.fillRect(PAGE.x - 8, PAGE.y + PAGE.h + 16, PAGE.w + 16, 4);
     // artists who drew their own comic keep drawing at the sides
-    s.kept.forEach((cp, k) => { const x = k ? 318 : 40; c.save(); c.translate(x, 352); c.scale(0.32, 0.32); comic(c, -EW / 2, -EH / 2, EW, EH, 'own', t); c.restore(); SK.animal(c, cp.who, x, 410, 0.6, { t, pose: 'idle', expr: 'happy', phase: k }); });
+    s.kept.forEach((cp, k) => { const x = k ? 304 : 56; c.save(); c.translate(x, 352); c.scale(0.32, 0.32); comic(c, -EW / 2, -EH / 2, EW, EH, 'own', t); c.restore(); SK.animal(c, cp.who, x, 410, 0.6, { t, pose: 'idle', expr: 'happy', phase: k }); SK.tag(c, 'Own comic', x, 318, 18, '#d0ffd8'); });
     const cp = s.seq[s.i];
     if (cp && cp.st !== 'wait') {
       const k = cp.st === 'in' ? SK.easeOut((t - cp.at) / 0.4) : 1; let x = SK.lerp(420, EASEL.x, k), y = EASEL.y, rot = 0;
@@ -88,7 +89,10 @@ MG.add({
       if (cp.st === 'escape') { const q = (t - cp.at) / 0.9; x = EASEL.x - q * 300; }
       c.save(); c.translate(x, y); c.rotate(rot); c.translate(-x, -y);
       if (cp.st !== 'escape') easel(c, x, y, cp.kind, t);
-      SK.animal(c, cp.who, x + 92, y + 130, 0.9, { t, pose: cp.st === 'escape' ? 'walk' : cp.st === 'judge' ? 'idle' : 'idle', expr: cp.st === 'escape' ? 'laugh' : cp.st === 'swept' ? 'wow' : 'happy', facing: cp.st === 'escape' ? -1 : -1 });
+      // a copier works on tracing paper taped over its page (you can see the frog's lines through it)
+      if (cp.kind !== 'own' && cp.st !== 'escape') { c.save(); c.globalAlpha = 0.28; c.fillStyle = '#ffffff'; c.beginPath(); c.roundRect(x - EW / 2 + 6, y - EH / 2 - 6, EW - 4, EH + 4, 4); c.fill(); c.restore(); c.fillStyle = 'rgba(240,220,150,0.9)'; for (const [tx, ty] of [[x - EW / 2 + 12, y - EH / 2 - 4], [x + EW / 2 - 12, y - EH / 2 - 4]]) { c.save(); c.translate(tx, ty); c.rotate(0.5); c.fillRect(-10, -4, 20, 8); c.restore(); } }
+      if (cp.st === 'swept') SK.tag(c, 'Copy', x, y - EH / 2 - 22, 20, '#ffd0d0');
+      const own = cp.kind === 'own'; SK.animal(c, cp.who, x + 92, y + 130, 0.9, { t, pose: cp.st === 'escape' ? 'walk' : own ? 'wave' : 'idle', expr: cp.st === 'escape' ? 'laugh' : cp.st === 'swept' ? 'wow' : own ? 'laugh' : 'think', facing: -1 });
       c.restore();
       // the copier runs off with a stack of copies
       if (cp.st === 'escape') { const q = (t - cp.at) / 0.9; for (let j = 0; j < 4; j++) { c.save(); c.translate(EASEL.x - q * 300 + 70 - j * 4, EASEL.y + 60 - j * 6); c.rotate(-0.1 + j * 0.05); c.scale(0.32, 0.32); comic(c, -EW / 2, -EH / 2, EW, EH, cp.kind, t); c.restore(); } }

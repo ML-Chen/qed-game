@@ -53,6 +53,39 @@ const SK = (() => {
     c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(x, y, r * 0.3, x, y, r * 1.5); gr.addColorStop(0, 'rgba(255,240,170,0)'); gr.addColorStop(0.6, `rgba(255,230,140,${0.18 + 0.15 * p})`); gr.addColorStop(1, 'rgba(255,230,140,0)'); c.fillStyle = gr; c.beginPath(); c.arc(x, y, r * 1.5, 0, TAU); c.fill(); c.restore();
     c.save(); c.strokeStyle = col; c.globalAlpha = 0.55 + 0.4 * p; c.lineWidth = 3; c.setLineDash([8, 6]); c.lineDashOffset = -g.t * 30; c.beginPath(); c.arc(x, y, r + p * 4, 0, TAU); c.stroke(); c.restore();
   }
+  // Marking what to drag and where (the owner: "if you want me to drag something, that has to be obvious as opposed to
+  // just highlighting some things"). Use all three for every drag: SK.grab on the thing you move (a solid pulsing ring,
+  // a little hand-grab badge, and a gentle bob), SK.target on where it goes (a dashed outline that breathes, with four
+  // arrows pointing in), and SK.arrow between them (a dotted arrow that flows from the thing to the target).
+  // They show at every level until the drag starts (pass o.always to keep them at level 2 too; by default level 2 shows
+  // only the arrow while the player is idle, like the ghost hand).
+  function hintOn(g, o) { if (g.done || (g.ptr && g.ptr.down)) return false; if (o.always || g.level < 2) return true; return g.t - (g.lastIn ?? 0) > 2.8; }
+  function grab(c, g, x, y, r = 26, o = {}) {
+    if (!hintOn(g, o)) return; const p = 0.5 + 0.5 * Math.sin(g.t * 6);
+    c.save(); c.strokeStyle = o.col || '#fff6ea'; c.lineWidth = 4; c.globalAlpha = 0.75 + 0.25 * p; c.beginPath(); c.arc(x, y, r + 3 * p, 0, TAU); c.stroke();
+    c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.globalAlpha = 0.5; c.beginPath(); c.arc(x, y, r + 3 * p + 2.5, 0, TAU); c.stroke(); c.restore();
+    // the badge: a small open hand above the thing, bobbing
+    const bx = x + r * 0.75, by = y - r * 0.9 - 4 * p; c.save(); c.translate(bx, by); c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2;
+    c.beginPath(); c.arc(0, 0, 13, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#fff6ea'; c.lineWidth = 1.6;
+    for (let i = 0; i < 4; i++) { c.beginPath(); c.roundRect(-6.5 + i * 3.4, -8 + (i === 0 || i === 3 ? 2 : 0), 3, 8, 1.5); c.fill(); c.stroke(); }
+    c.beginPath(); c.roundRect(-7, -1, 13, 8, 3); c.fill(); c.stroke(); c.restore();
+  }
+  function target(c, g, x, y, r = 30, o = {}) {
+    if (!hintOn(g, o)) return; const p = 0.5 + 0.5 * Math.sin(g.t * 4);
+    c.save(); c.strokeStyle = o.col || '#ffe27a'; c.lineWidth = 3.5; c.setLineDash([9, 7]); c.lineDashOffset = -g.t * 24; c.globalAlpha = 0.8;
+    if (o.w) { c.beginPath(); c.roundRect(x - o.w / 2, y - o.h / 2, o.w, o.h, 12); c.stroke(); } else { c.beginPath(); c.arc(x, y, r + 4 * p, 0, TAU); c.stroke(); }
+    c.setLineDash([]); c.fillStyle = o.col || '#ffe27a'; const R = (o.w ? Math.max(o.w, o.h) / 2 : r) + 16 + 6 * (1 - p);
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; c.save(); c.translate(x + Math.cos(a) * R, y + Math.sin(a) * R); c.rotate(a + Math.PI); c.beginPath(); c.moveTo(7, 0); c.lineTo(-5, -6); c.lineTo(-5, 6); c.closePath(); c.fill(); c.restore(); }
+    c.restore();
+  }
+  function arrow(c, g, ax, ay, bx, by, o = {}) {
+    if (!(g.done || (g.ptr && g.ptr.down)) && (o.always || g.level < 2 || g.t - (g.lastIn ?? 0) > 2.8)) {
+      const L = Math.hypot(bx - ax, by - ay); if (L < 20) return; const ux = (bx - ax) / L, uy = (by - ay) / L, s0 = o.from ?? 30, s1 = L - (o.to ?? 36);
+      c.save(); c.fillStyle = o.col || '#fff6ea'; c.globalAlpha = 0.85; const step = 16, off = (g.t * 40) % step;
+      for (let d = s0 + off; d < s1; d += step) { c.beginPath(); c.arc(ax + ux * d, ay + uy * d, 3.2, 0, TAU); c.fill(); }
+      const hx = ax + ux * s1, hy = ay + uy * s1; c.translate(hx, hy); c.rotate(Math.atan2(uy, ux)); c.beginPath(); c.moveTo(10, 0); c.lineTo(-6, -8); c.lineTo(-6, 8); c.closePath(); c.fill(); c.strokeStyle = '#3a1640'; c.lineWidth = 1.5; c.stroke(); c.restore();
+    }
+  }
   // call from the microgame's down handler (or use SK.input) so the demo hand stops once the player has touched
   function touched(g) { g.s.touched = true; }
 
@@ -127,5 +160,5 @@ const SK = (() => {
     hold(g, synth, key, t, x, y, dur) { const B = g.s._bot = g.s._bot || {}; if (B[key] === 2 || g.t < t) return B[key] === 2; if (!B[key]) { B[key] = 1; synth('down', x, y); } if (g.t >= t + dur) { B[key] = 2; synth('up', x, y); } return B[key] === 2; },
   };
 
-  return { TAU, clamp, lerp, easeOut, easeInOut, dist, hand, demo, glow, touched, dragStart, dragMove, dragEnd, dragging, pick, holdStart, holdEnd, held, step, tag, shadow, animal, ball, bot };
+  return { TAU, clamp, lerp, easeOut, easeInOut, dist, hand, demo, glow, grab, target, arrow, touched, dragStart, dragMove, dragEnd, dragging, pick, holdStart, holdEnd, held, step, tag, shadow, animal, ball, bot };
 })();

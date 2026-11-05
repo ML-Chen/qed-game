@@ -26,7 +26,7 @@ function paintDiner(o) {
   o.fillStyle = '#f4f0f8'; o.beginPath(); o.roundRect(96, 444, 256, 26, 13); o.fill(); o.strokeStyle = '#b8b0c8'; o.lineWidth = 2; o.stroke();
 }
 MG.add({
-  id: 'stopeating', stage: 'markets', cmd: 'EAT TILL IT ISN\'T WORTH IT!', time: 6, mood: 'desert', winText: 'The margin!', failText: 'Too full!', hold: 1.7,
+  id: 'stopeating', stage: 'markets', cmd: 'EAT TILL IT ISN\'T WORTH IT!', time: 6, mood: 'desert', winText: 'Stopped at the right slice!', failText: 'Too full!', hold: 1.7,
   card: { title: 'Stop when the next one isn\'t worth it', kind: 'Economics', ref: 'Marginal benefit',
     text: 'The first slice of pizza is wonderful. The second is still great. By the fifth, you hardly enjoy it. The extra enjoyment from one more slice is called its marginal benefit, and it usually shrinks as you have more.\n\nEach slice costs the same coin. So keep buying while the next slice is worth more to you than its price, and stop when it is worth less. When the price changes, the best place to stop changes too.',
     note: 'Keep going while the next one is worth more than it costs; stop when it isn\'t.' },

@@ -54,7 +54,7 @@ function bot(c, x, y, h, ghost, t) {
 function sees(s, i) { const p = POSTERS[i], r = real(s), d = SK.dist(r.x, r.y, p.x, p.y); if (d > s.C.range) return false; let da = Math.atan2(p.y - r.y, p.x - r.x) - r.h; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; return Math.abs(da) < 0.95; }
 function real(s) { const q = at(s.d); return { x: q.x + s.dev.x + s.off.x, y: q.y + s.dev.y + s.off.y, h: q.h }; }
 MG.add({
-  id: 'landmark', stage: 'robots', cmd: 'SPOT LANDMARK!', time: 7, mood: 'night', winText: 'Landmark fix!', failText: 'Lost!',
+  id: 'landmark', stage: 'robots', cmd: 'TAP POSTERS THE ROBOT SEES!', time: 7, mood: 'night', winText: 'Parked on charger!', failText: 'Lost!',
   card: { title: 'Small errors add up', kind: 'Robotics', ref: 'Odometry drift and landmark correction (localisation)',
     text: 'A robot can keep track of where it is by counting how far its wheels have turned. This is called odometry. But wheels slip a little and are never exactly the size the robot thinks, so every metre adds a tiny error, and the errors pile up. The robot\'s guess slides further and further from the truth.\n\nThe fix is to look around. When the camera spots something whose place on the map it already knows, called a landmark, the robot can work out exactly where it is and reset its guess. Warehouse robots, robot vacuums and phones all mix counting with looking like this.',
     note: 'Counting wheel turns drifts as small errors add up; spotting a known landmark snaps the robot\'s guess back to the truth.' },
@@ -93,11 +93,15 @@ MG.add({
     if (e > 4 && !won) { c.save(); c.strokeStyle = `rgba(255,120,120,${Math.min(0.8, e / 40)})`; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(gx, gy); c.lineTo(r.x, r.y); c.stroke(); c.restore(); }
     bot(c, gx, gy, q.h, true, t);
     bot(c, r.x, r.y, r.h, false, t);
+    SK.tag(c, 'Charger', CHG.x, CHG.y + 44, 18);
+    if (!g.done && e > 12) SK.tag(c, 'Its guess', gx, gy - 34, 18);
+    if (!g.done && t < 3.5) SK.tag(c, 'Robot', r.x + 50, r.y + 4, 18);
+    { const vi = s.used.findIndex((u, i) => !u && sees(s, i)); if (vi >= 0 && !g.done) { const p = POSTERS[vi]; SK.tag(c, 'Landmark', SK.clamp(p.x, 60, 300), p.y + 36, 18); } }
     // the snap: a ring flies from the ghost to the robot
     if (s.snap && t - s.snap < 0.4) { const k = (t - s.snap) / 0.4; c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#ffe27a'; c.lineWidth = 3; c.beginPath(); c.arc(r.x, r.y, 10 + k * 40, 0, 7); c.stroke(); c.restore(); }
     if (s.crash) { for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(r.x + Math.cos(a) * 18, r.y - 22 + Math.sin(a) * 6, 4, 0, 7); c.fill(); } }
     // the fox supervising from the top corner
-    SK.animal(c, 'fox', 316, 112 + 0, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : e > 30 ? 'wow' : 'think', facing: -1 });
+    SK.animal(c, 'fox', 300, 600, 0.75, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : e > 30 ? 'wow' : 'think', facing: -1 });
     // guidance: tap the poster the camera can see right now
     const nn = s.used.findIndex((u, i) => !u && sees(s, i));
     if (nn >= 0) SK.demo(g, c, 'tap', [POSTERS[nn].x, POSTERS[nn].y], null, { delay: 0.9 });

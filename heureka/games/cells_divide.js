@@ -34,7 +34,7 @@ function cellBody(c, pts, r, t, mood) {
 }
 
 MG.add({
-  id: 'cells_divide', stage: 'cells', cmd: 'COPY, THEN SPLIT THE CELL!', time: 7, mood: 'sea', winText: 'Mitosis!', failText: 'Mixed up!',
+  id: 'cells_divide', stage: 'cells', cmd: 'COPY, THEN SPLIT THE CELL!', time: 7, mood: 'sea', winText: 'Two full cells!', failText: 'Mixed up!',
   card: { title: 'One cell becomes two', kind: 'Biology', ref: 'Mitosis',
     text: 'Before a cell divides, it copies every chromosome, the long strands of DNA that carry its genes. Each copy stays joined to its original, making an X shape.\n\nNext, fibres from the two ends of the cell grab every X and line them all up across the middle. The cell checks that every X is attached before it goes on. Then the fibres pull the two halves of each X apart, and the cell pinches in two.\n\nBecause everything was lined up first, each new cell gets exactly one copy of every chromosome.',
     note: 'A cell copies its chromosomes, lines them up and pulls them apart, so both new cells get a full set.' },

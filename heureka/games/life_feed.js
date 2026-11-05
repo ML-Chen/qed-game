@@ -1,6 +1,6 @@
 // FEED! (chem_bio EL-01) — a sunny garden with a hungry puppy, a wilting sapling, a mushroom, a rock and a toy robot.
-// Drag a biscuit from the bowl, or the watering can, to everything that needs it: the puppy wags and grows, the sapling
-// perks up and sprouts a leaf, the mushroom pops up a baby mushroom. Feeding the rock or the robot does nothing: the
+// Drag a biscuit from the bowl, or the watering can, to anything. Living things use it and grow, two feeds each: the
+// puppy grows bigger, the sapling perks up and flowers, the mushroom pops up babies. Feeding the rock or the robot does nothing: the
 // crumbs just sit there and a bird swoops down and eats them. Level 2 swaps in a seed (alive, waiting) and a campfire
 // (it grows, but is not alive).
 (() => {
@@ -25,7 +25,7 @@
     SK.shadow(o, BOWL.x, BOWL.y + 14, 44, 10, 0.25); SK.shadow(o, CAN.x, CAN.y + 22, 46, 10, 0.25);
   }
   function puppy(c, it, t, hungry) {
-    const s = 1 + 0.18 * SK.easeOut(it.fed), wag = Math.sin(t * (it.fed ? 22 : 4)) * (it.fed ? 0.7 : 0.15);
+    const s = 1 + 0.3 * it.fed, wag = Math.sin(t * (it.fed ? 22 : 4)) * (it.fed ? 0.7 : 0.15);
     c.save(); c.translate(it.x, it.y + 20); c.scale(s, s);
     SK.shadow(c, 0, 0, 30, 7, 0.25);
     c.strokeStyle = '#8a5a30'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(-20, -18); c.quadraticCurveTo(-34 + wag * 8, -34, -30 + wag * 14, -44); c.stroke();
@@ -52,6 +52,7 @@
     leaf(x + lean * 0.5, y - 26, -0.5 + droop * 1.5 + sw, 18); leaf(x + lean * 0.5, y - 26, Math.PI + 0.5 - droop * 1.5 + sw, 18);
     leaf(x + lean, top, -0.9 + droop * 1.6 + sw, 16); leaf(x + lean, top, Math.PI + 0.9 - droop * 1.6 + sw, 16);
     if (k > 0.05) leaf(x, top - 2, -Math.PI / 2 + sw, 14 * k);
+    if (k > 0.75) { const q = (k - 0.75) * 4; c.fillStyle = '#ff8ab0'; for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28; c.beginPath(); c.arc(x + Math.cos(a) * 6 * q, top - 18 + Math.sin(a) * 6 * q, 4.5 * q, 0, 7); c.fill(); } c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(x, top - 18, 3.5 * q, 0, 7); c.fill(); }
   }
   function seed(c, it, t) {
     const k = SK.easeOut(it.fed), x = it.x, y = it.y + 24;
@@ -59,6 +60,7 @@
     c.fillStyle = '#c8a060'; c.strokeStyle = '#6a4a20'; c.lineWidth = 2; c.beginPath(); c.ellipse(x, y - 8 - k * 4, 9, 6, 0.3, 0, 7); c.fill(); c.stroke();
     if (k > 0.02) { c.strokeStyle = '#4a9a30'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(x, y - 12); c.quadraticCurveTo(x - 4, y - 12 - 20 * k, x + 2, y - 14 - 34 * k); c.stroke();
       for (const s of [-1, 1]) { c.save(); c.translate(x + 2, y - 14 - 34 * k); c.rotate(s * 0.7 - Math.PI / 2); c.fillStyle = '#6ac04a'; c.beginPath(); c.ellipse(0, s * 0, 12 * k, 6 * k, s * 0.9, 0, 7); c.fill(); c.restore(); } }
+    if (k > 0.75) { const q = (k - 0.75) * 4, fy = y - 50 - 34 * k + 34; c.fillStyle = '#ffd040'; for (let i = 0; i < 6; i++) { const a = i / 6 * 6.28; c.beginPath(); c.arc(x + 2 + Math.cos(a) * 6 * q, fy - 22 + Math.sin(a) * 6 * q, 4 * q, 0, 7); c.fill(); } c.fillStyle = '#c86a20'; c.beginPath(); c.arc(x + 2, fy - 22, 3 * q, 0, 7); c.fill(); }
   }
   function mushroom(c, it, t) {
     const k = SK.easeOut(it.fed), x = it.x, y = it.y + 24, one = (mx, sz, h) => {
@@ -67,7 +69,8 @@
       c.fillStyle = '#fff6ea'; for (const [dx, dy, r] of [[-0.45, -0.3, 0.16], [0.2, -0.5, 0.14], [0.5, -0.18, 0.11]]) { c.beginPath(); c.arc(mx + dx * sz, y - h + dy * sz, r * sz, 0, 7); c.fill(); } };
     SK.shadow(c, x, y, 30, 7, 0.22);
     one(x, 22 + k * 4, 26 + k * 8 - (1 - k) * 6);
-    if (k > 0.05) one(x + 26, 12 * k, 16 * k);
+    if (k > 0.05) one(x + 26, 12 * Math.min(1, k * 2), 16 * Math.min(1, k * 2));
+    if (k > 0.55) one(x - 24, 12 * (k - 0.5) * 2, 16 * (k - 0.5) * 2);
     if (!it.fed) { c.fillStyle = 'rgba(120,90,60,0.25)'; c.beginPath(); c.ellipse(x, y - 30, 22, 10, 0, 0, 7); c.fill(); }
   }
   function rock(c, it, t) { P.rock(c, it.x, it.y + 22, 1.1, '#a8a0a0'); if (it.wet) { c.fillStyle = 'rgba(150,200,255,0.35)'; c.beginPath(); c.ellipse(it.x, it.y + 6, 26, 14, 0, 0, 7); c.fill(); } }
@@ -82,7 +85,7 @@
     c.fillStyle = '#2a3a5a'; c.fillRect(x - 10, y - 30, 20, 8); c.fillStyle = bat > 0.4 ? '#6ad86a' : '#e8a040'; c.fillRect(x - 9, y - 29, 18 * bat, 6);
   }
   function campfire(c, it, t) {
-    const x = it.x, y = it.y + 24, k = 1 + it.crumbs * 0.6 - it.wet * 0.9;
+    const x = it.x, y = it.y + 24, flare = it.feedT != null ? 0.9 * Math.max(0, 1 - (t - it.feedT) / 1.6) : 0, k = Math.max(0.15, 1 - t * 0.04) + flare - it.wet * 0.9;
     SK.shadow(c, x, y, 28, 6, 0.25);
     c.fillStyle = '#8a5430'; c.save(); c.translate(x, y - 4); c.rotate(0.4); c.fillRect(-20, -4, 40, 8); c.rotate(-0.8); c.fillRect(-20, -4, 40, 8); c.restore();
     B3.glow(c, x, y - 16, 40 * Math.max(0.2, k), '255,150,60', 0.4);
@@ -103,7 +106,7 @@
     if (pouring) { const sx = x + Math.cos(tilt) * 52 - Math.sin(tilt) * -24, sy = y + Math.sin(tilt) * 52 + Math.cos(tilt) * -24; for (let i = 0; i < 14; i++) { const q = (t * 3 + i / 14) % 1; c.fillStyle = `rgba(120,200,255,${0.9 - q * 0.5})`; c.beginPath(); c.arc(sx + 6 * q + Math.sin(i) * 4, sy + q * 60, 2.6, 0, 7); c.fill(); } }
   }
   MG.add({
-    id: 'feed', stage: 'life', cmd: 'FEED WHAT IS ALIVE!', time: 6, mood: 'bright', winText: 'Alive!', failText: 'Hungry!',
+    id: 'feed', stage: 'life', cmd: 'FEED THEM SO THEY GROW!', time: 6, mood: 'bright', winText: 'The living things grew!', failText: 'Still hungry!',
     card: { title: 'What is alive?', kind: 'Biology', ref: 'Characteristics of living things',
       text: 'Living things need food and water. They use them to grow, to move, to repair themselves and to make more of their kind. A puppy eats food. A plant takes in water through its roots and makes its own food from sunlight. A mushroom soaks up food from the soil or wood it grows on, and needs water too.\n\nA rock and a toy robot are not alive. They do not eat, grow or have babies, so food does nothing for them. A campfire grows and gives off heat, but it is not alive either. A seed is alive even while it waits: give it water and it sprouts.',
       note: 'Living things take in food and water, grow, and make more living things. Non-living things do not.' },
@@ -121,17 +124,18 @@
       if (what === 'water') s.can.pour = { t0: g.t, it }; else s.snack = null;
       if (!it) return;
       const need = LIVING[it.kind];
-      if (need === what || (it.kind === 'puppy' && what === 'water')) { if (!it.fed) { it.fedAt = g.t; it.fed = 0.001; g.sfx(it.kind === 'puppy' ? (what === 'snack' ? 'munch' : 'slurp') : 'grow'); } return; }
+      if (need === what || (it.kind === 'puppy' && what === 'water')) { if ((it.lv || 0) < 2) { it.lv = (it.lv || 0) + 1; it.fedAt = g.t; g.sfx(it.kind === 'puppy' ? (what === 'snack' ? 'munch' : 'slurp') : 'grow'); } else g.sfx('thud'); return; }
+      if (it.kind === 'fire' && what === 'snack') { it.feedT = g.t; }
       // a plant cannot eat a biscuit, and a non-living thing needs nothing: the crumbs just sit there until a bird comes
       if (what === 'snack') { it.crumbs = 1; if (it.kind !== 'fire' && !s.bird) s.bird = { t0: g.t, it }; } else if (!need) it.wet = 1;
       g.sfx(it.kind === 'fire' ? (what === 'water' ? 'sweep' : 'fire') : 'thud'); if (!need) it.nope = g.t;
     },
     update(g, dt) {
       const s = g.s;
-      for (const it of s.items) if (it.fed > 0 && it.fed < 1) it.fed = Math.min(1, it.fed + dt * 2.2);
+      for (const it of s.items) { const want = (it.lv || 0) / 2; if (it.fed < want) it.fed = Math.min(want, it.fed + dt * 1.6); }
       const P0 = s.can.pour; if (P0) { const k = g.t - P0.t0; s.can.tilt = SK.easeOut(Math.min(1, k * 5)) * 0.7; if (k > 0.45) { s.can.tilt = 0; s.can.pour = null; s.can.back = true; } }
       if (s.can.back && !SK.dragging(g)) { s.can.x += (CAN.x - s.can.x) * Math.min(1, dt * 12); s.can.y += (CAN.y - s.can.y) * Math.min(1, dt * 12); if (SK.dist(s.can.x, s.can.y, CAN.x, CAN.y) < 1) s.can.back = false; }
-      if (!g.done && s.items.every(it => !LIVING[it.kind] || it.fed >= 1)) { g.win(); g.sfx('cheer'); g.burst(180, 360, ['#ffd45a', '#ff8aa0', '#8ad860'], 20, 200); }
+      if (!g.done && s.items.every(it => !LIVING[it.kind] || it.fed >= 0.99)) { g.win(); g.sfx('cheer'); g.burst(180, 360, ['#ffd45a', '#ff8aa0', '#8ad860'], 20, 200); }
       if (s.bird && g.t - s.bird.t0 > 1.1 && !s.bird.ate) { s.bird.ate = true; s.bird.it.crumbs = 0; g.sfx('tweet'); g.sfx('munch'); }
       if (s.bird && g.t - s.bird.t0 > 2.2) s.bird = null;
       for (const it of s.items) if (it.kind === 'fire' && it.crumbs) it.crumbs = Math.min(1.6, it.crumbs + dt);
@@ -141,9 +145,8 @@
       c.drawImage(g.bake('feed_bg', paintBg), 0, 0, 360, 640);
       const sorted = s.items.slice().sort((a, b) => a.y - b.y);
       for (const it of sorted) {
-        if (it.kind === 'puppy') puppy(c, it, t, !it.fed); else DRAW[it.kind](c, it, t);
+        if (it.kind === 'puppy') puppy(c, it, t, (it.lv || 0) < 2); else DRAW[it.kind](c, it, t);
         if (it.crumbs && it.kind !== 'fire' && !(s.bird && s.bird.ate && s.bird.it === it)) for (let i = 0; i < 6; i++) { c.fillStyle = '#c88a40'; c.fillRect(it.x - 12 + B3.hash(i) * 24, it.y + 2 + B3.hash(i * 2) * 8, 4, 3); }
-        if (LIVING[it.kind] && !it.fed) SK.glow(c, g, it.x, it.y, 40);
       }
       // the bird that swoops down for the crumbs
       if (s.bird) { const q = t - s.bird.t0, k = SK.clamp(q / 0.9, 0, 1), o = SK.clamp((q - 1.6) / 0.6, 0, 1), it = s.bird.it;
@@ -159,16 +162,17 @@
       // the frog cheers you on
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'frog', 180, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-      const nx = s.items.find(i => LIVING[i.kind] && !i.fed), snack = nx && LIVING[nx.kind] === 'snack';
+      if (!s.items.some(i => i.lv) && !s.held) { SK.glow(c, g, BOWL.x, BOWL.y - 6, 40); SK.glow(c, g, CAN.x, CAN.y, 40); }
+      const nx = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2), snack = nx && LIVING[nx.kind] === 'snack';
       SK.demo(g, c, 'drag', snack ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y], nx ? (snack ? [nx.x, nx.y + 4] : [nx.x - 30, nx.y - 8]) : [180, 300], { never: !nx || !!s.can.pour });
     },
+    // the bot feeds each living thing twice, one drag at a time
     auto(g, dt, synth) {
-      const s = g.s; if (g.done) return; const todo = s.items.filter(it => LIVING[it.kind]);
-      todo.forEach((it, i) => {
-        const t = 1.0 + i * 1.05, need = LIVING[it.kind];
-        if (need === 'snack') SK.bot.drag(g, synth, 'f' + i, t, [BOWL.x, BOWL.y - 6], [it.x, it.y + 12], 0.45);
-        else SK.bot.drag(g, synth, 'f' + i, t, [CAN.x, CAN.y], [it.x - 30, it.y - 8], 0.45);
-      });
+      const s = g.s; if (g.done || g.t < 1.0) return; const B = s._b = s._b || { n: 1.0 };
+      if (B.job) { const J = B.job, k = Math.min(1, (g.t - J.t0) / 0.4); synth('move', SK.lerp(J.a[0], J.b[0], k), SK.lerp(J.a[1], J.b[1], k)); if (k >= 1) { synth('up', J.b[0], J.b[1]); B.job = null; B.n = g.t + 0.15; } return; }
+      if (g.t < B.n || s.can.pour || s.can.back) return; const it = s.items.find(i => LIVING[i.kind] && (i.lv || 0) < 2); if (!it) return;
+      const snack = LIVING[it.kind] === 'snack' && !it.lv, a = snack ? [BOWL.x, BOWL.y - 6] : [CAN.x, CAN.y], b = snack ? [it.x, it.y + 12] : [it.x - 30, it.y - 8];
+      B.job = { a, b, t0: g.t }; synth('down', a[0], a[1]);
     },
   });
 })();

@@ -54,7 +54,7 @@ function cart(c, x, y, t, moving) { // the candy cart: striped canopy, lollipop 
   c.restore();
 }
 MG.add({
-  id: 'save', stage: 'money', cmd: 'SAVE COINS FOR THE BIKE!', time: 6, mood: 'bright', winText: 'Saving!', failText: 'Candy!', hold: 1.7,
+  id: 'save', stage: 'money', cmd: 'SAVE COINS FOR THE BIKE!', time: 6, mood: 'bright', winText: 'Saved enough!', failText: 'Spent on candy!', hold: 1.7,
   card: { title: 'Saving adds up', kind: 'Money', ref: 'Saving toward a goal',
     text: 'Each coin on its own is small. Put every one in the jar and the pile grows until it reaches the line, the price of the bike.\n\nSpend the coins as they come, on candy, and the jar never fills. Saving means keeping some money now so you can buy something bigger later.\n\nA goal helps. When you know the price of the thing you want, you can see how close you are, and a small treat now and then can still fit if you keep saving the rest.',
     note: 'Saving a little each time adds up to something big.' },

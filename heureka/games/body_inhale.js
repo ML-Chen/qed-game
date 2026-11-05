@@ -69,7 +69,7 @@ function bunny(c, t, fill, ay, cheeks, won, lost) {
 }
 
 MG.add({
-  id: 'body_inhale', stage: 'body', cmd: 'PULL THE DIAPHRAGM DOWN!', time: 8, mood: 'bright', winText: 'Diaphragm!', failText: 'Pfffft!',
+  id: 'body_inhale', stage: 'body', cmd: 'PULL THE DIAPHRAGM DOWN!', time: 8, mood: 'bright', winText: 'Deep breaths!', failText: 'Pfffft!',
   card: { title: 'Breathing in', kind: 'Biology', ref: 'The diaphragm and the lungs',
     text: 'Your lungs have no muscles of their own to pull in air. Under them sits the diaphragm, a dome-shaped sheet of muscle.\n\nWhen you breathe in, the diaphragm tightens and pulls down, and muscles between your ribs lift your chest outward. The space inside your chest gets bigger, so the air pressure in your lungs drops below the pressure of the air outside. Air rushes in through your nose and mouth to fill the space.\n\nWhen the diaphragm relaxes, it springs back up, the space shrinks, and air is pushed out.',
     note: 'Pulling the diaphragm down makes more room in your chest, so air flows into your lungs.' },

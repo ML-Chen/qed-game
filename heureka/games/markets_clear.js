@@ -39,10 +39,11 @@ function priceTag(c, x, y, p, hot) { // a paper tag on the pole holding a little
   c.fillStyle = hot ? '#fff8d8' : '#fff2d8'; c.strokeStyle = '#7a4a2a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-36, 0); c.lineTo(-22, -24); c.lineTo(30, -24); c.lineTo(30, 24); c.lineTo(-22, 24); c.closePath(); c.fill(); c.stroke();
   c.fillStyle = '#7a4a2a'; c.beginPath(); c.arc(-22, 0, 4, 0, 7); c.fill();
   const n = 1 + Math.round(p * 7); for (let i = 0; i < n; i++) B8.flatCoin(c, 6, 16 - i * 4.5, 13, 0);
+  c.fillStyle = '#3a1640'; for (const d of [-1, 1]) { c.beginPath(); c.moveTo(44, d * 22); c.lineTo(36, d * 10); c.lineTo(52, d * 10); c.closePath(); c.fill(); } c.fillRect(42, -10, 4, 20); // slide me up or down
   c.restore();
 }
 MG.add({
-  id: 'clearstall', stage: 'markets', cmd: 'SET A PRICE THAT SELLS OUT!', time: 6, mood: 'desert', winText: 'Equilibrium!', failText: 'Not cleared!', hold: 1.8,
+  id: 'clearstall', stage: 'markets', cmd: 'SET A PRICE THAT SELLS OUT!', time: 6, mood: 'desert', winText: 'Sold out, nobody waiting!', failText: 'Left over!', hold: 1.8,
   card: { title: 'The price that clears the market', kind: 'Economics', ref: 'Supply and demand: equilibrium',
     text: 'At a low price, lots of buyers want apples, but growers bring few, because picking them hardly pays. Buyers are left waiting. That is a shortage.\n\nAt a high price, growers bring lots of apples, but most buyers walk away. Apples are left to rot. That is a surplus.\n\nIn between is one price where the number of apples buyers want matches the number growers bring. Every apple sells and nobody waits. Economists call it the equilibrium price. When more buyers arrive, that price rises.',
     note: 'A market clears at the price where buyers want as much as sellers bring.' },
@@ -78,17 +79,17 @@ MG.add({
     const matched = i => k.a[i] && k.b[i] && (R ? true : true);
     for (let i = COLS - 1; i >= 0; i--) {
       const v = s.vis.b[i]; if (v < 0.02) continue; const x = CX(i) + (1 - v) * 80 * (i % 2 ? 1 : -1) * 0 + (1 - v) * 120, al = v;
-      const has = R && rk > 0.5 && matched(i), sadW = R && !k.a[i] && k.b[i];
+      const has = R && rk > 0.5 && matched(i), sadW = !k.a[i] && k.b[i], showSad = sadW && (!R || rk > 0.5); // a buyer with no apple above them is left waiting
       c.save(); c.globalAlpha = al;
-      SK.animal(c, KINDS[i], x, QUEUE + (i % 2) * 22, 0.74, { t, phase: i, pose: has && won ? 'cheer' : sadW && rk > 0.5 ? 'sad' : v < 0.95 ? 'walk' : 'idle', expr: has ? 'laugh' : sadW && rk > 0.5 ? 'sad' : 'happy', facing: v < 0.95 ? 1 : 1,
+      SK.animal(c, KINDS[i], x, QUEUE + (i % 2) * 22, 0.74, { t, phase: i, pose: has && won ? 'cheer' : showSad ? 'sad' : v < 0.95 ? 'walk' : 'idle', expr: has ? 'laugh' : showSad ? 'sad' : 'happy', facing: v < 0.95 ? 1 : 1,
         hold: has ? (h => apple(h, 0, -2, 9)) : null });
       c.restore();
-      if (sadW && rk > 0.5) { c.save(); c.globalAlpha = Math.min(1, (rk - 0.5) * 3); c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.ellipse(x + 14, QUEUE + (i % 2) * 22 - 78, 13, 13, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#3a1640'; c.font = '900 18px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x + 14, QUEUE + (i % 2) * 22 - 77); c.restore(); }
+      if (showSad) { c.save(); c.globalAlpha = R ? Math.min(1, (rk - 0.5) * 3) : 0.9; c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.ellipse(x + 14, QUEUE + (i % 2) * 22 - 78, 13, 13, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#3a1640'; c.font = '900 18px Nunito, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', x + 14, QUEUE + (i % 2) * 22 - 77); c.restore(); }
     }
     // the apples on the counter: grown and brought only when the price covers their cost
     for (let i = 0; i < COLS; i++) {
       const v = s.vis.a[i]; if (v < 0.02) continue; const flying = R && matched(i) && rk > 0;
-      const rot = R && k.a[i] && !k.b[i] ? SK.clamp((t - R.t) * 1.5, 0, 1) : 0;
+      const rot = k.a[i] && !k.b[i] ? (R ? SK.clamp(0.45 + (t - R.t) * 1.5, 0, 1) : 0.45) : 0; // an apple nobody buys starts to rot
       if (flying && rk > 0.5) continue; // now held by its buyer
       const ax = flying ? SK.lerp(CX(i), CX(i) + 4, rk * 2) : CX(i), ay = flying ? SK.lerp(COUNTER - 6, QUEUE - 40, rk * 2) : COUNTER - 6 - (1 - v) * 30;
       c.save(); c.globalAlpha = v; apple(c, ax, ay, 17, rot); c.restore();
@@ -96,12 +97,13 @@ MG.add({
     }
     // the price tag on its pole
     const ty = yOfP(s.p);
+    B8.coin(c, TRACK.x - 26, TRACK.y1 + 6, 9); for (let i = 0; i < 6; i++) B8.flatCoin(c, TRACK.x - 26, TRACK.y0 + 10 - i * 5, 10, 0); // cheap at the bottom, dear at the top
     if (!R) SK.glow(c, g, TRACK.x + 2, ty, 34);
     priceTag(c, TRACK.x + 4, ty, s.p, s.held);
-    // on a win, the buyers' and growers' curves draw themselves and cross at the tag
-    if (R && R.ok) { const q = SK.clamp((t - R.t - 0.3) * 2, 0, 1); c.save(); c.lineWidth = 5; c.lineCap = 'round';
-      c.strokeStyle = '#3a78d8'; c.beginPath(); c.moveTo(TRACK.x - 60, ty - 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty - 60, ty + 40, q)); c.stroke();
-      c.strokeStyle = '#e8403a'; c.beginPath(); c.moveTo(TRACK.x - 60, ty + 60); c.lineTo(SK.lerp(TRACK.x - 60, TRACK.x + 40, q), SK.lerp(ty + 60, ty - 40, q)); c.stroke(); c.restore(); }
+    // the state of the market, live as you slide, and the labels
+    const nb = k.b.filter(Boolean).length, na = k.a.filter(Boolean).length;
+    SK.tag(c, na === nb ? 'Every apple sold' : na < nb ? 'Shortage: buyers wait' : 'Surplus: apples rot', 150, 584, 20, '#fff6ea', na === nb ? 'rgba(40,140,70,0.88)' : 'rgba(190,40,40,0.88)');
+    SK.tag(c, 'Price', TRACK.x, TRACK.y0 - 34, 18); SK.tag(c, 'Buyers', 40, 418, 18); SK.tag(c, 'Apples', 228, 270, 18);
     // guidance: slide the tag up from the bottom
     if (!R) SK.demo(g, c, 'drag', [TRACK.x + 4, yOfP(s.p)], [TRACK.x + 4, yOfP(this.band(g))], { delay: 0.8, period: 2 }); // toward today's clearing price
   },

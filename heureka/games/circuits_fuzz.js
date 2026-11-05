@@ -54,7 +54,7 @@ function guitar(c, x, y, rot, strum, so) { // the instrument held across the fox
   c.restore();
 }
 MG.add({
-  id: 'fuzz', stage: 'circuits', cmd: 'TURN UP THE GAIN FOR FUZZ!', time: 7, mood: 'night', winText: 'Clipping!', failText: 'Zzz...',
+  id: 'fuzz', stage: 'circuits', cmd: 'TURN UP THE GAIN FOR FUZZ!', time: 7, mood: 'night', winText: 'Tops squashed flat!', failText: 'Zzz...',
   card: { title: 'Too much gain clips the wave', kind: 'Engineering', ref: 'Amplifier clipping',
     text: 'An amplifier makes a signal bigger. The gain knob sets how many times bigger. The amplifier gets its power from a supply with a top voltage and a bottom voltage, called the rails, and its output can never go past them.\n\nTurn the gain up far enough and the peaks of the wave hit the rails and are sliced flat. A flat-topped wave holds extra high, buzzy tones that the smooth wave did not have. Guitar players clip on purpose to get fuzz. In a phone call or a recording, the same clipping is unwanted distortion.',
     note: "An amplifier's output can't go past its power rails, so too much gain slices the wave's tops flat and makes it buzz." },

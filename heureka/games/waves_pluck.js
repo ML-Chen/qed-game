@@ -35,7 +35,7 @@
     c.beginPath(); c.ellipse(x, y - 34, w, 5, 0, 0, 7); c.strokeStyle = '#5a4a8a'; c.stroke();
   }
   MG.add({
-    id: 'pluck', stage: 'waves', cmd: 'PLUCK TO BOUNCE RICE IN BOWL!', time: 7, mood: 'party', winText: 'Vibration!', failText: 'Hungry!',
+    id: 'pluck', stage: 'waves', cmd: 'PLUCK TO BOUNCE RICE IN BOWL!', time: 7, mood: 'party', winText: 'Bowl full!', failText: 'Hungry!',
     card: { title: 'Sound is shaking', kind: 'Physics', ref: 'Vibration and sound',
       text: 'When you pluck the band, it shakes back and forth very fast. That shaking is called vibration. It pushes the air back and forth too, and the shaking air reaches your ears as a twang.\n\nThe shaking air also reaches the drum and makes its skin shake, so the rice on top hops. A bigger pluck makes a bigger shake, so the rice hops higher.\n\nTouch the band while it shakes and it stops. Then there is no sound, and the rice sits still.',
       note: 'Sound is made by something shaking, and the shaking can travel through the air and make other things shake.' },

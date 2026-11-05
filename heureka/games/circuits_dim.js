@@ -4,7 +4,7 @@
 // night-light for the sleepy rabbit, a reading light for the owl, a cosy glow for the hedgehog). Squeeze a wire shut
 // and that room goes dark. Level 2: the rings ask for a closer match.
 const SQ = 90, BUS = { l: 34, r: 340 }, ROWS = [230, 372, 514], CLAMP_X = 118, BULB_X = 214;
-const ROOM = [{ kind: 'rabbit', want: 0.1, wall: '#3a3a6a' }, { kind: 'owl', want: 0.33, wall: '#5a3a5a' }, { kind: 'hedgehog', want: 0.56, wall: '#3a5a5a' }];
+const ROOM = [{ kind: 'rabbit', want: 0.12, wall: '#3a3a6a' }, { kind: 'owl', want: 0.3, wall: '#5a3a5a' }, { kind: 'hedgehog', want: 0.5, wall: '#3a5a5a' }];
 const TOL = [0.08, 0.07, 0.05];
 function paintHouse(o) {
   o.fillStyle = '#141428'; o.fillRect(0, 0, 360, 640);
@@ -26,7 +26,7 @@ function bulb(c, x, y, b, t) {
   return R;
 }
 MG.add({
-  id: 'dim', stage: 'circuits', cmd: 'DIM EACH BULB TO ITS RING!', time: 7, mood: 'night', winText: 'Resistance!', failText: 'Too bright!',
+  id: 'dim', stage: 'circuits', cmd: 'DIM EACH BULB TO ITS RING!', time: 7, mood: 'night', winText: 'Just right!', failText: 'Too bright!',
   card: { title: 'A narrow wire lets less through', kind: 'Engineering', ref: 'Resistance',
     text: 'A battery pushes electric charges round the loop. The charges have to squeeze through every part of it. Where the wire is narrow, fewer can pass each second. That slowing is called resistance.\n\nSqueeze a wire and its resistance goes up, so less current flows round that branch and the bulb glows more dimly. Squeeze it shut and no current flows at all, so the bulb goes out. A long, thin wire resists even more. Old dimmer switches worked like this, and every resistor in a circuit uses the same idea to set how much current flows.',
     note: 'Resistance slows the flow of charge: the narrower or longer the path, the less current gets through.' },
@@ -41,7 +41,7 @@ MG.add({
     const s = g.s;
     for (const k of s.cl) {
       const b = k.w * k.w; s.flow[k.i] += dt * (0.3 + 2.2 * k.w);
-      const ok = Math.abs(b - ROOM[k.i].want) <= s.tol; if (ok && !k.ok) { g.sfx('chime', { vol: 0.5, pitch: 0.8 + k.i * 0.2 }); } if (ok) k.okT += dt; else k.okT = 0; k.ok = ok;
+      const ok = k.w > 0 && Math.abs(b - ROOM[k.i].want) <= s.tol; if (ok && !k.ok) { g.sfx('chime', { vol: 0.5, pitch: 0.8 + k.i * 0.2 }); } if (ok) k.okT += dt; else k.okT = 0; k.ok = ok;
     }
     if (!g.done && s.cl.every(k => k.okT > 0.25) && !SK.dragging(g)) { g.win(); g.sfx('cheer'); }
   },
@@ -66,13 +66,14 @@ MG.add({
       // the bulb and the glow it should have (dashed ring)
       const Rt = 14 + 56 * Math.sqrt(R.want);
       bulb(c, BULB_X, y - 6, b, t);
+      c.save(); c.fillStyle = k.ok ? 'rgba(120,255,150,0.12)' : 'rgba(255,240,200,0.10)'; c.beginPath(); c.arc(BULB_X, y - 6, Rt, 0, 7); c.fill(); c.restore();
       c.save(); c.strokeStyle = k.ok ? '#7aff9a' : 'rgba(255,240,200,0.8)'; c.lineWidth = 2.5; c.setLineDash([6, 6]); c.lineDashOffset = -t * 12; c.beginPath(); c.arc(BULB_X, y - 6, Rt, 0, 7); c.stroke(); c.restore();
       // the room's animal: squinting at a glare, sad in the dark, content when it's right
       const tooBright = b > R.want + s.tol, dark = k.w === 0;
       SK.animal(c, R.kind, 296, y + 40, R.kind === 'owl' ? 0.85 : 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won || k.ok ? (R.kind === 'rabbit' ? 'happy' : 'laugh') : dark ? 'sad' : tooBright ? 'wow' : 'think', facing: -1 });
       if (R.kind === 'rabbit' && (k.ok || won)) { c.fillStyle = '#d8d0ff'; c.font = '900 18px Nunito, system-ui, sans-serif'; c.fillText('z', 316 + Math.sin(t * 2) * 3, y - 34); }
       if (!k.ok && !g.done && SK.dragging(g) !== k) SK.glow(c, g, CLAMP_X, hy(k) - 4, 30);
-      if (k.i === 0) SK.tag(c, 'Clamp', CLAMP_X - 2, y + 36, 18);
+      if (k.i === 0) SK.tag(c, 'Narrow wire', CLAMP_X + 4, y + 36, 18);
     }
     SK.tag(c, 'Battery', 180, 137, 18);
     // guidance: push down the first clamp whose bulb is off its ring
