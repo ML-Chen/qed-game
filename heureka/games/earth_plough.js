@@ -53,7 +53,7 @@ MG.add({
     c.fillStyle = `rgba(40,40,70,${0.3 * p + 0.2 * storm})`; c.fillRect(0, 0, 360, 640);
     // the warm, damp air: an orange haze over the town, pushed up into a rising column at the cold air's nose
     c.save(); const wg = c.createLinearGradient(0, 300, 0, PO_G); wg.addColorStop(0, 'rgba(255,150,80,0)'); wg.addColorStop(0.4, 'rgba(255,150,80,0.32)'); wg.addColorStop(1, 'rgba(255,170,90,0.5)');
-    c.fillStyle = wg; c.beginPath(); c.moveTo(f - 10, PO_G); c.lineTo(370, PO_G); c.lineTo(370, 330); c.quadraticCurveTo(f + 80, 320 - p * 60, f + 10, 300 - p * 120); c.quadraticCurveTo(f - 30, 360, f - 10, PO_G); c.fill();
+    c.fillStyle = wg; c.beginPath(); c.moveTo(f - 10, PO_G); c.lineTo(370, PO_G); c.lineTo(370, 330); c.quadraticCurveTo(f + 80, 320 - p * 60, f + 10, 300 - p * 120); c.quadraticCurveTo(f - 30, 360, f - 10, PO_G); c.fill(); c.strokeStyle = 'rgba(255,140,60,0.8)'; c.lineWidth = 3; c.setLineDash([8, 6]); c.stroke(); c.setLineDash([]);
     // little warm parcels riding up the cold air's slope
     for (let i = 0; i < 9; i++) { const q = (t * 0.5 + i / 9) % 1, x = f + 70 - q * 80 + Math.sin(i * 3 + t * 2) * 6, y = PO_G - 30 - q * (140 + p * 140); c.globalAlpha = Math.sin(q * Math.PI) * (0.4 + 0.5 * p);
       c.fillStyle = '#ffb070'; c.beginPath(); c.arc(x, y, 6 + q * 4, 0, 7); c.fill(); c.strokeStyle = '#ff8a40'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y + 10); c.lineTo(x, y - 6); c.lineTo(x - 4, y - 2); c.moveTo(x, y - 6); c.lineTo(x + 4, y - 2); c.stroke(); }
@@ -80,6 +80,9 @@ MG.add({
     if (!s.stormT && !g.done && s.push < L.xt) { c.save(); c.strokeStyle = 'rgba(235,248,255,0.85)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(s.push + 14, PO_G - 12); c.lineTo(L.xt + 10, PO_G - 12); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(L.xt + 2, PO_G - 22); c.lineTo(L.xt + 14, PO_G - 12); c.lineTo(L.xt + 2, PO_G - 2); c.stroke(); c.restore(); }
     SK.demo(g, c, 'drag', [s.f - 30, PO_G - 40], [L.xt - 10, PO_G - 40], { never: !!s.stormT });
     c.restore();
+    // labels, drawn unmirrored
+    const mx = x => s.dirs[s.k] < 0 ? 360 - x : x;
+    if (!s.drop && !g.done) { SK.tag(c, 'Cold air', mx(Math.max(64, s.f - 100)), PO_G - s.lift - 40, 18); SK.tag(c, 'Warm air', mx(Math.min(300, Math.max(s.f + 90, 240))), 372, 18, '#fff6ea', 'rgba(170,70,20,0.78)'); }
     if (s.resetT && t - s.resetT < 0.35) { c.fillStyle = `rgba(20,20,40,${0.6 * (1 - (t - s.resetT) / 0.35)})`; c.fillRect(0, 0, 360, 640); }
   },
   auto(g, dt, synth) { const s = g.s, L = s.L, m = x => s.dirs[s.k] < 0 ? 360 - x : x; if (s.stormT) return;

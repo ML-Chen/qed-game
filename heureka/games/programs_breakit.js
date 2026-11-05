@@ -72,7 +72,7 @@ function machine(c, s, t, hx) {
   }
 }
 MG.add({
-  id: 'cs_breakit', stage: 'programs', cmd: 'BREAK IT!', time: 7, mood: 'bright', winText: 'Edge cases!', failText: 'Bugs escaped!',
+  id: 'cs_breakit', stage: 'programs', cmd: 'BREAK IT WITH WEIRD INPUTS!', time: 7, mood: 'bright', winText: 'Edge cases!', failText: 'Bugs escaped!',
   card: { title: 'Test with weird inputs', kind: 'Computer science', ref: 'Edge cases in software testing',
     text: 'A program that works for "Ann" and "Bo" can still break. Bugs hide in the inputs nobody tried: an empty name, a name a thousand letters long, a name made of emoji, an age below zero.\n\nThese are called edge cases. A good tester tries to break the program on purpose, by feeding it the strangest inputs they can think of, before real users do.\n\nEvery bug found this way can be fixed early, when it is cheap. A bug found by users is found late.',
     note: 'Bugs hide in unusual inputs, so test with empty, huge and strange ones, not just normal ones.' },
@@ -121,6 +121,7 @@ MG.add({
       const b = s.bugs[i]; if (b) { const k = Math.min(1, (t - b.t) / 0.8), bx = SK.lerp(240, jx, SK.easeInOut(k)), by = SK.lerp(380, jy + 4, SK.easeInOut(k)) - Math.sin(k * Math.PI) * 60; beetle(c, bx, by, 1.1, t, ['#5ad06a', '#ff7a5a', '#7ab0ff', '#ffd040'][i % 4]); }
     }
     machine(c, s, t, hx);
+    SK.tag(c, 'Sign-up form', 180, 470, 18); SK.tag(c, 'Bugs found', 180, 126, 18);
     // the beaver engineer
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 318, 512, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });

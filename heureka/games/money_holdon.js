@@ -73,6 +73,8 @@ MG.add({
     // your hand on the bar
     if (s.go && s.ptr) { c.save(); c.globalAlpha = 0.35; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y - 30, GRIP * 0.5, 0, 7); c.stroke(); c.restore(); }
     if (!s.go && !s.off && !g.done) SK.glow(c, g, p.x, p.y - 30, 30);
+    SK.tag(c, 'Stock market', 180, 150, 20); SK.tag(c, 'Price you paid', 300, s.startY + 22, 18);
+    if (!s.off) SK.tag(c, 'Your money', p.x, p.y - 74, 18); else SK.tag(c, 'Sold', s.offX, trackY(T, s.offX) - 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     SK.demo(g, c, 'hold', [p.x + 6, p.y - 26], null, { delay: 0.8 });
   },
   auto(g, dt, synth) { // press the bar and follow the cart all the way

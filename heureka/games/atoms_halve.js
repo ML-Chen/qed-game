@@ -29,7 +29,7 @@
     c.fillStyle = '#c8c8d0'; c.beginPath(); c.ellipse(16, 1, 7, 5, 0, 0, 7); c.fill(); c.fillStyle = '#2a2a30'; c.beginPath(); c.arc(21, 0, 1.6, 0, 7); c.fill(); c.restore();
   }
   MG.add({
-    id: 'atoms_halve', stage: 'atoms', cmd: 'HALVE!', time: 7, mood: 'night', winText: 'Half-life!', failText: 'Overshot!',
+    id: 'atoms_halve', stage: 'atoms', cmd: 'DECAY THEM DOWN TO THE MARK!', time: 7, mood: 'night', winText: 'Half-life!', failText: 'Overshot!',
     card: { title: 'Half-life', kind: 'Physics', ref: 'Radioactive decay',
       text: 'An unstable atom decays at a random moment, and nobody can say when one particular atom will go. But in a big crowd of them, about half decay in a fixed time, called the half-life.\n\nAfter one half-life, half are left. After two, a quarter. After three, an eighth. The pile shrinks by halves, so it never quite reaches zero in a straight line. Scientists date old bones this way: they measure how much carbon-14 is left and count how many half-lives have passed.',
       note: 'In each half-life, about half of the unstable atoms still left decay.' },
@@ -81,6 +81,7 @@
       const turns = Math.floor(s.tau / s.hl); for (let i = 0; i < Math.min(4, turns); i++) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(JAR.cx + 34 + i * 12, DY - 24, 4, 0, 7); c.fill(); }
       // jars still to go
       for (let i = 0; i < s.fr.length; i++) { c.fillStyle = i < s.round || (i === s.round && s.okT) ? '#ffd45a' : 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(300 + (i - (s.fr.length - 1) / 2) * 20, 170, 6, 0, 7); c.fill(); }
+      SK.tag(c, 'Unstable atoms', JAR.cx, JAR.b + 30, 18);
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'owl', 300, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.held ? 'think' : 'happy', facing: -1 });
       if (!s.held && !s.okT) SK.glow(c, g, JAR.cx, JAR.t + 11, 30);

@@ -66,6 +66,7 @@ MG.add({
     c.save(); c.strokeStyle = cost <= L.price ? '#5ad07a' : '#3a1640'; c.lineWidth = 4; c.setLineDash([7, 5]); c.lineDashOffset = -t * 15; c.beginPath(); c.arc(BADGE.x, BADGE.y, 16 * L.price + 3, 0, 7); c.stroke(); c.restore();
     c.save(); c.globalAlpha = 0.92; B8.coin(c, BADGE.x, BADGE.y, s.badge, 0, cost <= L.price ? {} : { col: '#f0a040' }); c.restore();
     if (!s.start) SK.glow(c, g, MACH.x, MACH.y - 40, 70);
+    SK.tag(c, 'Cost per cup', BADGE.x, 300, 18); SK.tag(c, 'Price', BADGE.x, 136, 18); SK.tag(c, 'Shift', 275, 238, 18); if (over > 0) SK.tag(c, 'Too crowded', MACH.x, MACH.y + 74, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     if (!s.end && cost > L.price && over === 0) SK.demo(g, c, 'tap', [MACH.x, MACH.y - 40], null, { delay: 0.7, period: 0.5 }); // keep mashing while the badge is outside the ring
   },
   auto(g, dt, synth) { // mash until the badge is inside the ring with a little room to spare, then stop

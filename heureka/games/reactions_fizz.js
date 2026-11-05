@@ -48,7 +48,7 @@
   const toLoc = (b, x, y) => ({ x: (x - b.x) / b.k + 180, y: (y - TABLE) / b.k + TABLE });
   const RATE = [2.6, 1.8, 0.9];
   MG.add({
-    id: 'fizz', stage: 'reactions', cmd: 'FIZZ!', time: 5, mood: 'desert', winText: 'Reaction!', failText: 'Flop!',
+    id: 'fizz', stage: 'reactions', cmd: 'FILL THE BALLOONS WITH GAS!', time: 5, mood: 'desert', winText: 'Reaction!', failText: 'Flop!',
     card: { title: 'Mixing can make something new', kind: 'Chemistry', ref: 'Chemical reactions (baking soda and vinegar)',
       text: 'Baking soda and vinegar react. Their atoms swap partners and make new substances. One of them is carbon dioxide, a gas. The gas makes the bubbles, and it has to go somewhere, so it blows up the balloon.\n\nThe gas comes only from soda that has reached the vinegar. Let the balloon flop back early and less soda falls in, so less gas is made and the balloon only half fills. Bubbles of a new gas are one sign that a chemical reaction has happened.',
       note: 'In a chemical reaction, atoms rearrange to make new substances. Here the new substance is a gas.' },
@@ -102,6 +102,7 @@
       const won = g.result === 'win', lost = g.result === 'fail', foamy = s.b.some(b => b.foam > 0.2);
       SK.animal(c, 'frog', 180, 294, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : foamy ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : foamy ? 'wow' : 'happy' });
       const b0 = next || s.b[0], h = toScr(b0, tipOf(b0, b0.hang, 0)), up = toScr(b0, { x: MOUTH.x, y: MOUTH.y - 110 });
+      { const b = s.b[0], bt = toScr(b, { x: 180, y: 505 }); SK.tag(c, 'Vinegar', bt.x, bt.y, 18); if (b.powder > 0.5) { const tp = toScr(b, tipOf(b)); SK.tag(c, 'Baking soda', tp.x + 36, tp.y + 40, 18); } }
       SK.demo(g, c, 'drag', [h.x, h.y], [up.x, up.y], { arc: 20, never: !next });
     },
     // the bot lifts each balloon upright in turn and holds it there until its soda has all fallen in

@@ -110,6 +110,8 @@ MG.add({
     for (const f of s.flying) { const q = SK.clamp((t - f.t) / 0.45, 0, 1); good(c, f.k, SK.lerp(f.x, CART.x, q), SK.lerp(f.y, CART.y - 36, q) - Math.sin(q * Math.PI) * 70, 1 - q * 0.25); }
     // you: the rabbit pushing the cart
     SK.animal(c, 'rabbit', 40, 604, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
+    SK.tag(c, 'Bank balance', TANK.x, TANK.y0 + 34, 18); SK.tag(c, 'Zero', TANK.x + 26, FLOORY - 16, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
+    SK.tag(c, 'Bill', TANK.x - 112, TANK.y1 + 34, 18); if (s.feeT) SK.tag(c, 'Overdraft fee', TANK.x - 10, TANK.y1 - 96, 20, '#fff6ea', 'rgba(190,40,40,0.9)');
     // guidance: tap a cheap item as it rolls past
     const cheap = s.belt.find(b => !b.gone && GOODS[b.k] === 1 && b.x > 40 && b.x < 300);
     if (cheap && s.cart.length + s.flying.length < L.need && !g.done) { SK.glow(c, g, cheap.x, cheap.y - 22, 34); SK.demo(g, c, 'tap', [cheap.x, cheap.y - 20], null, { delay: 0.6 }); }

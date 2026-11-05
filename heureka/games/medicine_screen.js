@@ -22,7 +22,7 @@ function paintFair(o) {
 const pos = i => [X0 + (i % COLS) * DX + (Math.floor(i / COLS) % 2 ? 10 : -10), Y0 + Math.floor(i / COLS) * DY];
 
 MG.add({
-  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST EVERYONE!', time: 6, mood: 'party', winText: 'False alarms!', failText: 'Missed some!',
+  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST ALL 40 ANIMALS!', time: 6, mood: 'party', winText: 'False alarms!', failText: 'Missed some!',
   card: { title: 'Most alarms can be false', kind: 'Medicine', ref: 'Screening tests and false positives',
     text: 'No test is perfect. A good test still lights up for a few healthy people by mistake. That is called a false positive.\n\nWhen an illness is rare, almost everyone tested is healthy, so a few mistakes among them add up to more lit-up people than there are sick ones. Here, one animal in 40 was sick, but five lit up. A second, more careful test showed that four of them were fine. When an illness is common, most of the lit-up people really are sick.\n\nThat is why doctors confirm a positive screening result with a second test before treating.',
     note: 'When an illness is rare, most positive results from a screening test are false alarms.' },
@@ -80,6 +80,8 @@ MG.add({
     // guidance: a ghost hand rubbing the scanner across the crowd
     if (!g.done && s.left === s.an.length) SK.glow(c, g, 180, 350, 60);
     const nx = s.an.findIndex(a => a.scanned < 0);
+    if (s.wand && !g.done) SK.tag(c, 'Quick test', SK.clamp(s.wand.x, 70, 290), s.wand.y - SR - 22, 18);
+    if (fly) SK.tag(c, 'Careful test', SK.clamp(ox, 80, 280), oy - 74, 18);
     if (nx >= 0) { const [, ry] = pos(nx); SK.demo(g, c, 'drag', [30, ry - 10], [330, ry - 10], { period: 1.6 }); }
   },
   // the bot: sweep the scanner back and forth over every row

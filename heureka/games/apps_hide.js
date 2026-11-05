@@ -69,7 +69,7 @@ function chest(c, x, y, open, locked, t) {
 }
 function pinSpot(i) { const col = (i + 1) % 4, row = Math.floor((i + 1) / 4); return [70 + col * 74, 182 + row * 72]; } // spot 0 holds the board's own drawing
 MG.add({
-  id: 'cs_hide', stage: 'apps', cmd: 'HIDE!', time: 7, mood: 'party', winText: 'Private!', failText: 'Snatched!',
+  id: 'cs_hide', stage: 'apps', cmd: 'HIDE THE PRIVATE CARDS!', time: 7, mood: 'party', winText: 'Private!', failText: 'Snatched!',
   card: { title: 'Keep private things private', kind: 'Computer science', ref: 'Personal information online (Code.org CS Fundamentals)',
     text: 'Some things about you are fine to share online, like a drawing of your cat or your favourite colour. Other things should stay private: your password, where you live and your phone number.\n\nOnce something is posted, anyone who can see the page can copy it, including strangers. A password lets someone pretend to be you. An address tells a stranger where to find you.\n\nIf someone online asks for one of these, keep it to yourself and tell a grown-up you trust.',
     note: 'Share the fun things; keep your password, address and phone number private.' },
@@ -119,6 +119,10 @@ MG.add({
     const s = g.s, t = g.t;
     c.drawImage(g.bake('cs_hide', paintRoom), 0, 0, 360, 640);
     boardDeco(c, t);
+    // everyone can see the public page: faces peek over its top edge
+    [[60, '#7ac860'], [130, '#f4a0c0'], [214, '#ffd45a']].forEach(([ex, col], i) => { const bob = Math.sin(t * 2 + i * 2) * 2; c.fillStyle = col; c.beginPath(); c.arc(ex, 128 + bob, 14, Math.PI, 0); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.arc(ex - 5, 122 + bob, 4, 0, 7); c.arc(ex + 5, 122 + bob, 4, 0, 7); c.fill(); c.fillStyle = '#2a1424'; const lk = Math.sin(t * 0.9 + i) * 1.5; c.beginPath(); c.arc(ex - 5 + lk, 123 + bob, 2, 0, 7); c.arc(ex + 5 + lk, 123 + bob, 2, 0, 7); c.fill(); });
+    SK.tag(c, 'Public page', 180, 300, 18); SK.tag(c, 'Private', CHEST.x, CHEST.y + 58, 18);
+    if (!s.fox) SK.animal(c, 'fox', 338, 356, 0.7, { t, pose: 'idle', expr: 'think', facing: -1 });
     // pinned cards (with a red pin), then the chest, then the floating cards
     for (const cd of s.cards) if (cd.state === 'pin') {
       const k = SK.easeOut((t - cd.pt) / 0.4), x = SK.lerp(cd.px, cd.pin[0], k), y = SK.lerp(cd.py, cd.pin[1], k);
@@ -140,7 +144,7 @@ MG.add({
     }
     // the fox plucks the private card off the board and runs off with it
     if (s.fox) {
-      const k = (t - s.fox.t), cd = s.fox.cd;
+      const k = (t - s.fox.t) + 0.35, cd = s.fox.cd; // the fox was already lurking beside the page
       if (!s.fox.by) {
         const run = Math.max(0, k - 0.6), fx = cd.pin[0] + 60 + run * 260, fy = 330;
         const cx = k < 0.6 ? SK.lerp(cd.x, cd.pin[0] + 40, k / 0.6) : fx + 10, cy = k < 0.6 ? SK.lerp(cd.y, 300, k / 0.6) : fy - 70;

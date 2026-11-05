@@ -34,7 +34,7 @@ function cellBody(c, pts, r, t, mood) {
 }
 
 MG.add({
-  id: 'cells_divide', stage: 'cells', cmd: 'DIVIDE!', time: 7, mood: 'sea', winText: 'Mitosis!', failText: 'Mixed up!',
+  id: 'cells_divide', stage: 'cells', cmd: 'COPY, THEN SPLIT THE CELL!', time: 7, mood: 'sea', winText: 'Mitosis!', failText: 'Mixed up!',
   card: { title: 'One cell becomes two', kind: 'Biology', ref: 'Mitosis',
     text: 'Before a cell divides, it copies every chromosome, the long strands of DNA that carry its genes. Each copy stays joined to its original, making an X shape.\n\nNext, fibres from the two ends of the cell grab every X and line them all up across the middle. The cell checks that every X is attached before it goes on. Then the fibres pull the two halves of each X apart, and the cell pinches in two.\n\nBecause everything was lined up first, each new cell gets exactly one copy of every chromosome.',
     note: 'A cell copies its chromosomes, lines them up and pulls them apart, so both new cells get a full set.' },
@@ -110,6 +110,7 @@ MG.add({
     // the octopus host, peering through the eyepiece edge
     SK.animal(c, 'octopus', 316, 600, 0.6, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     // guidance: hold the cell, then swipe sideways once lined up
+    if (s.split < 0) SK.tag(c, 'Chromosomes', CX, CY + R0 + (s.axis ? 70 : 72), 18);
     if (s.copied < 0 && !g.done) { SK.glow(c, g, CX, CY, 60); SK.demo(g, c, 'hold', [CX, CY + 10], null); }
     if (s.lined >= 0 && s.split < 0 && !g.done) SK.demo(g, c, 'swipe', s.axis ? [CX + 60, CY - 50] : [CX - 50, CY + 60], s.axis ? [CX + 60, CY + 80] : [CX + 80, CY + 60], { delay: 0 });
   },

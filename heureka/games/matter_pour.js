@@ -32,7 +32,7 @@
     o.fillStyle = '#8a8aa0'; o.fillRect(0, RAIL - 60, 360, 6); o.fillStyle = '#b8b8c8'; o.fillRect(0, RAIL - 60, 360, 2); // the rail the jug hangs from
   }
   MG.add({
-    id: 'matter_pour', stage: 'matter', cmd: 'POUR!', time: 8, mood: 'sea', winText: 'Liquid!', failText: 'Spilled!',
+    id: 'matter_pour', stage: 'matter', cmd: 'FILL EVERY GLASS!', time: 8, mood: 'sea', winText: 'Liquid!', failText: 'Spilled!',
     card: { title: 'Liquids take any shape', kind: 'Chemistry', ref: 'Solids and liquids',
       text: 'A liquid flows. Its particles slide past each other, so juice runs into every corner of a glass, even the tips of a star, and its top settles flat. A liquid keeps its amount, though: pour too much and it spills over.\n\nA solid keeps its own shape. The particles in an ice cube are locked together, so the cube stays a cube in any glass. It just floats in the juice. A pile of sand pours too, but each grain is a tiny solid that keeps its shape.',
       note: 'Liquids flow and take the shape of their container; solids keep their own shape.' },
@@ -87,6 +87,7 @@
       for (const q of s.ice) { c.fillStyle = 'rgba(230,248,255,0.9)'; c.strokeStyle = '#8ac0e0'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(q.dx - 8, -14, 16, 16, 3); c.fill(); c.stroke(); }
       c.strokeStyle = '#5a7a9a'; c.lineWidth = 5; c.beginPath(); c.arc(-30, 2, 14, Math.PI / 2, Math.PI * 1.5); c.stroke();
       c.restore();
+      SK.tag(c, 'Juice', j.x - 36, RAIL + 66, 18);
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 336, 626, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
       const next = s.cups.find(cc => !cc.full);

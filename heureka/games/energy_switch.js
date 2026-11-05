@@ -54,7 +54,7 @@
     c.restore();
   }
   MG.add({
-    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF!', time: 6, mood: 'night', winText: 'Power saved!', failText: 'Bill shock!',
+    id: 'energy_switch', stage: 'energy', cmd: 'SWITCH OFF TO SLOW THE METER!', time: 6, mood: 'night', winText: 'Power saved!', failText: 'Bill shock!',
     card: { title: 'Gulpers and sippers', kind: 'Physics', ref: 'Electrical power (watts)',
       text: 'Power is how fast something uses energy, measured in watts. Things that make heat are the big gulpers: a heater or a kettle uses about 2,000 watts. A TV or a fridge uses about 100. An LED lamp or a phone charger only sips about 5 to 10.\n\nSo switching off one heater saves as much as switching off two hundred LED lamps. To cut an energy bill, switch off or turn down the things that heat. A fridge runs all day, so it adds up too, but food needs it.',
       note: 'Things that heat use far more energy than lights and chargers.' },
@@ -84,7 +84,8 @@
       // the appliances and the energy pouring into each from its tap
       for (const a of s.apps) {
         const K = KINDS[a.k], w = a.on ? 1.5 + 11 * Math.sqrt(K.w / 2000) : 0; faucet(c, K.x, K.ceil);
-        if (a.on) stream(c, K.x, K.ceil + 26, K.y + 2, w, t);
+        if (a.on && K.w < 50) { for (let i = 0; i < 2; i++) { const q = (t * 1.6 + i * 0.5 + K.x * 0.01) % 1; c.fillStyle = 'rgba(255,220,90,0.9)'; c.beginPath(); c.arc(K.x, K.ceil + 26 + q * (K.y - K.ceil - 26), 2.6, 0, 7); c.fill(); } } // the sippers only drip
+        else if (a.on) stream(c, K.x, K.ceil + 26, K.y + 2, w * 1.4, t);
         else { const q = (t - a.offT) * 2.5; if (q < 1) { c.fillStyle = 'rgba(255,220,90,0.8)'; c.beginPath(); c.arc(K.x, K.ceil + 26 + q * (K.y - K.ceil - 26), 3, 0, 7); c.fill(); } }
         appliance(c, a.k, a, t, s);
       }
@@ -95,10 +96,10 @@
       c.strokeStyle = '#2a1430'; c.lineWidth = 3; c.beginPath(); c.moveTo(MC[0] + Math.cos(aL) * (MR - 16), MC[1] + Math.sin(aL) * (MR - 16)); c.lineTo(MC[0] + Math.cos(aL) * (MR + 2), MC[1] + Math.sin(aL) * (MR + 2)); c.stroke();
       const jit = s.f > 0.9 ? Math.sin(t * 50) * 0.03 : 0, na = ang(s.f) + jit; c.strokeStyle = '#2a1430'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(MC[0], MC[1]); c.lineTo(MC[0] + Math.cos(na) * (MR - 8), MC[1] + Math.sin(na) * (MR - 8)); c.stroke(); SK.ball(c, MC[0], MC[1], 6, '#5a5a70');
       c.fillStyle = '#c8c8d8'; c.beginPath(); c.ellipse(MC[0], MC[1] + 30, 30, 5, 0, 0, 7); c.fill(); const dx = Math.sin(s.disc) * 28; c.fillStyle = '#e84a3a'; c.fillRect(MC[0] + dx - 3, MC[1] + 26, 6, 8);
+      SK.tag(c, 'Meter', MC[0] + 96, MC[1] - 10, 18);
       // the penguin on the roof
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'penguin', 60, 228, 0.6, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-      if (heat && heat.on) SK.glow(c, g, heat.x, heat.y, 36, '#ffe27a', { level: 0 });
       const fr = s.apps.find(a => a.k === 'fridge'), nx = s.keepFridge && fr && !fr.on ? fr : s.apps.find(a => a.on && (KINDS[a.k].w >= 1000 || (g.level >= 2 && a.k === 'tv')));
       SK.demo(g, c, 'tap', nx ? [nx.x, nx.y] : [0, 0], null, { never: !nx });
     },

@@ -31,7 +31,7 @@ function lamp(c, x, y, r, on, col = '#ffd24a', off = '#2a2a34') {
   else { c.fillStyle = off; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill(); }
 }
 MG.add({
-  id: 'latch', stage: 'circuits', cmd: 'LATCH!', time: 7, mood: 'night', winText: 'Memory!', failText: 'Not stored!',
+  id: 'latch', stage: 'circuits', cmd: 'TAP TO STORE THE CODE!', time: 7, mood: 'night', winText: 'Memory!', failText: 'Not stored!',
   card: { title: 'Memory that copies on the tick', kind: 'Engineering', ref: 'The D flip-flop',
     text: 'A flip-flop is a tiny memory that holds one bit: a 1 (lit) or a 0 (dark). It has a data input and a clock input. Whatever the data says at the instant the clock ticks is copied into the memory. Between ticks, the data can wiggle all it likes and the memory stays the same.\n\nHere you are the clock: each tap is one tick. Chips are full of flip-flops, and a real clock ticks billions of times a second, so every bit moves along in step. A row of flip-flops filled one tick at a time, like this one, is called a shift register.',
     note: 'A flip-flop copies its input only at the tick of the clock and holds it until the next tick.' },
@@ -72,6 +72,7 @@ MG.add({
     void dNow;
     // the stored bit flying from the memory light into its cell
     if (s.fly && t - s.fly.t < 0.3) { const k = SK.easeInOut((t - s.fly.t) / 0.3), i = s.cells.length - 1, x = SK.lerp(CHIP.x + 22, cx(i), k), y = SK.lerp(CHIP.y, CELLY, k); lamp(c, x, y, 10, s.fly.b, '#5ae0ff', '#1e2a34'); }
+    SK.tag(c, 'Data', 46, BELTY - 44, 18); SK.tag(c, 'Flip-flop', CHIP.x + 112, CHIP.y, 18); SK.tag(c, 'Lock code', CHIP.x, CODEY - 52, 18); SK.tag(c, 'Memory', CHIP.x, CELLY + 44, 18);
     if (!g.done) SK.glow(c, g, GX, BELTY, 40);
     // the frog
     SK.animal(c, 'frog', 56, 612, 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : g.result === 'fail' ? 'sad' : s.bad && t - s.bad < 0.6 ? 'wow' : 'think' });

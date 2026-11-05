@@ -128,7 +128,7 @@ MG.add({
     if (!awake) { c.save(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2.5; c.lineJoin = 'round'; for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1, x = ox + 22 + q * 16, y = oy - 40 - q * 30, z = 5 + q * 5; c.globalAlpha = 1 - q; c.beginPath(); c.moveTo(x - z, y - z); c.lineTo(x + z, y - z); c.lineTo(x - z, y + z); c.lineTo(x + z, y + z); c.stroke(); } c.restore(); }
     // guidance: a ghost hand sweeps the Sun over the top of the sky
     // east and west on the hills, and the spinning Earth that makes the day
-    SK.tag(c, 'E', L.rise, 470, 20); SK.tag(c, 'W', L.set, 470, 20);
+    SK.tag(c, 'East', Math.max(42, L.rise), 470, 18); SK.tag(c, 'West', Math.min(318, L.set), 470, 18);
     const kk = s.setT ? 1 : SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 1); trGlobe(c, 44, 176, 22, (moon ? -Math.PI / 2 : Math.PI / 2) - kk * Math.PI, t);
     // guidance (every level when idle): a hand drags the current body from where it is along the rest of the arc
     if (!s.setT) { const k0 = SK.clamp((u.x - L.rise) / (L.set - L.rise), 0, 0.9); SK.demo(g, c, 'drag', [u.x, u.y], arcP(1), { arc: Math.max(0, arcH * Math.sin(((k0 + 1) / 2) * Math.PI) - 10) * (1 - k0), period: 2.4 }); }

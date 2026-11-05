@@ -97,6 +97,7 @@
       // levels 0 and 1: a dashed line at the height that wakes the next sleeper
       const nx = s.who.find(w => !w.awake);
       if (nx && g.level < 2 && !g.done) { const yy = SCR.mid - (s.band[0] + s.band[1]) / 2 / nx.att * APX; c.save(); c.strokeStyle = 'rgba(255,226,122,0.7)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.lineDashOffset = -t * 20; c.beginPath(); c.moveTo(SCR.x0 + 6, yy); c.lineTo(SCR.x1 - 6, yy); c.stroke(); c.restore(); }
+      SK.tag(c, 'Sound wave', 262, SCR.y0 - 24, 18);
       // the handle on the first crest
       const hx = crestX(s), hy = SCR.mid - yA; SK.ball(c, hx, hy, 13, '#ffd45a', { edge: '#7a4a10' });
       c.strokeStyle = 'rgba(255,212,90,0.6)'; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(hx, hy + 14); c.lineTo(hx, SCR.mid); c.stroke(); c.setLineDash([]);

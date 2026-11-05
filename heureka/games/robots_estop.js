@@ -64,7 +64,7 @@ function robot(c, b, t) { // a squat delivery robot: body, wheels, a face screen
 }
 const btnPos = b => [b.x, b.y - 32 * RS];
 MG.add({
-  id: 'estop', stage: 'robots', cmd: 'E-STOP!', time: 6, mood: 'party', winText: 'Power cut!', failText: 'Splat!',
+  id: 'estop', stage: 'robots', cmd: 'SLAM EVERY RED STOP BUTTON!', time: 6, mood: 'party', winText: 'Power cut!', failText: 'Splat!',
   card: { title: 'The big red button', kind: 'Robotics', ref: 'Emergency stop (e-stop)',
     text: 'Every real robot has a big red emergency stop button. Pressing it cuts the power to the motors directly, through its own wires, so the robot stops whatever its software is doing.\n\nThese robots\' software has frozen: their screens show a spinning wheel. A pause button on that screen would be handled by the same stuck software, so it might do nothing. The emergency stop does not ask the software. That is why factory robots, many machines and even treadmills have one, and why people who work near robots learn where it is first.',
     note: "An emergency stop cuts the motors' power directly, so it works even when the robot's software is stuck." },
@@ -95,6 +95,7 @@ MG.add({
     c.drawImage(g.bake('estop_room', paintParty), 0, 0, 360, 640);
     for (const [x, y, col, ph] of [[26, 168, '#ff5a7a', 0], [334, 176, '#5ac8ff', 1.4], [318, 150, '#ffc83a', 2.6]]) { const yy = y + Math.sin(t * 1.5 + ph) * 5; SK.ball(c, x, yy, 18, col); }
     cake(c, s.splat, t);
+    SK.tag(c, 'Cake', CAKE.x, CAKE.y + 50, 18);
     // the hedgehog guarding the cake, in a party hat
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'hedgehog', 296, 250, 1.0, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.bots.some(b => !b.stop && t >= b.t0) ? 'wow' : 'happy', facing: -1 });
@@ -102,8 +103,10 @@ MG.add({
     if (lost) { c.fillStyle = '#fff6ea'; for (const [dx, dy, r] of [[-8, -34, 8], [8, -26, 6], [-2, -48, 5]]) { c.beginPath(); c.arc(296 + dx, 250 + dy, r, 0, 7); c.fill(); } }
     // the robots, nearest the bottom drawn last
     const vis = s.bots.filter(b => t >= b.t0).sort((a, b) => a.y - b.y);
+    for (const b of vis) if (!b.stop && !g.done) { c.save(); c.strokeStyle = 'rgba(255,80,80,0.55)'; c.lineWidth = 3; c.setLineDash([8, 7]); c.lineDashOffset = -t * 40; c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(CAKE.x + (b.x - CAKE.x) * 0.25, TABLE.y + 30); c.stroke(); c.restore(); } // where it is heading
     for (const b of vis) { robot(c, b, t); if (!b.stop) { const [bx, by] = btnPos(b); SK.glow(c, g, bx, by, 24); } }
-    const first = vis.find(b => !b.stop); if (first) { const [bx, by] = btnPos(first); SK.demo(g, c, 'tap', [bx, by], null, { delay: first.t0 + 0.3, period: 0.9 }); }
+    const first = vis.find(b => !b.stop); if (first && !g.done) { const [bx, by] = btnPos(first); SK.tag(c, 'Stop button', SK.clamp(bx, 70, 290), by - 40, 18); }
+    if (first) { const [bx, by] = btnPos(first); SK.demo(g, c, 'tap', [bx, by], null, { delay: first.t0 + 0.3, period: 0.9 }); }
   },
   auto(g, dt, synth) { const s = g.s; s.bots.forEach((b, i) => { if (!b.stop && g.t >= b.t0 + 0.45) { const [bx, by] = btnPos(b); SK.bot.tap(g, synth, 'b' + i, b.t0 + 0.45, bx, by); } }); },
 });

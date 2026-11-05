@@ -78,6 +78,7 @@ MG.add({
     for (let i = 0; i < nGone; i++) { const side = i % 2 ? 1 : -1, x = BK.x + side * (150 + ((t * 30 + i * 37) % 60)), y = 590 + (i % 3) * 10; if (x < 4 || x > 356) continue; custBall(c, x, y, 7, FACES[i % 6], true); }
     // the beaver founder
     SK.animal(c, 'beaver', 52, 608, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : 'wow' });
+    SK.tag(c, 'Customers', BK.x, BK.y1 - 30, 18); SK.tag(c, 'New customers', 96, 196, 18); if (s.lost > 0.05) SK.tag(c, 'Quit', 316, 548, 18, '#fff6ea', 'rgba(190,40,40,0.85)');
     const first = s.holes.find(h => !h.plug); if (first) SK.demo(g, c, 'tap', [first.x, first.y], null, { delay: 0.7 });
   },
   auto(g, dt, synth) {

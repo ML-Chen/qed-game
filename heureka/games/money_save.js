@@ -134,6 +134,9 @@ MG.add({
     }
     // a lollipop flies from the cart to the rabbit
     if (lf && lk < 1) lollipop(c, SK.lerp(lf.x, 316, lk), SK.lerp(lf.y, 400, lk) - Math.sin(lk * Math.PI) * 60, 1.1);
+    // labels: the real names of things
+    SK.tag(c, 'Savings', JAR.x, JAR.y0 - 16, 18); SK.tag(c, 'Bike price', JAR.x, ly - 24, 18, '#fff6ea', full ? 'rgba(40,140,70,0.85)' : 'rgba(190,40,40,0.85)');
+    if (s.cartX > 60) SK.tag(c, 'Candy cart', s.cartX - 50, FLOOR - 112, 18);
     // guidance: drag the coin into the jar
     if (k && !k.inJar && !k.gone && k.onFloor) SK.demo(g, c, 'drag', [k.x, k.y], [JAR.x, JAR.y0 - 20], { arc: 60, delay: 0.6 });
   },

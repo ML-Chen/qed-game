@@ -81,7 +81,7 @@ function hog(c, x, y, k, t, rot = 0, sad = false) {
 }
 
 MG.add({
-  id: 'body_curl', stage: 'body', cmd: 'CURL UP!', time: 7, mood: 'bright', winText: 'Adaptation!', failText: 'Bonk!',
+  id: 'body_curl', stage: 'body', cmd: 'CURL UP WHEN THE FOX POUNCES!', time: 7, mood: 'bright', winText: 'Adaptation!', failText: 'Bonk!',
   card: { title: 'Spines that protect', kind: 'Biology', ref: 'Adaptations: the hedgehog',
     text: "A hedgehog's back is covered in about 5,000 to 7,000 stiff spines. Each spine is a hollow hair made of keratin, the same material as your fingernails.\n\nWhen danger comes close, a ring of muscle under the skin pulls tight like the string of a drawstring bag, and the hedgehog rolls into a ball. Its soft face, belly and legs end up tucked inside, and the spines stand up all around. A fox that sniffs the ball gets a sore nose and usually leaves it alone.",
     note: 'Body parts that help an animal survive, like a hedgehog\'s spines, are called adaptations.' },
@@ -160,6 +160,7 @@ MG.add({
     // guidance: the ring shows when the fox is close enough
     const near = (F.ph === 'crouch' || F.ph === 'lunge' || F.x + NOSE > HX - 30 - 55) && !s.used;
     if (near && !g.done) SK.glow(c, g, HX, GY - 34, 46);
+    if (!s.roll) SK.tag(c, 'Spines', HX + 8, GY - 104, 18);
     if (near) SK.demo(g, c, 'tap', [HX + 6, GY - 30], null, { delay: 0 }); // only while the fox is close: that is when to tap
   },
   // the bot: tap the moment the fox crouches for its real pounce (not the fake one)

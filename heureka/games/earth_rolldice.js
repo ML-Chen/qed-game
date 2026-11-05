@@ -32,7 +32,7 @@ function rdDie(c, x, y, r, face, spin) {
   (F[face] || F[1]).forEach(([a, b]) => pip(a, b)); c.restore();
 }
 MG.add({
-  id: 'rolldice', stage: 'earth', cmd: 'ROLL FLOOD DICE, A YEAR A TAP!', time: 6, mood: 'storm', winText: 'Risk adds up!', failText: 'Too slow!',
+  id: 'rolldice', stage: 'earth', cmd: 'ROLL FLOOD DICE YEAR BY YEAR!', time: 6, mood: 'storm', winText: 'Risk adds up!', failText: 'Too slow!',
   card: { title: 'Rare risks add up', kind: 'Earth science', ref: 'Return periods ("100-year flood")',
     text: 'A "100-year flood" does not mean a flood once every hundred years. It means a 1 in 100 chance of that flood in any single year. Each year rolls fresh dice, so a house can flood two years in a row.\n\nSmall yearly chances add up over time. Over 30 years, about 26 of 100 such houses flood at least once, roughly 1 in 4. Even over 100 years, about a third of them never flood.\n\nThis is why buyers in flood zones are told to think about insurance.',
     note: 'A small chance each year becomes a big chance over many years: a 1-in-100 yearly flood hits about 1 in 4 houses in 30 years.' },
@@ -67,13 +67,16 @@ MG.add({
     // the duck whose house flooded twice faints on its doorstep
     if (s.faint >= 0) { const i = s.faint, cx = RD_X0 + (i % RD_COLS) * RD_DX, cy = RD_Y0 + Math.floor(i / RD_COLS) * RD_DY + 20, k = SK.easeOut((t - s.faintT) / 0.4);
       c.save(); c.translate(cx + 12, cy); c.rotate(-k * 1.4); SK.animal(c, 'duck', 0, 0, 0.6, { t, expr: 'wow', pose: 'sad', noShadow: true }); c.restore(); }
+    // the running count of houses that have flooded at least once, and the yearly odds of the dice
+    const nf = s.hits.filter(h => h > 0).length; SK.tag(c, 'Flooded: ' + nf, 180, 166, 20, '#fff6ea', 'rgba(30,80,150,0.85)');
+    SK.tag(c, '1 in 100 each year', 110, 574, 18);
     // the big die: every tap rolls it
     const rk = SK.clamp((t - s.rollT) / 0.3, 0, 1), hop = Math.sin(rk * Math.PI) * 26;
-    rdDie(c, 180, 574 - hop, 26, s.face, (1 - rk) * 2.4);
-    if (!g.done) SK.glow(c, g, 180, 574, 40, '#ffe27a', { level: 2 });
+    rdDie(c, 256, 574 - hop, 26, s.face, (1 - rk) * 2.4);
+    if (!g.done) SK.glow(c, g, 256, 574, 40, '#ffe27a', { level: 2 });
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 318, 606, 0.7, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.faint >= 0 ? 'wow' : 'happy' });
-    SK.demo(g, c, 'tap', [180, 574], null, { period: 0.5 });
+    SK.demo(g, c, 'tap', [256, 574], null, { period: 0.5 });
   },
-  auto(g, dt, synth) { const s = g.s, B = s._bot = s._bot || {}; if (g.done || g.t < 0.9) return; if (!B.last || g.t - B.last >= 0.12) { B.last = g.t; synth('down', 180, 574); synth('up', 180, 574); } },
+  auto(g, dt, synth) { const s = g.s, B = s._bot = s._bot || {}; if (g.done || g.t < 0.9) return; if (!B.last || g.t - B.last >= 0.12) { B.last = g.t; synth('down', 256, 574); synth('up', 256, 574); } },
 });

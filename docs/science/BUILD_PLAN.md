@@ -86,6 +86,7 @@ Order within each topic: the first row is the entry game. Build topic by topic i
 | money | BUS EL-08 | `SAVE!` | drag-to-jar | Drag each coin into the jar before the candy cart grabs it. | Elementary; save before the candy shop |
 | money | BUS PF-07 | `ROLL!` | hold | Hold to keep the snowball rolling down the hill. | build-first #4; compound growth |
 | money | BUS PF-11 | `STAY ABOVE!` | tap with a limit | Tap groceries into your cart while keeping the water above the floor. | overdrafts, the most common avoidable fee |
+| startups | BUS SV-00 | `BUILD WHAT THEY WANT!` | drag-to-target, repeated | Drag what each leaving customer wanted onto your product, until a queue forms by itself. | the owner: "product-market fit is a more fundamental concept than dilution"; comes first in the topic |
 | startups | BUS EL-17 | `SET THE PRICE!` | stop the dial | Tap to stop the dial. | Elementary; set a price at a stand |
 | startups | BUS SV-20 | `DILUTE!` | drag-to-target | Drag the investor's slice into the pie. | build-first #1; dilution and a bigger pie |
 | startups | BUS SV-09 | `PLUG!` | whack (tap holes) | Tap the holes to plug them. | build-first #8; churn |

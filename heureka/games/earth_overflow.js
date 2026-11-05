@@ -91,6 +91,9 @@ MG.add({
     if (s.heat) { c.save(); c.globalCompositeOperation = 'lighter'; const hg = c.createRadialGradient(hx, hy, 4, hx, hy, 50); hg.addColorStop(0, 'rgba(255,170,80,0.55)'); hg.addColorStop(1, 'rgba(255,120,60,0)'); c.fillStyle = hg; c.beginPath(); c.arc(hx, hy, 50, 0, 7); c.fill(); c.restore(); }
     c.save(); c.translate(hx, hy - 50); c.scale(1.4, 1.4); c.fillStyle = '#e8563a'; c.strokeStyle = '#5a1a20'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-18, 8); c.lineTo(18, 8); c.lineTo(10, -12); c.lineTo(-10, -12); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = s.heat ? '#ffe27a' : '#f4e0b0'; c.beginPath(); c.ellipse(0, 9, 14, 5, 0, 0, 7); c.fill(); c.fillStyle = '#6a5a5a'; c.fillRect(-3, -26, 6, 14); c.restore();
+    // labels: the ice on land and the ice already floating in the sea
+    const ice0 = s.cubes.find(q => !q.land && q.v > 0);
+    if (!g.done) { for (const isl of L.rocks) if (s.cubes.some(q => q.land && q.v > 0 && q.x > isl[0] && q.x < isl[1])) SK.tag(c, 'Land ice', (isl[0] + isl[1]) / 2, 236, 18); if (ice0) SK.tag(c, 'Sea ice', ice0.x, wy + 56, 18); }
     // guidance: the lamp glows; the hand drags it to the next ice: an iceberg first (nothing happens), then the land ice
     const nx = ovNext(s); if (!s.heat && !g.done) SK.glow(c, g, hx, hy - 50, 30, '#ffe27a', { level: 2 });
     if (nx) SK.demo(g, c, 'drag', [hx, hy - 40], nx, { period: 2.2 });

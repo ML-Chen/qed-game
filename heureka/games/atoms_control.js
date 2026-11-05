@@ -26,7 +26,7 @@
     for (let i = 0; i < 4; i++) { o.fillStyle = ['#ff6a5a', '#ffd45a', '#6ae07a', '#6ac8ff'][i]; o.beginPath(); o.arc(268 + i * 22, 584, 5, 0, 7); o.fill(); }
   }
   MG.add({
-    id: 'atoms_control', stage: 'atoms', cmd: 'CONTROL!', time: 6, mood: 'night', winText: 'Critical!', failText: 'Runaway!',
+    id: 'atoms_control', stage: 'atoms', cmd: 'KEEP THE REACTOR STEADY!', time: 6, mood: 'night', winText: 'Critical!', failText: 'Runaway!',
     card: { title: 'A steady chain reaction', kind: 'Physics', ref: 'Nuclear reactor control',
       text: 'In a reactor, each uranium nucleus that splits frees two or three neutrons. If more than one of them goes on to split another nucleus, the count grows faster and faster. If fewer than one does, the reaction dies out.\n\nControl rods are made of a metal that soaks up neutrons. Pushing them in slows the reaction, and pulling them out speeds it up. Operators keep them where each split causes exactly one more, so the reactor gives steady heat. Engineers call this steady state critical. Some neutrons come out a few seconds late, which gives people time to adjust the rods.',
       note: 'A reactor runs steadily when each split causes exactly one more split.' },
@@ -72,8 +72,9 @@
       c.fillStyle = '#f2d27a'; c.fillRect(90, by - 12, 140, 4); c.fillStyle = '#7a5a1a'; c.beginPath(); c.roundRect(146, by - 30, 28, 18, 6); c.fill();
       // the counter: a bead that rides up and down the bar, and the ring that fills while it holds in the green
       const cy = barY(s.ln); SK.ball(c, BAR.x, cy, 13, s.inBand ? '#7aff9a' : s.ln > BAND[1] ? '#ff7a5a' : '#9ab8e0');
-      const rk = s.steady / s.need; c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 8; c.beginPath(); c.arc(BAR.x, 160, 18, 0, 7); c.stroke();
-      c.strokeStyle = '#7aff9a'; c.lineCap = 'round'; c.beginPath(); c.arc(BAR.x, 160, 18, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
+      const rk = s.steady / s.need; c.strokeStyle = 'rgba(255,255,255,0.2)'; c.lineWidth = 8; c.beginPath(); c.arc(BAR.x, 150, 18, 0, 7); c.stroke();
+      c.strokeStyle = '#7aff9a'; c.lineCap = 'round'; c.beginPath(); c.arc(BAR.x, 150, 18, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
+      SK.tag(c, 'Control rods', 160, by - 50, 18); SK.tag(c, 'Neutrons', BAR.x - 8, BAR.t - 22, 18);
       // alarms when it runs away
       const hot = s.ln > Math.log(6); if (hot || s.boom) { const on = Math.sin(t * 18) > 0; c.fillStyle = on ? 'rgba(255,60,40,0.28)' : 'rgba(255,60,40,0.08)'; c.fillRect(0, 0, 360, 640); for (const x of [26, 334]) { c.fillStyle = on ? '#ff4a3a' : '#6a1a1a'; c.beginPath(); c.arc(x, 150, 12, Math.PI, 0); c.fill(); } }
       // the beaver at the desk, diving under it when things run away

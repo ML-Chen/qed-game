@@ -40,7 +40,7 @@ const APP = {
     { id: 'ai', name: 'How AI works', grade: 'High school', group: 'Computer science', animal: 'owl', mood: 'night', sky: ['#2a2860', '#6a4a8a', '#c88a9a'], ground: ['#6a5a7a', '#4a3a5a'], line: 'An AI model learns patterns from lots of examples.' },
     // Money and business
     { id: 'money', name: 'Money basics', grade: 'Elementary', group: 'Money and business', animal: 'rabbit', mood: 'bright', sky: ['#f0b080', '#f8d0a8', '#fff4e0'], ground: ['#c8b070', '#9a8048'], line: 'Money you save can grow, and money you borrow costs extra.' },
-    { id: 'startups', name: 'Startups and investors', grade: 'Business', group: 'Money and business', animal: 'fox', mood: 'party', sky: ['#ff9ac0', '#ffc890', '#fff2d0'], ground: ['#b8d870', '#80a848'], line: 'Investors trade cash for a slice of your company.' },
+    { id: 'startups', name: 'Startups and investors', grade: 'Business', group: 'Money and business', animal: 'fox', mood: 'party', sky: ['#ff9ac0', '#ffc890', '#fff2d0'], ground: ['#b8d870', '#80a848'], line: 'Build something people want so much that they come back and bring their friends.' },
     { id: 'markets', name: 'Markets and prices', grade: 'Economics', group: 'Money and business', animal: 'duck', mood: 'desert', sky: ['#e8a0c0', '#f8c8d8', '#fff0f0'], ground: ['#c8a870', '#9a7a48'], line: 'When lots of people want something scarce, its price goes up.' },
     // Law, government and consulting
     { id: 'law', name: 'Law and contracts', grade: 'Law', group: 'Law, government and consulting', animal: 'turtle', mood: 'desert', sky: ['#d8b890', '#f0d8b8', '#fff4e0'], ground: ['#b89870', '#8a6a48'], line: 'A contract is a promise the law will make people keep.' },

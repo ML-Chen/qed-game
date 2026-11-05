@@ -47,7 +47,7 @@ function rbc(c, r, t, badge) {
 const nearWall = b => Math.min(b.x - AR.l, AR.r - b.x, b.y - AR.t, AR.b - b.y) < 40;
 
 MG.add({
-  id: 'body_gobble', stage: 'body', cmd: 'GOBBLE!', time: 7, mood: 'bright', winText: 'Phagocytosis!', failText: 'Multiplied!',
+  id: 'body_gobble', stage: 'body', cmd: 'SWALLOW ALL THE GERMS!', time: 7, mood: 'bright', winText: 'Phagocytosis!', failText: 'Multiplied!',
   card: { title: 'White cells eat germs', kind: 'Biology', ref: 'Phagocytes and phagocytosis',
     text: 'When bacteria get in through a cut, white blood cells crawl out of the blood vessels to meet them. Some white cells, called phagocytes, swallow germs whole: the cell flows around a bacterium, wraps it in a bubble and breaks it down with strong chemicals. This is called phagocytosis.\n\nThe body\'s own cells carry markers that say "self", so phagocytes leave them alone.\n\nSome bacteria grow a slippery coat called a capsule that is hard to grip. Phagocytes catch them more easily when they are pinned against a surface or coated with antibodies.',
     note: 'White blood cells find bacteria, swallow them and digest them, and leave the body\'s own cells alone.' },
@@ -112,6 +112,7 @@ MG.add({
     for (const e of [-1, 1]) { const ex = w.x + e * 11, ey = w.y + 15; c.fillStyle = '#fff'; c.beginPath(); c.arc(ex, ey, 5, 0, 7); c.fill(); c.fillStyle = '#2a1424'; c.beginPath(); c.arc(ex + Math.cos(la) * 2, ey + Math.sin(la) * 2, 2.6, 0, 7); c.fill(); }
     SK.animal(c, 'rabbit', 330, 628, 0.55, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (!s.touched && !g.done) SK.glow(c, g, w.x, w.y, 40);
+    if (!g.done) { SK.tag(c, 'White blood cell', SK.clamp(w.x, 92, 268), w.y + (w.y > 500 ? -62 : 58), 18); const r0 = s.rbc[1]; if (r0 && r0.x > 60 && r0.x < 300) SK.tag(c, 'Red blood cell', SK.clamp(r0.x, 86, 274), r0.y - 34, 18); }
     if (near) SK.demo(g, c, 'drag', [w.x, w.y], [near.x, near.y]);
   },
   // the bot: chase the nearest germ around the red cells; corner capsule germs against the nearest wall

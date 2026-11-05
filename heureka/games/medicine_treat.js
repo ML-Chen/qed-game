@@ -33,7 +33,7 @@ function bug(c, b, t, s = 1) {
 function inDish(x, y, m = 14) { return SK.dist(x, y, DC[0], DC[1]) < DR - m; }
 
 MG.add({
-  id: 'medicine_treat', stage: 'medicine', cmd: 'TREAT!', time: 6, mood: 'party', winText: 'Natural selection!', failText: 'Resistance!',
+  id: 'medicine_treat', stage: 'medicine', cmd: 'CLEAR THE DISH OF GERMS!', time: 6, mood: 'party', winText: 'Natural selection!', failText: 'Resistance!',
   card: { title: 'Drugs pick the survivors', kind: 'Medicine', ref: 'Antibiotic resistance and natural selection',
     text: 'An antibiotic kills the bacteria it can attack. In a big crowd of bacteria, a few may already carry a gene that protects them, like armour. The drug did not give them that armour; they had it before.\n\nEach dose kills unprotected bacteria and leaves the armoured ones, which then multiply. Over many rounds, the armoured kind takes over. This is natural selection.\n\nHere, white blood cells catch the few survivors, which works only while there are few of them. Using antibiotics only when they are needed slows the spread of resistance.',
     note: 'Antibiotics do not teach bacteria to resist. They kill the others, so the resistant ones that were already there take over.' },
@@ -112,6 +112,7 @@ MG.add({
     c.fillStyle = '#fff'; c.fillRect(DROP[0] - 9, 548, 18, 5); c.fillRect(DROP[0] - 2.5, 541, 5, 19);
     SK.animal(c, 'duck', 46, 618, 0.7, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     if (ready && !g.done) SK.glow(c, g, DROP[0], 548, 40);
+    SK.tag(c, 'Antibiotic', DROP[0] + 98, 548, 18); const ra = s.bugs.find(b => b.arm); if (ra && !g.done) SK.tag(c, 'Resistant germ', SK.clamp(ra.x, 84, 276), ra.y - 30, 18);
     if (ready) SK.demo(g, c, 'tap', [DROP[0], 552], null);
   },
   // the bot: dose whenever the dropper is full and plain bacteria have regrown

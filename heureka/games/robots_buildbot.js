@@ -47,7 +47,7 @@ function drawPart(c, kind, x, y, h, t, on, sc = 1.15, tray = false) { // on: 0..
 // where each part sits on the robot, in its own frame (forward = -y)
 const SLOT = { eye: [0, -30], brain: [0, 5], wheels: [0, 5], bumper: [0, 0] };
 MG.add({
-  id: 'buildbot', stage: 'robots', cmd: 'BUILD A BOT!', time: 6, mood: 'party', winText: 'Robot loop!', failText: 'Bonk!',
+  id: 'buildbot', stage: 'robots', cmd: 'BUILD A ROBOT TO EAT CRUMBS!', time: 6, mood: 'party', winText: 'Robot loop!', failText: 'Bonk!',
   card: { title: 'Sense, decide, act', kind: 'Robotics', ref: 'The robot loop (sense, think, act)',
     text: 'Every robot needs three kinds of part. A sensor notices the world: here, a camera eye spots a crumb. A brain decides what to do: a small computer turns toward the crumb. Motors act: the wheels roll it there.\n\nThen the robot does it all again, many times a second. That repeating cycle is called the robot loop.\n\nTake away the eye and the brain gets no news about the world. The wheels still turn, but the robot can only drive blindly, so it bumps into the fridge again and again.',
     note: 'A robot senses, decides and acts, over and over. Without a sense, it cannot react to the world.' },
@@ -127,8 +127,12 @@ MG.add({
     for (const k of ['wheels', 'brain', 'eye', 'bumper']) if (has(k)) { const [x, y] = rot(...SLOT[k]); drawPart(c, k, x, y, b.h, t, k === 'eye' ? lit(0) : k === 'brain' ? lit(1) : k === 'wheels' ? lit(2) + (run ? 0.5 : 0) : 0); }
     if (b.mode === 'seek') { const [ex, ey] = rot(0, -30); c.save(); c.globalAlpha = 0.18 + 0.12 * lit(0); c.fillStyle = '#5ad8ff'; c.beginPath(); c.moveTo(ex, ey); c.arc(ex, ey, 120, b.h - 0.45, b.h + 0.45); c.closePath(); c.fill(); c.restore(); }
     if (b.bonk > 0) { const [bx, by] = rot(0, -RR - 6); for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; c.fillStyle = '#ffe27a'; c.save(); c.translate(bx + Math.cos(a) * 16, by - 14 + Math.sin(a) * 6); c.rotate(a); c.beginPath(); for (let j = 0; j < 10; j++) { const r = j % 2 ? 3 : 7, aa = j * Math.PI / 5; c.lineTo(Math.cos(aa) * r, Math.sin(aa) * r); } c.fill(); c.restore(); } }
+    // the robot loop, on the fridge: sense, think, act light up in turn while it runs
+    { const parts = [['Sense', 'eye', '#2a9ad8'], ['Think', 'brain', '#c83a6a'], ['Act', 'wheels', '#d88a1a']];
+      parts.forEach(([w, k, col], i) => { const x = 104 + i * 76, on = has(k), l = run ? lit(i) : 0; SK.tag(c, on ? w : '?', x, 166, 18, on ? '#fff6ea' : 'rgba(255,246,234,0.6)', l > 0.3 ? col : on ? 'rgba(30,14,36,0.55)' : 'rgba(30,14,36,0.25)'); if (i < 2) { c.fillStyle = 'rgba(58,40,60,0.6)'; c.beginPath(); c.moveTo(x + 34, 160); c.lineTo(x + 42, 166); c.lineTo(x + 34, 172); c.fill(); } }); }
+    if (b.mode === 'seek' && lit(0) > 0.3) { let best = null, bd = 1e9; for (const q of s.crumbs) { if (q.gone) continue; const d = SK.dist(q.x, q.y, b.x, b.y); if (d < bd) { bd = d; best = q; } } if (best) { c.strokeStyle = '#5ad8ff'; c.lineWidth = 3; c.beginPath(); c.arc(best.x, best.y, 14, 0, 7); c.stroke(); } }
     // the parts still on the tray (and the one being dragged)
-    for (const p of s.parts) if (!p.on) { SK.shadow(c, p.x + 2, p.y + 18, 22, 6, 0.3); drawPart(c, p.kind, p.x, p.y, -Math.PI / 2, t, 0, p.kind === 'bumper' ? 0.9 : 1.4, true); }
+    for (const p of s.parts) if (!p.on) { SK.shadow(c, p.x + 2, p.y + 18, 22, 6, 0.3); drawPart(c, p.kind, p.x, p.y, -Math.PI / 2, t, 0, p.kind === 'bumper' ? 0.9 : 1.4, true); if (!SK.dragging(g) || SK.dragging(g) !== p) { const j = s.parts.indexOf(p), up = s.parts.length > 3 && j % 2 === 1; SK.tag(c, { eye: 'Eye', brain: 'Brain', wheels: 'Wheels', bumper: 'Bumper' }[p.kind], p.hx, p.hy + (up ? -36 : 34), 18); } }
     if (!SK.dragging(g)) SK.glow(c, g, b.x, b.y, RR + 8);
     // the hedgehog, cheering crumbs away or groaning at the bonks
     const won = g.result === 'win', lost = g.result === 'fail';

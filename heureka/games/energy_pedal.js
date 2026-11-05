@@ -23,7 +23,7 @@
     c.strokeStyle = b > 0.05 ? `rgb(255,${140 + 110 * b},60)` : '#6a5a5a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x - 5, y - 10); c.lineTo(x - 4, y); c.lineTo(x - 1, y - 4); c.lineTo(x + 1, y); c.lineTo(x + 4, y - 4); c.lineTo(x + 5, y - 10); c.stroke();
   }
   MG.add({
-    id: 'energy_pedal', stage: 'energy', cmd: 'PEDAL!', time: 6, mood: 'night', winText: 'Pedal power!', failText: 'Too dark!',
+    id: 'energy_pedal', stage: 'energy', cmd: 'PEDAL TO KEEP THE LIGHT ON!', time: 6, mood: 'night', winText: 'Pedal power!', failText: 'Too dark!',
     card: { title: 'How much power you have', kind: 'Physics', ref: 'Power in watts',
       text: 'Power is how fast energy is used or made, measured in watts. A fit person pedalling steadily makes about 100 watts. That is enough for one bright old-style bulb, which uses about 60 to 100 watts.\n\nA kettle uses about 2,000 watts, so it would take about twenty people pedalling to boil it. With a big load on the generator, the pedals get much harder to turn. Two bulbs need twice the power, so you have to pedal harder.',
       note: 'One person can make about 100 watts: enough for a bulb, nowhere near enough for a kettle.' },
@@ -77,7 +77,8 @@
       c.fillStyle = `rgba(8,6,24,${0.72 * (1 - b)})`; c.fillRect(0, 0, 360, 640);
       for (const [x, y] of s.bulbs) bulb(c, x, y, b, t);
       // the reading ring: fills while the bulb is bright enough
-      const rk = s.read / s.need, rx = 236, ry = 270; c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 7; c.beginPath(); c.arc(rx, ry, 16, 0, 7); c.stroke(); c.strokeStyle = '#ffe27a'; c.lineCap = 'round'; c.beginPath(); c.arc(rx, ry, 16, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
+      const rk = s.read / s.need, rx = 330, ry = 452; c.strokeStyle = 'rgba(255,255,255,0.25)'; c.lineWidth = 7; c.beginPath(); c.arc(rx, ry, 16, 0, 7); c.stroke(); c.strokeStyle = '#ffe27a'; c.lineCap = 'round'; c.beginPath(); c.arc(rx, ry, 16, -Math.PI / 2, -Math.PI / 2 + rk * Math.PI * 2); c.stroke();
+      SK.tag(c, 'Generator', cx + 82, cy - 40, 18); if (s.kettle) SK.tag(c, 'Kettle', KET.x - 8, KET.y - 44, 18);
       if (s.kettle) SK.glow(c, g, SW[0], SW[1], 26);
       SK.glow(c, g, cx + 4, cy + 14, 34, '#ffe27a', { level: 0 });
       SK.demo(g, c, 'tap', s.kettle ? SW : [cx + 4, cy + 30], null, { period: s.kettle ? 1.1 : 0.35 });

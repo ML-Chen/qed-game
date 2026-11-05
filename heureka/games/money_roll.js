@@ -90,6 +90,8 @@ MG.add({
     // the rabbit at the bottom, with a shovel for scraping
     const scr = s.spends.length && t - s.spends[s.spends.length - 1].t < 0.6;
     SK.animal(c, 'rabbit', 176, 612, 0.95, { t, pose: won ? 'cheer' : scr ? 'wave' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : scr ? 'wow' : 'happy', facing: 1 });
+    SK.tag(c, 'Savings goal', gx, gy - L.goal - 16, 18); if (!sink) SK.tag(c, 'Savings', bx, by - s.r - 18, 18);
+    if (s.spends.length && t - s.spends[s.spends.length - 1].t < 0.9) { const sp = s.spends[s.spends.length - 1]; SK.tag(c, 'Spent', sp.x + 40, sp.y - 40, 18, '#fff6ea', 'rgba(190,40,40,0.85)'); }
     if (!s.rolling && !s.end) SK.demo(g, c, 'hold', [bx + 4, by + 6], null, { delay: 0.8, period: 2.4 });
     if (s.rolling && s.u > 0.8) SK.glow(c, g, gx, gy, L.goal * 0.6); // levels 0 and 1: the place to let go glows
   },

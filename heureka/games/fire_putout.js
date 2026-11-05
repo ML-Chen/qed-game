@@ -60,7 +60,7 @@
     if (f.spark && t - f.spark < 0.9) for (let i = 0; i < 8; i++) { const q = (t * 3 + i / 8) % 1; c.strokeStyle = '#ffe85a'; c.lineWidth = 2; const sx = x - 30 + B3.hash(i + Math.floor(t * 8)) * 60, sy = top - 10 - q * 30; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + 5, sy - 6); c.lineTo(sx + 1, sy - 8); c.lineTo(sx + 7, sy - 15); c.stroke(); }
   }
   MG.add({
-    id: 'putout', stage: 'fire', cmd: 'PUT IT OUT!', time: 6, mood: 'storm', winText: 'Fire classes!', failText: 'Still burning!',
+    id: 'putout', stage: 'fire', cmd: 'PUT OUT ALL THE FIRES!', time: 6, mood: 'storm', winText: 'Fire classes!', failText: 'Still burning!',
     card: { title: 'The right extinguisher for the fire', kind: 'Chemistry', ref: 'Classes of fire and extinguishers',
       text: 'Different fires need different extinguishers. Water cools burning paper and wood. Water conducts electricity, so it must never go on live electrics; carbon dioxide smothers the fire without wetting the wires. On burning cooking oil, water sinks, boils into steam at once and throws burning oil out, so a wet-chemical extinguisher is used: it cools the oil and makes a soapy crust that keeps the air out. Burning metals need a special powder.\n\nThis is general safety information. If a fire is big or spreading, get out, stay out and call the fire service. Unplug electrics only if it is safe to.',
       note: 'Match the extinguisher to what is burning. Never use water on electrics or cooking oil.' },
@@ -110,6 +110,8 @@
       if (lost || (s.singed && t - s.singed < 2)) B3.smoke(c, 312, 548, t, 0.6, '80,80,90', 3, 40);
       const nf = s.fires.find(f => !f.out), w = nf ? s.ext.find(e => e.kind === WORKS[nf.kind][0]) : s.ext[0];
       if (nf && !SK.dragging(g) && !S) { SK.glow(c, g, w.x, w.y, 34, '#ffe27a', { level: 0 }); SK.glow(c, g, nf.x, BENCH - 40, 40, '#ffe27a', { level: 1 }); }
+      const EN = { water: 'Water', co2: 'CO\u2082', wet: 'Wet chem', metal: 'Powder' }, FN = { bin: 'Paper', toaster: 'Toaster', fryer: 'Oil', metal: 'Metal' };
+      s.ext.forEach((e, i) => { if (SK.dragging(g) !== e && !(S && S.e === e)) SK.tag(c, EN[e.kind], e.hx, s.ext.length > 3 && i % 2 ? 478 : 496, 18); }); for (const f of s.fires) SK.tag(c, FN[f.kind], f.x, BENCH + 16, 18);
       SK.demo(g, c, 'drag', [w.hx, w.hy], [nf ? nf.x - 36 : 180, BENCH - 70], { never: !nf || !!S });
     },
     // the bot uses the right extinguisher on each fire in turn

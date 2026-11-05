@@ -80,14 +80,17 @@ MG.add({
   draw(g, c) {
     const s = g.s, t = g.t, b = s.cap;
     c.drawImage(g.bake('catchup_bg', cuPaint), 0, 0, 360, 640);
+    // three orbit tracks: their dashes travel at the real speeds, fastest on the lowest track
+    for (const k of [0.78, 1.25]) { const r = CU_R * k, w = 2 * Math.PI / CU_T * Math.pow(k, -1.5); c.save(); c.strokeStyle = 'rgba(200,210,255,0.22)'; c.lineWidth = 2; c.setLineDash([6, 12]); c.lineDashOffset = t * w * r; c.beginPath(); c.arc(CU_C[0], CU_C[1], r, 0, 7); c.stroke(); c.restore(); }
     // the station's orbit, faint
-    c.save(); c.strokeStyle = 'rgba(200,210,255,0.28)'; c.lineWidth = 2; c.setLineDash([4, 8]); c.beginPath(); c.arc(CU_C[0], CU_C[1], CU_R, 0, 7); c.stroke(); c.restore();
+    c.save(); c.strokeStyle = 'rgba(200,210,255,0.28)'; c.lineWidth = 2; c.setLineDash([6, 12]); c.lineDashOffset = t * 2 * Math.PI / CU_T * CU_R; c.beginPath(); c.arc(CU_C[0], CU_C[1], CU_R, 0, 7); c.stroke(); c.restore();
     cuEarth(c, t);
     // the capsule's own path for the next lap (worked out from the same gravity), drawn after a burn
     if (s.fired && !s.dock && !s.crash) { const q = { x: b.x, y: b.y, vx: b.vx, vy: b.vy }, T = Math.min(5, cuPeriod(b)), n = 90; c.save(); c.strokeStyle = 'rgba(140,230,200,0.6)'; c.lineWidth = 2.5; c.setLineDash([3, 6]); c.beginPath(); c.moveTo(q.x, q.y);
       for (let i = 0; i < n; i++) { for (let k = 0; k < 4; k++) cuStep(q, T / n / 4); c.lineTo(q.x, q.y); if (Math.hypot(q.x - CU_C[0], q.y - CU_C[1]) < CU_EARTH) break; } c.stroke(); c.restore(); }
     const sx = CU_C[0] + CU_R * Math.cos(s.st.th), sy = CU_C[1] + CU_R * Math.sin(s.st.th);
     cuStation(c, sx, sy, s.st.th, t);
+    if (!g.done) SK.tag(c, 'Station', SK.clamp(sx + Math.cos(s.st.th) * 44, 48, 312), SK.clamp(sy + Math.sin(s.st.th) * 44, 160, 600), 18);
     if (!g.done) SK.glow(c, g, sx, sy, 34, '#9ad8ff', { level: 2 });
     if (!s.crash) cuCapsule(c, b.x, b.y, Math.atan2(b.vy, b.vx), t - s.flameT < 0.45 ? s.flame : s.dock && t - s.dock < 0.5 ? 1 : 0, t);
     // the rabbit at mission control

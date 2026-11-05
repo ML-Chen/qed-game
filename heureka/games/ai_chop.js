@@ -23,7 +23,7 @@ function paintForest(o) {
   o.fillStyle = '#5a4030'; for (let x = 2; x < 360; x += 16) o.fillRect(x, TRAINY + 15, 7, 20);
 }
 MG.add({
-  id: 'cs_chop', stage: 'ai', cmd: 'CHOP!', time: 7, mood: 'night', winText: 'Tokens!', failText: 'Too long!',
+  id: 'cs_chop', stage: 'ai', cmd: 'CHOP THE WORD INTO TOKENS!', time: 7, mood: 'night', winText: 'Tokens!', failText: 'Too long!',
   card: { title: 'Words in pieces', kind: 'Artificial intelligence', ref: 'Tokenization (subword tokens)',
     text: 'A language model does not read letters one by one, and it does not know every whole word. It reads tokens: pieces from a fixed list it learned. Common words are often one token. Rarer words are built from a few pieces, like "un" + "believ" + "able".\n\nIf a piece is not on the list, the model has to fall back to smaller pieces, sometimes single letters. Then the same text takes many more tokens, which costs more and fills the model\'s memory sooner.\n\nWords from languages that were rarer in the training text often need more pieces.',
     note: 'Models read tokens: common words whole, rarer words in a few pieces from a fixed list.' },
@@ -62,6 +62,7 @@ MG.add({
     c.fillStyle = '#6a4428'; c.beginPath(); c.roundRect(16, 130, 328, 108, 12); c.fill(); c.fillStyle = '#8a5a34'; c.beginPath(); c.roundRect(22, 136, 316, 96, 9); c.fill();
     { let x = 32, y = 160; c.font = `700 19px ${B7.MONO}`; c.textBaseline = 'middle'; c.textAlign = 'center'; for (const v of s.board) { const w = carW(v); if (x + w > 330) { x = 32; y += 44; } const used = s.segs.some(q => q.st === 'tok' && s.word.slice(q.a, q.b) === v);
       c.fillStyle = used ? '#a8e8a0' : '#f4dcb0'; c.strokeStyle = '#4a2a14'; c.lineWidth = 2; c.beginPath(); c.roundRect(x, y - 16, w, 32, 6); c.fill(); c.stroke(); c.fillStyle = '#3a2010'; c.fillText(v, x + w / 2, y + 1); x += w + 8; } }
+    SK.tag(c, 'Token list', 180, 252, 18);
     // the log: still-uncut parts sit here; tokens and crumbs leave for the train
     for (const q of s.segs) {
       const txt = s.word.slice(q.a, q.b), x0 = G.gapX(q.a), x1 = G.gapX(q.b), age = q.t ? t - q.t : 9;

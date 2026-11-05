@@ -81,6 +81,10 @@ MG.add({
       c.fillStyle = 'rgba(220,170,110,0.65)'; c.beginPath(); c.ellipse(-R * 0.2, -R * 0.45, R * 0.5, R * 0.16, -0.3, 0, 7); c.fill();
       c.fillStyle = '#5e3a20'; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(R * (0.9 + i * 0.35), -R * (0.7 + 0.3 * Math.sin(t * 9 + i * 2)), R * 0.14, 0, 7); c.fill(); }
       c.restore(); }
+    // planted soil tries to move in the rain but the roots hold it: a little crumb of soil slips and stops at the bush
+    if (s.rainT) { const k = SK.easeOut(Math.min(1, (t - s.rainT) * 1.5)); for (const p of s.spots) if (p.at) { const x = p.x - 22 + 12 * k; c.fillStyle = '#7a4c2c'; c.beginPath(); c.ellipse(x, plY(x) - 3, 6, 3.5, 0.5, 0, 7); c.fill(); } }
+    const fp = s.spots.find(p => p.at && t - p.at > 0.4); if (fp && !g.done) SK.tag(c, 'Roots', fp.x + 34, fp.y + 56, 18);
+    if (!s.rainT && !s.spots.some(p => p.at)) SK.tag(c, 'Bare soil', 96, 452, 18);
     // water running down the hill and past the house: clear where the soil holds, brown behind mud
     if (rain) { c.save(); c.globalAlpha = rain; c.lineCap = 'round'; c.lineWidth = 3;
       for (let i = 0; i < 14; i++) { const q = ((t * 0.9 + i / 14) % 1), x = q * 380 - 10, y = Math.min(plY(x), PL_BOT) + (x > PL_X1 ? 8 : 0) - 2;

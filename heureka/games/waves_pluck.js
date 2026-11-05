@@ -91,6 +91,7 @@
       for (let i = 0; i < 18; i++) { const x = DRUM.x - 32 + (i * 13 % 64), y = DRUM.y - 3 - (i % 3) * 2.5 + sk * 0.3; c.beginPath(); c.ellipse(x, y, 4.6, 2.3, i, 0, 7); c.fill(); c.stroke(); }
       for (const q of s.grains) { if (q.dead) continue; c.save(); c.translate(q.x, q.y); c.rotate(q.a); c.beginPath(); c.ellipse(0, 0, 5, 2.6, 0, 0, 7); c.fill(); c.stroke(); c.restore(); }
       for (const q of s.grains) if (q.dead) { c.fillStyle = 'rgba(255,244,216,0.9)'; c.beginPath(); c.ellipse(q.x, 521, 4.5, 2, 0, 0, 7); c.fill(); }
+      SK.tag(c, 'Rubber band', BAND.x + 6, BAND.y0 - 52, 18); SK.tag(c, 'Drum', DRUM.x, DRUM.y + 54, 18);
       // the bowl and the bird on its rim
       bowl(c, s.B, s.step / s.steps + Math.min(s.got, s.need) / s.need / s.steps, s.back);
       const pk = t - s.peck < 0.3;

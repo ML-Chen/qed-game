@@ -87,6 +87,7 @@
         arrow(c, s.x - 4, ay, -me, '#ffb050', 18); arrow(c, s.x + 4, ay, fox, '#e84848', 18);
         c.fillStyle = '#ffffff'; c.beginPath(); c.arc(s.x, ay, 5, 0, 7); c.fill();
         const net = (fox - me); arrow(c, s.x, Y + 44, net, net < 0 ? '#6ef0b4' : '#ff6a8a', 14);
+        SK.tag(c, 'Your pull', SK.clamp(s.x - 62, 58, 302), ay - 34, 18, '#ffd08a'); SK.tag(c, "Fox's pull", SK.clamp(s.x + 62, 58, 302), ay - 34 - 34, 18, '#ffb0b0'); SK.tag(c, 'Net force', SK.clamp(s.x, 70, 290), Y + 80, 18, '#a0ffd2');
       }
       // the crowd on the ice: three penguins and a duck, cheering whoever wins
       for (const [px, kind, ph] of [[96, 'penguin', 0], [150, 'duck', 1.3], [212, 'penguin', 2.1], [266, 'penguin', 3.3]]) SK.animal(c, kind, px, 598 + Math.sin(ph) * 6, 0.85, { t, phase: ph, pose: g.done ? 'cheer' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: px < 180 ? 1 : -1 });

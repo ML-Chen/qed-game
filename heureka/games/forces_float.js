@@ -23,7 +23,7 @@
     o.fillStyle = '#a0a8b8'; o.fillRect(TUB.x1 - 34, 352, 8, 34); o.beginPath(); o.roundRect(TUB.x1 - 50, 346, 30, 10, 4); o.fill(); // the tap
   }
   function boatPath(c, w, hw) { // a bowl seen from the side, rim at y = -hw, bottom at y = 0
-    const r = w / 2, th = 7;
+    const r = w / 2, th = 10;
     c.beginPath(); c.moveTo(-r, -hw); c.bezierCurveTo(-r, -hw * 0.2, -r * 0.6, 0, 0, 0); c.bezierCurveTo(r * 0.6, 0, r, -hw * 0.2, r, -hw);
     c.lineTo(r - th, -hw); c.bezierCurveTo(r - th, -hw * 0.25 - th * 0.2, r * 0.55, -th, 0, -th); c.bezierCurveTo(-r * 0.55, -th, -r + th, -hw * 0.25 - th * 0.2, -r + th, -hw); c.closePath();
   }
@@ -85,6 +85,7 @@
         c.fillStyle = '#c8905a'; c.fillRect(CL.x - 130, CL.y + 2, 260, 8);
         if (g.level === 0) { c.save(); c.setLineDash([5, 6]); c.strokeStyle = 'rgba(80,60,40,0.55)'; c.lineWidth = 2; c.translate(CL.x, CL.y); boatPath(c, 140, wallH(140)); c.stroke(); c.restore(); }
         c.save(); c.fillStyle = 'rgba(255,255,255,0.9)'; for (const sd of [-1, 1]) { const ax = CL.x + sd * (s.w / 2 + 22); c.beginPath(); c.moveTo(ax + sd * 12, CL.y - 20); c.lineTo(ax, CL.y - 30); c.lineTo(ax, CL.y - 10); c.closePath(); c.fill(); } c.restore();
+        SK.tag(c, 'Clay', CL.x, CL.y - 96, 18);
         SK.glow(c, g, CL.x, CL.y - 24, 40, undefined, { level: 2 });
         SK.demo(g, c, 'drag', [CL.x + 10, CL.y - 20], [CL.x + 10 + (140 - s.w) / 2, CL.y - 20]);
       }
@@ -102,7 +103,7 @@
     const n = a.length; let i = 0;
     for (const k of a) {
       const dx = waiting ? i * 30 : (i - (n - 1) / 2) * 22, hop = !waiting && board < 1 ? -Math.sin(board * Math.PI) * 40 : 0, sx = waiting ? x + dx : SK.lerp(52 + i * 30, x + dx, board);
-      if (k === 'peng') SK.animal(c, 'penguin', sx, y + hop, waiting ? 0.75 : 0.6, { t, phase: i, pose: sinking ? 'hop' : waiting ? 'idle' : 'cheer', expr: sinking ? 'wow' : 'happy', noShadow: !waiting });
+      if (k === 'peng') SK.animal(c, 'penguin', sx, y + hop, 0.75, { t, phase: i, pose: sinking ? 'hop' : waiting ? 'idle' : 'cheer', expr: sinking ? 'wow' : 'happy', noShadow: !waiting });
       else { c.fillStyle = '#b8803a'; c.strokeStyle = '#5a3a1a'; c.lineWidth = 2; c.beginPath(); c.roundRect(sx - 11, y + hop - 20, 22, 20, 3); c.fill(); c.stroke(); c.fillStyle = '#f0a050'; c.beginPath(); c.ellipse(sx, y + hop - 22, 8, 4, 0, 0, 7); c.fill(); }
       i++;
     }

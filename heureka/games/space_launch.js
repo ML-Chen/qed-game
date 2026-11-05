@@ -63,11 +63,17 @@ MG.add({
     // the cannon on the peak, with its plunger pulled back
     const [mx, my] = LA_MUZ, d = s.pull;
     c.save(); c.translate(mx - 18, my); c.scale(1.25, 1.25); c.fillStyle = '#5a4a3a'; c.fillRect(-10, 6, 30, 8);
-    c.strokeStyle = '#c8c0c8'; c.lineWidth = 3; c.beginPath(); for (let i = 0; i <= 12; i++) c.lineTo(-14 - d * i / 12, (i % 2 ? -6 : 6)); c.stroke(); // the spring
-    c.fillStyle = '#e84a3a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.roundRect(-20 - d, -9, 10, 18, 3); c.fill(); c.stroke();
+    c.strokeStyle = '#c8c0c8'; c.lineWidth = 3; c.beginPath(); const dd = d * 0.8; for (let i = 0; i <= 12; i++) c.lineTo(-14 - dd * i / 12, (i % 2 ? -6 : 6)); c.stroke(); // the spring
+    c.fillStyle = '#e84a3a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.roundRect(-20 - dd, -9, 10, 18, 3); c.fill(); c.stroke();
     const bg = c.createLinearGradient(0, -10, 0, 10); bg.addColorStop(0, '#8a8aa0'); bg.addColorStop(1, '#4a4a60'); c.fillStyle = bg; c.beginPath(); c.roundRect(-14, -10, 44, 20, 6); c.fill(); c.stroke();
     c.fillStyle = '#2a2a3a'; c.beginPath(); c.ellipse(30, 0, 4, 9, 0, 0, 7); c.fill(); c.restore();
-    if (!g.done && !s.grab) { SK.glow(c, g, mx - 24, my, 30, '#ffe27a', { level: 2 }); c.save(); c.strokeStyle = 'rgba(255,230,160,0.55)'; c.lineWidth = 3; c.setLineDash([5, 7]); c.beginPath(); c.moveTo(mx - 50, my + 22); c.lineTo(mx - 24 - LA_PULL - 20, my + 22); c.stroke(); c.setLineDash([]); c.beginPath(); c.moveTo(mx - 24 - LA_PULL - 10, my + 14); c.lineTo(mx - 24 - LA_PULL - 22, my + 22); c.lineTo(mx - 24 - LA_PULL - 10, my + 30); c.stroke(); c.restore(); }
+    // the pull gauge under the cannon: where the plunger is now, and the green stretch of pulls that make an orbit
+    { const px = dv => mx - 43 - dv, r0 = Math.hypot(LA_MUZ[0] + 6 - LA_C[0], LA_MUZ[1] - LA_C[1]), dOf = rx => LA_PULL * Math.sqrt(2 * LA_GM * rx / (r0 * (r0 + rx))) / LA_VC, d0 = dOf(L.rp), d1 = dOf(L.ra);
+      c.save(); c.strokeStyle = 'rgba(255,230,160,0.5)'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(px(0), my + 24); c.lineTo(px(150), my + 24); c.stroke();
+      c.strokeStyle = '#5ad06a'; c.lineWidth = 8; c.beginPath(); c.moveTo(px(d0), my + 24); c.lineTo(px(d1), my + 24); c.stroke();
+      c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(px(d), my + 24, 6, 0, 7); c.fill(); c.restore();
+      if (!g.done) SK.tag(c, 'Orbit', px((d0 + d1) / 2), my + 48, 18, '#fff6ea', 'rgba(30,90,40,0.8)'); }
+    if (!g.done && !s.grab) SK.glow(c, g, mx - 24, my, 30, '#ffe27a', { level: 2 });
     // the rabbit on the mountain ducks as balls whizz round, cheers when they stay up
     const whizz = s.balls.some(b => b.st === 'orbit' && SK.dist(b.x, b.y, mx, my) < 60);
     const won = g.result === 'win', lost = g.result === 'fail';

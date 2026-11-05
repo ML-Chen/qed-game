@@ -69,7 +69,7 @@ function scrub(g, x, y) {
 }
 function gpos(gm, rub) { const P0 = PAWS[gm.pw], a = P0.a, ca = Math.cos(a), sa = Math.sin(a); return [P0.x + gm.dx * ca - gm.dy * sa + rub * (gm.pw ? -6 : 6), P0.y + gm.dx * sa + gm.dy * ca]; }
 MG.add({
-  id: 'medicine_wash', stage: 'medicine', cmd: 'WASH HANDS!', time: 5, mood: 'party', winText: 'Soap scrub!', failText: 'Still germy!',
+  id: 'medicine_wash', stage: 'medicine', cmd: 'SCRUB THE GERMS OFF WITH SOAP!', time: 5, mood: 'party', winText: 'Soap scrub!', failText: 'Still germy!',
   card: { title: 'Soap lifts germs off', kind: 'Medicine', ref: 'Handwashing with soap',
     text: 'Germs stick to the oily layer on your skin, so a splash of water alone leaves most of them behind. Soap breaks up that oil. Rubbing your hands together with soap lifts the germs into the lather, and rinsing washes them down the drain.\n\nHealth agencies advise scrubbing for at least 20 seconds, about two rounds of "Happy Birthday", including between the fingers and under the nails. Clean hands stop germs from riding onto door handles and food, and on to the next person. This also stops germs that resist antibiotics from spreading.',
     note: 'Scrubbing with soap for at least 20 seconds lifts germs off your hands, so they cannot pass to the next person.' },
@@ -140,6 +140,7 @@ MG.add({
     if (!s.touched && !g.done) SK.glow(c, g, 180, 420, 70);
     const nail = s.germs.find(gm => gm.nail && gm.hits < 3);
     if (nail && g.level <= 1) for (const gm of s.germs) if (gm.nail && gm.hits < 3) { const q = gpos(gm, 0); SK.glow(c, g, q[0], q[1], 18); }
+    SK.tag(c, 'Soap', 50, 290, 18); if (!g.done && s.rinse < 0) SK.tag(c, 'Germs', 180, 330, 18);
     if (s.rinse < 0) { if (nail && s.scrubs > 4) { const q = gpos(nail, 0); SK.demo(g, c, 'tap', [q[0], q[1] + 6], null, { period: 0.5 }); } else SK.demo(g, c, 'drag', [130, 440], [230, 440], { period: 0.7 }); }
   },
   auto(g, dt, synth) {

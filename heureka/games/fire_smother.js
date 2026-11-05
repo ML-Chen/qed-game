@@ -59,7 +59,7 @@
     c.restore();
   }
   MG.add({
-    id: 'smother', stage: 'fire', cmd: 'STOP THE FIRE!', time: 6, mood: 'storm', winText: 'Fire triangle!', failText: 'Toasted!',
+    id: 'smother', stage: 'fire', cmd: 'PUT OUT EACH CAMPFIRE!', time: 6, mood: 'storm', winText: 'Fire triangle!', failText: 'Toasted!',
     card: { title: 'The fire triangle', kind: 'Chemistry', ref: 'The fire triangle (combustion)',
       text: 'A fire needs three things at the same time: fuel to burn, heat, and oxygen from the air. These are the three sides of the fire triangle. Take away any one side and the fire goes out.\n\nRaking the logs apart takes away the fuel. Sand over the fire smothers it: it keeps the air out. Water cools the fire until it is too cold to keep burning. Bellows do the opposite: they blow in more oxygen, so the flames grow.\n\nEmbers can stay hot for hours and start a fire again. Put out a campfire with an adult, and keep cooling and stirring it until it feels cold.',
       note: 'Fire needs fuel, heat and oxygen at once. Remove any one and it goes out.' },
@@ -131,6 +131,7 @@
       // guidance: the next unused tool glows, and a dashed ring marks the fire as where it goes
       const nx = s.tools.find(tl => tl.id === ['fuel', 'air', 'heat'].find(id => !s.used[id])), busy = !!A || !!s.out || !!s.fan;
       if (nx && !busy && !SK.dragging(g)) { SK.glow(c, g, nx.x, nx.y, 34); c.save(); c.globalAlpha = 0.5; c.setLineDash([8, 7]); c.lineDashOffset = -t * 20; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(FIRE.x, FIRE.y - 20, 62, 0, 7); c.stroke(); c.restore(); }
+      for (const sd of SIDES) if (!s.broken[sd.id]) SK.tag(c, { heat: 'Heat', air: 'Air', fuel: 'Fuel' }[sd.id], sd.x, sd.y + 44, 18);
       SK.demo(g, c, 'drag', nx ? [nx.hx, nx.hy] : [180, 400], [FIRE.x, FIRE.y - 20], { never: !nx || busy });
     },
     // the bot drags the next unused tool (rake, then sand, then water) onto the fire

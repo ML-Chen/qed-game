@@ -36,7 +36,7 @@
     c.beginPath(); c.moveTo(x - 44, y); c.quadraticCurveTo(x, y + (bowl ? 44 : 18), x + 44, y); c.closePath(); c.fill(); c.stroke();
   }
   MG.add({
-    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT!', time: 6, mood: 'night', winText: 'Lighter!', failText: 'Missed!',
+    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT THE NUCLEUS!', time: 6, mood: 'night', winText: 'Lighter!', failText: 'Missed!',
     card: { title: 'Splitting a nucleus', kind: 'Physics', ref: 'Nuclear fission and E = mc²',
       text: 'The middle of an atom is its nucleus, a tight ball of protons and neutrons. A neutron has no electric charge, so it flies straight in. A big nucleus such as uranium can wobble and split in two when a neutron hits it, and two or three spare neutrons fly out.\n\nWeigh all the pieces and they come to a tiny bit less than the nucleus did. That missing mass has turned into a huge amount of energy, the flash. Nuclear power stations run on this. Joining two small nuclei (fusion) also loses mass and powers the Sun.',
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },
@@ -134,6 +134,8 @@
       // the missing mass: a little glowing bit leaves the bowl as light, and the bowl rises
       if (s.boom) { const q = (t - s.flash) / 0.9; if (q < 1) { const mx = cx + 10, my = cy - 20 - q * 140; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(mx, my, 6 + q * 10, 0, 7); c.fill(); c.restore(); } if (t - s.flash > 0.2) SK.tag(c, 'Lighter!', cx + 4, cy - 64, 18); }
       if (n.st === 'ready' && !s.hit && !g.s._drag && g.level === 0) { c.save(); c.strokeStyle = 'rgba(160,210,255,0.45)'; c.lineWidth = 2.5; c.setLineDash([6, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(cx, cy); c.stroke(); c.restore(); }
+      if (!s.hit) SK.tag(c, s.fus ? 'Nucleus' : 'Uranium nucleus', cx + (s.fus ? 0 : 30), cy - s.bigR - 40, 18);
+      if (n.st === 'ready') SK.tag(c, s.fus ? 'Small nucleus' : 'Neutron', s.start[0] + (s.start[0] > 250 ? -40 : 0), s.start[1] + 44, 18);
       // the beaver peeks over the bench, and ducks when a neutron comes flying its way
       const ducking = t - s.duck < 0.9, dy = ducking ? 52 : 0;
       SK.animal(c, 'beaver', 60, 556 + dy, 0.78, { t, pose: g.result === 'win' ? 'cheer' : 'idle', expr: ducking ? 'wow' : 'happy' });

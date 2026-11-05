@@ -33,7 +33,7 @@
     else B3.smoke(c, x, y - 50, t, 0.7, '170,170,180', 5, 110);
   }
   MG.add({
-    id: 'hurry', stage: 'reactions', cmd: 'HURRY!', time: 5, mood: 'desert', winText: 'Slowest step!', failText: 'Pile-up!',
+    id: 'hurry', stage: 'reactions', cmd: 'SPEED UP THE BUCKET LINE!', time: 5, mood: 'desert', winText: 'Slowest step!', failText: 'Pile-up!',
     card: { title: 'The slowest step sets the pace', kind: 'Chemistry', ref: 'Rate-determining step',
       text: 'Every bucket has to pass through every helper, so the whole line can only go as fast as its slowest helper. Hurrying the frog makes no difference: its buckets just pile up in front of the turtle. Hurrying the turtle speeds up the whole line.\n\nMany chemical reactions happen in several steps, one after another. The slowest step is called the rate-determining step, and it sets how fast the whole reaction goes. Factories, checkout queues and computer programs work the same way.',
       note: 'In a chain of steps, the slowest step limits the speed of the whole chain.' },

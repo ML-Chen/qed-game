@@ -42,7 +42,7 @@ function counterBoard(c, g, s, x, y) { // the tally counter on the wall: one win
   c.restore();
 }
 MG.add({
-  id: 'cs_loop', stage: 'programs', cmd: 'LOOP!', time: 7, mood: 'bright', winText: 'For loop!', failText: 'Off by one!',
+  id: 'cs_loop', stage: 'programs', cmd: 'DO WHAT THE GLOWING LINE SAYS!', time: 7, mood: 'bright', winText: 'For loop!', failText: 'Off by one!',
   card: { title: 'A loop repeats its body', kind: 'Computer science', ref: 'for loops and range() (Python)',
     text: 'A for loop runs the indented lines under it, called its body, once for each value it is given. range(3) gives 0, 1 and 2, then stops. That is three values, starting from 0, so the body runs three times.\n\nEach time the computer reaches the for line, it takes the next value. When there are none left, it skips past the body to the first line after the loop.\n\nA very common mistake is to run one lap too many. Here that walks the robot right off the end of the path.',
     note: 'A for loop runs its body once per value; range(3) gives 0, 1, 2 and then the loop ends.' },

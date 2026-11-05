@@ -43,7 +43,7 @@
     if (n > 0) { drawMol(c, kind, x - 12, y - 2, 0.75); drawMol(c, kind, x + 12, y - 2, 0.75); drawMol(c, kind, x, y - 14, 0.85); }
   }
   MG.add({
-    id: 'balance_eq', stage: 'reactions', cmd: 'BALANCE!', time: 6, mood: 'night', winText: 'Mass conserved!', failText: 'Lopsided!',
+    id: 'balance_eq', stage: 'reactions', cmd: 'BALANCE THE ATOMS!', time: 6, mood: 'night', winText: 'Same atoms!', failText: 'Lopsided!',
     card: { title: 'Atoms are never lost', kind: 'Chemistry', ref: 'Balancing chemical equations (conservation of mass)',
       text: 'When methane burns, its atoms join up with oxygen in new ways and make carbon dioxide and water. No atom is made or destroyed. Every atom on the left must turn up on the right.\n\nYou can only add whole molecules, so you change how many of each molecule there are. One methane needs two oxygen molecules, and it makes one carbon dioxide and two waters. Those counts are the numbers written in front: CH₄ + 2O₂ → CO₂ + 2H₂O. Because every atom is still there, the mass on both sides is the same too.',
       note: 'In a reaction, atoms rearrange but none are lost, so a balanced equation has the same atoms on both sides.' },
@@ -104,7 +104,7 @@
       });
       // the trays and the loose atom
       for (const tr of s.trays) { tray(c, tr.x, tr.y, tr.kind, 1); }
-      const bq = s.bounce ? SK.clamp((t - s.bounce) * 3, 0, 1) : 1; SK.ball(c, s.loose.x, s.loose.y - Math.sin(bq * Math.PI) * 40, 11.5, COL.O, { lw: 1.6 });
+      const bq = s.bounce ? SK.clamp((t - s.bounce) * 3, 0, 1) : 1, ly = s.loose.y - Math.sin(bq * Math.PI) * 40, lw = Math.sin(t * 7) * 0.25; c.save(); c.translate(s.loose.x, ly); c.rotate(lw); SK.ball(c, 0, 0, 11.5, COL.O, { lw: 1.6 }); c.restore(); c.save(); c.strokeStyle = 'rgba(255,140,120,0.8)'; c.lineWidth = 2; c.setLineDash([3, 4]); c.beginPath(); c.arc(s.loose.x, ly, 17, 0, 7); c.stroke(); c.restore();
       if (s.held && !s.held.loose) drawMol(c, s.held.kind, s.held.x, s.held.y, 1.1);
       // the equation, once balanced
       if (g.result === 'win') { const cL = {}, cR = {}; for (const m of s.L) cL[m.kind] = (cL[m.kind] || 0) + 1; for (const m of s.R) cR[m.kind] = (cR[m.kind] || 0) + 1;
@@ -117,6 +117,7 @@
       let need = null; if (nr.C < nl.C) need = 'CO2'; else if (nr.H < nl.H) need = 'H2O'; else if (nl.O < nr.O) need = 'O2';
       const tr = s.trays.find(t => t.kind === need) || s.trays[0], tp = tr.side === 'L' ? lp : rp;
       if (need && !s.held) SK.glow(c, g, tr.x, tr.y, 34);
+      const NAME = { O2: 'Oxygen', CO2: 'CO\u2082', H2O: 'Water' }; for (const tr of s.trays) SK.tag(c, NAME[tr.kind], tr.x, 598, 18);
       SK.demo(g, c, 'drag', [tr.x, tr.y], [tp.x, tp.y - 40], { never: !need });
     },
     auto(g, dt, synth) {

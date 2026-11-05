@@ -39,7 +39,7 @@ function paintStudio(o) {
 }
 function lvlY(k, y0, y1) { return y1 - (y1 - y0 - 8) * k; }
 MG.add({
-  id: 'charge', stage: 'circuits', cmd: 'CHARGE!', time: 6, mood: 'party', winText: 'Capacitor!', failText: 'Too dark!',
+  id: 'charge', stage: 'circuits', cmd: 'CHARGE UP, LET GO TO SNAP!', time: 6, mood: 'party', winText: 'Capacitor!', failText: 'Too dark!',
   card: { title: 'A capacitor fills fast, then slowly', kind: 'Engineering', ref: 'Charging a capacitor (RC circuit)',
     text: 'A capacitor stores electric charge, like a jar stores water. Here the battery is a full tank, and charge flows into the capacitor through a narrow pipe, which is a resistor.\n\nAt first the jar is empty and the push from the tank is strong, so it fills fast. As the jar fills, its own level pushes back, the difference shrinks, and the flow slows down. It creeps closer and closer to the tank\'s level but never quite gets there. A narrower pipe makes the whole thing slower. A camera flash charges a capacitor like this, then empties it all at once into the lamp.',
     note: 'A capacitor charges quickly at first and then more and more slowly, as it nears the battery\'s voltage.' },
@@ -84,8 +84,9 @@ MG.add({
     // photos popping out of the camera, stacked along the top of the body
     s.photos.forEach((p, i) => { const k = SK.easeOut((t - p.t) / 0.35), x = 34 + (i % 5) * 52, y = 372 - k * 26; if (!p.ok && t - p.t > 0.9) return; c.save(); c.translate(x, y); c.rotate((i % 2 ? 1 : -1) * 0.08); c.fillStyle = '#fff6ea'; c.fillRect(-20, -24, 40, 46); c.fillStyle = p.ok ? '#9ad8e8' : '#1a1a22'; c.fillRect(-16, -20, 32, 30); if (p.ok) SK.animal(c, p.kind, 0, 8, 0.36, { t: 0 }); c.restore(); });
     if (!g.done && s._hold == null) SK.glow(c, g, 150, PIPE_Y, 30);
+    SK.tag(c, 'Battery', TANK.x, 520, 18); SK.tag(c, 'Capacitor', JAR.x, 600, 18); SK.tag(c, 'Flash', FL.x - 76, FL.y + 4, 18);
     // the beaver photographer
-    SK.animal(c, 'beaver', 312, 604, 0.8, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : s.dud || lost ? 'sad' : open ? 'think' : 'happy' });
+    SK.animal(c, 'beaver', 322, 612, 0.7, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : s.dud || lost ? 'sad' : open ? 'think' : 'happy' });
     SK.demo(g, c, 'hold', [150, PIPE_Y], null, { period: 2.0 });
   },
   auto(g, dt, synth) {

@@ -23,7 +23,7 @@
   }
   function seasonLen(g) { return Math.min(SEASON_S, (g.dur - 0.7) / SEASONS[Math.min(2, g.level)]); }
   MG.add({
-    id: 'unleash', stage: 'life', cmd: 'UNLEASH!', time: 6, mood: 'bright', winText: 'Predator-prey!', failText: 'Overrun!',
+    id: 'unleash', stage: 'life', cmd: 'SEND FOXES WHEN RABBITS BOOM!', time: 6, mood: 'bright', winText: 'Predator-prey!', failText: 'Overrun!',
     card: { title: 'Predators and prey', kind: 'Biology', ref: 'Predator and prey cycles (population ecology)',
       text: 'With no foxes, rabbits breed fast until they eat the meadow bare. When there are plenty of rabbits, foxes find food easily and raise more cubs. More foxes eat more rabbits, so the rabbits fall. Then the foxes go hungry and leave or die, which lets the rabbits recover.\n\nSo the two numbers rise and fall in a chase, with the foxes one step behind. Too many foxes at once can eat almost every rabbit, and then the foxes starve too. Records of lynx and snowshoe hares in Canada show a similar rise and fall about every ten years.',
       note: 'Predator and prey numbers rise and fall in turn: more prey feeds more predators, and more predators mean fewer prey.' },
@@ -65,6 +65,7 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       if (won || lost) SK.animal(c, 'fox', 120, 610, 0.8, { t, pose: won ? 'cheer' : 'sad', expr: won ? 'laugh' : 'wow' });
       if (s.F < 0.5) SK.glow(c, g, DEN.x, DEN.y - 14, 40, s.R > 20 ? '#ffe27a' : 'rgba(255,240,200,0.5)');
+      SK.tag(c, 'Rabbits', 120, 218, 18, '#fff6ea'); SK.tag(c, 'Foxes', 240, 218, 18, '#ffb060'); SK.tag(c, 'Fox den', DEN.x + 40, DEN.y + 30, 18);
       SK.demo(g, c, 'tap', [DEN.x, DEN.y - 14], null, { delay: 2.2, never: (g.s.touched || g.level > 0) && !(s.R > 20 && s.F < 0.5) });
     },
     // the bot sends out one fox whenever the rabbits boom and no foxes are left

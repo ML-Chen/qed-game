@@ -56,8 +56,8 @@
         const end = endPt(s.px, aR, -1), q = SK.clamp(e / 0.32, 0, 1); s.frog = { x: SK.lerp(17, end.x + 8, q), y: SK.lerp(GND - 34, end.y, q) - Math.sin(q * Math.PI) * 60 };
         if (q >= 1) { s.phase = lifts ? 'tip' : 'fling'; s.pt = g.t; g.sfx('thud'); }
       } else if (s.phase === 'tip') {
-        const q = SK.easeInOut(e / 0.75); s.angNow = SK.lerp(aR, aF, q); const end = endPt(s.px, s.angNow, -1); s.frog = { x: end.x + 8, y: end.y }; // the frog's end sinks slowly, the rock's end rises
-        if (e >= 0.75) {
+        const q = SK.easeInOut(e / 0.6); s.angNow = SK.lerp(aR, aF, q); const end = endPt(s.px, s.angNow, -1); s.frog = { x: end.x + 8, y: end.y }; // the frog's end sinks slowly, the rock's end rises
+        if (e >= 0.6) {
           const h = GND - endPt(s.px, aF, 1).y; s.phase = h >= HN - 2 ? 'roll' : 'low'; s.pt = g.t;
           if (s.phase === 'roll') { g.sfx('cheer'); } else { g.sfx('thud'); g.sfx('wrong'); }
         }
@@ -91,6 +91,7 @@
       c.strokeStyle = '#5a5a6a'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, BR - 6, 0, 7); c.stroke(); c.fillStyle = '#3a2010'; c.beginPath(); c.arc(px, py, 4, 0, 7); c.fill();
       // the height the rock must reach: a dashed line from the ledge top back across the plank
       c.save(); c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(LEDGE + 4, GND - HN - 4); c.lineTo(200, GND - HN - 4); c.stroke(); c.restore();
+      SK.tag(c, 'Pivot', px, GND + 50, 18);
       // the plank, resting on the top of the barrel
       const a = s.angNow, L0 = endPt(px, a, -1), R0 = endPt(px, a, 1);
       c.save(); c.translate(px, GND - BH); c.rotate(a); c.fillStyle = '#d8a060'; c.strokeStyle = '#6a3a1a'; c.lineWidth = 2; c.beginPath(); c.roundRect(-(px - X0), -10, LEN, 10, 3); c.fill(); c.stroke();

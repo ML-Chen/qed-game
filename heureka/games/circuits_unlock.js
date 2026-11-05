@@ -4,6 +4,7 @@
 // the open switch and nothing flows. Level 2: three switches in a row, so the duck has to stand on one too.
 // (Only one finger is tracked, so an animal holds the first switch down.)
 const WY = 522, TOPY = 150, BX = 40, RX = 330, DOOR = { x: 180, y: 306, r: 98 }, LOCK = { x: RX, y: 306 };
+const STAY = [1.6, 1.4, 2.0]; // seconds a helper will stand on a switch before hopping off
 const LAY = [ // switch x positions and which animals help
   { pads: [118, 236], helpers: ['fox'] }, { pads: [118, 236], helpers: ['fox'] }, { pads: [92, 176, 260], helpers: ['fox', 'duck'] },
 ];
@@ -41,7 +42,7 @@ function pad(c, x, down, t, live) { // a big red floor switch in the wire
   c.restore();
 }
 MG.add({
-  id: 'unlock', stage: 'circuits', cmd: 'UNLOCK!', time: 6, mood: 'night', winText: 'AND gate!', failText: 'Locked!',
+  id: 'unlock', stage: 'circuits', cmd: 'PRESS BOTH SWITCHES AT ONCE!', time: 6, mood: 'night', winText: 'AND gate!', failText: 'Locked!',
   card: { title: 'Switches in a row make AND', kind: 'Engineering', ref: 'Logic gates (AND and OR)',
     text: 'This lock is wired through two switches in a row, one after the other. Electricity flows only around a complete loop, so current reaches the lock only when the first switch AND the second switch are both pressed. With one pressed, the loop is still broken at the other, and nothing flows.\n\nEngineers call this an AND gate. Wire the two switches side by side instead, and either one alone completes the loop: that is an OR gate. Computer chips are built from billions of tiny gates like these, made of transistors instead of buttons.',
     note: 'Switches in a row make an AND: every one must be closed before any current flows.' },
@@ -61,10 +62,11 @@ MG.add({
     const s = g.s; if (s.hold) { s.hold = null; SK.holdEnd(g); }
     const d = SK.dragEnd(g); if (!d || !d.obj) return; const a = d.obj;
     const p = s.pads.filter(q => !q.by).sort((u, v) => Math.abs(u.x - a.x) - Math.abs(v.x - a.x))[0];
-    if (p && Math.abs(p.x - a.x) < 60 && Math.abs(a.y - WY) < 90) { a.pad = p; p.by = a; a.x = p.x; a.y = WY - 2; g.sfx('click'); g.sfx('thud'); }
+    if (p && Math.abs(p.x - a.x) < 60 && Math.abs(a.y - WY) < 90) { a.pad = p; p.by = a; a.x = p.x; a.y = WY - 2; a.onT = g.t; g.sfx('click'); g.sfx('thud'); }
     else { a.x = a.hx; a.y = a.hy; }
   },
   update(g, dt) {
+    for (const a of g.s.ani) if (a.pad && !g.done && g.t - a.onT > STAY[Math.min(2, g.level)]) { a.pad.by = null; a.pad = null; a.x = a.hx; a.y = a.hy; a.hopT = g.t; g.sfx('boing'); } // the helper gets bored and hops off
     const s = g.s, pressed = q => !!q.by || s.hold === q, all = s.pads.every(pressed);
     if (g.done) { if (g.result === 'win') { s.open = Math.min(1, s.open + dt * 1.6); s.flow += dt; } return; }
     s.on = all ? s.on + dt : 0; if (all) s.flow += dt;
@@ -96,13 +98,15 @@ MG.add({
     // the bolt from the lock box into the door, and the lamp on the box
     const bolt = all || g.result === 'win' ? SK.clamp(s.on / 0.3, 0, 1) : 0; c.fillStyle = '#c0c8d0'; c.fillRect(DOOR.x + DOOR.r - 6, LOCK.y - 7, (RX - 22 - (DOOR.x + DOOR.r - 6)) * (1 - bolt) + 4, 14);
     const lit = all || g.result === 'win'; c.fillStyle = lit ? '#5aff8a' : '#ff3a3a'; c.beginPath(); c.arc(RX, LOCK.y - 14, 8, 0, 7); c.fill(); c.fillStyle = lit ? 'rgba(90,255,138,0.35)' : 'rgba(255,58,58,0.3)'; c.beginPath(); c.arc(RX, LOCK.y - 14, 15, 0, 7); c.fill();
+    SK.tag(c, 'Battery', BX + 4, 404, 18); SK.tag(c, 'Lock', RX - 6, LOCK.y - 52, 18);
     // the floor switches
-    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!pressed(p)) SK.glow(c, g, p.x, WY - 4, 32); }
+    for (const p of s.pads) { pad(c, p.x, pressed(p), t, false); if (!p.by) SK.tag(c, 'Switch', p.x, WY - 36, 18); if (!pressed(p)) SK.glow(c, g, p.x, WY - 4, 32); }
     // a spark where the live wire stops at an open switch
     if (!all && !g.done) { const p = s.pads.find(q => !pressed(q)); if (p) { c.save(); c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 20); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(p.x - 30, WY, 6, 0, 7); c.fill(); c.restore(); } }
     // the helpers, standing by or pressing a switch down
     const won = g.result === 'win', lost = g.result === 'fail';
     for (const a of s.ani) { const sc = a.kind === 'duck' ? 1.1 : 1.2; SK.animal(c, a.kind, a.x, a.y, sc, { t, pose: won ? 'cheer' : SK.dragging(g) === a ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : a.pad ? 'think' : 'happy', facing: -1 }); }
+    for (const a of s.ani) if (a.pad && !g.done) { const k = (g.t - a.onT) / STAY[Math.min(2, g.level)]; c.strokeStyle = '#ffe27a'; c.lineWidth = 4; c.beginPath(); c.arc(a.x, a.y - 96, 10, -Math.PI / 2, -Math.PI / 2 + (1 - k) * 6.283); c.stroke(); }
     // your finger on the held switch
     if (s.hold) SK.hand(c, s.hold.x, WY - 8, 1, 0.85);
     // guidance: first drag a helper onto a free switch, then hold the last one

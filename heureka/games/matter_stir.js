@@ -22,7 +22,7 @@
   }
   function makeGrain(g, kind) { return { kind, a: g.rand() * Math.PI * 2, r: Math.pow(g.rand(), 0.8), h: 0, lift: 0.15 + g.rand() * 0.75, size: 1, sp: 0.7 + g.rand() * 0.6, gone: false }; }
   MG.add({
-    id: 'matter_stir', stage: 'matter', cmd: 'STIR!', time: 7, mood: 'sea', winText: 'Dissolved!', failText: 'Gritty!', hold: 1.6,
+    id: 'matter_stir', stage: 'matter', cmd: 'STIR THE SUGAR AWAY!', time: 7, mood: 'sea', winText: 'Dissolved!', failText: 'Gritty!', hold: 1.6,
     card: { title: 'Dissolving', kind: 'Chemistry', ref: 'Solutions',
       text: 'Stirring sugar into water makes it disappear, but the sugar is still there. Water knocks tiny bits off each grain, and the bits spread out between the bits of water. They are far too small to see, even with a magnifying glass, so the drink looks clear but tastes sweet. This mix is called a solution.\n\nSand does not dissolve in water. Stir it and it swirls round, then sinks back to the bottom. Sugar dissolves faster in warm water than in cold, because the bits move faster.',
       note: 'When sugar dissolves, it breaks into bits too small to see, and they spread through the water.' },
@@ -93,13 +93,15 @@
         const k = SK.easeOut(s.mag), mx = SK.lerp(400, G.cx, k), my = SK.lerp(560, 400, k), R = 74;
         c.save(); c.beginPath(); c.arc(mx, my, R, 0, 7); c.fillStyle = '#e8f6fc'; c.fill(); c.clip();
         const rnd = P.rng(21); for (let i = 0; i < 46; i++) { const x = mx - R + rnd() * 2 * R + Math.sin(t * 3 + i) * 2, y = my - R + rnd() * 2 * R + Math.cos(t * 3.4 + i) * 2;
-          if (i % 5 === 0) { c.fillStyle = '#fff'; c.strokeStyle = '#c87aa0'; c.lineWidth = 2; c.beginPath(); for (let j = 0; j < 6; j++) { const a = j * Math.PI / 3; c.lineTo(x + Math.cos(a) * 7, y + Math.sin(a) * 7); } c.closePath(); c.fill(); c.stroke(); }
+          if (i % 3 === 0) { c.fillStyle = '#fff'; c.strokeStyle = '#4a4a6a'; c.lineWidth = 2.5; c.beginPath(); for (let j = 0; j < 6; j++) { const a = j * Math.PI / 3; c.lineTo(x + Math.cos(a) * 10, y + Math.sin(a) * 10); } c.closePath(); c.fill(); c.stroke(); }
           else { const ra = i * 1.3 + Math.sin(t * 2 + i) * 0.3; for (const sd of [-1, 1]) { const ha = ra + sd * 0.95; SK.ball(c, x + Math.cos(ha) * 7, y + Math.sin(ha) * 7, 3.4, '#f4f4fa', { lw: 1 }); } SK.ball(c, x, y, 6, '#e05050', { lw: 1 }); } }
         c.restore(); c.strokeStyle = '#5a3a2a'; c.lineWidth = 9; c.beginPath(); c.arc(mx, my, R, 0, 7); c.stroke(); c.strokeStyle = '#c89a5a'; c.lineWidth = 4; c.stroke();
         c.strokeStyle = '#5a3a2a'; c.lineWidth = 14; c.beginPath(); c.moveTo(mx + R * 0.72, my + R * 0.72); c.lineTo(mx + R * 1.3, my + R * 1.3); c.stroke();
       }
       // a heaped spoon tips sugar into the glass for the next round
       const pk = (t - s.pourT) / 0.7; if (pk >= 0 && pk < 1) { const tip = Math.sin(Math.min(1, pk * 2) * Math.PI / 2) * 1.1; c.save(); c.translate(G.cx + 50, G.top - 26); c.rotate(-tip); c.strokeStyle = '#8a8aa0'; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.lineTo(70, -30); c.stroke(); c.fillStyle = '#d0d0e0'; c.beginPath(); c.ellipse(-8, 4, 20, 11, -0.4, 0, 7); c.fill(); if (pk < 0.4) { c.fillStyle = '#fff'; c.beginPath(); c.ellipse(-8, -2, 16, 8, -0.4, Math.PI, 0); c.fill(); } c.restore(); }
+      if (!s.doneT) SK.tag(c, 'Sugar', G.cx - 40, G.bot + 34, 18); if (!s.doneT && s.grains.some(q => q.kind === 'sand')) SK.tag(c, 'Sand', G.cx + 50, G.bot + 34, 18);
+      if (s.mag >= 1) { SK.tag(c, 'Sugar', G.cx - 40, 300, 18); SK.tag(c, 'Water', G.cx + 44, 300, 18); }
       // the fox waits for its drink
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'fox', 312, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : W > 0.4 ? 'wow' : 'happy', facing: -1 });

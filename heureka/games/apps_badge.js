@@ -51,7 +51,7 @@ function request(c, r, x, y, s, t) { // an envelope: the asker's badge on the le
   c.restore();
 }
 MG.add({
-  id: 'cs_badge', stage: 'apps', cmd: 'CHECK BADGE!', time: 7, mood: 'party', winText: 'Authorized!', failText: 'Data leak!',
+  id: 'cs_badge', stage: 'apps', cmd: 'ONLY SEND ORDERS TO THEIR OWNER!', time: 7, mood: 'party', winText: 'Authorized!', failText: 'Data leak!',
   card: { title: 'Logged in is not enough', kind: 'Computer science', ref: 'Authorization (broken access control)',
     text: 'Logging in proves who you are. That is called authentication. It does not prove that you may see a particular thing.\n\nSo every time a request asks the server for something, like order 42, the server must also check that order 42 belongs to the person asking. That check is called authorization.\n\nForgetting it is one of the most common security mistakes in real apps. A stranger just changes the number in the address and sees someone else\'s order, with their name and address on it.',
     note: 'The server checks every request: is this thing yours? Being logged in only proves who you are.' },
@@ -91,6 +91,7 @@ MG.add({
     c.restore();
     // the cabinet of orders, one drawer per owner
     OWN.forEach((o, i) => { const open = a && a.kind === 'give' && a.di === i ? Math.min(1, Math.sin(Math.min(1, (t - a.t) / 0.9) * Math.PI) * 1.4) : foxWin && s.res.a.di === i ? 1 : 0; drawerBox(c, i, o, open, t, foxWin && s.res.a.di === i); });
+    SK.tag(c, 'Database', CAB.x + CAB.w / 2 - 2, 136, 18); SK.tag(c, 'Denied', PAD.x, PAD.y + 40, 18); SK.tag(c, 'Server: you', 250, 560, 18);
     // the red stamp pad
     c.save(); c.translate(PAD.x, PAD.y); c.fillStyle = '#5a2a2a'; c.beginPath(); c.roundRect(-52, -22, 104, 44, 8); c.fill(); c.fillStyle = '#c83a4a'; c.beginPath(); c.roundRect(-44, -15, 88, 30, 6); c.fill();
     c.strokeStyle = 'rgba(255,220,220,0.7)'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-12, -9); c.lineTo(12, 9); c.moveTo(12, -9); c.lineTo(-12, 9); c.stroke(); c.restore();

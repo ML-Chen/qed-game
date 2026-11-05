@@ -36,7 +36,7 @@
     o.fillStyle = '#5a4a6a'; o.fillRect(RX[1] + LEDGE - 6, rim - 30, 4, 30); o.fillStyle = '#ffd45a'; o.beginPath(); o.moveTo(RX[1] + LEDGE - 2, rim - 30); o.lineTo(RX[1] + LEDGE + 18, rim - 24); o.lineTo(RX[1] + LEDGE - 2, rim - 18); o.fill(); // a flag on the ledge
   }
   MG.add({
-    id: 'energy_skate', stage: 'energy', cmd: 'SKATE!', time: 7, mood: 'night', winText: 'Energy kept!', failText: 'Splash!',
+    id: 'energy_skate', stage: 'energy', cmd: 'SKATE ONTO THE LEDGE!', time: 7, mood: 'night', winText: 'Energy kept!', failText: 'Splash!',
     card: { title: 'Height turns into speed', kind: 'Physics', ref: 'Conservation of energy',
       text: 'High up, the skater has energy stored by her height. Rolling down, that energy turns into speed. Rolling up the other side, the speed turns back into height, so she rises to almost exactly the height she started from.\n\nStart lower than the ledge and she can never reach it. Start a little higher and she arrives with just a little speed left. Start much higher and the extra energy carries her right off the end. Rough ground turns some energy into heat, so she rises a little less each time.',
       note: 'Energy changes form, from height to speed and back, but the total stays the same.' },
@@ -54,7 +54,7 @@
       let best = null, bd = 1e9; for (const p of s.T) { if (p.x > LX[1] + 30) break; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p; } }
       if (best) k.s = Math.max(best.s, 6);
     },
-    up(g) { const s = g.s, k = s.sk; if (k.st !== 'drag') return; k.st = 'roll'; k.dir = 1; k.Y0 = at(s.T, k.s).y; k.crossed = false; g.sfx('swoosh'); },
+    up(g) { const s = g.s, k = s.sk; if (k.st !== 'drag') return; s.relY = at(s.T, k.s).y; k.st = 'roll'; k.dir = 1; k.Y0 = at(s.T, k.s).y; k.crossed = false; g.sfx('swoosh'); },
     update(g, dt) {
       const s = g.s, k = s.sk, rim = s.rims[s.round], end = s.T[s.T.length - 1].s, sRim = sOfX(s.T, RX[1]);
       if (k.st === 'roll') {
@@ -85,6 +85,7 @@
       if (s.rough) { c.fillStyle = '#8a6a4a'; c.fillRect(RX[0] - 50, BOT - 3, 40, 7); c.fillStyle = '#5a4030'; for (let i = 0; i < 16; i++) { c.beginPath(); c.arc(RX[0] - 48 + i * 2.5, BOT - 3 - (i % 3) * 1.5, 2.4, 0, 7); c.fill(); } }
       // a dotted guide at the ledge's height across the park, levels 0 and 1
       if (g.level < 2 && !g.done) { c.save(); c.strokeStyle = 'rgba(255,255,255,0.45)'; c.lineWidth = 2; c.setLineDash([4, 8]); c.beginPath(); c.moveTo(14, rim); c.lineTo(RX[1], rim); c.stroke(); c.restore(); }
+      if (s.relY && k.st !== 'rest') { c.save(); c.strokeStyle = 'rgba(255,240,120,0.8)'; c.lineWidth = 3; c.setLineDash([3, 6]); c.beginPath(); c.moveTo(14, s.relY); c.lineTo(RX[1] + LEDGE, s.relY); c.stroke(); c.restore(); c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(at(s.T, 0).x + 8, s.relY, 5, 0, 7); c.fill(); } // where you let her go
       // the skater on her board
       let p = k.st === 'fall' ? { x: s.fall.x, y: s.fall.y, ang: Math.atan2(s.fall.vy, s.fall.vx) * 0.5 } : at(s.T, k.s);
       if (k.st === 'drag') { c.save(); c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2; c.setLineDash([4, 6]); c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(360, p.y); c.stroke(); c.restore(); }
@@ -94,6 +95,7 @@
         SK.animal(c, 'rabbit', 0, -10, 0.85, { t, pose: k.st === 'won' ? 'cheer' : k.st === 'roll' ? 'balance' : 'idle', expr: k.st === 'fall' ? 'wow' : k.st === 'won' ? 'laugh' : 'happy', facing: k.dir });
         c.restore();
       } else { const q = (t - s.splash) / 0.8; SK.animal(c, 'rabbit', s.fall.x - 8, 600 - Math.sin(q * Math.PI) * 10, 0.5, { t, pose: 'sad', expr: 'wow' }); }
+      SK.tag(c, 'Ledge', RX[1] + LEDGE / 2 - 4, rim + 26, 18);
       // the rounds still to go: little flags along the top
       for (let i = 0; i < s.rims.length; i++) { c.fillStyle = i < s.round || (i === s.round && k.st === 'won') ? '#ffd45a' : 'rgba(255,255,255,0.35)'; c.beginPath(); c.arc(180 + (i - (s.rims.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
       if (k.st === 'rest') { const q = at(s.T, k.s); SK.glow(c, g, q.x, q.y - 20, 30); }

@@ -35,7 +35,7 @@ function paintCallYard(o, s) {
 }
 function logAt(c, x, y) { c.fillStyle = '#8a5a34'; c.strokeStyle = '#4a2a14'; c.lineWidth = 2; c.beginPath(); c.roundRect(x - 20, y - 26, 40, 22, 10); c.fill(); c.stroke(); c.fillStyle = '#c89a6a'; c.beginPath(); c.ellipse(x + 17, y - 15, 6, 10, 0, 0, 7); c.fill(); c.stroke(); c.strokeStyle = '#8a5a34'; c.beginPath(); c.ellipse(x + 17, y - 15, 2.5, 5, 0, 0, 7); c.stroke(); }
 MG.add({
-  id: 'cs_call', stage: 'programs', cmd: 'CALL!', time: 7, mood: 'bright', winText: 'Call stack!', failText: 'Lost!',
+  id: 'cs_call', stage: 'programs', cmd: 'ACT OUT THE FUNCTION CALLS!', time: 7, mood: 'bright', winText: 'Call stack!', failText: 'Lost!',
   card: { title: 'Calling a function', kind: 'Computer science', ref: 'Function calls and the call stack',
     text: 'A function is a named set of steps, written once with def and used by calling its name. When the computer reaches a call, it notes the line to come back to, then jumps into the function.\n\nThe notes are kept in a pile called the call stack, like a pile of plates. Each call puts a plate on top. At return, the computer takes the top plate off and goes back to the line on its note.\n\nA function can call another function. Then two plates are on the pile, and the newest one comes off first.',
     note: 'A call jumps into the function and puts a note on the call stack; return takes the top note off and goes back.' },
@@ -85,6 +85,7 @@ MG.add({
     s.stack.forEach((p, i) => { const k = Math.min(1, (t - p.t) / 0.25); plate(c, SK.lerp(s.cup.x, s.pile.x, k), SK.lerp(s.cup.y, s.pile.y - i * 12, k) - Math.sin(k * Math.PI) * 30, p.back >= s.lines.length ? 'end' : p.back + 1, 1, t); });
     if (s.popped && t - s.popped.t < 0.5) { const k = (t - s.popped.t) / 0.5; c.save(); c.globalAlpha = 1 - k; plate(c, s.pile.x + k * 60, s.pile.y - s.popped.n * 12 - k * 40, s.popped.back + 1, 1, t); c.restore();
       const ly = s.lay.lineY(s.popped.back); c.save(); c.globalAlpha = 1 - k; c.fillStyle = '#ffe27a'; c.font = `800 18px ${B7.MONO}`; c.fillText(String(s.popped.back + 1), SK.lerp(s.pile.x, PX + 12, k), SK.lerp(s.pile.y - 40, ly, k)); c.restore(); }
+    SK.tag(c, 'Call stack', s.pile.x, s.pile.y + 30, 18);
     if (s.carry) plate(c, s.carry.x, s.carry.y, null, 1.05);
     // the robot
     let rx = G.at(s.pos), ry = G.y, lift = 0, sink = 0; const a = s.anim;

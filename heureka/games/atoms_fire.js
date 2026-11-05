@@ -23,7 +23,7 @@
     o.strokeStyle = '#e8b83a'; o.lineWidth = 3; for (let y = GUN[1] - 38; y < GUN[1] - 8; y += 7) { o.beginPath(); o.moveTo(GUN[0] - 13, y); o.lineTo(GUN[0] + 13, y + 3); o.stroke(); }
   }
   MG.add({
-    id: 'atoms_fire', stage: 'atoms', cmd: 'FIRE ONE!', time: 6, mood: 'night', winText: 'Interference!', failText: 'Blob!',
+    id: 'atoms_fire', stage: 'atoms', cmd: 'FIRE ELECTRONS AT THE SLITS!', time: 6, mood: 'night', winText: 'Interference!', failText: 'Blob!',
     card: { title: 'One electron, two slits', kind: 'Physics', ref: 'The double-slit experiment',
       text: 'Each electron lands on the screen as one tiny dot, like a particle. But where it lands is random, and after many electrons the dots form bright and dark stripes.\n\nStripes like these happen when waves pass through two slits: the waves add up in some places and cancel out in others. So each electron travels like a wave through both slits at once, then lands in one spot. Cover one slit and the stripes vanish: the dots pile into one plain blob. This is the heart of quantum physics.',
       note: 'Single electrons land as dots, but together they build stripes, as waves through both slits would.' },
@@ -61,6 +61,7 @@
       }
       // the progress bead along the bottom of the screen
       c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(SCR.l, SCR.b + 14, SCR.r - SCR.l, 6); c.fillStyle = '#9affc0'; c.fillRect(SCR.l, SCR.b + 14, (SCR.r - SCR.l) * k, 6);
+      SK.tag(c, 'Electron gun', GUN[0] + 100, GUN[1] + 10, 18); SK.tag(c, 'Two slits', 290, WALL + 30, 18); SK.tag(c, 'Screen', 300, SCR.b + 40, 18);
       // the gun's muzzle flash
       if (t - s.lastFire < 0.12) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(180,230,255,0.7)'; c.beginPath(); c.arc(GUN[0], GUN[1] - 46, 14, 0, 7); c.fill(); c.restore(); }
       // the ant with its leaf (levels 1 and 2), walking along the top of the wall

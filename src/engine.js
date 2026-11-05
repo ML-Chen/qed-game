@@ -912,7 +912,8 @@ function banner(c, text, y, size, pop, opts) {
 // command banner, input hint and the fuse timer over a running microgame
 function drawPlayOverlay(c, g, t) {
   const d = g.def, a = g.t; drawStepCue(c, g, t);
-  if (a < 1.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > 1.0 ? 1 - (a - 1.0) / 0.25 : 1;
+  const cmdT = 1.0 + Math.min(1.0, Math.max(0, d.cmd.split(' ').length - 2) * 0.2); // a longer command stays up longer (up to 2.25 s in all) so it can be read
+  if (a < cmdT + 0.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > cmdT ? 1 - (a - cmdT) / 0.25 : 1;
     c.save(); c.globalAlpha = Math.max(0, fade); banner(c, d.cmd, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
   // fuse (hidden when the timer is off)
   const frac = Math.max(0, 1 - g.fuse() / g.dur), x0 = 20, x1 = 340, y = 622;

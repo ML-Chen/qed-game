@@ -38,7 +38,7 @@ function foxBot(c, x, y, t, mood) {
   c.save(); c.translate(x - 6, y - 52); c.fillStyle = '#9aa4b4'; c.strokeStyle = '#3a4050'; c.lineWidth = 2; c.beginPath(); c.roundRect(-14, -12, 28, 12, 4); c.fill(); c.stroke(); c.fillStyle = '#ff5a5a'; c.beginPath(); c.arc(0, -16, 3, 0, 7); c.fill(); c.restore(); // a robot visor and antenna
 }
 MG.add({
-  id: 'cs_hidekey', stage: 'apps', cmd: 'HIDE KEY!', time: 7, mood: 'party', winText: 'Secret kept!', failText: 'Key leaked!',
+  id: 'cs_hidekey', stage: 'apps', cmd: 'HIDE THE API KEY, THEN PUSH!', time: 7, mood: 'party', winText: 'Secret kept!', failText: 'Key leaked!',
   card: { title: 'Keep keys out of your code', kind: 'Computer science', ref: 'Secrets management (.env and .gitignore)',
     text: 'An API key is a secret password that lets your app use a paid service. Anyone who has it can spend your money.\n\nBots scan public code sites all day looking for keys. So the key goes in a separate file, often called .env, and the code reads it from there. The file .gitignore lists files that git must never upload, and .env goes on that list.\n\nIf a key was ever pushed, hiding it later is not enough: copies may already exist. Make a new key and switch the old one off.',
     note: 'Keep secret keys out of shared code: store them in an ignored file, and replace any key that leaked.' },
@@ -77,6 +77,8 @@ MG.add({
     c.fillStyle = '#fff6ea'; c.font = `700 18px ${B7.MONO}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('.gitignore', FENCE.x - 6, FENCE.y - 58);
     // the key cutter (level 2): makes a fresh key and switches the leaked one off
     if (s.old) { c.save(); c.translate(CUTTER.x, CUTTER.y); c.fillStyle = s.cut ? '#5a8a6a' : '#8a6aa0'; c.strokeStyle = '#2a2040'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(-34, -30, 68, 60, 10); c.fill(); c.stroke(); c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(-10, 0, 9, 0, 7); c.fill(); c.fillRect(-2, -3, 26, 6); c.fillRect(14, 3, 4, 6); c.restore(); }
+    SK.tag(c, 'Your computer', 96, s.panelB + 18, 18); SK.tag(c, 'Public site', BOARD.x, BOARD.y - 82, 18);
+    if (s.keys.length) { const [a, b] = strSpan(s, s.keys[0]); SK.tag(c, 'API key', Math.min(300, b + 52), s.lay.lineY(s.keys[0]), 18, '#fff', '#c83a6a'); }
     // the push button (a cloud with an arrow up)
     c.save(); c.translate(PUSH.x, PUSH.y); const pp = P0 ? 0.9 : 1 + Math.sin(t * 5) * 0.03; c.scale(pp, pp); c.fillStyle = '#5ab0ff'; c.strokeStyle = '#1a4a8a'; c.lineWidth = 3; c.beginPath(); c.arc(-14, 4, 16, 0, 7); c.arc(12, 2, 20, 0, 7); c.arc(-2, -12, 18, 0, 7); c.fill(); c.stroke();
     c.fillStyle = '#5ab0ff'; c.beginPath(); c.arc(-14, 4, 15, 0, 7); c.arc(12, 2, 19, 0, 7); c.arc(-2, -12, 17, 0, 7); c.fill(); c.fillStyle = '#fff'; c.beginPath(); c.moveTo(0, -14); c.lineTo(11, -2); c.lineTo(4, -2); c.lineTo(4, 12); c.lineTo(-4, 12); c.lineTo(-4, -2); c.lineTo(-11, -2); c.closePath(); c.fill(); c.restore();

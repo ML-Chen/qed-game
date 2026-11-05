@@ -93,6 +93,7 @@ MG.add({
     // fruit sliding back to you (or bouncing back)
     for (const f of s.fly) { const q = SK.clamp((t - f.t) / 0.5, 0, 1); if (q <= 0) continue; fruit(c, f.k, SK.lerp(f.from[0], ME.x + 40, SK.easeInOut(q)), SK.lerp(f.from[1], ME.y, SK.easeInOut(q)) - Math.sin(q * Math.PI) * 50, 0.85, q * 6); }
     if (s.drag) fruit(c, s.drag.k, s.drag.x, s.drag.y, 1.05);
+    SK.tag(c, 'You', 56, ME.y + 2, 18);
     const tg = this.target(g);
     if (tg && !s.drag && !g.done) { const m = this.slots(g, 'me').find(o => o.k === tg.k); if (m) { SK.glow(c, g, m.x, m.y, 22); SK.demo(g, c, 'drag', [m.x, m.y], [POS[tg.w].x, POS[tg.w].y - 20], { delay: 0.7, arc: 40 }); } }
   },

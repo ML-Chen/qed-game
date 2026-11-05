@@ -40,7 +40,7 @@ function slots(k) {
 }
 
 MG.add({
-  id: 'cells_cycle', stage: 'cells', cmd: 'CYCLE!', time: 7, mood: 'sea', winText: 'Doubling!', failText: 'No copies!',
+  id: 'cells_cycle', stage: 'cells', cmd: 'HEAT AND COOL TO COPY DNA!', time: 7, mood: 'sea', winText: 'Doubling!', failText: 'No copies!',
   card: { title: 'Copy DNA by heating and cooling', kind: 'Biology', ref: 'PCR (polymerase chain reaction)',
     text: 'PCR makes millions of copies of a piece of DNA from just a little. It needs a tiny tube with the right ingredients, and a machine that heats and cools it.\n\nHeating to about 95 °C pulls apart the two strands of each DNA molecule. Cooling to about 60 °C lets short starter pieces called primers stick on, and at about 72 °C an enzyme called a polymerase builds a new partner strand along each one.\n\nEach heat-and-cool cycle doubles the DNA: 1, 2, 4, 8, 16. Thirty cycles make about a billion copies, enough to test for a virus.',
     note: 'Heating separates the DNA strands and cooling lets each one be copied, so every cycle doubles the DNA.' },
@@ -111,6 +111,7 @@ MG.add({
     // guidance: hold while the needle climbs to red, let go once the ladders unzip
     if (!g.done && !s.hold && s.sep < 1) SK.glow(c, g, BTN[0], BTN[1], 44);
     if (!g.done && s.hold && s.sep >= 1 && g.level <= 1) { const p = 0.5 + 0.5 * Math.sin(t * 10); c.strokeStyle = `rgba(80,150,255,${0.5 + 0.5 * p})`; c.lineWidth = 4; c.beginPath(); c.arc(TB.x, (tY(COOL) + tY(TMIN)) / 2, 22 + p * 4, 0, 7); c.stroke(); }
+    SK.tag(c, 'DNA', ZC[0] - 86, ZC[1] - 96, 20); SK.tag(c, 'Heat', BTN[0], BTN[1] + 36, 18);
     if (s.sep < 1 && s.cp === 0) SK.demo(g, c, 'hold', BTN, null, { period: 2.0 });
   },
   // the bot: hold until the strands have unzipped, let go until the copies are made, repeat

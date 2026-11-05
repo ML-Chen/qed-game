@@ -53,7 +53,7 @@ function cell(c, x, y, t, i, awake, badge, K) {
 }
 
 MG.add({
-  id: 'medicine_remember', stage: 'medicine', cmd: 'REMEMBER!', time: 8, mood: 'party', winText: 'Immunity!', failText: 'Spreading!',
+  id: 'medicine_remember', stage: 'medicine', cmd: 'SHOW THE VACCINE POSTER FIRST!', time: 8, mood: 'party', winText: 'Immunity!', failText: 'Spreading!',
   card: { title: 'Practise on a poster', kind: 'Medicine', ref: 'Vaccines and immune memory',
     text: 'A vaccine shows your immune system a harmless copy or piece of a germ, like a wanted poster. Immune cells learn its shape, and some stay on as memory cells, often for years.\n\nIf the real germ arrives later, the memory cells recognise it and quickly make lots of antibodies, Y-shaped proteins that stick to the germ and help destroy it. Without that practice, the body needs a week or more to build its defence, and the germ has time to spread.\n\nSome germs, like flu viruses, keep changing their outside, so their vaccines are updated every year.',
     note: 'A vaccine teaches the immune system a germ\'s shape ahead of time, so the real germ is stopped quickly.' },
@@ -109,6 +109,7 @@ MG.add({
     if (p && !p.on) { SK.glow(c, g, TRAY[0], TRAY[1], 42); c.save(); c.setLineDash([8, 6]); c.strokeStyle = `rgba(255,250,200,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.roundRect(BOARD.x + BOARD.w / 2 - 50, BOARD.y + 6, 100, 112, 6); c.stroke(); c.restore(); }
     if (p) poster(c, p.x, p.y, KINDS[p.kind], t, p.drag ? 1.4 : 1.3);
     SK.animal(c, 'duck', 40, 620, 0.65, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
+    if (p) SK.tag(c, 'Vaccine', p.x, p.y - 64, 18); SK.tag(c, 'Immune cells', 120, 534, 18); if (R && !R.beat && !R.spread && R.k < 0.5) SK.tag(c, 'Germ', 300, 232, 18);
     if (p && !p.on) SK.demo(g, c, 'drag', [TRAY[0], TRAY[1]], [BOARD.x + BOARD.w / 2, BOARD.y + BOARD.h / 2]);
   },
   // the bot: put each poster on the board as soon as it appears

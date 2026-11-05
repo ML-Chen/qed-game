@@ -29,7 +29,7 @@ function paintMat(o) {
 }
 
 MG.add({
-  id: 'medicine_compress', stage: 'medicine', cmd: 'COMPRESS!', time: 7, mood: 'party', winText: 'CPR!', failText: 'Too slow!',
+  id: 'medicine_compress', stage: 'medicine', cmd: 'PRESS THE CHEST ON EVERY BEAT!', time: 7, mood: 'party', winText: 'CPR!', failText: 'Too slow!',
   card: { title: 'Pump for the heart', kind: 'Medicine', ref: 'CPR: chest compressions',
     text: "When someone's heart stops, blood stops carrying oxygen to the brain, and brain cells start to die within minutes. Pressing hard and fast on the middle of the chest squeezes the heart and the chest, which pushes blood out to the brain and body.\n\nCompressions work best at 100 to 120 presses a minute, about 5 to 6 cm deep for an adult, letting the chest come all the way back up each time. Call the emergency number first.\n\nThis game is not training. Take a real first-aid course to learn CPR.",
     note: 'Pressing hard and fast on the chest, 100 to 120 times a minute, pumps blood to the brain when the heart has stopped.' },
@@ -82,6 +82,7 @@ MG.add({
     c.fillStyle = P.mix('#8a9ab0', '#ff6a8a', s.meter); c.beginPath(); c.roundRect(293, 247 - 104 * s.meter, 16, 104 * s.meter, 8); c.fill();
     if (!g.done) SK.glow(c, g, HANDS[0], HANDS[1], 34);
     // demo: tap on the next beat
+    SK.tag(c, 'Heart', 76, HEART[1], 18); SK.tag(c, 'Brain', 76, BRAIN[1] - 10, 18);
     SK.demo(g, c, 'tap', [HANDS[0] + 4, HANDS[1] + 4], null, { period: PER, delay: s.t0 - 0.45 * PER });
   },
   // the bot: press on every beat

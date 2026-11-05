@@ -54,7 +54,7 @@ function guitar(c, x, y, rot, strum, so) { // the instrument held across the fox
   c.restore();
 }
 MG.add({
-  id: 'fuzz', stage: 'circuits', cmd: 'FUZZ!', time: 7, mood: 'night', winText: 'Clipping!', failText: 'Zzz...',
+  id: 'fuzz', stage: 'circuits', cmd: 'TURN UP THE GAIN FOR FUZZ!', time: 7, mood: 'night', winText: 'Clipping!', failText: 'Zzz...',
   card: { title: 'Too much gain clips the wave', kind: 'Engineering', ref: 'Amplifier clipping',
     text: 'An amplifier makes a signal bigger. The gain knob sets how many times bigger. The amplifier gets its power from a supply with a top voltage and a bottom voltage, called the rails, and its output can never go past them.\n\nTurn the gain up far enough and the peaks of the wave hit the rails and are sliced flat. A flat-topped wave holds extra high, buzzy tones that the smooth wave did not have. Guitar players clip on purpose to get fuzz. In a phone call or a recording, the same clipping is unwanted distortion.',
     note: "An amplifier's output can't go past its power rails, so too much gain slices the wave's tops flat and makes it buzz." },
@@ -87,7 +87,7 @@ MG.add({
     // rails: the power supply's top and bottom, as glowing bars
     const top = CY - L.R, bot = CY + L.R, hit = s.fuzzy ? 1 : 0;
     for (const [yy, col] of [[top, '#ff6a4a'], [bot, '#4ab0ff']]) {
-      c.save(); c.globalAlpha = 0.55 + 0.4 * hit * (0.5 + 0.5 * Math.sin(t * 30)); c.fillStyle = col; c.fillRect(SC.x0, yy - 2.5, SC.x1 - SC.x0, 5); c.restore();
+      c.save(); c.globalAlpha = 0.55 + 0.4 * hit * (0.5 + 0.5 * Math.sin(t * 30)); c.fillStyle = col; c.fillRect(SC.x0, yy - 4, SC.x1 - SC.x0, 8); c.restore();
     }
     c.save(); c.font = '900 20px Nunito, system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#ff8a6a'; c.fillText('+', SC.x0 + 12, top - 13); c.fillStyle = '#7ac8ff'; c.fillText('−', SC.x0 + 12, bot + 13); c.restore();
     // the wave: the clipped output, plus a faint ghost of what was sliced off beyond the rails
@@ -96,11 +96,14 @@ MG.add({
     for (let px = SC.x0; px <= SC.x1; px += 2) { const tau = t - (SC.x1 - px) / SPEED, v = gain * L.A * so.A * env(tau) * wav(tau * so.f * Math.PI * 2) * (1 - s.swap / 0.45); pts.push([px, v]); }
     c.strokeStyle = 'rgba(180,255,200,0.22)'; c.lineWidth = 2; c.setLineDash([4, 5]); c.beginPath(); pts.forEach(([px, v], i) => i ? c.lineTo(px, CY - v) : c.moveTo(px, CY - v)); c.stroke(); c.setLineDash([]);
     for (const [w, a] of [[9, 0.18], [3.5, 1]]) { c.strokeStyle = `rgba(140,255,170,${a})`; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); pts.forEach(([px, v], i) => { const y = CY - SK.clamp(v, -L.R, L.R); i ? c.lineTo(px, y) : c.moveTo(px, y); }); c.stroke(); }
+    // the flattened tops, painted hot red where the wave is squashed against a rail
+    c.strokeStyle = '#ff4a5a'; c.lineWidth = 6; c.lineCap = 'round'; for (let i = 1; i < pts.length; i++) { const [x0, v0] = pts[i - 1], [x1, v1] = pts[i]; if (Math.abs(v0) > L.R && Math.abs(v1) > L.R && Math.sign(v0) === Math.sign(v1)) { const y = v1 > 0 ? top : bot; c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); } }
     // sparks where the wave grinds along a rail
     for (let i = 0; i < pts.length; i += 6) { const [px, v] = pts[i]; if (Math.abs(v) > L.R) { const y = v > 0 ? top : bot, f = Math.sin(px * 1.7 + t * 40); c.fillStyle = v > 0 ? '#ffd0a0' : '#c0e8ff'; c.beginPath(); c.arc(px, y + f * 2, 2 + Math.abs(f) * 2, 0, 7); c.fill(); } }
     c.restore();
+    SK.tag(c, 'Power rail', SC.x1 - 62, top + 20, 18, '#ffd0c0'); SK.tag(c, 'Power rail', SC.x1 - 62, bot - 20, 18, '#c8e8ff');
     // the gain knob
-    SK.glow(c, g, s.kn.x, s.kn.y, 44);
+    SK.glow(c, g, s.kn.x, s.kn.y, 44); SK.tag(c, 'Gain', s.kn.x + 70, s.kn.y, 18); SK.tag(c, 'Amplifier', 180, AMP.y + 114, 18);
     B6.drawKnob(c, s.kn, { col: '#2a2420', cap: '#e8d8b0', arc: s.fuzzy ? '#ff5ad0' : '#ffb43a' });
     // the speaker grille thumps with the sound
     const thump = s.strum * Math.min(1, gain * L.A * so.A / L.R);
@@ -110,7 +113,7 @@ MG.add({
     c.strokeStyle = '#111'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(AMP.x + 32, AMP.y + 52); c.bezierCurveTo(30, 380, 20, 560, 50, 570); c.stroke();
     SK.animal(c, 'fox', 84, 606 + bob * 0.3, 1.5, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.fuzzy ? 'laugh' : 'happy' });
     const sw = s.swap / 0.45; guitar(c, 74 - sw * 140, 556 + bob * 0.3, -0.5, s.strum, so);
-    for (let i = 0; i < SONGS.length; i++) { c.fillStyle = i < s.song || g.result === 'win' ? '#ffe27a' : 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(156 + i * 24, AMP.y + 132, 7, 0, 7); c.fill(); } // songs played
+    for (let i = 0; i < SONGS.length; i++) { c.fillStyle = i < s.song || g.result === 'win' ? '#ffe27a' : 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(156 + i * 24, AMP.y + 140, 6, 0, 7); c.fill(); } // songs played
     // the crowd: head-banging to the fuzz, or nodding off to the lullaby
     const crowd = [['hedgehog', 208, 608, 1.05, 0], ['rabbit', 266, 602, 1.0, 1.3], ['duck', 322, 608, 0.95, 2.1]];
     for (const [kind, x, y, sc, ph] of crowd) {

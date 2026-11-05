@@ -2,7 +2,7 @@
 // and forth: every reversal grows a tiny crack at the bend, and the bend warms up, until the wire snaps in two. Swiping
 // the same way again only pushes the bend further, it does not break the wire: one big pull would just straighten it.
 // That is metal fatigue. Level 2: a thicker wire that takes more bends.
-const BB_P = [180, 420], BB_LEN = 150, BB_LV = [{ n: 8, w: 9 }, { n: 10, w: 10 }, { n: 14, w: 12 }];
+const BB_P = [180, 420], BB_LEN = 150, BB_LV = [{ n: 10, w: 9 }, { n: 12, w: 10 }, { n: 16, w: 12 }];
 function bbPaint(o) {
   B5.vgrad(o, 0, 0, 360, 640, ['#cfe4ec', '#e8f0ec', '#f6efe0']);
   // the workbench, seen close up
@@ -10,8 +10,6 @@ function bbPaint(o) {
   o.strokeStyle = 'rgba(90,50,20,0.3)'; o.lineWidth = 2; for (let y = 490; y < 640; y += 22) { o.beginPath(); o.moveTo(0, y); o.bezierCurveTo(120, y + 6, 240, y - 6, 360, y + 3); o.stroke(); }
   // pegboard on the wall with a few tools
   o.fillStyle = '#e8d4b0'; o.fillRect(20, 150, 320, 200); o.fillStyle = 'rgba(120,90,60,0.35)'; for (let x = 36; x < 340; x += 24) for (let y = 166; y < 350; y += 24) { o.beginPath(); o.arc(x, y, 2.5, 0, 7); o.fill(); }
-  o.strokeStyle = '#6a6a7a'; o.lineWidth = 6; o.lineCap = 'round'; o.beginPath(); o.moveTo(60, 190); o.lineTo(60, 280); o.stroke(); o.fillStyle = '#e84a3a'; o.fillRect(52, 270, 16, 50);
-  o.beginPath(); o.moveTo(300, 190); o.lineTo(300, 300); o.stroke(); o.fillStyle = '#4ab0e0'; o.fillRect(290, 180, 20, 26);
   P.grain(o, 360, 640, 0.03);
 }
 function bbWire(c, pts, w) { // a steel wire along the points

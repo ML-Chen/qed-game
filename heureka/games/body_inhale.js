@@ -69,7 +69,7 @@ function bunny(c, t, fill, ay, cheeks, won, lost) {
 }
 
 MG.add({
-  id: 'body_inhale', stage: 'body', cmd: 'INHALE!', time: 8, mood: 'bright', winText: 'Diaphragm!', failText: 'Pfffft!',
+  id: 'body_inhale', stage: 'body', cmd: 'PULL THE DIAPHRAGM DOWN!', time: 8, mood: 'bright', winText: 'Diaphragm!', failText: 'Pfffft!',
   card: { title: 'Breathing in', kind: 'Biology', ref: 'The diaphragm and the lungs',
     text: 'Your lungs have no muscles of their own to pull in air. Under them sits the diaphragm, a dome-shaped sheet of muscle.\n\nWhen you breathe in, the diaphragm tightens and pulls down, and muscles between your ribs lift your chest outward. The space inside your chest gets bigger, so the air pressure in your lungs drops below the pressure of the air outside. Air rushes in through your nose and mouth to fill the space.\n\nWhen the diaphragm relaxes, it springs back up, the space shrinks, and air is pushed out.',
     note: 'Pulling the diaphragm down makes more room in your chest, so air flows into your lungs.' },
@@ -123,6 +123,8 @@ MG.add({
     if (s.cheeks > 0.2) { c.strokeStyle = `rgba(200,220,255,${s.cheeks})`; c.lineWidth = 3; for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(180, 262 + i * 4, 20 + (1 - s.cheeks) * 60 + i * 10, 0.3, Math.PI - 0.3); c.stroke(); } }
     // the grip on the diaphragm
     if (!g.done) { SK.glow(c, g, 180, s.ay, 26); c.fillStyle = 'rgba(255,255,255,0.85)'; c.strokeStyle = '#c0384a'; c.lineWidth = 2.5; c.beginPath(); c.roundRect(156, s.ay - 9, 48, 18, 9); c.fill(); c.stroke(); const bob = Math.sin(t * 5) * 3; c.fillStyle = '#c0384a'; c.beginPath(); c.moveTo(170, s.ay + 16 + bob); c.lineTo(190, s.ay + 16 + bob); c.lineTo(180, s.ay + 28 + bob); c.closePath(); c.fill(); }
+    c.strokeStyle = 'rgba(58,22,64,0.6)'; c.lineWidth = 2; c.beginPath(); c.moveTo(108, 382); c.lineTo(132, 382); c.moveTo(118, EDGE); c.lineTo(132, EDGE - 4); c.stroke();
+    SK.tag(c, 'Lungs', 60, 382, 18); SK.tag(c, 'Diaphragm', 62, EDGE, 18);
     SK.demo(g, c, 'drag', [180, apexOf(REST)], [180, apexOf(LOW)]);
   },
   // the bot: pull down and hold until the lungs are full; at level 2 then let go to blow

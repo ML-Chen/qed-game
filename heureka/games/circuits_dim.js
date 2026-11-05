@@ -26,7 +26,7 @@ function bulb(c, x, y, b, t) {
   return R;
 }
 MG.add({
-  id: 'dim', stage: 'circuits', cmd: 'DIM!', time: 7, mood: 'night', winText: 'Resistance!', failText: 'Too bright!',
+  id: 'dim', stage: 'circuits', cmd: 'DIM EACH BULB TO ITS RING!', time: 7, mood: 'night', winText: 'Resistance!', failText: 'Too bright!',
   card: { title: 'A narrow wire lets less through', kind: 'Engineering', ref: 'Resistance',
     text: 'A battery pushes electric charges round the loop. The charges have to squeeze through every part of it. Where the wire is narrow, fewer can pass each second. That slowing is called resistance.\n\nSqueeze a wire and its resistance goes up, so less current flows round that branch and the bulb glows more dimly. Squeeze it shut and no current flows at all, so the bulb goes out. A long, thin wire resists even more. Old dimmer switches worked like this, and every resistor in a circuit uses the same idea to set how much current flows.',
     note: 'Resistance slows the flow of charge: the narrower or longer the path, the less current gets through.' },
@@ -72,7 +72,9 @@ MG.add({
       SK.animal(c, R.kind, 296, y + 40, R.kind === 'owl' ? 0.85 : 0.9, { t, pose: won ? 'cheer' : 'idle', expr: won || k.ok ? (R.kind === 'rabbit' ? 'happy' : 'laugh') : dark ? 'sad' : tooBright ? 'wow' : 'think', facing: -1 });
       if (R.kind === 'rabbit' && (k.ok || won)) { c.fillStyle = '#d8d0ff'; c.font = '900 18px Nunito, system-ui, sans-serif'; c.fillText('z', 316 + Math.sin(t * 2) * 3, y - 34); }
       if (!k.ok && !g.done && SK.dragging(g) !== k) SK.glow(c, g, CLAMP_X, hy(k) - 4, 30);
+      if (k.i === 0) SK.tag(c, 'Clamp', CLAMP_X - 2, y + 36, 18);
     }
+    SK.tag(c, 'Battery', 180, 137, 18);
     // guidance: push down the first clamp whose bulb is off its ring
     const nx = s.cl.find(k => !k.ok); if (nx) { const y0 = ROWS[nx.i] - 40, wt = Math.sqrt(ROOM[nx.i].want), ty = y0 + (1 - wt) * SQ; SK.demo(g, c, 'drag', [CLAMP_X, hy(nx) - 4], [CLAMP_X, ty - (nx.y - hy(nx)) - 4]); }
   },

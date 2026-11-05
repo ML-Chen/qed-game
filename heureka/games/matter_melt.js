@@ -21,7 +21,7 @@
     o.fillStyle = '#5a7a9a'; o.fillRect(TH.x - 2, 210, 4, 28);
   }
   MG.add({
-    id: 'matter_melt', stage: 'matter', cmd: 'MELT IT!', time: 7, mood: 'sea', winText: 'Latent heat!', failText: 'Whoops!',
+    id: 'matter_melt', stage: 'matter', cmd: 'MELT ALL THE ICE!', time: 7, mood: 'sea', winText: 'Latent heat!', failText: 'Whoops!',
     card: { title: 'Melting takes heat', kind: 'Chemistry', ref: 'Latent heat and changes of state',
       text: 'In ice, the particles are held in neat rows. Heating makes them jiggle faster, so the ice gets warmer. At 0 °C the heat goes into breaking particles out of their rows instead, so the thermometer stops rising until all the ice has melted. Melting ice takes about as much heat as warming the water from 0 to 80 °C.\n\nBoiling works the same way. At 100 °C the heat goes into setting particles free as steam, and the temperature stays at 100 °C until the water has boiled away.',
       note: 'While ice melts or water boils, the heat breaks particles free, so the temperature stops rising.' },
@@ -85,6 +85,7 @@
       const ty = tY(T); c.fillStyle = '#e8403a'; c.beginPath(); c.arc(TH.x, TH.b + 6, 11, 0, 7); c.fill(); c.fillRect(TH.x - 4, ty, 8, TH.b + 6 - ty);
       const stuck = (T === 0 && s.melt > 0 && s.melt < 1) || (T === 100 && s.vap > 0); if (stuck) { const pz = 1 + 0.12 * Math.sin(t * 10); c.save(); c.translate(TH.x - 8, ty - 28); c.scale(pz, pz); SK.tag(c, T === 0 ? 'still 0 °C' : 'still 100 °C', -34, 0, 18); c.restore(); c.strokeStyle = `rgba(255,255,255,${0.5 + 0.5 * Math.sin(t * 10)})`; c.lineWidth = 3; c.beginPath(); c.arc(TH.x, ty, 9, 0, 7); c.stroke(); }
       for (let i = 0; i < s.goals.length; i++) { c.fillStyle = i < s.round || (i === s.round && s.okT) ? '#ffd45a' : 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(174 + (i - (s.goals.length - 1) / 2) * 22, 140, 7, 0, 7); c.fill(); }
+      SK.tag(c, 'Burner', BTN[0], BTN[1] - 46, 18); if (s.melt < 1) SK.tag(c, 'Ice', (B.l + B.r) / 2, B.t - 22, 18);
       // the burner button
       const pr = s.heat ? 1 : 0; c.fillStyle = '#7a1a1a'; c.beginPath(); c.arc(BTN[0], BTN[1] + 4, 30, 0, 7); c.fill(); SK.ball(c, BTN[0], BTN[1] + pr * 3, 27, s.heat ? '#ff6a3a' : '#e8403a');
       // the penguin: waits with its cup, skates on the leftover ice if you stop, cheers with a drink

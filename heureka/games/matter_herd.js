@@ -21,7 +21,7 @@
     o.fillStyle = '#5a3a2a'; o.fillRect(MID - 22, BOX.t - 42, 44, 32); // the door's slot on top
   }
   MG.add({
-    id: 'matter_herd', stage: 'matter', cmd: 'HERD!', time: 8, mood: 'sea', winText: 'Entropy!', failText: 'Everywhere!',
+    id: 'matter_herd', stage: 'matter', cmd: 'HERD THEM BACK TO THE LEFT!', time: 8, mood: 'sea', winText: 'Entropy!', failText: 'Everywhere!',
     card: { title: 'Things spread out', kind: 'Chemistry', ref: 'Entropy and the second law of thermodynamics',
       text: 'Gas particles fly about at random and bounce off the walls. Open the door and they soon fill the whole box. They never all gather back in one half by themselves, because there are far more ways to be spread out than to be bunched up.\n\nGetting them back takes work: you have to push them, and they keep slipping away. Pushing also speeds them up, so the gas gets warmer. Scientists call this tendency to spread out entropy, and it rises on its own.',
       note: 'Left alone, things spread out and mix, and never un-mix by themselves.' },
@@ -69,6 +69,7 @@
         c.strokeStyle = '#7a4a2a'; c.lineWidth = 6; c.lineCap = 'round'; c.beginPath(); c.moveTo(bx + 6, by); c.lineTo(bx + 46, by - 16); c.stroke(); }
       // the ant watches from the bench
       const won = g.result === 'win', lost = g.result === 'fail', frantic = !!s.broom;
+      if (!s.broom) SK.tag(c, 'Broom', 300, 548, 18); SK.tag(c, 'Gas particles', 180, BOX.b + 30, 18);
       SK.animal(c, 'ant', 56, 612, 0.8, { t, pose: won ? 'cheer' : lost ? 'sad' : frantic ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : frantic ? 'wow' : 'happy', facing: -1 });
       if (!s.broom) { // the broom, lying on the bench until you pick it up (dim until the gas has spread)
         c.save(); c.globalAlpha = s.spread ? 1 : 0.55; c.translate(268, 584); c.rotate(-0.12); c.strokeStyle = '#d89a5a'; c.lineWidth = 8; c.lineCap = 'round'; c.beginPath(); c.moveTo(-70, 6); c.lineTo(10, 0); c.stroke();

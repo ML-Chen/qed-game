@@ -69,7 +69,7 @@ function drawPart(c, kind, x, y, t, on, s = 1) {
 }
 
 MG.add({
-  id: 'cells_equip', stage: 'cells', cmd: 'EQUIP!', time: 6, mood: 'sea', winText: 'Organelles!', failText: 'Hungry!',
+  id: 'cells_equip', stage: 'cells', cmd: 'PUT THE PARTS IN THE CELL!', time: 6, mood: 'sea', winText: 'Organelles!', failText: 'Hungry!',
   card: { title: 'Every part has a job', kind: 'Biology', ref: 'Organelles of plant and animal cells',
     text: 'A cell is the smallest living unit. Inside it, small parts called organelles each do one job.\n\nThe nucleus holds the DNA, the instructions that run the cell. Chloroplasts catch sunlight and use it to make sugar from water and carbon dioxide. Mitochondria break sugar down to release the energy the cell uses. In a plant cell, a big water-filled sac called the vacuole pushes out against a stiff cell wall, which keeps the plant firm.\n\nAnimal cells have a nucleus and mitochondria too, but no chloroplasts and no cell wall.',
     note: 'A cell stays alive because each of its parts does its own job. Plant cells also have chloroplasts and a wall; animal cells do not.' },
@@ -159,6 +159,9 @@ MG.add({
     SK.animal(c, 'octopus', 332, 614, 0.55, { t, pose: g.result === 'win' ? 'cheer' : 'idle', expr: g.result === 'win' ? 'laugh' : lost ? 'sad' : s.reject >= 0 && t - s.reject < 1 ? 'wow' : 'happy', facing: -1 });
     // guidance: glow on the next part to bring in, and a ghost hand dragging it into the cell
     const next = s.parts.find(p => p.state === 'wait' && !(an && p.kind === 'chloro') && p.kind !== 'pebble' && (s.used[p.kind] || 0) < L.need.filter(k => k === p.kind).length);
+    const NAMES = { nucleus: 'Nucleus', chloro: 'Chloroplast', mito: 'Mitochondrion', vacuole: 'Vacuole', pebble: 'Pebble' }, shown = {};
+    for (const p of s.parts) if (p.state === 'in' && !shown[p.kind]) { shown[p.kind] = 1; SK.tag(c, NAMES[p.kind], SK.clamp(p.x, 76, 284), p.y + 30, 18); }
+    if (dr) SK.tag(c, NAMES[dr.kind], SK.clamp(dr.x, 76, 284), dr.y - 42, 18); else if (next) SK.tag(c, NAMES[next.kind], SK.clamp(next.x, 76, 284), next.y - 40, 18);
     if (next && !dr) { SK.glow(c, g, next.x, next.y, 30); SK.demo(g, c, 'drag', [next.x, next.y], [CX, CY]); }
   },
   auto(g, dt, synth) {

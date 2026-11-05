@@ -74,14 +74,14 @@ function sceneCat(c, s, t, x, y) { // the picture of the sentence: where the cat
   c.strokeStyle = 'rgba(255,240,220,0.5)'; c.lineWidth = 3; c.beginPath(); c.roundRect(20, 214, 320, 116, 16); c.stroke();
 }
 MG.add({
-  id: 'cs_next', stage: 'ai', cmd: 'NEXT!', time: 7, mood: 'night', winText: 'Next token!', failText: 'Unlikely!',
+  id: 'cs_next', stage: 'ai', cmd: 'STOP THE WHEEL FOR EACH WORD!', time: 7, mood: 'night', winText: 'Next token!', failText: 'Unlikely!',
   card: { title: 'One word at a time', kind: 'Artificial intelligence', ref: 'Next-token prediction (language models)',
     text: 'A language model writes one piece of text at a time. Each piece is called a token: a word or part of a word.\n\nFor each step, the model gives every possible next token a chance. After "The cat sat on the", "mat" gets a big chance and "moon" a tiny one. Then one token is drawn, like stopping a prize wheel, and added to the text.\n\nThen it starts again with the longer text, so every new word changes the chances for the next one. Usually a likely word comes up. Now and then a tiny slice wins, and the sentence goes strange.',
     note: 'A language model writes by drawing the next token again and again, each one picked by its chance of coming next.' },
   init(g) {
     const s = g.s, L = Math.min(2, g.level); s.words = []; s.need = L === 2 ? 4 : 3; s.wp = WEIRD_P[L];
     s.om = [4.6, 6.4, 8.4][L]; s.fly = null; s.fail = false; s.won = false; s.lastAt = null; s.taps = 0;
-    startWheel(g);
+    startWheel(g); s.wt = -1; // the first wheel is there from the first frame
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done || s.state !== 'spin') return;
@@ -134,6 +134,7 @@ MG.add({
       c.fillStyle = 'rgba(30,14,36,0.7)'; const w = c.measureText(s.fly.w).width + 22; c.beginPath(); c.roundRect(fx - w / 2, fy - 18, w, 36, 18); c.fill(); c.fillStyle = s.fly.weird ? '#ff9ab0' : '#ffd45a'; c.fillText(s.fly.w, fx, fy + 1); c.restore(); }
     // the fox host, beside the wheel
     const won = g.result === 'win', lost = g.result === 'fail';
+    B7.robot(c, 44, 616, 0.8, { t, dir: 0, mood: g.result === 'win' ? 'happy' : g.result === 'fail' ? 'wow' : 'idle' }); SK.tag(c, 'AI model', 52, 520, 18);
     SK.animal(c, 'fox', 316, 612, 0.75, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy', facing: -1 });
     if (s.state === 'spin') SK.glow(c, g, WX, WY, 40);
     SK.demo(g, c, 'tap', [WX, WY]);

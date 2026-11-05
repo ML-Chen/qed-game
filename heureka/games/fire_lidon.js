@@ -38,7 +38,7 @@
     B3.flame(c, x + 31, y + 6, 0.16, 0, 1);
   }
   MG.add({
-    id: 'lidon', stage: 'fire', cmd: 'LID ON!', time: 5, mood: 'storm', winText: 'No air!', failText: 'Whoosh!',
+    id: 'lidon', stage: 'fire', cmd: 'LID ON, THEN HEAT OFF!', time: 5, mood: 'storm', winText: 'No air!', failText: 'Whoosh!',
     card: { title: 'Lid on, heat off, never water', kind: 'Chemistry', ref: 'Fire safety: cooking oil fires',
       text: 'Burning oil needs air, like every fire. A lid slid over the pan cuts off the air, so the flames go out at once. Turning the stove off stops the oil getting hotter, and leaving the lid on lets it cool so it cannot light again.\n\nNever throw water on burning oil. The water sinks under the oil, boils into steam in an instant and throws burning oil into the air. Never carry the pan outside. If the fire is not out at once, get out, close the door and call the fire service.',
       note: 'Smother an oil fire with a lid and turn off the heat. Water makes it explode.' },
@@ -106,6 +106,7 @@
       const np = s.pans.find(p => !p.lid), nl = s.lids.find(l => !l.on), nk = s.pans.find(p => p.lid && !p.off) || s.pans.find(p => !p.off);
       if (np && nl && !SK.dragging(g)) { SK.glow(c, g, nl.x, nl.y, 34); c.save(); c.globalAlpha = 0.35; c.setLineDash([6, 6]); c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.ellipse(np.x, np.y - 28, 52, 16, 0, 0, 7); c.stroke(); c.restore(); }
       else if (nk) SK.glow(c, g, nk.kx, KY, 28);
+      SK.tag(c, 'Water', s.cup.x, s.cup.y + 36, 18); SK.tag(c, 'Lid', s.lids[0].hx, 176, 18);
       if (np && nl) SK.demo(g, c, 'drag', [nl.hx, nl.hy], [np.x, np.y - 30], { never: !!s.flare });
       else if (nk) SK.demo(g, c, 'drag', [nk.kx + 24, KY], [nk.kx, KY - 24], { arc: 10, never: !!s.flare });
       else SK.demo(g, c, 'tap', [180, 300], null, { never: true });

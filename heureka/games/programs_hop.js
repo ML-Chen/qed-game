@@ -81,7 +81,7 @@ function startRun(g) { // tap go: work out the whole run now, then play it line 
     s.run = { t0: g.t, steps, got }; g.sfx('magic');
   }
 MG.add({
-  id: 'cs_hop', stage: 'programs', cmd: 'HOP!', time: 7, mood: 'bright', winText: 'Sequence!', failText: 'Plop!',
+  id: 'cs_hop', stage: 'programs', cmd: 'PROGRAM THE FROG TO THE FLY!', time: 7, mood: 'bright', winText: 'Sequence!', failText: 'Plop!',
   card: { title: 'A program is steps in order', kind: 'Computer science', ref: 'Sequencing (Code.org CS Fundamentals)',
     text: 'A program is a list of steps. The computer does them one at a time, from the top line down, exactly as written.\n\nThe same three steps in a different order make a different program. "Right, right, up" takes the frog around the water to the fly. "Up, right, right" sends it into the rock, because the first step already goes the wrong way.\n\nWhen a program goes wrong, look for the first line where the world stopped matching your plan.',
     note: 'A program is a list of steps, and the computer does them in exactly the order you write them.' },

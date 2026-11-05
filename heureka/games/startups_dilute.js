@@ -28,7 +28,7 @@ function wedge(c, x, y, r, a0, da, col) { // a loose slice of pie, apex at (x, y
   c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.lineJoin = 'round'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, a0, a0 + da); c.closePath(); c.stroke();
 }
 MG.add({
-  id: 'dilute', stage: 'startups', cmd: 'ADD EACH INVESTOR'S SLICE!', time: 5, mood: 'party', winText: 'Dilution!', failText: 'Oven broke!', hold: 2.1,
+  id: 'dilute', stage: 'startups', cmd: "ADD EACH INVESTOR'S SLICE!", time: 5, mood: 'party', winText: 'Dilution!', failText: 'Oven broke!', hold: 2.1,
   card: { title: 'A thinner slice of a bigger pie', kind: 'Startups', ref: 'Dilution',
     text: 'The pie is the company, and each slice is the share one owner holds. Each time an investor buys in, the company makes new shares for them. Every old slice becomes a smaller part of the whole. That is called dilution.\n\nThe investor\'s cash makes the company worth more, so the pie gets bigger. Right after a fair deal, a founder\'s thinner slice is worth about what the old slice was. The cash is meant to help the whole pie grow, and then the thinner slice can be worth much more.',
     note: 'Selling a slice to an investor makes your share smaller, but the cash can make the whole company bigger.' },
@@ -98,6 +98,8 @@ MG.add({
       if (!SK.dragging(g)) SK.glow(c, g, it.x, it.y, 40);
     }
     const first = s.items.find(i => !i.in && i.show && t > i.show + 0.3);
+    SK.tag(c, 'Company', PIE.x, PIE.y - s.r - 20, 18); SK.tag(c, 'Founders', 172, 512, 18);
+    for (const it of s.items) if (!it.in && it.show && t > it.show + 0.2) SK.tag(c, it.who === 'turtle' ? 'Staff pool' : 'Investor', it.hx, it.hy - 66, 18);
     if (first) SK.demo(g, c, 'drag', [first.x, first.y], [PIE.x + 10, PIE.y], { delay: 0.7 });
   },
   auto(g, dt, synth) {

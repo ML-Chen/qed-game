@@ -77,6 +77,8 @@ MG.add({
     c.save(); c.translate(s.px, BAGY); c.rotate(s.pour ? 2.6 : 0); B8.cashBag(c, 0, 0, bs); c.restore();
     c.strokeStyle = '#7a5a8a'; c.lineWidth = 2; c.beginPath(); c.moveTo(s.px, BAGY - 40); c.lineTo(s.px, BAGY - 22 * bs); c.stroke();
     if (!s.pour) SK.glow(c, g, s.px, BAGY, 36);
+    SK.tag(c, 'Founders', FOUND.x, FOUND.y0 + 34, 18); if (!s.pour) SK.tag(c, 'Sale money', s.px, BAGY + 48, 18);
+    s.tops.forEach((b, i) => SK.tag(c, n > 1 ? (i ? 'Early investor' : 'Late investor') : 'Investors', this.topX(g, i), this.topY(i, n) + 34, 18));
     SK.demo(g, c, 'drag', [s.px, BAGY], [this.topX(g, 0), BAGY], { delay: 0.8 }); // press the bag and slide it over the top bucket
   },
   auto(g, dt, synth) { // hold, and keep the bag over the swaying top bucket

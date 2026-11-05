@@ -66,7 +66,7 @@ function bubble(c, x, y, r, t, k) { // an iridescent soap bubble; k 0..1 grows i
   c.restore();
 }
 MG.add({
-  id: 'wrapshop', stage: 'law', cmd: 'WRAP THE SHOP!', time: 6, mood: 'desert', winText: 'LLC shield!', failText: 'Not my house!',
+  id: 'wrapshop', stage: 'law', cmd: 'WRAP EACH SHOP IN AN LLC!', time: 6, mood: 'desert', winText: 'LLC shield!', failText: 'Not my house!',
   card: { title: 'A company is its own person', kind: 'Law', ref: 'Limited liability (LLC or corporation)',
     text: 'When you form an LLC or a corporation, the law treats the business as a separate person. The business owns its own money and owes its own debts. If it can\'t pay, the people it owes can usually take only what the business owns, and the owner\'s house stays safe.\n\nA sole proprietor runs a business without forming a company. Then the business debts are the owner\'s own debts. The shield has holes: an owner who signs a personal guarantee, or mixes company money with personal money, can be made to pay.\n\nGeneral information about US law, not legal advice.',
     note: 'An LLC or corporation is a separate legal person, so its debts usually can\'t reach the owner\'s own home.' },
@@ -122,6 +122,14 @@ MG.add({
     if (s.path.length > 1) { c.save(); c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 14; c.beginPath(); s.path.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); c.strokeStyle = 'rgba(170,225,255,0.95)'; c.lineWidth = 5; c.stroke(); c.restore(); }
     for (const k of L.shops) if (s.bub[k]) { const [cx, cy] = centre(SHOPS[k]); bubble(c, cx, cy, R, t, (t - s.bub[k]) / 0.35); }
     for (const p of s.pops) { const k = (t - p.t) / 0.4; if (k < 1) { c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#bfe8ff'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 60 + k * 60, 0, TAU); c.stroke(); c.restore(); } }
+    // the debt paths: from each shop that has no shield, a dashed red arrow runs down to the owner's front door
+    const [ddx, ddy] = doorOf(g);
+    for (const k of L.shops) { const S = SHOPS[k], fade = s.bub[k] ? Math.max(0, 1 - (t - s.bub[k]) * 3) : 1; if (fade <= 0) continue; c.save(); c.globalAlpha = 0.9 * fade; c.strokeStyle = '#d0303a'; c.lineWidth = 5; c.setLineDash([8, 7]); c.lineDashOffset = -t * 30; const x0 = S.cx + (S.cx < ddx ? 30 : -30), y0 = S.gy + 6, mx = (x0 + ddx) / 2, my = Math.max(y0, ddy) - 10; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(mx, y0 + 60, ddx + (S.cx < ddx ? -12 : 12), ddy - 16); c.stroke(); c.setLineDash([]); const ex = ddx + (S.cx < ddx ? -12 : 12), ey = ddy - 16, a = Math.atan2(ey - (y0 + 60), ex - mx); c.fillStyle = '#d0303a'; c.beginPath(); c.moveTo(ex + Math.cos(a) * 8, ey + Math.sin(a) * 8); c.lineTo(ex + Math.cos(a + 2.5) * 10, ey + Math.sin(a + 2.5) * 10); c.lineTo(ex + Math.cos(a - 2.5) * 10, ey + Math.sin(a - 2.5) * 10); c.closePath(); c.fill(); c.restore(); }
+    // labels: the shops, the owner's house, the debts, and each shield once it forms
+    const names = { bakery: 'Bakery', toys: 'Toy shop', cafe: 'Café' };
+    for (const k of L.shops) { const S = SHOPS[k]; SK.tag(c, s.bub[k] ? names[k] + ' LLC' : names[k], S.cx, S.gy + 18, 18, s.bub[k] ? '#bff0ff' : '#fff6ea'); }
+    SK.tag(c, 'Your house', (H.x0 + H.x1) / 2, H.gy - 160, 18);
+    if (s.L.some(q => q.st === 'fly' && t < q.T0)) SK.tag(c, 'Debts', 170, 206, 18, '#ffd0d0');
     for (const q of s.L) letter(c, q.x, q.y, t, q.ph, { paid: q.paid, stuck: q.st === 'stuck', rot: q.st === 'stuck' ? (q.i - 1) * 0.25 : q.st === 'bounce' ? q.dir * (t - q.at) * 6 : undefined });
     const next = L.shops.find(k => !s.bub[k]);
     if (next && !g.done) { const [cx, cy] = centre(SHOPS[next]); SK.glow(c, g, cx, cy, R); B9.demoPath(g, c, B9.ring(cx, cy, R + 2, R + 2, 30, -Math.PI / 2, 1.05), { period: 2.4 }); }

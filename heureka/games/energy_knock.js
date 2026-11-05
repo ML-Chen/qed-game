@@ -70,7 +70,7 @@
     c.restore();
   }
   MG.add({
-    id: 'energy_knock', stage: 'energy', cmd: 'KNOCK DOWN!', time: 7, mood: 'night', winText: 'Momentum!', failText: 'Still up!',
+    id: 'energy_knock', stage: 'energy', cmd: 'KNOCK DOWN THE TOWERS!', time: 7, mood: 'night', winText: 'Momentum!', failText: 'Still up!',
     card: { title: 'Heavy and fast hits hard', kind: 'Physics', ref: 'Kinetic energy and momentum',
       text: 'A ball rolling down the ramp speeds up, because gravity keeps pulling it. The higher you let it go, the faster it is at the bottom.\n\nA moving ball carries energy. At the same speed, a heavier ball carries more energy than a light one, and a faster ball carries more than a slower one. The bowling ball has plenty, so it sends the blocks flying. The ping-pong ball is so light that it only taps the tower and bounces off.',
       note: 'Heavier and faster things carry more energy, so they hit harder.' },
@@ -140,6 +140,7 @@
       // the hedgehog watches from the floor
       const won = g.result === 'win', lost = g.result === 'fail', ow = t - s.tik < 1.2;
       SK.animal(c, 'hedgehog', 296, 614, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : ow ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : ow ? 'wow' : 'happy', facing: -1 });
+      if (s.balls[0].st === 'home') SK.tag(c, 'Bowling ball', 80, 496, 18); if (s.balls[1].st === 'home') SK.tag(c, 'Ping-pong ball', 178, 598, 18);
       const bowl = s.balls[0];
       if (bowl.st === 'home' && !s.down) SK.glow(c, g, P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23, 30, '#ffe27a', { level: 2 });
       SK.demo(g, c, 'drag', bowl.home, [P0[0] + D[0] * 50 + N[0] * 23, P0[1] + D[1] * 50 + N[1] * 23], { period: 2, never: s.down || s.balls.some(b => b.st !== 'home') });
