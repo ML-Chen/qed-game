@@ -2,7 +2,7 @@
 // bush; their roots grip the soil. When the rain comes, planted soil stays put and only clear water runs past the door.
 // Any patch left bare turns to mud, slides down the hill and splats on the door.
 const PL_SPOTS = [[40, 90, 140, 190, 236], [30, 72, 114, 156, 198, 240], [24, 60, 96, 132, 168, 204, 242]];
-const PL_DOOR = 282, PL_TOP = 250, PL_BOT = 520, PL_X1 = 280;
+const PL_DOOR = 280, PL_TOP = 250, PL_BOT = 520, PL_X1 = 280;
 function plY(x) { if (x >= PL_X1) return PL_BOT; const k = Math.max(0, x / PL_X1), e = k * k * (3 - 2 * k); return PL_TOP + (PL_BOT - PL_TOP) * e; }
 function plPaint(o) {
   B5.vgrad(o, 0, 0, 360, 640, ['#56688f', '#8fa3c2', '#d9d4c4', '#efe0c2']);
@@ -43,7 +43,7 @@ MG.add({
   update(g, dt) {
     const s = g.s, all = s.spots.every(p => p.at);
     // the clouds roll in on their own; once every patch is planted they hurry up
-    if (!s.rainT) { const arrive = g.dur * 0.55; s.ck = Math.min(1, s.ck + dt * (all ? 2.2 : B5.patient() ? 0 : 1 / arrive)); if (s.ck >= 1) { s.rainT = g.t; g.sfx('rain'); g.sfx('thunder');
+    if (!s.rainT) { const arrive = SK.clamp(g.dur * 0.5, 3.2, 6.5); s.ck = Math.min(1, s.ck + dt * (all ? 2.2 : B5.patient() ? 0 : 1 / arrive)); if (s.ck >= 1) { s.rainT = g.t; g.sfx('rain'); g.sfx('thunder');
       for (const p of s.spots) if (!p.at) s.mud.push({ x: p.x, v: 20, r: 9 }); } }
     if (!s.rainT || g.done) return;
     for (const m of s.mud) { m.v = Math.min(300, m.v + 420 * dt); m.x += m.v * dt; m.r = Math.min(20, m.r + dt * 8);
@@ -57,11 +57,11 @@ MG.add({
     c.fillStyle = `rgba(40,44,70,${0.32 * s.ck})`; c.fillRect(0, 0, 360, 640);
     // the cottage and the beaver on the doorstep
     const lost = g.result === 'fail', won = g.result === 'win';
-    B5.cottage(c, 312, PL_BOT + 2, 0.86, { mud: s.splat ? Math.min(1, (t - s.splat) * 4) : 0 });
-    SK.animal(c, 'beaver', 340, PL_BOT + 40, 0.62, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.ck > 0.6 ? 'think' : 'happy' });
+    B5.cottage(c, 312, PL_BOT + 2, 1, { mud: s.splat ? Math.min(1, (t - s.splat) * 4) : 0 });
+    SK.animal(c, 'beaver', 334, PL_BOT + 52, 0.7, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.ck > 0.6 ? 'think' : 'happy' });
     // the patches: bare dug spots, or plants with roots reaching down into the soil
     for (const p of s.spots) {
-      if (!p.at) { c.fillStyle = '#5e3a22'; c.beginPath(); c.ellipse(p.x, p.y + 3, 15, 6, Math.atan2(plY(p.x + 4) - plY(p.x - 4), 8), 0, 7); c.fill();
+      if (!p.at) { c.fillStyle = '#5e3a22'; c.beginPath(); c.ellipse(p.x, p.y + 3, 19, 7, Math.atan2(plY(p.x + 4) - plY(p.x - 4), 8), 0, 7); c.fill();
         c.fillStyle = '#7a4c2c'; for (let i = -1; i <= 1; i++) { c.beginPath(); c.arc(p.x + i * 8, p.y + (i ? 1 : -1), 3, 0, 7); c.fill(); }
         if (!s.rainT) SK.glow(c, g, p.x, p.y, 22); continue; }
       const k = SK.easeOut((t - p.at) / 0.45);
@@ -71,7 +71,7 @@ MG.add({
       c.restore();
       const sway = Math.sin(t * 3 + p.x) * (1 + rain * 2);
       B5.blades(c, p.x - 14, p.y + 2, 14 * k, '#6ab84f', sway); B5.blades(c, p.x + 14, plY(p.x + 14) + 2, 13 * k, '#5aa848', sway);
-      B5.bush(c, p.x, p.y + 4, 0.8, k, '#4f9a48');
+      B5.bush(c, p.x, p.y + 4, 1.0, k, '#4f9a48');
     }
     // sliding mud
     for (const m of s.mud) { if (s.splat && m.x >= PL_DOOR) continue; const y = Math.min(plY(m.x), PL_BOT) - m.r * 0.5;
@@ -84,8 +84,8 @@ MG.add({
         c.strokeStyle = s.mud.length ? 'rgba(130,86,50,0.7)' : 'rgba(190,230,255,0.8)'; c.beginPath(); c.moveTo(x - 10, Math.min(plY(x - 10), PL_BOT) + (x - 10 > PL_X1 ? 8 : 0) - 2); c.lineTo(x, y); c.stroke(); }
       c.restore(); }
     // the clouds rolling in from the left, and the rain
-    const cx = -140 + s.ck * 260;
-    P.cloud(c, cx, 170, 1.15, '#c6cbdc', '#6e7392', 0.95); P.cloud(c, cx + 120, 150, 0.95, '#b8bdd2', '#646a8a', 0.95); P.cloud(c, cx - 70, 200, 0.8, '#aeb4ca', '#5e6484', 0.9);
+    const cx = -70 + s.ck * 190;
+    P.cloud(c, cx + 130, 150, 1.0, '#8e94ac', '#4a4f6c', 0.97); P.cloud(c, cx - 60, 160, 1.1, '#8a90a8', '#464b68', 0.97); P.cloud(c, cx + 40, 178, 1.3, '#9aa0b6', '#50567a', 0.98);
     if (rain) { c.save(); c.globalAlpha = rain; c.beginPath(); c.rect(0, 190, 330, 450); c.clip(); P.rain(c, 330, 640, t, 110, 'rgba(210,225,255,0.55)', -0.15); c.restore(); }
     const first = s.spots.find(p => !p.at); if (first) SK.demo(g, c, 'tap', [first.x, first.y], null);
   },

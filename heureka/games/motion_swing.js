@@ -84,9 +84,9 @@
         for (let i = 0; i < 4; i++) { // straight line, steady speed: nothing pushes it on the ice
           const h = dt / 4; b.x += b.vx * h; b.y += b.vy * h;
           if (!b.done && SK.dist(b.x, b.y, s.T.x, s.T.y) < TR + BR - 4) { b.done = 'board'; b.vx = b.vy = 0; s.hitT = g.t; g.sfx('thud'); g.sfx('cheer'); g.burst(b.x, b.y, ['#ffd45a', '#e8403a', '#fff6ea'], 24, 220); g.win(); }
-          if (!b.done && Math.abs(b.x - s.S.x) < 26 && b.y > s.S.y - 82 && b.y < s.S.y) { b.done = 'snowman'; s.hat = { x: s.S.x, y: s.S.y - 70, a: 0, vx: b.vx * 0.5, vy: -260, va: 7 }; b.vx *= 0.3; b.vy *= 0.3; g.sfx('crunch'); g.sfx('laugh'); g.burst(b.x, b.y, ['#ffffff', '#cfd0ee'], 16, 160); if (!g.done) g.fail(); }
+          if (!b.done && Math.abs(b.x - s.S.x) < 26 && b.y > s.S.y - 82 && b.y < s.S.y) { b.done = 'snowman'; s.hat = { x: s.S.x, y: s.S.y - 70, a: 0, vx: b.vx * 0.12, vy: -420, va: 9 }; b.vx *= 0.3; b.vy *= 0.3; g.sfx('crunch'); g.sfx('laugh'); g.burst(b.x, b.y, ['#ffffff', '#cfd0ee'], 16, 160); if (!g.done) g.fail(); }
         }
-        if (!b.done && (b.x < -20 || b.x > 380 || b.y < 40 || b.y > 660)) { b.done = 'out'; s.missT = g.t; g.sfx('thud'); if (!g.done) g.fail(); }
+        if (!b.done && (b.x < -20 || b.x > 380 || b.y < 40 || b.y > 660)) { b.done = 'out'; s.missT = g.t; g.sfx('thud'); g.sfx('rustle'); g.shake(4, 0.25); if (!g.done) g.fail(); }
         if (b.done === 'snowman') { b.vx *= 0.9; b.vy *= 0.9; }
         s.trail.push([b.x, b.y]); if (s.trail.length > 30) s.trail.shift();
       }
@@ -122,7 +122,7 @@
         const fl = SK.clamp((t - s.freeT) * 3, 0, 1); c.strokeStyle = '#5a3a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(hx, hy);
         c.quadraticCurveTo(hx + Math.cos(s.relAt) * 30, hy + Math.sin(s.relAt) * 30 + fl * 30, hx + Math.cos(s.relAt) * (s.snapT ? 34 : 54) * (1 - fl * 0.4), hy + Math.sin(s.relAt) * 40 + fl * 46); c.stroke();
         if (b.done !== 'board') snowball(c, b.x, b.y); else snowball(c, b.x, b.y, 0.8);
-        if (s.missT) { const k = SK.clamp((t - s.missT) * 2, 0, 1); c.save(); c.globalAlpha = 1 - k; c.fillStyle = '#fff'; for (let i = 0; i < 6; i++) { const a = i * 1.05; c.beginPath(); c.arc(SK.clamp(b.x, 10, 350) + Math.cos(a) * 30 * k, SK.clamp(b.y, 50, 630) + Math.sin(a) * 30 * k, 9 * (1 - k) + 3, 0, 7); c.fill(); } c.restore(); }
+        if (s.missT) { const k = SK.clamp((t - s.missT) * 1.6, 0, 1); c.save(); c.globalAlpha = 1 - k; c.fillStyle = '#fff'; for (let i = 0; i < 6; i++) { const a = i * 1.05; c.beginPath(); c.arc(SK.clamp(b.x, 16, 344) + Math.cos(a) * 46 * k, SK.clamp(b.y, 56, 600) + Math.sin(a) * 46 * k, 16 * (1 - k) + 4, 0, 7); c.fill(); } c.restore(); }
       }
       if (s.snapT && t - s.snapT < 0.8) SK.tag(c, 'Snap!', hx, hy - 34, 20);
       if (!s.free) { const per = Math.PI * 2 / s.w, ph = ((((s.relTh - (s.th - s.w * t)) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / s.w, r = ball(s, s.relTh);

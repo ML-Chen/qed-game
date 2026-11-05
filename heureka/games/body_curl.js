@@ -2,7 +2,7 @@
 // before the fox's nose reaches it: it rolls into a ball, the spines bristle out, the fox gets a prickle on the nose
 // and runs off. Curl too early (it can only hold the ball so long) or too late, and the fox gives it a playful nudge
 // and it tumbles downhill. Level 2: the fox fakes a pounce from further away first.
-const HX = 196, GY = 468, SLOPE_X = 252; // the hedgehog's spot, the ground line, where the hill starts falling away
+const HX = 226, GY = 468, SLOPE_X = 276; // the hedgehog's spot, the ground line, where the hill starts falling away
 const groundY = x => x < SLOPE_X ? GY : GY + (x - SLOPE_X) * 0.62;
 const CURL_HOLD = [1.7, 1.25, 0.95]; // seconds the hedgehog can stay curled, per level
 const FS = 1.35, NOSE = 34 * FS;     // fox scale and how far its nose sits ahead of its feet
@@ -87,10 +87,10 @@ MG.add({
     note: 'Body parts that help an animal survive, like a hedgehog\'s spines, are called adaptations.' },
   init(g) {
     const s = g.s, f = 1 + (g.speed - 1) * 0.35, L = Math.min(2, g.level);
-    s.f = f; s.fox = { x: -70, ph: 'creep', pt: 0, crouch: 0, flee: 0, wait: 0, faked: L < 2 }; s.curl = 0; s.curlAt = -1; s.used = false;
-    s.creepV = (L === 0 ? 62 : L === 1 ? 76 : 88) * f;
-    s.fakeAt = HX - 150 - g.rand() * 30; // level 2: where the fox fakes a pounce
-    s.pauseAt = [-10 + g.rand() * 40, 40 + g.rand() * 30]; s.end = null; s.roll = null; s.leaves = [];
+    s.f = f; s.fox = { x: L < 2 ? 34 : 14, ph: 'creep', pt: 0, crouch: 0, flee: 0, wait: 0, faked: L < 2 }; s.curl = 0; s.curlAt = -1; s.used = false;
+    s.creepV = (L === 0 ? 40 : L === 1 ? 50 : 64) * f;
+    s.fakeAt = HX - 30 - 82 - g.rand() * 14; // level 2: where the fox fakes a pounce
+    s.pauseAt = [60 + g.rand() * 20, 100 + g.rand() * 20]; s.end = null; s.roll = null; s.leaves = [];
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done || s.used) return;

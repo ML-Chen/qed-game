@@ -7,7 +7,7 @@ const TAU = Math.PI * 2;
 function houseOf(g) { return HOUSES[Math.min(2, g.level)]; }
 function doorOf(g) { const H = houseOf(g); return [(H.x0 + H.x1) / 2, BK.gy - 32]; }
 function paintScene(o, H) {
-  P.sky(o, 360, 640, ['#f2b98a', '#f9d7b0', '#fff1dc'], { x: 300, y: 150, r: 40 });
+  P.sky(o, 360, 640, ['#f2b98a', '#f9d7b0', '#fff1dc'], { x: 300, y: 150, r: 34, color: '#ffd9a0' });
   P.hills(o, 360, 420, 40, '#e0b98c', '#c99a6a', { seed: 4, freq: 0.01 });
   P.hills(o, 360, 452, 22, '#c9a06e', '#a87c4e', { seed: 7, freq: 0.016 });
   // the street
@@ -38,7 +38,7 @@ function paintScene(o, H) {
 }
 // a debt letter: an envelope with a red seal and flapping paper wings
 function letter(c, x, y, t, ph, o = {}) {
-  c.save(); c.translate(x, y); c.rotate(o.rot || Math.sin(t * 6 + ph) * 0.12);
+  c.save(); c.translate(x, y); c.scale(1.35, 1.35); c.rotate(o.rot || Math.sin(t * 6 + ph) * 0.12);
   const f = Math.sin(t * 18 + ph) * 0.6; c.fillStyle = '#fffaf0'; c.strokeStyle = '#7a5a60'; c.lineWidth = 1.5;
   for (const s of [-1, 1]) { c.save(); c.scale(s, 1); c.rotate(-0.3 + f * 0.5); c.beginPath(); c.moveTo(10, -4); c.quadraticCurveTo(26, -18, 32, -6); c.quadraticCurveTo(24, -2, 12, 2); c.closePath(); c.fill(); c.stroke(); c.restore(); }
   c.fillStyle = '#fff4e0'; c.beginPath(); c.roundRect(-17, -11, 34, 22, 3); c.fill(); c.stroke();
@@ -65,7 +65,8 @@ MG.add({
   init(g) {
     const s = g.s; s.path = []; s.wind = 0; s.windH = 0; s.bub = 0; s.R = 90; s.pops = [];
     const arrive = SK.clamp(0.5 * g.dur, 2.6, 6.5); // when the first letter reaches the bakery
-    s.L = [0, 1, 2].map(i => ({ i, sx: -30 - i * 10, sy: 150 + i * 34, T0: 0.7 + i * 0.3, T1: arrive + i * 0.38, x: -40, y: 150, st: 'fly', ph: g.rand() * 6 }));
+    s.L = [0, 1, 2].map(i => ({ i, sx: [36, 96, 156][i], sy: [196, 162, 200][i], T1: arrive + i * 0.38, st: 'fly', ph: g.rand() * 6 }));
+    for (const L of s.L) { L.T0 = L.T1 - 1.1; L.x = L.sx; L.y = L.sy; }
   },
   down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.bub) return; s.path = [[x, y]]; s.wind = 0; s.windH = 0; s.drawing = true; },
   move(g, x, y) {
@@ -85,9 +86,9 @@ MG.add({
     const s = g.s, [dx, dy] = doorOf(g);
     for (const L of s.L) {
       if (L.st === 'fly') {
-        if (g.t < L.T0) continue;
-        if (g.t < L.T1) { const k = (g.t - L.T0) / (L.T1 - L.T0); L.x = SK.lerp(L.sx, BC[0], k); L.y = SK.lerp(L.sy, BC[1] - 60, k) - Math.sin(k * Math.PI) * 30; }
-        else { const k = Math.min(1, (g.t - L.T1) / 0.9); L.x = SK.lerp(BC[0], dx, k); L.y = SK.lerp(BC[1] - 60, dy, k); if (k >= 1) { L.st = 'stuck'; L.at = g.t; L.x = dx + (L.i - 1) * 9; L.y = dy - 14 + L.i * 15; g.sfx('thud'); g.shake(4, 0.25); if (!g.done) { g.sfx('wrong'); g.fail(); } } }
+        if (g.t < L.T0) { L.x = L.sx + Math.sin(g.t * 2 + L.ph) * 8; L.y = L.sy + Math.sin(g.t * 3.1 + L.ph) * 6; continue; }
+        if (g.t < L.T1) { const k = SK.easeInOut((g.t - L.T0) / (L.T1 - L.T0)); L.x = SK.lerp(L.sx, BC[0] + (L.i - 1) * 20, k); L.y = SK.lerp(L.sy, BC[1] - 50, k) - Math.sin(k * Math.PI) * 40; }
+        else { const k = Math.min(1, (g.t - L.T1) / 0.9); L.x = SK.lerp(BC[0] + (L.i - 1) * 20, dx, k); L.y = SK.lerp(BC[1] - 50, dy, k) - Math.sin(k * Math.PI) * 30; if (k >= 1) { L.st = 'stuck'; L.at = g.t; L.x = dx + (L.i - 1) * 9; L.y = dy - 14 + L.i * 15; g.sfx('thud'); g.shake(4, 0.25); if (!g.done) { g.sfx('wrong'); g.fail(); } } }
         // the bubble: the letter bounces off, and the bakery pays it from its own till
         if (s.bub && g.t - s.bub > 0.2 && SK.dist(L.x, L.y, BC[0], BC[1]) < s.R + 14) {
           L.st = 'bounce'; L.at = g.t; L.bx = L.x; L.by = L.y; g.sfx('boing'); g.burst(L.x, L.y, ['#bfe8ff', '#ffc4f0'], 8, 100);
@@ -115,7 +116,7 @@ MG.add({
     if (s.bub) bubble(c, BC[0], BC[1], s.R, t, (t - s.bub) / 0.35);
     for (const p of s.pops) { const k = (t - p.t) / 0.4; if (k < 1) { c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#bfe8ff'; c.lineWidth = 3; c.beginPath(); c.arc(p.x, p.y, 60 + k * 60, 0, TAU); c.stroke(); c.restore(); } }
     // the letters
-    for (const L of s.L) { if (L.st === 'fly' && t < L.T0) continue; letter(c, L.x, L.y, t, L.ph, { paid: L.paid, stuck: L.st === 'stuck', rot: L.st === 'stuck' ? (L.i - 1) * 0.25 : L.st === 'bounce' ? -(t - L.at) * 6 : undefined }); }
+    for (const L of s.L) { letter(c, L.x, L.y, t, L.ph, { paid: L.paid, stuck: L.st === 'stuck', rot: L.st === 'stuck' ? (L.i - 1) * 0.25 : L.st === 'bounce' ? -(t - L.at) * 6 : undefined }); }
     if (!s.bub && !g.done) SK.glow(c, g, BC[0], BC[1], 92);
     B9.demoPath(g, c, B9.ring(BC[0], BC[1], 94, 94, 30, -Math.PI / 2, 1.05), { period: 2.4 });
   },

@@ -4,7 +4,7 @@
 // and the crowd dozes off. Level 2: a bigger power supply (rails farther apart) and a softer strum need more gain.
 const SC = { x0: 30, x1: 330, y0: 128, y1: 300 }, CY = 214, AMP = { x: 70, y: 318, w: 220, h: 148 };
 const CFG = [ // rail height above the centre line (px), the guitar's wave size (px), the most gain the knob gives
-  { R: 56, A: 22, gmax: 6 }, { R: 64, A: 20, gmax: 7 }, { R: 74, A: 16, gmax: 9 },
+  { R: 56, A: 17, gmax: 7 }, { R: 64, A: 16, gmax: 8 }, { R: 74, A: 13, gmax: 11 },
 ];
 const STRUM = 0.62, SPEED = 230; // seconds per strum; how fast the trace scrolls (px/s)
 const wav = th => (Math.sin(th) + 0.38 * Math.sin(2 * th + 0.6) + 0.18 * Math.sin(3 * th + 1.3)) / 1.32; // a guitar-ish shape
@@ -41,7 +41,7 @@ function paintClub(o) {
   o.fillStyle = '#ff3a3a'; o.beginPath(); o.arc(x + w - 30, y + 52, 6, 0, 7); o.fill(); o.fillStyle = 'rgba(255,120,120,0.4)'; o.beginPath(); o.arc(x + w - 30, y + 52, 11, 0, 7); o.fill();
 }
 function guitar(c, x, y, rot, strum) { // a red electric guitar, held across the fox
-  c.save(); c.translate(x, y); c.rotate(rot);
+  c.save(); c.translate(x, y); c.rotate(rot); c.scale(1.35, 1.35);
   c.fillStyle = '#7a4a22'; c.fillRect(0, -4, 78, 8); c.fillStyle = '#3a2210'; c.fillRect(74, -7, 16, 14);
   c.fillStyle = '#d8283a'; c.strokeStyle = '#5a0a14'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(-14, 0, 24, 19, 0, 0, 7); c.fill(); c.stroke(); c.beginPath(); c.ellipse(8, 0, 16, 14, 0, 0, 7); c.fill(); c.stroke();
   c.fillStyle = '#fff6ea'; c.beginPath(); c.ellipse(-12, 6, 10, 6, 0.3, 0, 7); c.fill();
@@ -83,7 +83,7 @@ MG.add({
     // the wave: the clipped output, plus a faint ghost of what was sliced off beyond the rails
     c.save(); c.beginPath(); c.roundRect(SC.x0, SC.y0, SC.x1 - SC.x0, SC.y1 - SC.y0, 10); c.clip();
     const pts = [];
-    for (let px = SC.x0; px <= SC.x1; px += 2) { const tau = t - (SC.x1 - px) / SPEED, v = gain * L.A * env(tau) * wav(tau * 5.2 * Math.PI * 2); pts.push([px, v]); }
+    for (let px = SC.x0; px <= SC.x1; px += 2) { const tau = t - (SC.x1 - px) / SPEED, v = gain * L.A * env(tau) * wav(tau * 3.4 * Math.PI * 2); pts.push([px, v]); }
     c.strokeStyle = 'rgba(180,255,200,0.22)'; c.lineWidth = 2; c.setLineDash([4, 5]); c.beginPath(); pts.forEach(([px, v], i) => i ? c.lineTo(px, CY - v) : c.moveTo(px, CY - v)); c.stroke(); c.setLineDash([]);
     for (const [w, a] of [[9, 0.18], [3.5, 1]]) { c.strokeStyle = `rgba(140,255,170,${a})`; c.lineWidth = w; c.lineJoin = 'round'; c.beginPath(); pts.forEach(([px, v], i) => { const y = CY - SK.clamp(v, -L.R, L.R); i ? c.lineTo(px, y) : c.moveTo(px, y); }); c.stroke(); }
     // sparks where the wave grinds along a rail
@@ -97,15 +97,15 @@ MG.add({
     c.save(); c.globalAlpha = 0.18 * thump; c.fillStyle = s.fuzzy ? '#ff5ad0' : '#ffe8a0'; c.beginPath(); c.ellipse(180, AMP.y + 124, 92 + thump * 6, 20 + thump * 3, 0, 0, 7); c.fill(); c.restore();
     // the fox and its guitar, cable to the amp
     const won = g.result === 'win', lost = g.result === 'fail', bob = Math.sin(t * (s.fuzzy || won ? 14 : 4)) * (s.fuzzy || won ? 5 : 1.5);
-    c.strokeStyle = '#111'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(AMP.x + 32, AMP.y + 52); c.bezierCurveTo(30, 380, 30, 560, 92, 560); c.stroke();
-    SK.animal(c, 'fox', 92, 604 + bob * 0.3, 0.95, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.fuzzy ? 'laugh' : 'happy' });
-    guitar(c, 86, 566 + bob * 0.3, -0.45, s.strum);
+    c.strokeStyle = '#111'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(AMP.x + 32, AMP.y + 52); c.bezierCurveTo(30, 380, 20, 560, 50, 570); c.stroke();
+    SK.animal(c, 'fox', 84, 606 + bob * 0.3, 1.5, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : s.fuzzy ? 'laugh' : 'happy' });
+    guitar(c, 74, 556 + bob * 0.3, -0.5, s.strum);
     // the crowd: head-banging to the fuzz, or nodding off to the lullaby
-    const crowd = [['hedgehog', 228, 612, 0.62, 0], ['rabbit', 282, 606, 0.6, 1.3], ['duck', 330, 612, 0.55, 2.1]];
+    const crowd = [['hedgehog', 208, 608, 1.05, 0], ['rabbit', 266, 602, 1.0, 1.3], ['duck', 322, 608, 0.95, 2.1]];
     for (const [kind, x, y, sc, ph] of crowd) {
       const rock = (s.fuzzy || won) ? Math.abs(Math.sin(t * 12 + ph)) * 10 : 0, zz = lost ? 1 : s.sleep;
       c.save(); c.translate(x, y - rock); c.rotate(zz * 0.25 * (ph % 2 ? 1 : -1)); SK.animal(c, kind, 0, 0, sc, { t, pose: won ? 'cheer' : (s.fuzzy ? 'hop' : 'idle'), expr: won || s.fuzzy ? 'laugh' : zz > 0.45 ? 'sad' : 'happy', facing: -1 }); c.restore();
-      if (zz > 0.3) { c.save(); c.globalAlpha = Math.min(1, (zz - 0.3) * 3); c.fillStyle = '#d8d0ff'; c.font = '900 20px Nunito, system-ui, sans-serif'; for (let i = 0; i < 3; i++) { const k = ((t * 0.6 + i / 3 + ph) % 1); c.globalAlpha = Math.min(1, (zz - 0.3) * 3) * (1 - k); c.fillText('z', x + 10 + k * 18, y - 70 - k * 40); } c.restore(); }
+      if (zz > 0.3) { c.save(); c.globalAlpha = Math.min(1, (zz - 0.3) * 3); c.fillStyle = '#d8d0ff'; c.font = '900 20px Nunito, system-ui, sans-serif'; for (let i = 0; i < 3; i++) { const k = ((t * 0.6 + i / 3 + ph) % 1); c.globalAlpha = Math.min(1, (zz - 0.3) * 3) * (1 - k); c.fillText('z', x + 12 + k * 18, y - 96 - k * 40); } c.restore(); }
     }
     // stage lights flash on a win
     if (won) { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.18 + 0.12 * Math.sin(t * 20); c.fillStyle = Math.sin(t * 7) > 0 ? '#ff5ad0' : '#5ae0ff'; c.fillRect(0, 0, 360, 640); c.restore(); }
