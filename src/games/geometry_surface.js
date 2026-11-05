@@ -6,7 +6,8 @@
 //      while the three length tags glide to the net's edges.
 //   2-4. Tap any face (each pair in any order): the face and its two edges light up with their lengths, "4 × 3 = 12"
 //      writes itself on the face, 12 settles into it, an arrow carries 12 to the matching face on the other side, and
-//      both 12s fly down into the chalk tag, whose total rolls up by 24. After the last pair the total is circled.
+//      both 12s fly down into the chalk tag as terms of the sum (SA = 24 + 8 + 8), which then collapses: the terms slide
+//      into the first and it rolls over to the new total. After the last pair the total is circled.
 // Wrong moves: tapping a length tag, or a face whose pair is already done, wobbles. Level 0: small boxes such as
 // 4 × 2 × 3. Level 1: sides up to 5. Level 2: up to 6 × 3 × 5. Medium mode: the tray asks for each face's area.
 const M = MK, CY0 = 300, TOTY = 508, CARD = '#d9a866', CARD2 = '#b88648', EDGE = '#4a2a10', INSIDE = '#8a5a2a';
@@ -71,7 +72,9 @@ MG.add({
     S.tagV = { dl: l, dw: w, dh: h }; S.setTags = () => { const tp = S.tagPos(S.uk); for (const id in tp) M.zone(g, id, { x: tp[id][0], y: tp[id][1], w: 34, h: 32 }); };
     S.setTags();
     M.zone(g, 'box', { x: 180, y: CY0 - 4, w: (l + w) * S.U0 + 10, h: (h + w * 0.6) * S.U0 + 20 });
-    S.sumN = M.num(0, 'sum'); S.tot = M.row(M.txt('SA', 'sa'), M.op('=', 'seq'), S.sumN); M.place(g, 'tot', S.tot, 180, TOTY + 13, 38, { col: '#fbf8ee' });
+    S.sumN = M.num(0, 'sum'); S.tot = M.row(M.txt('SA', 'sa'), M.op('=', 'seq'), S.sumN);
+    // the total line shrinks a little when it holds a long sum, so it stays on its chalk tag
+    S.placeTot = () => { S.totS = Math.min(38, 300 / (M.lay(S.tot, 38).w / 38)); M.place(g, 'tot', S.tot, 180, TOTY + 13, S.totS, { col: '#fbf8ee' }); S.totW = M.lay(S.tot, S.totS).w; }; S.placeTot();
     M.inert(g, ['sa', 'seq', 'sum']);
     const hop = (g, e) => { S.mk.lastMove = g.t; if (e) { S.face = e; S.faceT = g.t; } };
     // the flat rectangles of the faces (object units) and their centres on screen once the net is flat
@@ -83,18 +86,27 @@ MG.add({
         M.at(g, [[0.3 * T, g => g.sfx('whoosh')], [0.65 * T, g => g.sfx('whoosh')], [0.95 * T, g => g.sfx('pop')], [1.25 * T, g => g.sfx('whoosh')],
           [unfoldLen - 0.05, g => { for (const f of ['F', 'K', 'T', 'Bo', 'L', 'R']) { const r = S.scr(f); M.zone(g, f, { x: r.x, y: r.y, w: r.w - 4, h: r.h - 4 }); } g.sfx('tap'); hop(g, 'happy'); }]]); } };
     // one pair of faces: light the face and its edges, compute its area, copy it to the twin, add both to the total
-    const pairMove = p => { const [a, b] = PAIRS[p].ids, [ha, va] = p === 0 ? [l, h] : p === 1 ? [l, w] : [w, h], A = ha * va, rest = 1.75 * T;
+    const pairMove = p => { const [a, b] = PAIRS[p].ids, [ha, va] = p === 0 ? [l, h] : p === 1 ? [l, w] : [w, h], A = ha * va, rest = 3.2 * T;
       return { tap: [a, b], busy: 0.1, askAt: 0.75 * T, after: rest, ask: { v: A, wrong: [ha + va, 2 * A, 2 * (ha + va), A + ha].filter(v => v !== A) },
         then(g, id) { S.done[p] = true; const me = id, tw = me === a ? b : a; S.cur = { p, me, tw }; M.show(g, 0.75 * T); hop(g, 'think'); g.sfx('pop');
           S.lit[me] = g.t; S.edgeAt = { id: me, t0: g.t, ha, va };
-          const r = S.scr(me); S.noteN = M.row(M.num(ha), M.op('×'), M.num(va), M.op('=')); S.noteR = r; S.noteKey = 'nt' + p; M.place(g, S.noteKey, S.noteN, r.x, r.y + 8, 24, { col: '#ffffff' }); M.writeIn(g, S.noteN, { dur: 0.35 * T, delay: 0.25 * T }); S.noteAt = g.t; },
-        resolve(g) { M.show(g, rest); const { me, tw } = S.cur, r = S.scr(me); const an = M.num(A, null, { col: '#ffe9a0', _born: -1 }); S.noteN.items.push(an); M.place(g, S.noteKey, S.noteN, r.x, r.y + 8, 24, { col: '#ffffff' }); M.writeIn(g, an, { dur: 0.2 * T }); g.sfx('ding');
-          M.at(g, [[0.45 * T, g => { S.noteOut = g.t; S.area[me] = { v: A, t0: g.t }; M.sparkle(g, [r.x, r.y], { n: 8 }); hop(g); }],
-            [0.65 * T, g => { M.arrow(g, [r.x, r.y], [S.scr(tw).x, S.scr(tw).y], { dur: 0.35 * T, bend: -50, col: '#fff2a0', linger: 0.25 * T }); }],
-            [0.95 * T, g => { S.lit[tw] = g.t; S.area[tw] = { v: A, t0: g.t }; M.sparkle(g, [S.scr(tw).x, S.scr(tw).y], { n: 8 }); g.sfx('pop'); delete g.s.mk.ex[S.noteKey]; }],
-            [1.15 * T, g => { for (const [f, d] of [[me, 0], [tw, 0.08 * T]]) { const q = S.scr(f); M.fly(g, { node: M.num(A, null), from: [q.x, q.y], to: 'sum', delay: d, dur: 0.4 * T, arc: -40, s0: 24, s1: 34, col: '#fff2a0' }); } }],
-            [1.15 * T + 0.48 * T, g => { const from = S.sum; S.sum += 2 * A; M.roll(g, S.sumN, S.sum, { dur: 0.3 * T }); M.place(g, 'tot', S.tot, 180, TOTY + 13, 38, { col: '#fbf8ee' }); g.sfx('coin'); hop(g, 'happy');
-              if (S.done[0] && S.done[1] && S.done[2]) { M.circle(g, 'sum', { delay: 0.15 * T, dur: 0.5 * T, col: '#ffd45a' }); M.sparkle(g, 'sum', { delay: 0.25 * T, n: 16 }); hop(g, 'laugh'); } }]]); } };
+          const r = S.scr(me); S.noteN = M.row(M.num(ha), M.op('×'), M.num(va), M.op('=')); S.noteR = r; S.noteKey = 'nt' + p; S.noteX = () => M.clamp(r.x, M.lay(S.noteN, 24).w / 2 + 22, 338 - M.lay(S.noteN, 24).w / 2); M.place(g, S.noteKey, S.noteN, S.noteX(), r.y + 8, 24, { col: '#ffffff' }); M.writeIn(g, S.noteN, { dur: 0.35 * T, delay: 0.25 * T }); S.noteAt = g.t; S.noteOut = null; },
+        resolve(g) { M.show(g, rest); const { me, tw } = S.cur, r = S.scr(me); const an = M.num(A, null, { col: '#ffe9a0', _born: -1 }); S.noteN.items.push(an); M.place(g, S.noteKey, S.noteN, S.noteX(), r.y + 8, 24, { col: '#ffffff' }); M.writeIn(g, an, { dur: 0.2 * T }); g.sfx('ding');
+          // the face's area stays readable on its note, then settles into the face; a copy goes to its twin
+          M.at(g, [[0.85 * T, g => { S.noteOut = g.t; S.area[me] = { v: A, t0: g.t }; M.sparkle(g, [r.x, r.y], { n: 8 }); hop(g); }],
+            [1.05 * T, g => { M.arrow(g, [r.x, r.y], [S.scr(tw).x, S.scr(tw).y], { dur: 0.35 * T, bend: -50, col: '#fff2a0', linger: 0.25 * T }); }],
+            [1.35 * T, g => { S.lit[tw] = g.t; S.area[tw] = { v: A, t0: g.t }; M.sparkle(g, [S.scr(tw).x, S.scr(tw).y], { n: 8 }); g.sfx('pop'); delete g.s.mk.ex[S.noteKey]; }],
+            // both areas fly down and join the total as terms of one sum: SA = 24 + 8 + 8
+            [1.55 * T, g => { const o = { alpha: 0, _born: -1 }, n1 = M.num(A, 'pa' + p, { ...o }), n2 = M.num(A, 'pb' + p, { ...o }), p1 = M.op('+', 'pp' + p, { ...o }), p2 = M.op('+', 'pq' + p, { ...o });
+              M.inert(g, ['pa' + p, 'pb' + p, 'pp' + p, 'pq' + p]); S.terms = S.sum ? [S.sumN, p1, n1, p2, n2] : [n1, p2, n2]; S.tot.items = [S.tot.items[0], S.tot.items[1], ...S.terms]; S.placeTot();
+              for (const [f, d, n, pl] of [[me, 0, n1, S.sum ? p1 : null], [tw, 0.1 * T, n2, p2]]) { const q = S.scr(f); M.fly(g, { node: M.num(A, null), from: [q.x, q.y], to: n.id, delay: d, dur: 0.4 * T, arc: -40, s0: 24, s1: S.totS, col: '#fff2a0',
+                then(g) { n.alpha = 1; n.pop = g.t; if (pl) { pl.alpha = 1; pl.pop = g.t; } M.sparkle(g, n, { n: 6 }); g.sfx('pop'); } }); } }],
+            // the sum collapses into the new total: the terms slide into the first one and it rolls over
+            [2.3 * T, g => { for (const q of S.terms) M.indicate(g, q, { dur: 0.3 * T, sc: 1.12 }); hop(g, 'think'); }],
+            [2.65 * T, g => { const [keep, ...rest2] = S.terms, bk = M.box(g, keep.id); for (const q of rest2) { const b = M.box(g, q.id); if (b && bk) M.tween(g, q, { dx: bk.x - b.x, alpha: 0, sc: 0.5 }, 0.28 * T); }
+              S.sum += 2 * A; M.roll(g, keep, S.sum, { delay: 0.12 * T, dur: 0.3 * T }); M.at(g, [[0.42 * T, g => { M.sparkle(g, keep, { n: 10 }); g.sfx('coin'); hop(g, 'happy'); }]]); }],
+            [3.1 * T, g => { const keep = S.terms[0]; S.sumN = keep; S.tot.items = [S.tot.items[0], S.tot.items[1], keep]; S.placeTot();
+              if (S.done[0] && S.done[1] && S.done[2]) { M.circle(g, keep, { delay: 0.1 * T, dur: 0.5 * T, col: '#ffd45a' }); M.sparkle(g, keep, { delay: 0.2 * T, n: 16 }); hop(g, 'laugh'); } }]]); } };
     };
     M.play(g, {
       moves(g) { if (!S.unfold) return [unfold]; const out = []; for (let p = 0; p < 3; p++) if (!S.done[p]) out.push(pairMove(p)); return out; },
@@ -137,7 +149,7 @@ MG.add({
       c.save(); c.translate(x + bad, y); c.fillStyle = 'rgba(20,8,0,0.35)'; c.beginPath(); c.roundRect(-15, -13, 34, 32, 9); c.fill(); c.fillStyle = '#c8402a'; c.beginPath(); c.roundRect(-17, -16, 34, 32, 9); c.fill();
       c.font = M.NUMF(26, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff4dc'; c.fillText(String(S.tagV[id]), 0, 1); c.restore(); } }
     // the running total on a chalk tag
-    SCN.panel(c, 'chalk', 180, TOTY, 190, 62, t); M.drawEx(g, c, 'tot');
+    SCN.panel(c, 'chalk', 180, TOTY, Math.max(190, (S.totW || 0) + 44), 62, t); M.drawEx(g, c, 'tot');
     const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0;
     const expr = won ? 'laugh' : lost || t - mk.missAt < 0.5 ? 'sad' : S.faceT != null && t - S.faceT < 0.7 ? S.face : 'happy';
     if (typeof ANI !== 'undefined') ANI.draw(c, 'beaver', 316, 626 - hopK * 20, 1.15, { t, facing: -1, pose: won ? 'cheer' : hopK > 0 ? 'hop' : M.showing(g) ? 'point' : 'idle', expr }); else SCN.host(g, c, 'beaver', 316, 626, 1.15);
