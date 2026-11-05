@@ -83,7 +83,7 @@
       // guidance: drag an egg from the nest to the emptiest basket
       if (s.phase === 'fill' && s.left && !g.done) { let tg = s.b[0]; for (const b of s.b) { const n = b.tie ? tied.reduce((a, o) => a + o.n, 0) : b.n, m = tg.tie ? tied.reduce((a, o) => a + o.n, 0) : tg.n; if (n < m) tg = b; }
         const ex = NEST.x - 34 + ((s.left - 1) % 4) * 22, ey = NEST.y - 4; SK.grab(c, g, ex, ey, 22); SK.target(c, g, tg.x, tg.y - 4, 0, { w: 96, h: 50 }); SK.arrow(c, g, ex, ey, tg.x, tg.y, { from: 26, to: 34 });
-        SK.demo(g, c, 'drag', [ex, ey], [tg.x, tg.y - 4]); s.hintB = s.b.indexOf(tg); }
+        SK.demo(g, c, 'drag', [ex, ey], [tg.x, tg.y - 4]); }
     },
     auto(g, dt, synth) {
       const s = g.s; if (g.done || s.phase !== 'fill' || (!s.left && !s.held)) return; const B = s._a = s._a || { n: 1.0, k: 0 }; if (g.t < B.n) return;
