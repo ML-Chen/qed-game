@@ -6,7 +6,7 @@
 // push each other apart, and only a fast flick gets them close enough to join.
 (() => {
   const PIV = [180, 214], BEAM = 92, STR = 70, WALL = { l: 6, r: 354, t: 124, b: 604 }, VMAX = 950;
-  const KREP = 7.1e6, TILT = 0.045; // repulsion between two nuclei (level 2); beam tilt per unit of mass difference
+  const KREP = 7.1e6, TILT = 0.07; // repulsion between two nuclei (level 2); beam tilt per unit of mass difference
   const sunflower = (n, R) => { const o = []; for (let i = 0; i < n; i++) { const r = R * Math.sqrt((i + 0.5) / n), a = i * 2.39996; o.push([Math.cos(a) * r, Math.sin(a) * r, i % 2 ? 'n' : 'p']); } return o.reverse(); };
   function cluster(c, x, y, balls, br, t, jig = 1) {
     balls.forEach(([dx, dy, k], i) => { const jx = Math.sin(t * 9 + i * 1.7) * 0.9 * jig, jy = Math.cos(t * 8 + i * 2.3) * 0.9 * jig; SK.ball(c, x + dx + jx, y + dy + jy, br, k === 'p' ? '#e8503a' : '#9ab8e0', { lw: 1.2 }); });
@@ -23,7 +23,9 @@
     o.fillStyle = '#b8862a'; o.beginPath(); o.ellipse(PIV[0], 472, 62, 12, 0, 0, 7); o.fill(); o.fillStyle = '#e0b04a'; o.beginPath(); o.ellipse(PIV[0], 466, 56, 9, 0, 0, 7); o.fill();
     const pg = o.createLinearGradient(PIV[0] - 7, 0, PIV[0] + 7, 0); pg.addColorStop(0, '#a87a22'); pg.addColorStop(0.5, '#f2cc6a'); pg.addColorStop(1, '#a87a22'); o.fillStyle = pg; o.fillRect(PIV[0] - 7, PIV[1], 14, 252);
     // the dial behind the needle
-    o.strokeStyle = 'rgba(255,230,160,0.55)'; o.lineWidth = 2; o.beginPath(); o.arc(PIV[0], PIV[1], 52, Math.PI / 2 - 0.5, Math.PI / 2 + 0.5); o.stroke();
+    o.fillStyle = 'rgba(20,16,50,0.75)'; o.beginPath(); o.moveTo(PIV[0], PIV[1]); o.arc(PIV[0], PIV[1], 124, Math.PI / 2 - 0.32, Math.PI / 2 + 0.32); o.closePath(); o.fill();
+    o.strokeStyle = 'rgba(255,230,160,0.7)'; o.lineWidth = 3; o.beginPath(); o.arc(PIV[0], PIV[1], 118, Math.PI / 2 - 0.3, Math.PI / 2 + 0.3); o.stroke();
+    o.strokeStyle = '#7aff9a'; o.lineWidth = 6; o.beginPath(); o.moveTo(PIV[0], PIV[1] + 104); o.lineTo(PIV[0], PIV[1] + 126); o.stroke(); // the 'level' mark
     for (let k = -4; k <= 4; k++) { const a = Math.PI / 2 + k * 0.11, r0 = k ? 47 : 42; o.beginPath(); o.moveTo(PIV[0] + Math.cos(a) * r0, PIV[1] + Math.sin(a) * r0); o.lineTo(PIV[0] + Math.cos(a) * 56, PIV[1] + Math.sin(a) * 56); o.stroke(); }
     // the lab bench the beaver hides behind
     o.fillStyle = '#3a2a5a'; o.fillRect(0, 548, 120, 6);
@@ -34,7 +36,7 @@
     c.beginPath(); c.moveTo(x - 44, y); c.quadraticCurveTo(x, y + (bowl ? 44 : 18), x + 44, y); c.closePath(); c.fill(); c.stroke();
   }
   MG.add({
-    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT!', time: 6, mood: 'night', winText: 'E = mc²!', failText: 'Missed!',
+    id: 'atoms_split', stage: 'atoms', cmd: 'SPLIT!', time: 6, mood: 'night', winText: 'Lighter!', failText: 'Missed!',
     card: { title: 'Splitting a nucleus', kind: 'Physics', ref: 'Nuclear fission and E = mc²',
       text: 'The middle of an atom is its nucleus, a tight ball of protons and neutrons. A neutron has no electric charge, so it flies straight in. A big nucleus such as uranium can wobble and split in two when a neutron hits it, and two or three spare neutrons fly out.\n\nWeigh all the pieces and they come to a tiny bit less than the nucleus did. That missing mass has turned into a huge amount of energy, the flash. Nuclear power stations run on this. Joining two small nuclei (fusion) also loses mass and powers the Sun.',
       note: 'When a big nucleus splits, a little of its mass turns into a lot of energy.' },
@@ -57,7 +59,7 @@
     update(g, dt) {
       const s = g.s, n = s.n;
       // the scale's beam swings toward the balance point of the two pans
-      const tgt = SK.clamp((s.mR - s.mL) * TILT, -0.16, 0.16); s.va += (-(s.a - tgt) * 60 - s.va * 5) * dt; s.a += s.va * dt;
+      const tgt = SK.clamp((s.mR - s.mL) * TILT, -0.2, 0.2); s.va += (-(s.a - tgt) * 60 - s.va * 5) * dt; s.a += s.va * dt;
       const [bx, by] = bowlAt(s), cx = bx, cy = by + 2 - s.bigR * 0.55;
       if (n.st === 'fly') {
         for (let i = 0; i < 4; i++) {
@@ -78,7 +80,7 @@
       }
       if (s.hit && !s.boom && g.t - s.hit > 0.3) { // the flash, the spare neutrons, and the lighter bowl
         s.boom = true; s.flash = g.t; g.sfx('thunder'); g.sfx('sparkle'); g.shake(8, 0.35);
-        s.mL = s.fus ? 5 - 1.4 : 30 - 2.2; // exaggerated, so the bowl visibly rises
+        s.mL = s.fus ? 5 - 1.4 : 30 - 2.5; // exaggerated, so the bowl visibly rises
         const k = s.fus ? 1 : 3; for (let i = 0; i < k; i++) s.spare.push({ x: (i - (k - 1) / 2) * 8, y: -20, vx: (i - (k - 1) / 2) * 60 + (g.rand() - 0.5) * 30, vy: -260 - g.rand() * 120, r: s.br });
         g.burst(cx, cy, ['#fff6ea', '#ffe27a', '#ff9a4a', '#9ad8ff'], 30, 320);
       }
@@ -94,7 +96,7 @@
       c.drawImage(g.bake('split_lab', paintLab), 0, 0, 360, 640);
       // the beam, the needle and the two pans
       const [l, r] = ends(s.a), [bx, by] = bowlAt(s);
-      c.strokeStyle = '#ffe27a'; c.lineWidth = 3; c.beginPath(); c.moveTo(PIV[0], PIV[1]); c.lineTo(PIV[0] - Math.sin(s.a) * 50, PIV[1] + Math.cos(s.a) * 50); c.stroke();
+      c.strokeStyle = '#ffe27a'; c.lineWidth = 3; c.beginPath(); c.lineWidth = 5; c.moveTo(PIV[0], PIV[1]); c.lineTo(PIV[0] - Math.sin(s.a) * 116, PIV[1] + Math.cos(s.a) * 116); c.stroke();
       c.strokeStyle = '#6a4210'; c.lineWidth = 9; c.lineCap = 'round'; c.beginPath(); c.moveTo(l[0], l[1]); c.lineTo(r[0], r[1]); c.stroke(); c.strokeStyle = '#f2cc6a'; c.lineWidth = 5; c.stroke();
       SK.ball(c, PIV[0], PIV[1], 8, '#e0b04a');
       // the brass weight on the right pan
@@ -129,6 +131,9 @@
         if (n.st === 'ready') SK.glow(c, g, n.x, n.y, 24, '#9ad8ff');
         const d = g.s._drag; if (d && n.st === 'ready') { const q = d.pts[d.pts.length - 1]; c.save(); c.strokeStyle = 'rgba(160,210,255,0.4)'; c.lineWidth = 3; c.setLineDash([5, 6]); c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(q.x, q.y); c.stroke(); c.restore(); }
       }
+      // the missing mass: a little glowing bit leaves the bowl as light, and the bowl rises
+      if (s.boom) { const q = (t - s.flash) / 0.9; if (q < 1) { const mx = cx + 10, my = cy - 20 - q * 140; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.fillStyle = '#ffe27a'; c.beginPath(); c.arc(mx, my, 6 + q * 10, 0, 7); c.fill(); c.restore(); } if (t - s.flash > 0.2) SK.tag(c, 'Lighter!', cx + 4, cy - 64, 18); }
+      if (n.st === 'ready' && !s.hit && !g.s._drag && g.level === 0) { c.save(); c.strokeStyle = 'rgba(160,210,255,0.45)'; c.lineWidth = 2.5; c.setLineDash([6, 8]); c.lineDashOffset = -t * 30; c.beginPath(); c.moveTo(n.x, n.y); c.lineTo(cx, cy); c.stroke(); c.restore(); }
       // the beaver peeks over the bench, and ducks when a neutron comes flying its way
       const ducking = t - s.duck < 0.9, dy = ducking ? 52 : 0;
       SK.animal(c, 'beaver', 60, 556 + dy, 0.78, { t, pose: g.result === 'win' ? 'cheer' : 'idle', expr: ducking ? 'wow' : 'happy' });
@@ -138,7 +143,7 @@
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'owl', 318, 616, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'wow' : lost ? 'sad' : 'happy', facing: -1 });
       // the flash: the missing mass, turned into energy
-      const fk = (t - s.flash) / 0.9; if (fk >= 0 && fk < 1) {
+      const fk = (t - s.flash) / 0.5; if (fk >= 0 && fk < 1) {
         c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = (1 - fk) * 0.9; const fg = c.createRadialGradient(cx, cy, 5, cx, cy, 420); fg.addColorStop(0, '#ffffff'); fg.addColorStop(0.25, s.fus ? '#ffd27a' : '#c8e8ff'); fg.addColorStop(1, 'rgba(60,40,120,0)'); c.fillStyle = fg; c.fillRect(0, 0, 360, 640);
         c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (let i = 0; i < 14; i++) { const a = i * Math.PI / 7 + fk; c.beginPath(); c.moveTo(cx + Math.cos(a) * (30 + fk * 60), cy + Math.sin(a) * (30 + fk * 60)); c.lineTo(cx + Math.cos(a) * (80 + fk * 240), cy + Math.sin(a) * (80 + fk * 240)); c.stroke(); }
         c.restore();

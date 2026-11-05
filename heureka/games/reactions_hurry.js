@@ -4,7 +4,7 @@
 // Hurry the frog instead and its buckets just pile up in front of the turtle while the fire keeps burning.
 // Level 0: frog then turtle; level 1: frog, turtle, rabbit; level 2: the same three in a shuffled order and a bigger fire.
 (() => {
-  const Y = 470, FIRE = { x: 322, y: Y + 4 }, RATE = { fast: 2.4, slow: 0.12, boost: 2.6 }, NEED = [5, 6, 7];
+  const Y = 470, FIRE = { x: 322, y: Y + 4 }, RATE = { fast: 2.4, slow: 0.12, boost: 2.6 }, NEED = [8, 9, 10];
   const KIND = { frog: 'fast', rabbit: 'fast', turtle: 'slow' };
   function paintBg(o) {
     const sk = o.createLinearGradient(0, 0, 0, 470); sk.addColorStop(0, '#5a3a7a'); sk.addColorStop(0.55, '#e88a6a'); sk.addColorStop(1, '#ffd0a0'); o.fillStyle = sk; o.fillRect(0, 0, 360, 640);
@@ -43,7 +43,9 @@
       if (L >= 2) for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
       const xs = kinds.length === 2 ? [104, 212] : [84, 160, 236];
       s.a = kinds.map((k, i) => ({ kind: k, x: xs[i], p: 0, busy: false, q: 0, boost: 0, hop: -9 }));
-      s.need = NEED[L]; s.hits = 0; s.splash = -9; s.taps = [];
+      s.need = NEED[L]; s.hits = 0; s.splash = -9; s.taps = []; s.grow = 0;
+      // the line has been running a while: buckets are already stacked up in front of the slow helper
+      for (const a of s.a) if (KIND[a.kind] === 'slow') a.q = 5;
     },
     down(g, x, y) {
       const s = g.s; SK.touched(g); if (g.done) return; let best = null, bd = 56;
@@ -52,6 +54,8 @@
     },
     update(g, dt) {
       const s = g.s; if (g.done) return;
+      // the fire grows back unless buckets keep arriving: every 1.5 s without a splash it needs one more
+      if (g.t - Math.max(s.splash, 0.9) > 1.5 && s.need - s.hits < NEED[Math.min(2, g.level)] + 2) { s.need++; s.splash = g.t - 0.0001; s.grow = g.t; g.sfx('fire'); }
       s.a.forEach((a, i) => {
         a.boost = Math.max(0, a.boost - dt);
         if (!a.busy && (i === 0 || a.q > 0)) { a.busy = true; a.p = 0; if (i > 0) a.q--; }
@@ -74,14 +78,16 @@
         SK.animal(c, a.kind, a.x, Y + 6 - hop, a.kind === 'turtle' ? 1.3 : 1.2, { t: t * (fast ? 2.5 : 1), phase: i, pose: won ? 'cheer' : lost ? 'sad' : a.busy ? 'carry' : 'idle', expr: won ? 'laugh' : a.q > 3 ? 'wow' : fast ? 'laugh' : KIND[a.kind] === 'slow' ? 'think' : 'happy' });
         if (fast) { c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 2.5; for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(a.x - 30 - k * 4, Y - 40 + k * 12); c.lineTo(a.x - 46 - k * 4, Y - 40 + k * 12); c.stroke(); } }
         if (a.busy) { const k = a.p, x = SK.lerp(a.x + 8, nx, k), y = Y - 74 - Math.sin(k * Math.PI) * 30; bucket(c, x, y, true, 1.3); }
-        if (KIND[a.kind] === 'slow' && !g.done) SK.glow(c, g, a.x, Y - 36, 42);
+        if (!g.done && !s.touched) SK.glow(c, g, a.x, Y - 36, 42);
+        if (a.q >= 3) { const bob = Math.abs(Math.sin(t * 5)) * 4; c.fillStyle = '#ff5a3a'; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; c.beginPath(); c.arc(a.x - 36, Y - 6 - Math.min(a.q, 14) * 17 - 18 - bob, 12, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff6ea'; c.fillRect(a.x - 38, Y - Math.min(a.q, 14) * 17 - 31 - bob, 4, 10); c.fillRect(a.x - 38, Y - Math.min(a.q, 14) * 17 - 19 - bob, 4, 4); }
       });
       // buckets waiting in front of a helper stack up into a wobbly tower
       for (const a of s.a) for (let j = 0; j < Math.min(a.q, 14); j++) { const w = Math.sin(t * 5 + j * 0.4) * j * 1.3; bucket(c, a.x - 36 + w, Y + 16 - j * 17, true, 1.05); }
       for (const tp of s.taps) { const q = (t - tp.t) * 3; if (q > 1) continue; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#ffd45a'; c.lineWidth = 3; c.beginPath(); c.arc(tp.x, tp.y, 12 + q * 18, 0, 7); c.stroke(); c.restore(); }
       // how many buckets the fire still needs: drops along the top of the barn
-      for (let i = 0; i < s.need; i++) { const x = 210 + i * 20, y = 268, got = i < s.hits; c.fillStyle = got ? '#5ab0f0' : 'rgba(255,255,255,0.35)'; c.beginPath(); c.moveTo(x, y - 9); c.quadraticCurveTo(x + 7, y, x, y + 5); c.quadraticCurveTo(x - 7, y, x, y - 9); c.fill(); }
-      const slow = s.a.find(a => KIND[a.kind] === 'slow'); SK.demo(g, c, 'tap', [slow.x, Y - 30], null, { period: 0.5 });
+      const left = s.need - s.hits, gw = Math.max(0, 1 - (t - s.grow) * 3); for (let i = 0; i < left; i++) { const x = 316 - (left - 1) * 8 + i * 16, y = 268 - (i === left - 1 ? gw * 8 : 0); c.fillStyle = i === left - 1 && gw > 0 ? '#ff8a3a' : 'rgba(255,255,255,0.6)'; c.beginPath(); c.moveTo(x, y - 9); c.quadraticCurveTo(x + 7, y, x, y + 5); c.quadraticCurveTo(x - 7, y, x, y - 9); c.fill(); }
+      // the hand shows how to hurry a helper; once you have tried, a stuck hint points at the slow one
+      const slow = s.a.find(a => KIND[a.kind] === 'slow'), first = s.touched ? slow : s.a[0]; SK.demo(g, c, 'tap', [first.x, Y - 30], null, { period: 0.5 });
     },
     // the bot mashes the slow helper
     auto(g, dt, synth) { const s = g.s; if (g.done || g.t < 1.0) return; const B = s._b = s._b || { n: 1.0 }; if (g.t < B.n) return; const a = s.a.find(a => KIND[a.kind] === 'slow'); synth('down', a.x, Y - 30); synth('up', a.x, Y - 30); B.n = g.t + 0.14; },

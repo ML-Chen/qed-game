@@ -43,14 +43,17 @@
     o.fillStyle = '#c83a5a'; o.beginPath(); o.ellipse(112, 560, 100, 34, 0, 0, 7); o.fill(); o.strokeStyle = '#f2c84a'; o.lineWidth = 4; o.setLineDash([8, 6]); o.beginPath(); o.ellipse(112, 560, 86, 26, 0, 0, 7); o.stroke(); o.setLineDash([]);
     // the ramp: a plank resting on the shelf, with a curved lip at the bottom
     o.fillStyle = '#e8b878'; o.strokeStyle = '#7a4a24'; o.lineWidth = 2.5; o.beginPath(); o.moveTo(P0[0] - 8, P0[1] - 6); o.lineTo(P1[0], P1[1]); o.quadraticCurveTo(P1[0] + 14, FLOOR, P1[0] + 26, FLOOR); o.lineTo(P1[0] - 16, FLOOR); o.lineTo(P0[0] - 8 - N[0] * 14, P0[1] - 6 - N[1] * 14); o.closePath(); o.fill(); o.stroke();
+    for (let k = 0.12; k < 0.9; k += 0.19) { const x = P0[0] + DX * k, y = P0[1] + DY * k, col = P.mix('#5ac85a', '#e8403a', 1 - k); o.strokeStyle = col; o.lineWidth = 5; o.lineCap = 'round'; o.beginPath(); o.moveTo(x - N[0] * 2, y - N[1] * 2); o.lineTo(x + N[0] * 12, y + N[1] * 12); o.stroke(); } // height marks: red is high and fast
     o.strokeStyle = 'rgba(122,74,36,0.35)'; o.lineWidth = 1.2; for (let k = 0.1; k < 1; k += 0.18) { const x = P0[0] + DX * k - N[0] * 6, y = P0[1] + DY * k - N[1] * 6; o.beginPath(); o.moveTo(x, y); o.lineTo(x + D[0] * 30, y + D[1] * 30); o.stroke(); }
   }
-  function drawBall(c, b) {
+  function drawBall(c, b, t = 0) {
     c.save(); c.globalAlpha = b.alpha ?? 1;
+    if (b.st === 'home' && b.k === 'bowl') { c.fillStyle = 'rgba(80,10,30,0.45)'; c.beginPath(); c.ellipse(b.x, b.y + b.r - 2, b.r * 1.3, 8, 0, 0, 7); c.fill(); } // it sinks into the rug
+    const hop = b.st === 'home' && b.k === 'pong' ? Math.abs(Math.sin(t * 5)) * 12 : 0; b = hop ? { ...b, y: b.y - hop } : b;
     SK.shadow(c, b.x, (b.st === 'home' || b.y > FLOOR - b.r - 2 ? Math.max(FLOOR, b.y + b.r) : b.y + b.r + 6), b.r * 0.9, b.r * 0.25, 0.25);
     if (b.k === 'bowl') {
-      SK.ball(c, b.x, b.y, b.r, '#5a3aa8');
-      for (let i = 0; i < 3; i++) { const a = b.rot + [-0.35, 0.05, 0.4][i] - 1.2, rr = b.r * [0.5, 0.42, 0.5][i]; c.fillStyle = '#1e1040'; c.beginPath(); c.arc(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr, b.r * 0.12, 0, 7); c.fill(); }
+      SK.ball(c, b.x, b.y, b.r, '#2a2a3a', { edge: '#0a0a14' });
+      for (let i = 0; i < 3; i++) { const a = b.rot + [-0.35, 0.05, 0.4][i] - 1.2, rr = b.r * [0.5, 0.42, 0.5][i]; c.fillStyle = '#7a7a90'; c.beginPath(); c.arc(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr, b.r * 0.12, 0, 7); c.fill(); }
     } else {
       SK.ball(c, b.x, b.y, b.r, '#fff4e6', { edge: '#c8a080', lw: 1.5 });
       c.strokeStyle = '#f2903a'; c.lineWidth = 2; c.beginPath(); c.arc(b.x, b.y, b.r * 0.62, b.rot, b.rot + 1.6); c.stroke();
@@ -74,8 +77,8 @@
     init(g) {
       const s = g.s, lv = Math.min(2, g.level);
       s.balls = [
-        { k: 'bowl', r: 23, m: 1, home: [76, 548], st: 'home', rot: 0 },
-        { k: 'pong', r: 9, m: 0.03, home: [158, 560], st: 'home', rot: 0 },
+        { k: 'bowl', r: 27, m: 1, home: [76, 546], st: 'home', rot: 0 },
+        { k: 'pong', r: 9, m: 0.03, home: [160, 556], st: 'home', rot: 0 },
       ];
       for (const b of s.balls) { b.x = b.home[0]; b.y = b.home[1]; }
       s.towers = TOWERS[lv]; s.round = 0; build(g, s); s.blocks.forEach(bl => { bl.born = -9; }); s.down = false; s.nextAt = 0; s.wob = -9; s.tik = -9; s.tries = 0;
@@ -112,7 +115,7 @@
         }
       }
       for (const bl of s.blocks) {
-        if (!bl.free) { bl.wob = g.t - s.wob < 0.8 ? Math.sin((g.t - s.wob) * 30) * 0.05 * (1 - (g.t - s.wob) / 0.8) * (bl.y < FLOOR - 40 ? 1 : 0.4) : 0; continue; }
+        if (!bl.free) { bl.wob = g.t - s.wob < 0.8 ? Math.sin((g.t - s.wob) * 30) * (s.tikK === 'pong' ? 0.03 : 0.1) * (1 - (g.t - s.wob) / 0.8) * (bl.y < FLOOR - 40 ? 1 : 0.4) : 0; continue; }
         const hit = SK.step(bl, dt, { gy: 900, floor: FLOOR, right: 354 }); bl.a += bl.va * dt; if (bl.onFloor) { bl.va *= Math.exp(-6 * dt); bl.a = SK.lerp(bl.a, Math.round(bl.a / (Math.PI / 2)) * Math.PI / 2, Math.min(1, dt * 6)); }
         if (hit) g.sfx('thud');
       }
@@ -130,10 +133,10 @@
       for (const bl of s.blocks) block(c, bl, t);
       // a dropped ball's landing spot on the ramp, while dragging
       const dr = SK.dragging(g); if (dr) { const sp = snap(dr); if (sp != null) { const [px, py] = pathPos(dr, sp); c.save(); c.strokeStyle = 'rgba(255,240,200,0.7)'; c.lineWidth = 2.5; c.setLineDash([5, 5]); c.beginPath(); c.arc(px, py, dr.r, 0, 7); c.stroke(); c.restore(); } }
-      for (const b of s.balls) if (b !== dr) drawBall(c, b);
+      for (const b of s.balls) if (b !== dr) drawBall(c, b, t);
       if (dr) drawBall(c, dr);
       // the ping-pong ball's "tik" and the tower's wobble
-      if (t - s.tik < 0.7) { const k = (t - s.tik) / 0.7; c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (let i = 0; i < 3; i++) { const a = Math.PI + (i - 1) * 0.6; c.beginPath(); c.moveTo(TX - BW / 2 - 8 + Math.cos(a) * 10, FLOOR - 14 + Math.sin(a) * 10); c.lineTo(TX - BW / 2 - 8 + Math.cos(a) * (18 + k * 14), FLOOR - 14 + Math.sin(a) * (18 + k * 14)); c.stroke(); } c.restore(); if (s.tikK === 'pong') SK.tag(c, 'tik', TX - 52, FLOOR - 58 - k * 20, 18); }
+      if (t - s.tik < 0.7) { const k = (t - s.tik) / 0.7; c.save(); c.globalAlpha = 1 - k; c.strokeStyle = '#fff6ea'; c.lineWidth = 3; for (let i = 0; i < 3; i++) { const a = Math.PI + (i - 1) * 0.6; c.beginPath(); c.moveTo(TX - BW / 2 - 8 + Math.cos(a) * 10, FLOOR - 14 + Math.sin(a) * 10); c.lineTo(TX - BW / 2 - 8 + Math.cos(a) * (18 + k * 14), FLOOR - 14 + Math.sin(a) * (18 + k * 14)); c.stroke(); } c.restore(); SK.tag(c, s.tikK === 'pong' ? 'tik' : 'wobble', TX - 52, FLOOR - 70 - k * 20, 18); }
       // the hedgehog watches from the floor
       const won = g.result === 'win', lost = g.result === 'fail', ow = t - s.tik < 1.2;
       SK.animal(c, 'hedgehog', 296, 614, 0.95, { t, pose: won ? 'cheer' : lost ? 'sad' : ow ? 'hop' : 'idle', expr: won ? 'laugh' : lost ? 'sad' : ow ? 'wow' : 'happy', facing: -1 });

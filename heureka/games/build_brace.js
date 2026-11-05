@@ -40,11 +40,13 @@ function brTruck(c, x, y, a, t, moving) {
   c.restore();
 }
 // the frame's joints: bottom node j and top node j, after any folding
-function brNodes(s) {
-  const n = s.n, S = s.S, B = [], T = [];
+// before the truck rolls, the open squares sway on their pins (a vertical leans only if no square next to it is braced)
+function brNodes(s, t = 0) {
+  const n = s.n, S = s.S, B = [], T = [], sway = s.goT ? 0 : 0.17 * Math.sin(t * 3.2) + 0.05 * Math.sin(t * 7.3);
   for (let j = 0; j <= n; j++) {
     let drop = 0, lean = 0;
     s.sq.forEach((q, k) => { if (!q.fold) return; const f = SK.easeInOut(q.fold), sh = j <= k ? j / (k + 0.5) : (n - j) / (n - k - 0.5); drop += f * 46 * Math.max(0, Math.min(1, sh)); if (j === k || j === k + 1) lean = Math.max(lean, f * 1.25); });
+    if (sway && !(s.sq[j - 1] && s.sq[j - 1].brace) && !(s.sq[j] && s.sq[j].brace)) lean += sway;
     const bx = BR_X0 + j * S, by = BR_YT + S + drop; B.push([bx, by]); T.push([bx + Math.sin(lean) * S, by - Math.cos(lean) * S]);
   }
   return { B, T };
@@ -82,7 +84,7 @@ MG.add({
     if (tr.x > 356 && !g.done) { g.win(); g.sfx('cheer'); g.sfx('honk'); }
   },
   draw(g, c) {
-    const s = g.s, t = g.t, tr = s.truck, { B, T } = brNodes(s);
+    const s = g.s, t = g.t, tr = s.truck, { B, T } = brNodes(s, t);
     c.drawImage(g.bake('brace_bg', brPaint), 0, 0, 360, 640);
     // the frame: bottom chord, verticals, top chord (the road), diagonals
     for (let j = 0; j < s.n; j++) brBeam(c, B[j], B[j + 1], '#a06a3a', 8);
@@ -92,7 +94,8 @@ MG.add({
     for (let j = 0; j < s.n; j++) { brBeam(c, T[j], T[j + 1], '#7a6a6a', 10); }
     for (const p of [...B, ...T]) { c.fillStyle = '#3a2a2a'; c.beginPath(); c.arc(p[0], p[1], 4.5, 0, 7); c.fill(); c.fillStyle = '#c8c0c8'; c.beginPath(); c.arc(p[0] - 1, p[1] - 1, 2, 0, 7); c.fill(); }
     // glowing open squares at levels 0 and 1
-    if (!s.goT) s.sq.forEach(q => { if (!q.brace) SK.glow(c, g, q.x + s.S / 2, BR_YT + s.S / 2, s.S * 0.36, '#ffe27a', { level: 2 }); });
+    // each open square shows the diagonal to draw: a dashed line from pin to pin, with a glowing start pin
+    if (!s.goT && !g.done) s.sq.forEach((q, k) => { if (q.brace) return; c.save(); c.strokeStyle = 'rgba(255,240,190,0.9)'; c.lineWidth = 4; c.setLineDash([8, 8]); c.lineDashOffset = -t * 24; c.beginPath(); c.moveTo(...T[k]); c.lineTo(...B[k + 1]); c.stroke(); c.restore(); SK.glow(c, g, T[k][0], T[k][1], 14, '#ffe27a', { level: 2 }); });
     // the line being drawn
     if (s.line) { c.save(); c.strokeStyle = 'rgba(255,240,200,0.9)'; c.lineWidth = 6; c.lineCap = 'round'; c.setLineDash([10, 8]); c.beginPath(); c.moveTo(...s.line.a); c.lineTo(...s.line.b); c.stroke(); c.restore(); }
     // the truck rides along the road (the top chord), following any dip
@@ -102,7 +105,7 @@ MG.add({
     // the beaver on the far cliff waves the truck over
     const won = g.result === 'win', lost = g.result === 'fail';
     SK.animal(c, 'beaver', 348, BR_YT - 8, 0.5, { t, facing: -1, pose: won ? 'cheer' : lost ? 'sad' : 'wave', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
-    const q0 = s.sq.find(q => !q.brace); if (q0) SK.demo(g, c, 'drag', [q0.x + 6, BR_YT + 6], [q0.x + s.S - 6, BR_YT + s.S - 6]);
+    const k0 = s.sq.findIndex(q => !q.brace); if (k0 >= 0) SK.demo(g, c, 'drag', T[k0], B[k0 + 1], { never: !!s.goT });
   },
   auto(g, dt, synth) { const s = g.s; s.sq.forEach((q, k) => SK.bot.drag(g, synth, 'b' + k, 0.9 + k * 0.3, [q.x + 8, BR_YT + 8], [q.x + s.S - 8, BR_YT + s.S - 8], 0.18)); },
 });

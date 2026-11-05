@@ -56,8 +56,8 @@
         const end = endPt(s.px, aR, -1), q = SK.clamp(e / 0.32, 0, 1); s.frog = { x: SK.lerp(17, end.x + 8, q), y: SK.lerp(GND - 34, end.y, q) - Math.sin(q * Math.PI) * 60 };
         if (q >= 1) { s.phase = lifts ? 'tip' : 'fling'; s.pt = g.t; g.sfx('thud'); }
       } else if (s.phase === 'tip') {
-        const q = SK.easeInOut(e / 0.4); s.angNow = SK.lerp(aR, aF, q); const end = endPt(s.px, s.angNow, -1); s.frog = { x: end.x + 8, y: end.y };
-        if (e >= 0.4) {
+        const q = SK.easeInOut(e / 0.75); s.angNow = SK.lerp(aR, aF, q); const end = endPt(s.px, s.angNow, -1); s.frog = { x: end.x + 8, y: end.y }; // the frog's end sinks slowly, the rock's end rises
+        if (e >= 0.75) {
           const h = GND - endPt(s.px, aF, 1).y; s.phase = h >= HN - 2 ? 'roll' : 'low'; s.pt = g.t;
           if (s.phase === 'roll') { g.sfx('cheer'); } else { g.sfx('thud'); g.sfx('wrong'); }
         }
@@ -75,7 +75,7 @@
           else { s.phase = 'reset'; s.pt = g.t; } }
       } else if (s.phase === 'reset') { // the frog hops back and the beaver drops on the next, heavier rock
         const q = SK.clamp(e / 0.4, 0, 1); s.angNow = SK.lerp(aF, aR, SK.easeInOut(q)); const end = endPt(s.px, s.angNow, -1); s.frog = { x: SK.lerp(end.x + 8, 17, q), y: SK.lerp(end.y, GND - 34, q) - Math.sin(q * Math.PI) * 50 };
-        if (q >= 1) { s.phase = 'aim'; s.drop = 0; s.rockA = 0; g.sfx('thud'); }
+        if (q >= 1) { s.phase = 'aim'; s.drop = 0; s.rockA = 0; g.sfx('pop'); }
       }
     },
     draw(g, c) {
@@ -89,21 +89,23 @@
       const bg = c.createLinearGradient(px - BR, 0, px + BR, 0); bg.addColorStop(0, '#7a4a2a'); bg.addColorStop(0.45, '#c88a4a'); bg.addColorStop(1, '#6a3a1a');
       c.fillStyle = bg; c.strokeStyle = '#3a2010'; c.lineWidth = 2; c.beginPath(); c.arc(px, py, BR, 0, 7); c.fill(); c.stroke();
       c.strokeStyle = '#5a5a6a'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, BR - 6, 0, 7); c.stroke(); c.fillStyle = '#3a2010'; c.beginPath(); c.arc(px, py, 4, 0, 7); c.fill();
+      // the height the rock must reach: a dashed line from the ledge top back across the plank
+      c.save(); c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 2; c.setLineDash([6, 6]); c.beginPath(); c.moveTo(LEDGE + 4, GND - HN - 4); c.lineTo(200, GND - HN - 4); c.stroke(); c.restore();
       // the plank, resting on the top of the barrel
       const a = s.angNow, L0 = endPt(px, a, -1), R0 = endPt(px, a, 1);
       c.save(); c.translate(px, GND - BH); c.rotate(a); c.fillStyle = '#d8a060'; c.strokeStyle = '#6a3a1a'; c.lineWidth = 2; c.beginPath(); c.roundRect(-(px - X0), -10, LEN, 10, 3); c.fill(); c.stroke();
-      c.strokeStyle = 'rgba(106,58,26,0.4)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-(px - X0) + 10, -5); c.lineTo(LEN - (px - X0) - 10, -5); c.stroke(); c.restore();
+      c.lineWidth = 4; c.lineCap = 'round'; c.strokeStyle = 'rgba(80,170,80,0.8)'; c.beginPath(); c.moveTo(-(px - X0) + 6, -5); c.lineTo(-4, -5); c.stroke(); c.strokeStyle = 'rgba(140,130,120,0.9)'; c.beginPath(); c.moveTo(4, -5); c.lineTo(LEN - (px - X0) - 6, -5); c.stroke(); c.restore(); // the frog's arm (green) and the rock's arm (grey)
       // the rock on the far end (it rolls off onto the ledge on a good lift)
       if (s.ri < s.ks.length) {
         const k = s.ks[s.ri], r = 14 + k * 7; let rx = R0.x - r * 0.9, ry = R0.y - r - 8 + Math.sin(a) * 0;
-        if (s.phase === 'roll') { const q = SK.clamp((t - s.pt) / 0.35, 0, 1); rx = SK.lerp(rx, LEDGE + 26, q); ry = SK.lerp(ry, GND - HN - r - 4, q) - Math.sin(q * Math.PI) * 14; }
-        if (s.drop < 1) ry -= (1 - s.drop) * 200;
-        rock(c, rx, ry, r, s.rockA);
+        if (s.phase === 'roll') { const q = SK.clamp((t - s.pt) / 0.35, 0, 1); rx = SK.lerp(rx, LEDGE + 26, q); ry = SK.lerp(ry, GND - HN - r - 4, q); }
+        rock(c, rx, ry, r * (s.drop < 1 ? SK.easeOut(s.drop) : 1), s.rockA); // a new rock pops onto the plank
       }
       // the frog
       const f = s.frog; SK.animal(c, 'frog', f.x, f.y, 0.9, { t, pose: won ? 'cheer' : s.phase === 'hop' || s.phase === 'fling' ? 'hop' : 'idle', expr: won ? 'laugh' : s.phase === 'fling' ? 'wow' : s.phase === 'low' ? 'think' : lost ? 'sad' : 'happy', noShadow: f.y < GND - 40 });
       // guidance: glow on the barrel; at level 0 the ghost hand slides it into the range that works
-      if (s.phase === 'aim' && !g.done) { SK.glow(c, g, px, py, 38, undefined, { level: 2 }); const w = win(s.ks[s.ri]); if (g.level === 0) { c.save(); c.fillStyle = 'rgba(255,240,150,0.3)'; c.beginPath(); c.roundRect(w.lo - BR, GND + 6, w.hi - w.lo + BR * 2, 10, 5); c.fill(); c.restore(); }
+      if (s.phase === 'aim' && !g.done) { SK.glow(c, g, px, py, 38, undefined, { level: 2 });
+        c.save(); c.fillStyle = 'rgba(255,255,255,0.85)'; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(px + sd * 52, GND + 14); c.lineTo(px + sd * 40, GND + 6); c.lineTo(px + sd * 40, GND + 22); c.closePath(); c.fill(); } c.fillRect(px - 40, GND + 12, 80, 4); c.restore(); const w = win(s.ks[s.ri]); if (g.level === 0) { c.save(); c.fillStyle = 'rgba(255,240,150,0.3)'; c.beginPath(); c.roundRect(w.lo - BR, GND + 26, w.hi - w.lo + BR * 2, 10, 5); c.fill(); c.restore(); }
         SK.demo(g, c, 'drag', [px, py], [(w.lo + w.hi) / 2, py]); }
     },
     auto(g, dt, synth) {

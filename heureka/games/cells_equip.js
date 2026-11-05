@@ -9,7 +9,7 @@ const PARTS = {
 };
 const LEVELS = [
   { animal: false, need: ['nucleus', 'chloro', 'mito'], extra: [] },
-  { animal: false, need: ['nucleus', 'chloro', 'mito', 'vacuole'], extra: [] },
+  { animal: false, need: ['nucleus', 'chloro', 'mito', 'vacuole'], extra: ['pebble'] },
   { animal: true, need: ['nucleus', 'mito', 'mito'], extra: ['chloro'] },
 ];
 const SLOTS = { // where each part settles inside the cell (offsets from the centre)
@@ -56,6 +56,9 @@ function drawPart(c, kind, x, y, t, on, s = 1) {
     c.fillStyle = mg; c.strokeStyle = '#8a2a1a'; c.lineWidth = 2; c.beginPath(); c.ellipse(0, 0, 24, 12, 0, 0, 7); c.fill(); c.stroke();
     c.strokeStyle = '#a83a24'; c.lineWidth = 1.8; c.beginPath(); for (let i = 0; i <= 16; i++) { const xx = -18 + i * 2.25, yy = (i % 2 ? 6 : -6); i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
     if (on) { c.strokeStyle = '#fff36a'; c.lineWidth = 2.5; for (let i = 0; i < 2; i++) { const a = t * 5 + i * 3, r = 20; c.beginPath(); c.moveTo(Math.cos(a) * r, Math.sin(a) * r); c.lineTo(Math.cos(a) * (r + 8) + 3, Math.sin(a) * (r + 8) - 3); c.lineTo(Math.cos(a) * (r + 12), Math.sin(a) * (r + 14)); c.stroke(); } }
+  } else if (kind === 'pebble') {
+    c.fillStyle = '#9a8a7a'; c.strokeStyle = '#5a4a3a'; c.lineWidth = 2; c.beginPath(); c.ellipse(0, 0, 20, 15, 0.3, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.ellipse(-6, -5, 7, 4, 0.3, 0, 7); c.fill(); c.fillStyle = '#7a6a5a'; c.beginPath(); c.arc(6, 4, 2.5, 0, 7); c.arc(-3, 6, 1.8, 0, 7); c.fill();
   } else if (kind === 'vacuole') {
     const sw = on ? 1.25 + Math.sin(t * 3) * 0.03 : 1; c.scale(sw, sw);
     const vg = c.createRadialGradient(-10, -10, 4, 0, 0, 40); vg.addColorStop(0, 'rgba(230,250,255,0.95)'); vg.addColorStop(1, 'rgba(120,190,240,0.85)');
@@ -76,7 +79,7 @@ MG.add({
     // shuffle the waiting order with g.rand so it changes from game to game
     for (let i = kinds.length - 1; i > 0; i--) { const j = Math.floor(g.rand() * (i + 1)); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
     kinds.forEach((k, i) => { const hx = 44 + i * (232 / Math.max(1, kinds.length - 1)), hy = 548 + (i % 2 ? 14 : -6); s.parts.push({ kind: k, x: hx, y: hy, hx, hy, ph: g.rand() * 6, state: 'wait', at: 0 }); });
-    s.used = {}; s.alive = -1; s.reject = -1;
+    s.used = {}; s.alive = -1; s.reject = -1; s.chain = -1;
   },
   down(g, x, y) {
     const s = g.s; SK.touched(g); if (g.done) return;
@@ -86,7 +89,7 @@ MG.add({
   up(g) {
     const s = g.s, d = SK.dragEnd(g); if (!d || !d.obj) return; const p = d.obj;
     if (g.done || !inCell(s.L.animal, p.x, p.y)) { p.state = 'home'; p.from = [p.x, p.y]; p.at = g.t; return; }
-    if (s.L.animal && p.kind === 'chloro') { p.state = 'spit'; p.from = [p.x, p.y]; p.at = g.t; s.reject = g.t; g.sfx('boing'); return; }
+    if ((s.L.animal && p.kind === 'chloro') || p.kind === 'pebble') { p.state = 'spit'; p.from = [p.x, p.y]; p.at = g.t; s.reject = g.t; g.sfx('boing'); return; }
     const n = s.used[p.kind] || 0, slot = SLOTS[p.kind][n % SLOTS[p.kind].length]; s.used[p.kind] = n + 1;
     p.state = 'in'; p.from = [p.x, p.y]; p.to = [CX + slot[0], CY + slot[1]]; p.at = g.t; g.sfx('click');
     g.sfx({ nucleus: 'magic', chloro: 'sparkle', mito: 'ding', vacuole: 'bubble' }[p.kind]);
@@ -95,13 +98,18 @@ MG.add({
     const s = g.s, L = s.L;
     for (const p of s.parts) {
       const k = Math.min(1, (g.t - p.at) / 0.3);
+      if (p.state === 'wait') { p.x = p.hx + Math.sin(g.t * 0.8 + p.ph) * 12; p.y = p.hy + Math.cos(g.t * 1.1 + p.ph) * 6; }
       if (p.state === 'in') { p.x = SK.lerp(p.from[0], p.to[0], SK.easeOut(k)); p.y = SK.lerp(p.from[1], p.to[1], SK.easeOut(k)); }
       if (p.state === 'home' || p.state === 'spit') { const kk = Math.min(1, (g.t - p.at) / (p.state === 'spit' ? 0.6 : 0.35)); p.x = SK.lerp(p.from[0], p.hx, SK.easeOut(kk)); p.y = SK.lerp(p.from[1], p.hy, SK.easeOut(kk)) - (p.state === 'spit' ? Math.sin(kk * Math.PI) * 90 : 0); if (kk >= 1) p.state = 'wait'; }
     }
     if (s.alive < 0 && !g.done) {
       const have = {}; for (const p of s.parts) if (p.state === 'in' && g.t - p.at > 0.3) have[p.kind] = (have[p.kind] || 0) + 1;
       const need = {}; for (const k of L.need) need[k] = (need[k] || 0) + 1;
-      if (Object.keys(need).every(k => (have[k] || 0) >= need[k])) { s.alive = g.t; g.win(); g.sfx('cheer'); g.burst(CX, CY, ['#b8ff7a', '#fff6a0', '#ffffff'], 26, 220); }
+      if (s.chain < 0 && Object.keys(need).every(k => (have[k] || 0) >= need[k])) { s.chain = g.t; g.sfx('magic'); }
+      // the parts work together (the fuse waits): the nucleus sends out instructions, sugar from the chloroplast (or,
+      // in an animal cell, from food outside) travels to a mitochondrion, which turns it into energy; then the cell wakes
+      if (s.chain >= 0) { g.held += dt; const k = g.t - s.chain; if (k > 0.45 && !s.sug) { s.sug = 1; g.sfx('pop'); } if (k > 1.0 && !s.zap) { s.zap = 1; g.sfx('sparkle'); g.sfx('ding'); }
+        if (k > 1.5) { s.alive = g.t; g.win(); g.sfx('cheer'); g.burst(CX, CY, ['#b8ff7a', '#fff6a0', '#ffffff'], 26, 220); } }
     }
   },
   draw(g, c) {
@@ -130,7 +138,7 @@ MG.add({
     for (let i = 0; i < 14; i++) { const a = t * (0.3 + alive * 0.9) + i * 0.45, r = 70 + (i % 4) * 12; c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.arc(Math.cos(a) * r, Math.sin(a) * r * 1.05, 2.2, 0, 7); c.fill(); }
     c.restore();
     // the parts (inside ones do their jobs)
-    for (const p of s.parts) { if (p.state === 'drag') continue; const bob = p.state === 'in' ? 0 : Math.sin(t * 2 + p.ph) * 4; drawPart(c, p.kind, p.x, p.y + bob, t, p.state === 'in' && t - p.at > 0.25); }
+    for (const p of s.parts) { if (p.state === 'drag') continue; const bob = 0; drawPart(c, p.kind, p.x, p.y + bob, t, p.state === 'in' && t - p.at > 0.25); }
     c.save(); c.translate(CX, CY); c.scale(breathe, breathe);
     // the cell's face: asleep, awake once complete, sad and hungry when time runs out
     const ex = 34, ey = -6; c.strokeStyle = '#2a3a2a'; c.fillStyle = '#2a3a2a'; c.lineWidth = 3.5; c.lineCap = 'round';
@@ -139,17 +147,24 @@ MG.add({
     if (!alive && !lost) { const k = (t * 0.7) % 1; c.fillStyle = `rgba(42,58,42,${0.7 * (1 - k)})`; c.font = '900 20px Nunito, system-ui, sans-serif'; c.fillText('z', 40 + k * 20, -40 - k * 30); }
     c.restore();
     if (lost && !an && !chl.length) { const k = (t * 2) % 1; c.strokeStyle = `rgba(120,60,20,${1 - k})`; c.lineWidth = 3; c.beginPath(); for (let i = 0; i < 6; i++) c.lineTo(CX - 20 + i * 8, CY + 70 + (i % 2 ? 6 : -6) + k * 10); c.stroke(); }
+    if (s.chain >= 0) {
+      const k = t - s.chain, nuc = inn.find(p => p.kind === 'nucleus'), mit = inn.find(p => p.kind === 'mito'), src = inn.find(p => p.kind === 'chloro');
+      if (nuc && k < 0.8) for (const p of inn) { if (p === nuc) continue; const q = SK.clamp(k / 0.5, 0, 1); c.fillStyle = `rgba(220,170,255,${1 - Math.max(0, k - 0.5) * 3})`; for (let j = 0; j < 3; j++) { const qq = SK.clamp(q - j * 0.12, 0, 1); c.beginPath(); c.arc(SK.lerp(nuc.x, p.x, qq), SK.lerp(nuc.y, p.y, qq), 4, 0, 7); c.fill(); } }
+      if (mit && k > 0.45 && k < 1.05) { const q = SK.easeInOut((k - 0.45) / 0.55), from = src ? [src.x, src.y] : [CX - 130, CY + 30]; const x = SK.lerp(from[0], mit.x, q), y = SK.lerp(from[1], mit.y, q) - Math.sin(q * Math.PI) * 30; c.fillStyle = '#fff'; c.strokeStyle = '#c89a30'; c.lineWidth = 2; c.beginPath(); c.roundRect(x - 7, y - 7, 14, 14, 3); c.fill(); c.stroke(); }
+      if (mit && k > 1.0) { const q = SK.clamp((k - 1.0) / 0.5, 0, 1); c.save(); c.globalCompositeOperation = 'lighter'; const gl = c.createRadialGradient(mit.x, mit.y, 4, mit.x, mit.y, 40 + q * 80); gl.addColorStop(0, 'rgba(255,240,120,0.6)'); gl.addColorStop(1, 'rgba(255,240,120,0)'); c.fillStyle = gl; c.beginPath(); c.arc(mit.x, mit.y, 40 + q * 80, 0, 7); c.fill(); c.restore();
+        c.strokeStyle = '#fff36a'; c.lineWidth = 3; for (let j = 0; j < 6; j++) { const a = j * 1.05 + k * 3, r0 = 22 + q * 20; c.beginPath(); c.moveTo(mit.x + Math.cos(a) * r0, mit.y + Math.sin(a) * r0); c.lineTo(mit.x + Math.cos(a + 0.2) * (r0 + 12), mit.y + Math.sin(a + 0.2) * (r0 + 12)); c.lineTo(mit.x + Math.cos(a) * (r0 + 22), mit.y + Math.sin(a) * (r0 + 22)); c.stroke(); } }
+    }
     const dr = SK.dragging(g); if (dr) drawPart(c, dr.kind, dr.x, dr.y, t, false, 1.12);
     // the octopus host, bottom right
     SK.animal(c, 'octopus', 332, 614, 0.55, { t, pose: g.result === 'win' ? 'cheer' : 'idle', expr: g.result === 'win' ? 'laugh' : lost ? 'sad' : s.reject >= 0 && t - s.reject < 1 ? 'wow' : 'happy', facing: -1 });
     // guidance: glow on the next part to bring in, and a ghost hand dragging it into the cell
-    const next = s.parts.find(p => p.state === 'wait' && !(an && p.kind === 'chloro') && (s.used[p.kind] || 0) < L.need.filter(k => k === p.kind).length);
+    const next = s.parts.find(p => p.state === 'wait' && !(an && p.kind === 'chloro') && p.kind !== 'pebble' && (s.used[p.kind] || 0) < L.need.filter(k => k === p.kind).length);
     if (next && !dr) { SK.glow(c, g, next.x, next.y, 30); SK.demo(g, c, 'drag', [next.x, next.y], [CX, CY]); }
   },
   auto(g, dt, synth) {
     const s = g.s, L = s.L; if (g.done) return;
     if (s.botCur) { const b = s.botCur; if (!SK.bot.drag(g, synth, b.key, b.t, b.a, b.b, 0.35)) return; s.botCur = null; return; }
-    const next = s.parts.find(p => p.state === 'wait' && !(L.animal && p.kind === 'chloro') && (s.used[p.kind] || 0) < L.need.filter(k => k === p.kind).length);
+    const next = s.parts.find(p => p.state === 'wait' && !(L.animal && p.kind === 'chloro') && p.kind !== 'pebble' && (s.used[p.kind] || 0) < L.need.filter(k => k === p.kind).length);
     if (!next || g.t < 0.6) return; s.botN = (s.botN || 0) + 1;
     s.botCur = { key: 'd' + s.botN, t: g.t + 0.15, a: [next.x, next.y], b: [CX + (next.x < CX ? -10 : 10), CY] };
   },

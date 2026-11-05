@@ -36,7 +36,7 @@
     init(g) {
       const s = g.s, L = LV[Math.min(2, g.level)]; s.fr = L.fr; s.hl = L.hl; s.round = 0; s.held = false; s.overT = 0; this.fill(g);
     },
-    fill(g) { const s = g.s; s.tau = 0; s.born = g.t; s.okT = 0; s.hogs = SLOTS.map(([x, y], i) => ({ x, y, life: -s.hl * Math.log(1 - g.rand()) / Math.LN2, gone: 0 })); s.target = Math.round(N / s.fr[s.round]); },
+    fill(g) { const s = g.s; s.tau = 0; s.ticks = []; s.born = g.t; s.okT = 0; s.hogs = SLOTS.map(([x, y], i) => ({ x, y, life: -s.hl * Math.log(1 - g.rand()) / Math.LN2, gone: 0 })); s.target = Math.round(N / s.fr[s.round]); },
     down(g) { const s = g.s; SK.holdStart(g); if (g.done || s.okT) return; s.held = true; g.sfx('click'); },
     up(g) {
       const s = g.s; SK.holdEnd(g); if (!s.held) return; s.held = false; if (g.done || s.okT) return;
@@ -47,7 +47,7 @@
     barY(n) { return SK.lerp(BAR.b, BAR.t, n / N); },
     update(g, dt) {
       const s = g.s; if (g.done) return;
-      if (s.held && !s.okT) { s.tau += dt; for (const h of s.hogs) if (!h.gone && s.tau > h.life) { h.gone = g.t; g.sfx('pop'); } }
+      if (s.held && !s.okT) { const k0 = Math.floor(s.tau / s.hl); s.tau += dt; if (Math.floor(s.tau / s.hl) > k0) { s.ticks.push(s.hogs.filter(h => !h.gone || h.gone === g.t).length); g.sfx('bell'); } for (const h of s.hogs) if (!h.gone && s.tau > h.life) { h.gone = g.t; g.sfx('pop'); } }
       const left = s.hogs.filter(h => !h.gone).length, tol = Math.max(1, Math.round(s.target * 0.2));
       if (!s.okT && left < s.target - tol) { s.overT = g.t; g.fail(); g.sfx('laugh'); }
       if (s.okT && g.t - s.okT > 0.8) { if (s.round + 1 >= s.fr.length) { g.win(); g.sfx('cheer'); } else { s.round++; this.fill(g); g.sfx('sweep'); } }
@@ -57,23 +57,34 @@
       c.drawImage(g.bake('halve_shelf', paintShelf), 0, 0, 360, 640);
       // the hedgehogs: curled (unstable) or uncurled and grey (decayed); new jars drop in from above
       const dk = SK.easeOut(SK.clamp((t - s.born) / 0.4, 0, 1));
-      for (const [i, h] of s.hogs.entries()) { const y = h.y - (1 - dk) * 40; c.globalAlpha = dk; if (h.gone) { const q = SK.clamp((t - h.gone) / 0.25, 0, 1); if (q < 1) curled(c, h.x, y - q * 8, t, i); c.globalAlpha = q; flat(c, h.x, y, t); c.globalAlpha = 1; } else curled(c, h.x, y, t, i); c.globalAlpha = 1; }
+      for (const [i, h] of s.hogs.entries()) {
+        const y = h.y - (1 - dk) * 40; c.globalAlpha = dk;
+        if (!h.gone) { curled(c, h.x, y, t, i); c.globalAlpha = 1; continue; }
+        // a decayed one uncurls, turns grey, climbs out over the rim and walks away
+        const age = t - h.gone; if (age < 0.25) { curled(c, h.x, y - age * 30, t, i); c.globalAlpha = 1; continue; }
+        const w = (age - 0.25) / 1.4; if (w >= 1) { c.globalAlpha = 1; continue; }
+        const up = SK.clamp(w / 0.35, 0, 1), along = SK.clamp((w - 0.35) / 0.65, 0, 1), rimY = JAR.t - 2;
+        const x = SK.lerp(h.x, -40, SK.easeInOut(along)), yy = SK.lerp(y, rimY, SK.easeOut(up)) - Math.abs(Math.sin(age * 14)) * 3;
+        c.save(); c.filter = 'grayscale(1) brightness(1.15)'; SK.animal(c, 'hedgehog', x, yy, 0.55, { t: t + i, pose: 'walk', expr: 'happy', facing: -1 }); c.restore(); c.globalAlpha = 1;
+      }
       // the curled ones left snore when you overshoot
       if (g.result === 'fail') for (const [i, h] of s.hogs.entries()) if (!h.gone) { const q = (t * 0.8 + i * 0.3) % 1; c.fillStyle = `rgba(255,255,255,${1 - q})`; c.font = '900 18px Nunito, system-ui, sans-serif'; c.fillText('z', h.x + 10 + q * 10, h.y - 14 - q * 20); }
       // the count bar and its mark
       const fy = this.barY(left); c.fillStyle = '#9a7048'; c.fillRect(BAR.x - 13, fy, 26, BAR.b - fy);
+      for (const d of [2, 4, 8]) { const ny = this.barY(N / d), lit = left <= N / d; c.strokeStyle = lit ? '#9ad8ff' : 'rgba(255,255,255,0.3)'; c.lineWidth = 2; c.beginPath(); c.moveTo(BAR.x - 16, ny); c.lineTo(BAR.x + 16, ny); c.stroke(); }
+      for (const k of s.ticks) { const ky = this.barY(k); c.fillStyle = '#9ad8ff'; c.beginPath(); c.moveTo(BAR.x - 30, ky - 6); c.lineTo(BAR.x - 19, ky); c.lineTo(BAR.x - 30, ky + 6); c.fill(); } // one arrow per half-life turn
       const ty = this.barY(s.target); c.strokeStyle = '#ffd45a'; c.lineWidth = 4; c.beginPath(); c.moveTo(BAR.x - 22, ty); c.lineTo(BAR.x + 22, ty); c.stroke();
       SK.tag(c, '1/' + s.fr[s.round], BAR.x, ty - 24, 18);
       // the clock ring: one full turn per half-life
-      const ang = (s.tau / s.hl) * Math.PI * 2; c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 8; c.beginPath(); c.arc(JAR.cx, 172, 22, 0, 7); c.stroke();
-      c.strokeStyle = s.held ? '#9ad8ff' : '#6a8ab0'; c.lineCap = 'round'; c.beginPath(); c.arc(JAR.cx, 172, 22, -Math.PI / 2, -Math.PI / 2 + (ang % (Math.PI * 2))); c.stroke();
-      const turns = Math.floor(s.tau / s.hl); for (let i = 0; i < Math.min(4, turns); i++) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(JAR.cx + 36 + i * 12, 172, 4, 0, 7); c.fill(); }
+      const ang = (s.tau / s.hl) * Math.PI * 2, DY = JAR.t + 11; c.fillStyle = '#fff6ea'; c.beginPath(); c.arc(JAR.cx, DY, 24, 0, 7); c.fill(); c.strokeStyle = '#2a3a60'; c.lineWidth = 8; c.beginPath(); c.arc(JAR.cx, DY, 17, 0, 7); c.stroke();
+      c.strokeStyle = s.held ? '#4ab0f0' : '#6a8ab0'; c.lineCap = 'round'; c.beginPath(); c.arc(JAR.cx, DY, 17, -Math.PI / 2, -Math.PI / 2 + (ang % (Math.PI * 2))); c.stroke();
+      const turns = Math.floor(s.tau / s.hl); for (let i = 0; i < Math.min(4, turns); i++) { c.fillStyle = '#9ad8ff'; c.beginPath(); c.arc(JAR.cx + 34 + i * 12, DY - 24, 4, 0, 7); c.fill(); }
       // jars still to go
       for (let i = 0; i < s.fr.length; i++) { c.fillStyle = i < s.round || (i === s.round && s.okT) ? '#ffd45a' : 'rgba(255,255,255,0.3)'; c.beginPath(); c.arc(300 + (i - (s.fr.length - 1) / 2) * 20, 170, 6, 0, 7); c.fill(); }
       const won = g.result === 'win', lost = g.result === 'fail';
       SK.animal(c, 'owl', 300, 614, 0.72, { t, pose: won ? 'cheer' : lost ? 'sad' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : s.held ? 'think' : 'happy', facing: -1 });
-      if (!s.held && !s.okT) SK.glow(c, g, JAR.cx, 172, 30);
-      SK.demo(g, c, 'hold', [JAR.cx, 180], null, { never: !!s.okT });
+      if (!s.held && !s.okT) SK.glow(c, g, JAR.cx, JAR.t + 11, 30);
+      SK.demo(g, c, 'hold', [JAR.cx, JAR.t + 14], null, { never: !!s.okT });
     },
     // the bot: hold until the jar is down to the mark, then let go
     auto(g, dt, synth) {
