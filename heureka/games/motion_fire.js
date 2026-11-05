@@ -5,7 +5,7 @@
 // every shot takes the same time to come down, and you fire when a boat is the same distance from where the ball lands.
 // Two boats at level 0, three at levels 1 and 2 (faster boats; level 0 and 1 mark where the ball will land).
 (() => {
-  const TOP = 236, SEA = 548, MUZ = { x: 140, y: TOP - 22 }, VX = 170, G = 900, DROP = { x: 72, y: TOP - 30 };
+  const TOP = 236, SEA = 548, MUZ = { x: 140, y: TOP - 22 }, VX = 90, G = 900, DROP = { x: 72, y: TOP - 30 };
   const TFALL = Math.sqrt(2 * (SEA - MUZ.y) / G), LAND = MUZ.x + VX * TFALL; // every shot lands here, after the same time
   function paintCliff(o) {
     const sky = o.createLinearGradient(0, 0, 0, SEA); sky.addColorStop(0, '#8ac8f0'); sky.addColorStop(0.7, '#cfe8f8'); sky.addColorStop(1, '#f0f8ff'); o.fillStyle = sky; o.fillRect(0, 0, 360, 640);
@@ -43,7 +43,7 @@
     init(g) {
       const s = g.s, L = Math.min(2, g.level);
       s.v = SK.variant(g, 4); s.speeds = [[[70, 90], [80, 100, 120], [100, 120, 135]], [[90, 70], [120, 80, 100], [135, 100, 120]], [[80, 80], [100, 120, 80], [120, 135, 100]], [[75, 95], [110, 90, 120], [110, 135, 120]]][s.v][L]; s.bi = 0; s.mark = L < 2;
-      s.boat = { x: 500, hit: 0 }; s.old = null; s.ball = null; s.snow = null; s.trail = []; s.lines = []; s.splash = []; s.cool = 0; s.recoil = -9;
+      s.boat = { x: 560, hit: 0 }; s.old = null; s.ball = null; s.snow = null; s.trail = []; s.lines = []; s.splash = []; s.cool = 0; s.recoil = -9;
     },
     down(g) { const s = g.s; SK.touched(g); if (g.done || s.ball || g.t < s.cool) return;
       s.ball = { x: MUZ.x, y: MUZ.y, vx: VX, vy: 0, t: 0 }; s.snow = { x: DROP.x, y: DROP.y, vy: 0 }; s.lines = []; s.recoil = g.t; g.sfx('thud'); g.sfx('rumble', { vol: 0.5 }); g.shake(3, 0.15); g.burst(MUZ.x + 10, MUZ.y, ['#ffffff', '#c8c8d8'], 10, 120); },
@@ -90,7 +90,7 @@
       // levels 0 and 1: a flag on the water where the boat must be when you fire; the cannon turns green when it's time
       const v = s.speeds[Math.min(s.bi, s.speeds.length - 1)], want = LAND + v * TFALL, now = !B.hit && Math.abs(B.x - want) < 30;
       if (s.mark && !g.done && !s.ball && want < 350) { c.strokeStyle = '#5a3a1a'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(want, SEA + 4); c.lineTo(want, SEA - 30); c.stroke(); c.fillStyle = now ? '#5ad07a' : '#f5c23a'; c.beginPath(); c.moveTo(want, SEA - 30); c.lineTo(want + 18, SEA - 24); c.lineTo(want, SEA - 18); c.closePath(); c.fill(); }
-      if (s.mark && !g.done && !s.ball && t >= s.cool) SK.tag(c, now ? 'Fire now!' : B.x > want ? 'Wait...' : 'Too late', MUZ.x + 44, MUZ.y - 76, now ? 22 : 18, '#fff6ea', now ? 'rgba(40,150,70,0.95)' : 'rgba(30,14,36,0.72)');
+      if (s.mark && !g.done && !s.ball && t >= s.cool) SK.tag(c, now ? 'Fire now!' : B.x > want ? 'Wait...' : 'Too late', SK.clamp(want, 70, 290), SEA - 112, now ? 22 : 18, '#fff6ea', now ? 'rgba(40,150,70,0.95)' : 'rgba(30,14,36,0.72)');
       if (!s.ball && !g.done && t >= s.cool) { SK.glow(c, g, MUZ.x - 10, MUZ.y, 28, now && s.mark ? '#7aff9a' : undefined, { level: 2 }); SK.demo(g, c, 'tap', [MUZ.x - 8, MUZ.y + 6], null, { period: 1.1, never: s.mark && !(B.x < want + 30 + v * 0.35 && B.x > want - 10) }); } // the hand taps just as the boat reaches the flag
     },
     auto(g, dt, synth) {
