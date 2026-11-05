@@ -96,7 +96,7 @@ MG.add({
     // the queue of happy customers who came back (they stand in a row behind the path)
     const qn = Math.min(10, s.queue);
     for (let i = 0; i < qn; i++) SK.animal(c, KINDS[(i * 3) % KINDS.length], 300 - i * 28, 448, 0.55, { t, phase: i, pose: won ? 'cheer' : 'idle', expr: 'laugh', facing: -1 });
-    if (s.queue && !s.fitT) SK.tag(c, 'Happy customers', 266, 470, 18);
+    if (!g.done) SK.tag(c, `Happy customers ${Math.min(s.queue, s.L.goal)} / ${s.L.goal}`, 250, 470, 18); // the goal: this many who stay
     // word of mouth: arrows from happy customers out to new friends
     for (const w of s.wom) { const q = (t - w.t) / 0.8; if (q > 1) continue; c.save(); c.globalAlpha = 1 - q; c.strokeStyle = '#ff5a8a'; c.lineWidth = 4; c.setLineDash([6, 5]); c.beginPath(); c.moveTo(300 - (w.i - 1) * 28, 420); c.quadraticCurveTo(160, 380 - q * 30, 20, 470); c.stroke(); c.restore(); }
     if (s.fitT && t - s.fitT < 3) SK.tag(c, 'Word of mouth', 84, 520, 18, '#fff6ea', 'rgba(200,60,110,0.85)');

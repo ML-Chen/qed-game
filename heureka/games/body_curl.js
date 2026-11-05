@@ -160,7 +160,10 @@ MG.add({
     SK.animal(c, 'rabbit', 72, 598, 0.75, { t, pose: won ? 'cheer' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : 'happy' });
     // guidance: the ring shows when the fox is close enough
     const near = (F.ph === 'crouch' || F.ph === 'lunge' || F.x + NOSE > HX - 30 - 55) && !s.used;
-    if (near && !g.done) SK.glow(c, g, HX, GY - 34, 46);
+    if (near && !g.done) SK.glow(c, g, HX, GY - 34, 46, '#ffe27a', { level: 2 });
+    // timing cue: wait while the fox is far, tap now when it is close (the owner: say whether you're getting closer)
+    if (!g.done && !s.used && !s.roll) { if (near) SK.tag(c, 'Tap now!', HX, GY - 140 - Math.abs(Math.sin(t * 10)) * 4, 22, '#9affb0', 'rgba(20,90,50,0.9)'); else if (F.ph !== 'yelp') SK.tag(c, 'Wait for it...', HX, GY - 140, 18); }
+    if (!g.done) SK.tag(c, Math.min(s.round, s.rounds) + ' / ' + s.rounds + ' pounces', 270, 170, 18);
     if (!s.roll) SK.tag(c, 'Spines', HX + 8, GY - 104, 18);
     if (near) SK.demo(g, c, 'tap', [HX + 6, GY - 30], null, { delay: 0 }); // only while the fox is close: that is when to tap
   },

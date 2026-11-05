@@ -54,7 +54,7 @@
     up(g) {
       const s = g.s, n = s.n, d = SK.dragEnd(g); if (!d || n.st !== 'ready' || s.hit) return;
       let { vx, vy } = d; const sp = Math.hypot(vx, vy); if (sp < 140) return; if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
-      n.vx = vx; n.vy = vy; n.st = 'fly'; n.flyT = g.t; s.shots++; s.trail = []; g.sfx('swoosh');
+      n.vx = vx; n.vy = vy; n.minD = 999; n.st = 'fly'; n.flyT = g.t; s.shots++; s.trail = []; g.sfx('swoosh');
     },
     update(g, dt) {
       const s = g.s, n = s.n;
@@ -65,7 +65,7 @@
         for (let i = 0; i < 4; i++) {
           const h = dt / 4;
           if (s.fus) { const dx = n.x - cx, dy = n.y - cy, d2 = Math.max(200, dx * dx + dy * dy), d = Math.sqrt(d2), f = KREP / d2; n.vx += f * dx / d * h; n.vy += f * dy / d * h; }
-          n.x += n.vx * h; n.y += n.vy * h;
+          n.x += n.vx * h; n.y += n.vy * h; n.minD = Math.min(n.minD, SK.dist(n.x, n.y, cx, cy));
           if (n.x - n.r < WALL.l) { n.x = WALL.l + n.r; n.vx = Math.abs(n.vx) * 0.92; g.sfx('click'); }
           if (n.x + n.r > WALL.r) { n.x = WALL.r - n.r; n.vx = -Math.abs(n.vx) * 0.92; g.sfx('click'); }
           if (n.y - n.r < WALL.t) { n.y = WALL.t + n.r; n.vy = Math.abs(n.vy) * 0.92; g.sfx('click'); }
@@ -76,7 +76,7 @@
         }
         s.trail.push([n.x, n.y]); if (s.trail.length > 14) s.trail.shift();
         if (SK.dist(n.x, n.y, 60, 560) < 110) s.duck = g.t;
-        if (n.st === 'fly' && g.t - n.flyT > 1.8) { n.alpha = Math.max(0, 1 - (g.t - n.flyT - 1.8) * 3); if (n.alpha <= 0) { if (s.fus) s.slow = g.t; n.st = 'ready'; n.x = s.start[0]; n.y = s.start[1]; n.vx = n.vy = 0; n.alpha = 1; s.trail = []; } }
+        if (n.st === 'fly' && g.t - n.flyT > 1.8) { n.alpha = Math.max(0, 1 - (g.t - n.flyT - 1.8) * 3); if (n.alpha <= 0) { if (s.fus && n.minD < s.bigR + 90) s.slow = g.t; /* it was aimed right but pushed away: too slow */ n.st = 'ready'; n.x = s.start[0]; n.y = s.start[1]; n.vx = n.vy = 0; n.alpha = 1; s.trail = []; } }
       }
       if (s.hit && !s.boom && g.t - s.hit > 0.3) { // the flash, the spare neutrons, and the lighter bowl
         s.boom = true; s.flash = g.t; g.sfx('thunder'); g.sfx('sparkle'); g.shake(8, 0.35);

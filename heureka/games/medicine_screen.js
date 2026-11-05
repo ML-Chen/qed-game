@@ -22,7 +22,7 @@ function paintFair(o) {
 const pos = i => [X0 + (i % COLS) * DX + (Math.floor(i / COLS) % 2 ? 10 : -10), Y0 + Math.floor(i / COLS) * DY];
 
 MG.add({
-  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST ALL 40 ANIMALS!', time: 6, mood: 'party', winText: 'Only one was sick!', failText: 'Missed some!',
+  id: 'medicine_screen', stage: 'medicine', cmd: 'TEST ALL 40 ANIMALS!', time: 7.5, mood: 'party', winText: 'Only one was sick!', failText: 'Missed some!',
   card: { title: 'Most alarms can be false', kind: 'Medicine', ref: 'Screening tests and false positives',
     text: 'No test is perfect. A good test still lights up for a few healthy people by mistake. That is called a false positive.\n\nWhen an illness is rare, almost everyone tested is healthy, so a few mistakes among them add up to more lit-up people than there are sick ones. Here, one animal in 40 was sick, but five lit up. A second, more careful test showed that four of them were fine. When an illness is common, most of the lit-up people really are sick.\n\nThat is why doctors confirm a positive screening result with a second test before treating.',
     note: 'When an illness is rare, most positive results from a screening test are false alarms.' },
@@ -73,7 +73,8 @@ MG.add({
       c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 2; const sw = (t * 3) % 1; c.beginPath(); c.moveTo(w.x - SR * 0.8, w.y - SR * 0.6 + sw * SR * 1.2); c.lineTo(w.x + SR * 0.8, w.y - SR * 0.6 + sw * SR * 1.2); c.stroke();
       c.fillStyle = '#3a4a6a'; c.strokeStyle = '#1a2a3a'; c.lineWidth = 2; c.beginPath(); c.roundRect(w.x + SR * 0.62, w.y + SR * 0.62, 16, 48, 6); c.fill(); c.stroke(); c.fillStyle = Math.sin(t * 16) > 0 ? '#7affa0' : '#2a8a4a'; c.beginPath(); c.arc(w.x + SR * 0.62 + 8, w.y + SR * 0.62 + 10, 4, 0, 7); c.fill(); }
     // how much of the crowd is still unscanned: a counter strip of dots by the clinic is too much text; instead a shrinking bar
-    const done = 1 - s.left / s.an.length; c.fillStyle = 'rgba(30,40,30,0.45)'; c.beginPath(); c.roundRect(130, 586, 160, 16, 8); c.fill(); c.fillStyle = '#c0f0ff'; c.beginPath(); c.roundRect(130, 586, Math.max(16, 160 * done), 16, 8); c.fill();
+    const done = 1 - s.left / s.an.length; c.fillStyle = 'rgba(30,40,30,0.45)'; c.beginPath(); c.roundRect(130, 600, 160, 16, 8); c.fill(); c.fillStyle = '#c0f0ff'; c.beginPath(); c.roundRect(130, 600, Math.max(16, 160 * done), 16, 8); c.fill();
+    SK.tag(c, (s.an.length - s.left) + ' / ' + s.an.length + ' tested', 210, 576, 18);
     let ox = 322, oy = 616, fly = false;
     if (s.done >= 0 && s.lit) { const f = (t - s.done - 0.3) / s.per, j = SK.clamp(Math.floor(f), 0, s.lit.length - 1), k = SK.clamp((f - j) * 3, 0, 1); const prev = j > 0 ? pos(s.lit[j - 1]) : [322, 616], cur = pos(s.lit[j]); if (f >= 0 && f < s.lit.length + 0.6) { ox = SK.lerp(prev[0], cur[0] + 16, SK.easeInOut(k)); oy = SK.lerp(prev[1], cur[1] + 2, SK.easeInOut(k)) - Math.sin(k * Math.PI) * 30; fly = true; } }
     SK.animal(c, 'owl', ox, oy, fly ? 0.45 : 0.6, { t, pose: won ? 'cheer' : fly ? 'point' : 'idle', expr: won ? 'laugh' : lost ? 'wow' : fly ? 'think' : 'happy', facing: -1, noShadow: fly });
@@ -82,8 +83,10 @@ MG.add({
     const nx = s.an.findIndex(a => a.scanned < 0);
     if (s.wand && !g.done) SK.tag(c, 'Quick test', SK.clamp(s.wand.x, 70, 290), s.wand.y - SR - 22, 18);
     if (fly) SK.tag(c, 'Careful test', SK.clamp(ox, 80, 280), oy - 74, 18);
-    if (nx >= 0 && !s.wand && !g.done) { const [, ry] = pos(nx); SK.arrow(c, g, 40, ry - 14, 320, ry - 14, { from: 0, to: 0 }); }
-    if (nx >= 0) { const [, ry] = pos(nx); SK.demo(g, c, 'drag', [30, ry - 10], [330, ry - 10], { period: 1.6 }); }
+    // the next sweep: across the first row with untested animals and the row below it (the scanner covers both)
+    const sy = nx >= 0 ? Math.min(pos(nx)[1] + DY / 2, Y0 + (ROWS - 1) * DY) - 12 : 0, sx0 = nx >= 0 ? Math.max(30, pos(nx)[0] - 10) : 30;
+    if (nx >= 0 && !s.wand && !g.done) { c.save(); c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 6); c.strokeStyle = '#ffffff'; c.lineWidth = 4; c.beginPath(); c.arc(sx0, sy, SR, 0, 7); c.stroke(); c.restore(); SK.grab(c, g, sx0, sy, 26); SK.arrow(c, g, sx0, sy, 330, sy, { from: 30, to: 0 }); }
+    if (nx >= 0) SK.demo(g, c, 'drag', [sx0, sy], [330, sy], { period: 1.6 });
   },
   // the bot: sweep the scanner back and forth over every row
   auto(g, dt, synth) {
