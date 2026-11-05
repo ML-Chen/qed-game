@@ -187,6 +187,9 @@ const MK = (() => {
       for (const q of M.ghosts) { const k = ease(clamp((g.t - q.t0) / 0.32, 0, 1)), x = lerp(q.a.x, q.b.x, k), y = lerp(q.a.y, q.b.y, k), sz = q.s * (q.merge ? 1 - 0.35 * k : 1);
         const m = lay(q.n, sz); c.save(); c.globalAlpha *= 1 - k; draw(c, q.n, x - m.w / 2, y + (m.a - m.d) / 2, sz, { t: g.t, col: e.col }); c.restore(); } }
   }
+  // MK.track(g): run the glide/fade bookkeeping of every placed expression without painting (the rewind scrubber calls it
+  // on its re-simulated copy for the last moments before the time it shows, so symbols are caught mid-glide)
+  function track(g) { const M = g.s && g.s.mk; if (!M) return; for (const key of Object.keys(M.ex)) { try { drawEx(g, nullCtx, key); } catch (e) { } } }
   function box(g, id) { return g.s.mk.box[id]; }
   // MK.zone(g, id, { x, y, w, h }): a tappable/droppable area that is not a token (a grid region, an animal, a pan); x, y = centre
   function zone(g, id, b) { const M = g.s.mk; (M.zones = M.zones || {})[id] = true; M.box[id] = { s: 40, ...b }; }
@@ -243,7 +246,7 @@ const MK = (() => {
   function accept(g, mv, a, b) {
     const M = g.s.mk; const n = node(g, a); if (n) n.pop = g.t; g.sfx('pop');
     if (M.stepAdvance) M.stepAdvance(mv);
-    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t;
+    M.busyT = mv.busy ?? 0.12; M.lastMove = g.t; (M.log = M.log || []).push(g.t); // M.log: when each move was made (the rewind scrubber's marks)
     try { if (mv.then) mv.then(g, a, b); } catch (e) { console.error('move', e); }
     if (mv.ask && mv.resolve) {
       if (g.mode === 'medium') { M.busyT = 1e9; if (mv.askAt) later(g, mv.askAt, g => openAsk(g, mv)); else openAsk(g, mv); }
@@ -381,7 +384,7 @@ const MK = (() => {
     M.flies = M.flies.filter(f => !f.landed || f.keep);
     M.fx = M.fx.filter(p => g.t - p.t0 < p.life);
     for (const tm of M.timers.filter(tm => g.t >= tm.at)) { M.timers.splice(M.timers.indexOf(tm), 1); try { tm.fn(g); } catch (e) { console.error('later', e); } }
-    runTweens(g); if (!g.done && g.t < (M.showUntil || 0)) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown
+    runTweens(g); if (!g.done && (g.t < (M.showUntil || 0) || M.timers.some(tm => tm.hold))) g.held = (g.held || 0) + dt; // the fuse stands still while work is shown (and while its beats are still to come)
     if (M.busyT > 0) { M.busyT -= dt; if (M.busyT <= 0) { M.busyT = 0; M.moveT = g.t; } }
     if (!g.done && M.opts && !busy(M) && !showing(g) && !M.timers.some(tm => tm.hold) && !current(g).length) finish(g);
   }
@@ -409,9 +412,13 @@ const MK = (() => {
   // The owner's rule: every operation is acted out slowly enough to see what happens, and it plays by itself.
   // A move's then() / resolve() schedule beats with the helpers below; MK.show(g, seconds) marks how long they run.
   // While a show runs, input waits and the fuse stands still (g.held grows), so the animation never costs time.
-  // MK.pace(g) is the tempo factor (1 at level 0, quicker as guidance fades and the run speeds up): multiply every
-  // beat time by it. Targets are ids or node objects; positions are read from the boxes at draw time.
-  function pace(g) { return [1, 0.82, 0.68][Math.min(2, g.level || 0)] / Math.sqrt(Math.max(1, g.speed || 1)); }
+  // MK.pace(g) is the tempo factor: multiply every beat time by it. It is 1 at level 0 and only a little quicker as
+  // guidance fades (0.9, 0.8); the run's speed-ups shorten the fuse, not the explanations (at most 10% at speed 2).
+  // g.paceMul (set by the engine) stretches it: the animation-speed setting (Slow 1.5, Fast 0.75), 1.6 while the
+  // player's check-in on this microgame says "Confused", 2 for a "Replay slower".
+  // Targets are ids or node objects; positions are read from the boxes at draw time.
+  function pace(g) { return [1, 0.9, 0.8][Math.min(2, g.level || 0)] / (1 + 0.1 * (Math.max(1, g.speed || 1) - 1)) * (g.paceMul || 1); }
+  const NOTE_MIN_HOLD = 0.6; // seconds (times pace) a note stays fully written and still before it flies or fades
   function show(g, sec) { const M = g.s.mk; M.showUntil = Math.max(M.showUntil || 0, g.t + sec); M.busyT = Math.max(M.busyT, sec); return sec; }
   function showing(g) { const M = g.s.mk; return M && g.t < (M.showUntil || 0); }
   const nodeOf = (g, n) => typeof n === 'string' ? node(g, n) : n;
@@ -446,9 +453,12 @@ const MK = (() => {
   // MK.note(g, { node, at: [x, y] | id, off: [dx, dy], s, col, delay, write, hold, to: [x, y] | id, fly, s1, fade, then, pill }):
   // a small chalk-style working note ("+1", "6 ÷ 3 = 2") writes itself next to the problem, stays a moment, then either
   // flies into its place in the expression (and calls then) or fades away. This is the "showing your work" voice.
-  function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.hold ?? 0.3, fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
+  // A note that fades stays readable at least NOTE_MIN_HOLD × pace after it is written (a note that flies keeps its own
+  // timing, because games line up its landing with later beats), and input waits (MK.show) until every note has gone.
+  function note(g, o) { const nd = wrap(o.node), wr = o.write ?? 0.35, hold = o.to ? (o.hold ?? 0.3) : Math.max(o.hold ?? 0.3, NOTE_MIN_HOLD * pace(g)), fl = o.to ? (o.fly ?? 0.35) : 0, fade = o.to ? 0 : (o.fade ?? 0.3), dur = wr + hold + fl + fade, s0 = o.s || 28, col = o.col || HL;
         const where = () => { const b = boxOf(g, o.at || [180, 300]) || { x: 180, y: 300 }; return { x: b.x + (o.off ? o.off[0] : 0), y: b.y + (o.off ? o.off[1] : 0) }; };
     if (o.to && o.then) later(g, (o.delay || 0) + wr + hold + fl, o.then, true); // the landing runs on the game clock, not in draw
+    if (!g.done) show(g, (o.delay || 0) + dur);
     return anim(g, { delay: o.delay, dur, draw(c, g, k, t) {
       const p = where(); let x = p.x, y = p.y, sz = s0, al = 1, wk = clamp(t / wr, 0, 1);
       if (t > wr + hold && o.to) { const kk = easeIO((t - wr - hold) / fl), b0 = boxOf(g, o.to) || p, b = o.toOff ? { ...b0, x: b0.x + o.toOff[0], y: b0.y + o.toOff[1] } : b0; x = lerp(p.x, b.x, kk); y = lerp(p.y, b.y, kk) - Math.sin(kk * Math.PI) * (o.arc ?? 36); sz = lerp(s0, o.s1 || (b.s || s0), kk); if (kk >= 1) return; }
@@ -461,9 +471,9 @@ const MK = (() => {
       if (wk < 1) { c.shadowColor = col; c.shadowBlur = 10; c.fillStyle = '#fffbe0'; c.beginPath(); c.arc(x - m.w / 2 - 4 + (m.w + 8) * easeIO(wk), y, 3, 0, 7); c.fill(); }
     } }); }
   // a curved arrow that draws itself from one place to another, with an optional label at its middle
-  function arrow(g, from, to, o = {}) { const dur = o.dur || 0.45, col = o.col || HL;
-    return anim(g, { delay: o.delay, dur, linger: o.linger ?? 0.4, draw(c, g, k, t) { const a = boxOf(g, from), b = boxOf(g, to); if (!a || !b) return;
-      const fadeK = t > dur ? 1 - (t - dur) / (o.linger ?? 0.4) : 1, e = easeIO(k), bend = o.bend ?? -40, L = Math.hypot(b.x - a.x, b.y - a.y) || 1, mx = (a.x + b.x) / 2 + (b.y - a.y) / L * bend, my = (a.y + b.y) / 2 - (b.x - a.x) / L * bend; // bend > 0: bows to the left of the direction of travel
+  function arrow(g, from, to, o = {}) { const T = pace(g), dur = o.dur || 0.45 * T, col = o.col || HL, linger = o.linger ?? 0.4 * T; // defaults follow the pace
+    return anim(g, { delay: o.delay, dur, linger, draw(c, g, k, t) { const a = boxOf(g, from), b = boxOf(g, to); if (!a || !b) return;
+      const fadeK = t > dur ? 1 - (t - dur) / linger : 1, e = easeIO(k), bend = o.bend ?? -40, L = Math.hypot(b.x - a.x, b.y - a.y) || 1, mx = (a.x + b.x) / 2 + (b.y - a.y) / L * bend, my = (a.y + b.y) / 2 - (b.x - a.x) / L * bend; // bend > 0: bows to the left of the direction of travel
       const q = u => ({ x: (1 - u) * (1 - u) * a.x + 2 * (1 - u) * u * mx + u * u * b.x, y: (1 - u) * (1 - u) * a.y + 2 * (1 - u) * u * my + u * u * b.y });
       c.globalAlpha = clamp(fadeK, 0, 1); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 3; c.lineCap = 'round'; c.shadowColor = col; c.shadowBlur = 8; c.beginPath();
       for (let i = 0; i <= 24; i++) { const p = q(e * i / 24); i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y); } c.stroke();
@@ -508,5 +518,5 @@ const MK = (() => {
 
   return { INK, MID, GOOD, BAD, GLOW, NUMF, VARF, num, vr, txt, op, sup, frac, row, paren, mat, slot, gap, ddx, wrap, lay, draw, find,
     setup, place, relayout, drawEx, box, zone, inert, node, glowBox, unionBox, hand, drawGuide, drawDrag, play, steps, current, later, drawAsk, update, finish, openAsk, miss, down, move, up, auto, fly, drawFlies, drawFx, card, drawUI, ease, easeIO, lerp, clamp,
-    HL, mix, pace, show, showing, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss };
+    HL, mix, pace, show, showing, track, tween, indicate, light, unlight, roll, writeIn, strike, anim, drawAnims, circle, note, arrow, sparkle, at, onMiss };
 })();

@@ -51,7 +51,7 @@ MG.add({
     S.tail = [M.gap(12), S.modT, M.gap(8), S.pN];
     S.line = M.row(S.pw, ...S.tail);
     S.relay = () => M.place(g, 'L', S.line, 180, EY, ES, { col: INK }); S.relay();
-    M.inert(g, ['mod', 'pw', 'why', 'n6', 'n16', 'n96', 'nr', 'n81', 'n7k', 'nrr', 'mul', 'ceq']);
+    M.inert(g, ['mod', 'pw', 'why', 'why2', 'n6', 'n16', 'n96', 'nr', 'n81', 'n7k', 'nrr', 'mul', 'ceq']);
     S.ring = { alpha: 0 }; S.lit = {}; S.frog = { x: HX, y: HY }; S.notes = 0;
     const hop = e => { g.s.mk.lastMove = g.t; S.face = e; S.faceT = g.t; };
     // one working note at a time, written just under the expression; each note has its own key
@@ -66,7 +66,7 @@ MG.add({
 
     // ---- 1. why a^(p−1) ≡ 1: the frog makes one lap of the ring, multiplying by a at every hop ----
     const n = p - 1; S.order = [...Array(n)].map((_, j) => pw(a, j, p));
-    const HOPT = (p > 7 ? 0.6 : 0.82) * T, f = HOPT / (0.9 * T), t1 = 0.7 * T, ask1 = t1 + (n - 1) * HOPT + 0.61 * f * T + 0.3 * T, R1 = 2.15 * T;
+    const HOPT = (p > 7 ? 0.58 : 0.78) * T, f = HOPT / (0.9 * T), t1 = 0.6 * T, ask1 = t1 + (n - 1) * HOPT + 0.61 * f * T + 0.3 * T, R1 = 3.0 * T;
     const ringTrip = {
       busy: 0.1, askAt: ask1, after: R1, ask: { v: 1, wrong: [a, p - 1, 0] },
       then(g) { S.st = 1; S.point = true; hop('wow'); M.show(g, ask1); g.sfx('swoosh');
@@ -89,15 +89,19 @@ MG.add({
           // one full lap: the centre becomes the fact chip a^(p−1) ≡ 1, the 1 flying in from pad 1
           [0.35 * T, g => { S.c1 = M.num(1, 'c1', { alpha: 0 }); S.chip.items.push(M.op('≡', 'ceq'), S.c1); M.place(g, 'chip', S.chip, 180, RC + 10, 34, { col: GOLD });
             M.fly(g, { node: M.num(1, null, { col: GOLD }), from: [hx, hy], to: 'c1', dur: 0.45 * T, arc: -30, s0: 22, s1: 34, then(g) { S.c1.alpha = 1; S.c1.pop = g.t; g.sfx('pop'); } }); }],
+          // the direct check, once: a^(p−1) = A = p · k + 1, so it leaves remainder 1
+          [0.8 * T, g => { const A = Math.pow(a, p - 1); note(M.row(M.sup(M.num(a), M.num(p - 1)), M.op('='), M.num(A), M.op('='), M.num(p), M.op('·'), M.num((A - 1) / p), M.op('+'), M.num(1)), { dur: 0.5 * T }); }],
           // the ring fades away, the frog goes home to its corner pad, and the chip moves up under the expression
-          [0.95 * T, g => { M.tween(g, S.ring, { alpha: 0 }, 0.4 * T); leap(g, hx, hy, HX, HY, 0.45 * T); M.place(g, 'chip', S.chip, 180, CHY, 34, { col: GOLD }); M.tween(g, S.card, { alpha: 1 }, 0.35 * T, { delay: 0.2 * T }); }],
-          // the chip's reason, short
-          [1.4 * T, g => { S.why = M.txt(p + ' is prime: ' + p + ' − 1 = ' + (p - 1), 'why'); M.place(g, 'why', S.why, 180, CHY + 40, 18, { col: '#e8ffe8' }); M.writeIn(g, S.why, { dur: 0.5 * T }); }],
+          [1.45 * T, g => { M.tween(g, S.ring, { alpha: 0 }, 0.4 * T); leap(g, hx, hy, HX, HY, 0.45 * T); M.place(g, 'chip', S.chip, 180, CHY, 34, { col: GOLD }); M.tween(g, S.card, { alpha: 1 }, 0.35 * T, { delay: 0.2 * T }); }],
+          [1.95 * T, g => dropNote(g)],
+          // the chip's reason: first what the frog just did, then the theorem
+          [2.05 * T, g => { S.why = M.txt((p - 1) + ' hops: back to 1', 'why'); M.place(g, 'why', S.why, 180, CHY + 38, 22, { col: '#f4fff0' }); M.writeIn(g, S.why, { dur: 0.4 * T }); }],
+          [2.5 * T, g => { S.why2 = M.txt('always p − 1 hops when p is prime', 'why2'); M.place(g, 'why2', S.why2, 180, CHY + 64, 20, { col: '#c8e8c0' }); M.writeIn(g, S.why2, { dur: 0.45 * T }); }],
           [R1 - 0.03, g => { S.point = false; }]]);
       },
     };
     // ---- 2. the exponent: N = (p − 1)·q + r, rewritten in place ----
-    const ask2 = 1.35 * T, R2 = 2.4 * T;
+    const ask2 = 1.35 * T, R2 = 2.25 * T;
     const split = {
       busy: 0.1, askAt: ask2, after: R2, ask: { v: r, wrong: [q, N % p, p - 1, r + 1] },
       then(g) { S.st = 2; S.point = true; hop('think'); M.show(g, ask2); g.sfx('swoosh');
@@ -120,12 +124,12 @@ MG.add({
           [1.45 * T, g => { S.x6 = M.num(p - 1, 'x6', { alpha: 0 }); S.xd = M.op('·', null, { alpha: 0 }); S.x16 = M.num(q, 'x16', { alpha: 0 });
             S.pw.exp = M.row(S.x6, S.xd, S.x16, S.xp, S.x4); S.pw.exp.id = 'ex'; S.relay(); M.tween(g, S.xd, { alpha: 1 }, 0.3 * T, { delay: 0.15 * T });
             for (const [src, n] of [['n6', S.x6], ['n16', S.x16]]) M.fly(g, { node: M.num(n.v, null, { col: GOLD }), from: src, to: n.id, dur: 0.45 * T, arc: 30, s0: 24, s1: 27, then(g) { n.alpha = 1; n.pop = g.t; g.sfx('pop'); } }); }],
-          [2.15 * T, g => dropNote(g)],
+          [2.02 * T, g => dropNote(g)],
           [R2 - 0.03, g => { S.point = false; }]]);
       },
     };
     // ---- 3. the power splits: a^(mn + r) = a^(mn) · a^r = (a^m)^n · a^r ----
-    const R3 = 2.85 * T;
+    const R3 = 2.6 * T;
     const powers = {
       busy: 0.1,
       then(g) { S.st = 3; S.point = true; hop('think'); M.show(g, R3); g.sfx('swoosh');
@@ -136,11 +140,11 @@ MG.add({
           [0.95 * T, g => { S.b2 = M.num(a, 'b2', { alpha: 0 }); S.mul = M.op('·', 'mul', { alpha: 0 }); S.big = M.sup(S.b, M.row(S.x6, S.xd, S.x16), 'big'); S.small = M.sup(S.b2, S.x4, 'small');
             S.line = M.row(S.big, S.mul, S.small, ...S.tail); S.relay(); M.inert(g, ['mul']); M.tween(g, S.mul, { alpha: 1 }, 0.25 * T, { delay: 0.15 * T }); hop('wow');
             M.fly(g, { node: M.num(a, null, { col: INK }), from: 'b', to: 'b2', dur: 0.4 * T, arc: -30, s0: S.ES, s1: S.ES, then(g) { S.b2.alpha = 1; S.b2.pop = g.t; g.sfx('pop'); } }); }],
-          [1.6 * T, g => dropNote(g)],
-          [1.8 * T, g => note(M.row(M.sup(M.num(a), M.row(M.vr('m'), M.vr('n'))), M.op('='), M.sup(M.paren(M.sup(M.num(a), M.vr('m'))), M.vr('n'))), { dur: 0.5 * T })],
-          [2.3 * T, g => fade([S.xd], 0.15 * T)],
-          [2.45 * T, g => { S.in6 = M.sup(S.b, S.x6, 'in6'); S.big = M.sup(M.paren(S.in6), S.x16, 'big'); S.line.items[0] = S.big; S.relay(); hop('laugh'); g.sfx('pop'); }],
-          [2.65 * T, g => dropNote(g)],
+          [1.5 * T, g => dropNote(g)],
+          [1.65 * T, g => note(M.row(M.sup(M.num(a), M.row(M.vr('m'), M.vr('n'))), M.op('='), M.sup(M.paren(M.sup(M.num(a), M.vr('m'))), M.vr('n'))), { dur: 0.5 * T })],
+          [2.15 * T, g => fade([S.xd], 0.15 * T)],
+          [2.3 * T, g => { S.in6 = M.sup(S.b, S.x6, 'in6'); S.big = M.sup(M.paren(S.in6), S.x16, 'big'); S.line.items[0] = S.big; S.relay(); hop('laugh'); g.sfx('pop'); }],
+          [2.45 * T, g => dropNote(g)],
           [R3 - 0.03, g => { S.point = false; }]]);
       },
     };
@@ -240,11 +244,11 @@ MG.add({
       const a0 = 0.9 + j * 0.7; c.beginPath(); c.moveTo(x + Math.cos(a0 + 0.22) * pr * 0.55, y + Math.sin(a0 + 0.22) * pr * 0.55); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.closePath(); c.fill(); c.strokeStyle = PADD; c.lineWidth = 1.5; c.beginPath(); c.arc(x, y, pr, a0 + 0.4, a0 + 2 * Math.PI); c.stroke();
       c.font = M.NUMF(pr > 20 ? 22 : 19, 700); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#163a1a'; c.fillText(String(S.order[j]), x, y + 1); c.restore(); }
     // the fact chip's card
-    const cb = M.unionBox([M.box(g, 'chip'), S.why ? M.box(g, 'why') : null]);
+    const cb = M.unionBox([M.box(g, 'chip'), S.why ? M.box(g, 'why') : null, S.why2 ? M.box(g, 'why2') : null]);
     if (S.chip && cb) { const q = S.cbS || (S.cbS = { ...cb }), kk = 0.25; for (const k of ['x', 'y', 'w', 'h']) q[k] += (cb[k] - q[k]) * kk; const al = S.card.alpha;
       if (al > 0.01) { c.save(); c.globalAlpha = al; c.fillStyle = 'rgba(14,40,40,0.85)'; c.strokeStyle = GOLD; c.lineWidth = 2; const w = Math.max(q.w, 150) + 28;
         c.beginPath(); c.roundRect(q.x - w / 2, q.y - q.h / 2 - 10, w, q.h + 20, 14); c.fill(); c.stroke(); c.restore(); } }
-    if (S.chip) M.drawEx(g, c, 'chip'); if (S.why) M.drawEx(g, c, 'why');
+    if (S.chip) M.drawEx(g, c, 'chip'); if (S.why) M.drawEx(g, c, 'why'); if (S.why2) M.drawEx(g, c, 'why2');
     // the frog (on the ring, mid-hop, or home in its corner)
     let fx = S.frog.x, fy = S.frog.y, air = 0; const HA = S.hopA;
     if (HA && t < HA.t0 + HA.dur) { const k = M.easeIO(M.clamp((t - HA.t0) / HA.dur, 0, 1)); fx = M.lerp(HA.x0, HA.x1, k); fy = M.lerp(HA.y0, HA.y1, k) - Math.sin(k * Math.PI) * 34; air = Math.sin(k * Math.PI);

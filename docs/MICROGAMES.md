@@ -12,7 +12,14 @@ Q.E.D.! is a WarioWare-style math game for grade 3 through college. Each microga
 - Long multiplication: each partial product is written as a note ("6 × 7 = 42"), the 2 drops into place and the 4 is carried up and over, then added in (the note shows "+ 4") at the next step.
 - Dividing both sides: a "÷ 2" writes itself under both sides, then each side collapses into its result.
 
-Timing: each move's working lasts about 0.6–1.6 s at level 0 (multiply every beat by `MK.pace(g)`, which shortens beats as guidance fades and the run speeds up). Mark the length with `MK.show(g, seconds)`: input waits and the fuse stands still while it runs (the engine counts `g.held`), so the animation never costs the player time, and the microgame is not won until the show and every timer scheduled with `MK.at` have run. Keep beats overlapping and lively; never make the player stare at a still screen.
+Timing: each move's working lasts about 0.6–1.6 s at level 0. Multiply every beat, every `dur`, `delay`, `hold`, `write`, `fade` and `linger`, and every clock you run yourself in `update`/`draw`, by `const T = MK.pace(g)`. Mark the length with `MK.show(g, seconds)`: input waits and the fuse stands still while it runs (the engine counts `g.held`), so the animation never costs the player time, and the microgame is not won until the show and every timer scheduled with `MK.at` have run. Keep beats overlapping and lively; never make the player stare at a still screen.
+
+**Pacing rules (the owner's rule: "too many things happening too quickly").**
+- `MK.pace(g)` is 1 at level 0, 0.9 at level 1 and 0.8 at level 2. The run's speed-ups shorten the fuse, not the explanations: they take at most 10% off the pace (at speed 2).
+- `MK.pace(g)` is multiplied by `g.paceMul`, which the engine sets per microgame: the player's Animations setting (Slow ×1.5, Normal ×1, Fast ×0.75), times 1.6 while the player's last check-in on this microgame was "Confused", or ×2 for a "Replay slower". So a beat that is not multiplied by `T` does not slow down when the player asks for slower working: never hard-code a duration in the working. (Wrong-move reactions may stay short and unpaced.)
+- A note that fades (no `to`) stays fully written and still for at least 0.6 s × pace before it fades, whatever `hold` it is given. A note that flies into the expression keeps the timing you give it, because later beats are usually lined up with its landing; give it a `hold` of at least `0.3 * T`.
+- Every `MK.note` extends `MK.show` to cover itself, and the fuse also stands still while any `MK.at` beat is still to come, so slower working never costs time.
+- Check a microgame at slow pace: `HM.test(id, { auto: true, paceMul: 2 })` must still win, and the working must still line up (film it).
 
 Kit helpers (all in `src/mathkit.js`; targets are ids or node objects; every helper takes `delay` and `dur`):
 - `MK.show(g, sec)` — mark the working's length (fuse frozen, input waits).
@@ -35,9 +42,16 @@ In medium mode, the tray opens at `askAt` (when the working has reached the comp
 
 The player may do things in any order that is mathematically valid. The microgame's `moves(g)` lists every valid move at each moment.
 
-**Modes.** `g.mode` is 'easy' or 'medium' (the player picks it on the topic screen). In medium mode, when an animation reaches a computation (4 · 3), it pauses and the player picks the result from a tray of 3–4 tiles; wrong tiles are the results of real mistakes. Write each computation as a move with `ask` and `resolve` (see `src/mathkit.js`); easy mode just runs `resolve` by itself. Medium mode gets 40% more time.
+**Modes.** `g.mode` is 'easy' or 'medium' (the player picks it on the settings page). In medium mode, when an animation reaches a computation (4 · 3), it pauses and the player picks the result from a tray of 3–4 tiles; wrong tiles are the results of real mistakes. Write each computation as a move with `ask` and `resolve` (see `src/mathkit.js`); easy mode just runs `resolve` by itself. Medium mode gets 40% more time.
 
 Copy the reference microgame `src/games/calc_power.js`, and read `src/mathkit.js` (global `MK`) completely before you start.
+
+## Settings and the check-in (the engine handles these; a microgame needs nothing extra)
+- Settings (the gear at the top left of the title screen, the top right of the topic list, or Settings in the pause menu), saved in `SAVE.d.settings` and `SAVE.d.mode` / `SAVE.d.muted`: Timer On/Off (Off: the fuse is hidden and never runs out, and a lost microgame costs no acorn; stars still use time), Animations Slow/Normal/Fast (`g.paceMul`), Speed-ups On/Off (Off: the run stays at speed 1), Mode Easy/Medium, Sound On/Off.
+- After every microgame the screen between games shows three buttons for 2.5 s: **Got it!** (saved in `SAVE.d.learn[id]`; that microgame then joins each shuffled round only 40% of the time, in topic runs and in Mix them all), **Confused** (saved; the microgame comes back two games later in the same run, and its working plays ×1.6 slower in every run until the player taps Got it on it), **Replay slower** (the same microgame again at once, a new problem at the same level, working at half speed; it costs no acorn and does not count toward the 12 games, the speed-ups, the score or the stars). No tap records nothing and the run moves on. The check-in also follows the last microgame of a run.
+- So every microgame must work at any `g.paceMul` from 0.75 to about 3, and with the timer off it may run for as long as the player likes.
+- Pause is a compact bar along the top edge (Resume, rewind, Settings, Quit); the paused microgame stays fully visible, so don't rely on anything covering it.
+- **Rewind.** A button beside pause (also in the pause bar and on the check-in screen) opens a scrubber: the player drags back and forth through the microgame's working, taps a move's mark to jump to just before it, or plays it again. It works by re-playing a hidden copy of the microgame from `init` with the recorded frame times, input and random numbers. So a microgame must be **deterministic**: draw every random number that affects the problem or its animation with `g.rand()` (never `Math.random()`; random numbers drawn inside `draw` are fine either way), keep all state in `g.s` (no module-level variables that change during play), never read the wall clock (use `g.t`), and read the pointer only from the handler arguments or `g.ptr`. The suite's `rewind` test checks that the copy matches the live game.
 
 ## Goals
 - Very fun: juicy animation on every move, constant gentle motion in a gorgeous painted scene with animals, funny never-shameful misses.

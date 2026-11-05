@@ -59,16 +59,23 @@ const STAGE = Object.fromEntries(STAGES.map(s => [s.id, s]));
 // Saves: written to this browser's local storage at once, and to the viewer's private storage on Claude's
 // servers (the artifact 'db' capability, data/users/<id>/save) when the page runs inside Claude. On load the two
 // are merged so nothing earned in either place is lost.
+// settings: timer (false: the fuse never runs out and no acorn is lost), anim ('slow' | 'normal' | 'fast': how long the
+// working animations take), speedups (false: the run never gets faster). Mode and sound are SAVE.d.mode and SAVE.d.muted.
+// learn: { [microgame id]: { s: 'got' | 'confused', at } } from the check-in after each microgame.
+const SETTINGS_DEFAULT = { timer: true, anim: 'normal', speedups: true };
 const SAVE = {
-  key: 'qed1', d: { best: {}, cleared: {}, cards: {}, remixBest: 0, muted: false, mode: 'easy', savedAt: 0 },
+  key: 'qed1', d: { best: {}, cleared: {}, cards: {}, remixBest: 0, muted: false, mode: 'easy', settings: { ...SETTINGS_DEFAULT }, learn: {}, savedAt: 0 },
   db: null, uid: null, busy: false, again: false, timer: null,
-  // merge(a, b): union of cards and cleared stages, best scores, and the newer mute setting
+  // merge(a, b): union of cards and cleared stages, best scores, the newer settings, and per microgame the newer check-in
   merge(a, b) {
-    a = a || {}; b = b || {}; const out = { best: {}, cleared: {}, cards: {}, remixBest: Math.max(a.remixBest || 0, b.remixBest || 0), savedAt: Math.max(a.savedAt || 0, b.savedAt || 0) };
+    a = a || {}; b = b || {}; const out = { best: {}, cleared: {}, cards: {}, learn: {}, remixBest: Math.max(a.remixBest || 0, b.remixBest || 0), savedAt: Math.max(a.savedAt || 0, b.savedAt || 0) };
     for (const k of ['cards', 'cleared']) out[k] = Object.assign({}, a[k] || {}, b[k] || {});
     for (const k of new Set([...Object.keys(a.best || {}), ...Object.keys(b.best || {})])) out.best[k] = Math.max((a.best || {})[k] || 0, (b.best || {})[k] || 0);
-    out.muted = ((b.savedAt || 0) >= (a.savedAt || 0) ? b.muted : a.muted) || false;
-    out.mode = ((b.savedAt || 0) >= (a.savedAt || 0) ? b.mode : a.mode) || a.mode || 'easy';
+    const newer = (b.savedAt || 0) >= (a.savedAt || 0) ? b : a, older = newer === b ? a : b;
+    out.muted = (newer.muted ?? older.muted) || false;
+    out.mode = newer.mode || older.mode || 'easy';
+    out.settings = { ...SETTINGS_DEFAULT, ...(older.settings || {}), ...(newer.settings || {}) };
+    for (const src of [a.learn, b.learn]) for (const [id, v] of Object.entries(src || {})) if (v && (v.s === 'got' || v.s === 'confused') && (!out.learn[id] || (v.at || 0) >= (out.learn[id].at || 0))) out.learn[id] = { s: v.s, at: v.at || 0 };
     return out;
   },
   load() { try { const v = JSON.parse(localStorage.getItem(this.key) || 'null'); if (v) this.d = this.merge(this.d, v); } catch (e) { } },
@@ -99,6 +106,15 @@ const SAVE = {
   },
 };
 
+function setting(k) { const s = SAVE.d.settings || {}; return s[k] ?? SETTINGS_DEFAULT[k]; }
+function setSetting(k, v) { SAVE.d.settings = { ...SETTINGS_DEFAULT, ...(SAVE.d.settings || {}), [k]: v }; SAVE.save(); }
+function timerOn() { return setting('timer') !== false; }
+function learnOf(id) { const v = (SAVE.d.learn || {})[id]; return v ? v.s : null; }
+// how much slower than normal a microgame's working plays (MK.pace multiplies by g.paceMul): the animation-speed
+// setting, times 1.6 while the player's last check-in on it was "Confused", or 2 for a "Replay slower"
+const ANIM_MUL = { slow: 1.5, normal: 1, fast: 0.75 }, CONFUSED_MUL = 1.6, REPLAY_MUL = 2;
+function paceMulFor(def, replay) { return (ANIM_MUL[setting('anim')] || 1) * (replay ? REPLAY_MUL : learnOf(def.id) === 'confused' ? CONFUSED_MUL : 1); }
+
 // ---------------- canvas, scaling and input ----------------
 const cv = document.getElementById('game'), ctx = cv.getContext('2d');
 let scale = 1, offX = 0, offY = 0, DPR = 1;
@@ -110,14 +126,14 @@ function resize() {
 window.addEventListener('resize', resize); resize();
 const ptr = { x: 0, y: 0, down: false, sx: 0, sy: 0, st: 0, path: [] };
 function toLogical(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left - offX) / scale, (e.clientY - r.top - offY) / scale]; }
-cv.addEventListener('pointerdown', e => { e.preventDefault(); A.call('unlock'); const [x, y] = toLogical(e); if (!CV.list && tryPause(x, y)) return; ptr.x = x; ptr.y = y; ptr.down = true; ptr.sx = x; ptr.sy = y; ptr.st = performance.now(); ptr.path = [[x, y, ptr.st]]; input('down', x, y); try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+cv.addEventListener('pointerdown', e => { e.preventDefault(); A.call('unlock'); const [x, y] = toLogical(e); if (!CV.list && !SET.open && (tryPause(x, y) || tryRewind(x, y))) return; ptr.x = x; ptr.y = y; ptr.down = true; ptr.sx = x; ptr.sy = y; ptr.st = performance.now(); ptr.path = [[x, y, ptr.st]]; input('down', x, y); try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
 cv.addEventListener('pointermove', e => { const [x, y] = toLogical(e); ptr.x = x; ptr.y = y; if (ptr.down) { ptr.path.push([x, y, performance.now()]); if (ptr.path.length > 12) ptr.path.shift(); input('move', x, y); } });
 const endPtr = e => { if (!ptr.down) return; const [x, y] = toLogical(e); ptr.down = false; input('up', x, y); const dt = performance.now() - ptr.st, dx = x - ptr.sx, dy = y - ptr.sy; if (Math.hypot(dx, dy) > 28 && dt < 650) input('swipe', dx, dy, dx / Math.max(dt, 1) * 1000, dy / Math.max(dt, 1) * 1000); };
 cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
 // iPhones and iPads only allow audio to start on a touch-up or tap, not on touch-down
 for (const ev of ['touchend', 'click', 'pointerup', 'keydown']) window.addEventListener(ev, () => A.call('unlock'), { passive: true });
-window.addEventListener('keydown', e => { if (e.key !== 'Escape' && e.key !== 'p' && e.key !== 'P') return; if (run && run.paused) resumeRun(); else if (scene === 'run' && run && run.phase !== 'over' && !CV.list) pauseRun(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { A.call('pause'); if (scene === 'run' && run && run.phase !== 'over' && !CV.list) pauseRun(); } else if (!(run && run.paused)) A.call('resume'); });
+window.addEventListener('keydown', e => { if (e.key !== 'Escape' && e.key !== 'p' && e.key !== 'P') return; if (SET.open) { if (e.key === 'Escape') closeSettings(); return; } if (run && run.rewind) { if (e.key === 'Escape') closeRewind(); return; } if (run && run.paused) resumeRun(); else if (scene === 'run' && run && run.phase !== 'over' && !CV.list) pauseRun(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { A.call('pause'); if (scene === 'run' && run && run.phase !== 'over' && !CV.list && !SET.open) pauseRun(); } else if (!(run && run.paused)) A.call('resume'); });
 
 // ---------------- shared effects (particles, floating text, shake) ----------------
 const FX = {
@@ -178,54 +194,109 @@ function timeFactor(def, level, mode) {
   return [3, 2.2, 1.6][Math.min(2, level)] * (SAVE.d.cards[def.id] ? 1 : 1.4) * (mode === 'medium' ? 1.4 : 1);
 }
 // mode: 'easy' (taps and drags; the animations do the arithmetic) or 'medium' (also pick each result from a tray; more time)
-function makeG(def, level, speed, silent, mode) {
+// paceMul: how much longer the working animations take (MK.pace); by default from the settings and the check-ins
+function makeG(def, level, speed, silent, mode, paceMul) {
   mode = mode || SAVE.d.mode || 'easy';
   const g = {
-    W, H, def, level, speed, mode, t: 0, dur: def.time * timeFactor(def, level, mode) / (1 + (speed - 1) * 0.35), tf: timeFactor(def, level, mode), s: {}, done: false, result: null, doneAt: 0, ptr, held: 0, // held: seconds the fuse stood still while a show-your-work animation played
+    W, H, def, level, speed, mode, t: 0, paceMul: paceMul ?? paceMulFor(def), dur: def.time * timeFactor(def, level, mode) / (1 + (speed - 1) * 0.35), tf: timeFactor(def, level, mode), s: {}, done: false, result: null, doneAt: 0, ptr, held: 0, // held: seconds the fuse stood still while a show-your-work animation played
     fuse() { return this.t - this.held; },
     win() { if (this.done) return; this.done = true; this.result = 'win'; this.doneAt = this.t; if (!silent) A.sfx('chime'); },
     fail() { if (this.done) return; this.done = true; this.result = 'fail'; this.doneAt = this.t; if (!silent) A.sfx('fail'); },
     sfx: (n, o) => silent ? 0 : A.sfx(n, o), burst: (...a) => FX.burst(...a), float: (...a) => FX.float(...a), shake: (...a) => FX.shake(...a),
-    rand: Math.random, bake, left() { return Math.max(0, this.dur - this.fuse()); },
+    bake, left() { return Math.max(0, this.dur - this.fuse()); },
   };
+  // rec: everything the rewind scrubber needs to re-play this microgame exactly: each frame's dt, every input event
+  // (k = how many updates came before it) and every random number drawn outside drawing
+  g.rec = { dts: [], ev: [], rand: [] };
+  g.rand = () => { const v = Math.random(); if (!g._norec) g.rec.rand.push(v); return v; };
   return g;
 }
+// The run's order: shuffled rounds of the pool. A microgame the player marked "Got it" joins each round only
+// 40% of the time, so the ones still being learned come up more often (a round is never empty).
+const MASTERED_ODDS = 0.4;
 function playlist(stageId, only) {
   const pool = only ? [MG.byId[only]] : stageId === 'remix' ? MG.list.slice() : MG.forStage(stageId);
   const out = []; let last = null;
-  while (out.length < (stageId === 'remix' ? 400 : RUN_LEN)) { const sh = pool.slice().sort(() => Math.random() - 0.5); if (sh[0] === last && sh.length > 1) sh.push(sh.shift()); out.push(...sh); last = out[out.length - 1]; }
+  while (out.length < (stageId === 'remix' ? 400 : RUN_LEN)) {
+    let sh = pool.filter(d => learnOf(d.id) !== 'got' || Math.random() < MASTERED_ODDS); if (!sh.length) sh = [pool[Math.floor(Math.random() * pool.length)]];
+    if (sh.length === 1 && sh[0] === last && pool.length > 1) { const others = pool.filter(d => d !== last); sh.push(others[Math.floor(Math.random() * others.length)]); }
+    sh.sort(() => Math.random() - 0.5); if (sh[0] === last && sh.length > 1) sh.push(sh.shift()); out.push(...sh); last = out[out.length - 1];
+  }
   return out;
 }
 function holdOf(g) { return g.def.hold ?? 1.3; } // seconds the result stays on screen (math games show the right answer)
 function startRun(stageId, only) {
   const st = STAGE[stageId] || { id: 'remix', name: 'Remix', mood: 'party', sky: ['#ff9ac0', '#ffc890', '#fff2d0'], ground: ['#b8d870', '#80a848'], animal: 'owl', line: 'Every topic, all mixed up.' };
-  run = { stage: st, only: only || null, list: playlist(st.id, only), i: 0, loaves: 4, graceUsed: false, speed: 1, cleared: 0, phase: 'intro', pt: 0, wait: 0, g: null, newCards: [], lostLoafAt: -1, bpm: 108, stars: 0 };
+  run = { stage: st, only: only || null, list: playlist(st.id, only), i: 0, loaves: 4, graceUsed: false, speed: 1, cleared: 0, phase: 'intro', pt: 0, wait: 0, g: null, newCards: [], lostLoafAt: -1, bpm: 108, stars: 0, last: null, checkin: null, final: null, replays: 0 };
   scene = 'run'; A.music(null); run.wait = waitOf(A.jingle('stagestart', 1)); A.babble(st.line, 'woman');
 }
-function nextMicro() {
-  if (run.stage.id !== 'remix' && run.i >= RUN_LEN) return finishRun(true);
-  if (!run.list[run.i]) run.list.push(...playlist(run.stage.id, run.only)); // remix ran past its list
-  const def = run.list[run.i]; const level = Math.min(2, Math.floor(run.i / 4)); // guidance fades: games 1-4 level 0, 5-8 level 1, 9-12 level 2
-  run.g = makeG(def, level, run.speed); FX.clear();
+// replay: play the microgame just finished again (a new problem at the same level) with its working at half speed.
+// A replay costs no acorn and does not count toward the 12 games, the speed-ups, the score or the stars.
+function nextMicro(replay) {
+  let def, level;
+  if (replay && run.last) { def = run.last.def; level = run.last.level; run.replays++; }
+  else {
+    if (run.stage.id !== 'remix' && run.i >= RUN_LEN) return finishRun(true);
+    if (!run.list[run.i]) run.list.push(...playlist(run.stage.id, run.only)); // remix ran past its list
+    def = run.list[run.i]; level = Math.min(2, Math.floor(run.i / 4)); // guidance fades: games 1-4 level 0, 5-8 level 1, 9-12 level 2
+  }
+  run.g = makeG(def, level, run.speed, false, undefined, paceMulFor(def, replay)); run.g.replay = !!replay; run.checkin = null; FX.clear();
   try { def.init && def.init(run.g); } catch (e) { console.error(def.id, 'init', e); run.g.win(); }
   run.phase = 'play'; run.pt = 0; A.beat(true, { bpm: run.bpm, mood: def.mood || run.stage.mood });
 }
-function between() { run.phase = 'between'; run.pt = 0; A.beat(false); run.wait = waitOf(A.jingle('ready', run.speed)); }
+// The screen between microgames. After a microgame it also shows the check-in (Got it / Confused / Replay slower) and
+// waits a little longer. final: 'won' or 'lost' when the run ends after this screen.
+const CHECKIN_WAIT = 2.5, CHECKIN_GO = 0.35;
+function between(final) {
+  run.phase = 'between'; run.pt = 0; run.final = final || null; A.beat(false); run.wait = final ? 0 : waitOf(A.jingle('ready', run.speed));
+  run.checkin = run.last ? { def: run.last.def, choice: null, at: 0 } : null;
+  if (final && !run.checkin) return finishRun(final === 'won');
+}
+function betweenDone() {
+  if (run.checkin && run.checkin.choice) return run.pt > run.checkin.at + CHECKIN_GO;
+  return run.pt > Math.max(run.checkin ? CHECKIN_WAIT : 1.0, run.wait * 0.92);
+}
+function leaveBetween() {
+  const ck = run.checkin;
+  if (ck && ck.choice === 'replay') return nextMicro(true);
+  if (run.final) return finishRun(run.final === 'won');
+  nextMicro();
+}
+// the player's answer to the check-in. got: saved, and the microgame comes up less often. confused: saved, the
+// microgame comes back later in this run, and its working plays slower until a later "Got it". replay: play it again now.
+const CHECKIN = [{ id: 'got', label: 'Got it!', y: 466 }, { id: 'confused', label: 'Confused', y: 526 }, { id: 'replay', label: 'Replay slower', y: 586 }], CHECKIN_BOX = { x: 248, w: 184, h: 52 };
+function checkIn(choice) {
+  const ck = run && run.checkin; if (!ck || ck.choice) return;
+  ck.choice = choice; ck.at = run.pt; const id = ck.def.id;
+  if (choice === 'got' || choice === 'confused') { SAVE.d.learn = SAVE.d.learn || {}; SAVE.d.learn[id] = { s: choice, at: Date.now() }; SAVE.save(); }
+  if (choice === 'confused') requeue(ck.def);
+  A.sfx(choice === 'got' ? 'chime' : 'pop');
+}
+// put a microgame back into the run a couple of games from now (within the 12 games of a topic run)
+function requeue(def) {
+  if (run.final || run.only) return;
+  const end = run.stage.id === 'remix' ? run.i + 3 : RUN_LEN; if (run.i >= end) return;
+  const at = Math.max(run.i, Math.min(run.i + 2, end - 1)); run.list.splice(at, 0, def); run.requeued = (run.requeued || 0) + 1;
+}
 function endMicro() {
-  const g = run.g; A.beat(false); run.phase = 'result'; run.pt = 0;
-  if (g.result === 'win') { run.cleared++; run.stars += g.stars || 0; A.jingle('win', run.speed); const id = g.def.id; if (!SAVE.d.cards[id]) { SAVE.d.cards[id] = 1; run.newCards.push(id); SAVE.save(); } }
-  else { run.loaves--; run.lostLoafAt = T; A.jingle('fail', run.speed); }
+  const g = run.g; A.beat(false); run.phase = 'result'; run.pt = 0; run.last = { def: g.def, level: g.level, result: g.result, g };
+  const unlock = () => { const id = g.def.id; if (!SAVE.d.cards[id]) { SAVE.d.cards[id] = 1; run.newCards.push(id); SAVE.save(); } };
+  if (g.replay) { A.jingle(g.result === 'win' ? 'win' : 'fail', run.speed); if (g.result === 'win') unlock(); return; } // a replay changes nothing in the run
+  if (g.result === 'win') { run.cleared++; run.stars += g.stars || 0; A.jingle('win', run.speed); unlock(); }
+  else { if (timerOn()) { run.loaves--; run.lostLoafAt = T; } A.jingle('fail', run.speed); } // with the timer off no acorn is ever lost
   run.i++;
 }
 function afterResult() {
+  if (run.g && run.g.replay) return between(run.final); // back to the check-in, without a speed-up
   if (run.loaves <= 0 && !run.graceUsed) { run.graceUsed = true; run.phase = 'grace'; run.pt = 0; run.wait = waitOf(A.jingle('grace', 1)); return; }
-  if (run.loaves <= 0) return finishRun(false);
+  if (run.loaves <= 0) return between('lost');
   continueRun();
 }
-// after a result (or after grace gives a loaf back): end the stage after game 12, speed up every 4 games, else show the next number
+// after a result (or after grace gives a loaf back): end the stage after game 12, speed up every 4 games (unless the
+// speed-ups setting is off), else show the next number
 function continueRun() {
-  if (run.stage.id !== 'remix' && run.i >= RUN_LEN) return finishRun(true);
-  if (run.i % SPEED_EVERY === 0) { run.speed = +(run.speed + 0.25).toFixed(2); run.bpm = Math.round(108 * (1 + (run.speed - 1) * 0.7)); run.phase = 'speedup'; run.pt = 0; run.wait = waitOf(A.jingle('speedup', run.speed)); return; }
+  if (run.stage.id !== 'remix' && run.i >= RUN_LEN) return between('won');
+  if (run.i % SPEED_EVERY === 0 && setting('speedups') !== false) { run.speed = +(run.speed + 0.25).toFixed(2); run.bpm = Math.round(108 * (1 + (run.speed - 1) * 0.7)); run.phase = 'speedup'; run.pt = 0; run.wait = waitOf(A.jingle('speedup', run.speed)); return; }
   between();
 }
 function finishRun(cleared) {
@@ -238,31 +309,34 @@ function finishRun(cleared) {
 function updateRun(dt) {
   run.pt += dt;
   if (run.phase === 'intro' && run.pt > Math.max(2.2, run.wait, 1.2 + run.stage.line.split(' ').length * 0.3)) between(); // time to read the host's sentence (a tap skips it)
-  else if (run.phase === 'between' && run.pt > Math.max(1.0, run.wait * 0.92)) nextMicro();
+  else if (run.phase === 'between' && betweenDone()) leaveBetween();
   else if (run.phase === 'play') {
-    const g = run.g; g.t += dt;
+    const g = run.g; g.t += dt; g.rec.dts.push(dt);
     try { g.def.update && g.def.update(g, dt); } catch (e) { console.error(g.def.id, 'update', e); }
-    if (testMode && g.def.auto && window.HM_AUTO) { try { g.def.auto(g, dt, synth); } catch (e) { console.error(g.def.id, 'auto', e); } }
-    if (!g.done && g.fuse() >= g.dur) { if (g.def.winOnTimeout) g.win(); else g.fail(); }
+    if (testMode && g.def.auto && window.HM_AUTO) { g._norec = true; try { g.def.auto(g, dt, synth); } catch (e) { console.error(g.def.id, 'auto', e); } g._norec = false; } // the bot's own random numbers are not part of the replay (its moves are recorded as input)
+    if (!g.done && timerOn() && g.fuse() >= g.dur) { /* timer off: the fuse (hidden) never runs out */ g.rec.ev.push({ k: g.rec.dts.length, type: 'timeout' }); if (g.def.winOnTimeout) g.win(); else g.fail(); }
     if (g.done && g.t - g.doneAt > holdOf(g)) endMicro();
   }
   else if (run.phase === 'result' && run.pt > 0.9 / Math.sqrt(run.speed)) afterResult();
   else if (run.phase === 'speedup' && run.pt > Math.max(1.6, run.wait)) between();
   else if (run.phase === 'grace' && run.pt > 3.6) { run.loaves = 1; continueRun(); }
   // watchdog: no screen between games may last more than 8 seconds, and no game may run 3 seconds past its fuse
-  else if (run.phase === 'play' && !run.g.done && run.g.fuse() > run.g.dur + 3) { console.error(run.g.def.id, 'watchdog'); run.g.fail(); }
+  else if (run.phase === 'play' && !run.g.done && timerOn() && run.g.fuse() > run.g.dur + 3) { console.error(run.g.def.id, 'watchdog'); run.g.rec.ev.push({ k: run.g.rec.dts.length, type: 'fail' }); run.g.fail(); }
   else if (run.phase === 'play' && run.g.done && run.g.t - run.g.doneAt > 3) endMicro();
-  else if (run.phase !== 'over' && run.phase !== 'play' && run.pt > 8) { console.error('watchdog', run.phase); if (run.phase === 'between') nextMicro(); else if (run.phase === 'result') afterResult(); else if (run.phase === 'grace') { run.loaves = 1; continueRun(); } else between(); }
+  else if (run.phase !== 'over' && run.phase !== 'play' && run.pt > 8) { console.error('watchdog', run.phase); if (run.phase === 'between') leaveBetween(); else if (run.phase === 'result') afterResult(); else if (run.phase === 'grace') { run.loaves = 1; continueRun(); } else between(); }
 }
 // synthetic input for automated tests: synth('down', x, y) etc.
 function synth(type, ...a) { if (type === 'down') { ptr.down = true; ptr.x = a[0]; ptr.y = a[1]; ptr.sx = a[0]; ptr.sy = a[1]; } if (type === 'move') { ptr.x = a[0]; ptr.y = a[1]; } if (type === 'up') ptr.down = false; input(type, ...a); }
 
 function input(type, x, y, vx, vy) {
+  if (SET.open) { settingsInput(type, x, y); return; }
   if (CV.list) { cardInput(type, x, y); return; }
   if (scene === 'run' && run) {
+    if (run.rewind) { rewindInput(type, x, y); return; }
     if (run.paused) { pauseInput(type, x, y); return; }
     if (run.phase === 'intro' && type === 'down' && run.pt > 0.6 && !hit(x, y, 336, 24, 52, 52)) { between(); return; }
-    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } return; }
+    if (run.phase === 'between' && type === 'down' && run.checkin && !run.checkin.choice) { for (const b of CHECKIN) if (hit(x, y, CHECKIN_BOX.x, b.y, CHECKIN_BOX.w + 8, CHECKIN_BOX.h + 6)) { press('ck:' + b.id); checkIn(b.id); return; } return; }
+    if (run.phase === 'play') { const g = run.g, d = g.def; if (g.done) return; g.rec.ev.push({ k: g.rec.dts.length, type, a: [x, y, vx, vy] }); const nr = g._norec; g._norec = false; try { if (d[type]) d[type](g, x, y, vx, vy); } catch (e) { console.error(d.id, type, e); } g._norec = nr; return; }
     if (run.phase === 'over' && type === 'down') { if (hit(x, y, 180, 548, 220, 56)) { press('again'); A.sfx('pop'); setTimeout(() => startRun(run.stage.id, run.only), 140); } else if (hit(x, y, 180, 612, 160, 40)) { press('home'); A.sfx('click'); setTimeout(() => goStages(), 120); } }
     return;
   }
@@ -276,7 +350,7 @@ function input(type, x, y, vx, vy) {
   if (scene === 'stages' && ui.stageTap && (type === 'move' || type === 'up')) {
     const st = ui.stageTap; if (type === 'move') { ui.stageScroll = Math.max(0, Math.min(stageScrollMax(), st.sc - (y - st.y))); return; }
     ui.stageTap = null; if (Math.hypot(x - st.x, y - st.y) > 10) return;
-    if (y > MODE_Y - 30) return;
+    if (y > LIST_BOT) return;
     if (y < 62) return;
     for (const r of stageRows()) { if (y < r.y || y > r.y + r.h || x < 18 || x > 342) continue; press(r.id);
       if (r.kind === 'remix') { A.sfx('pop'); setTimeout(() => startRun('remix'), 140); }
@@ -287,35 +361,192 @@ function input(type, x, y, vx, vy) {
     return;
   }
   if (type !== 'down') return;
-  if (scene === 'title') { if (hit(x, y, 180, 300, 180, 60)) { press('play'); A.sfx('pop'); A.music('title'); setTimeout(goStages, 120); } else if (hit(x, y, 180, 372, 150, 46)) { press('cards'); A.sfx('click'); setTimeout(() => { scene = 'cards'; }, 120); } else if (hit(x, y, 330, 30, 44, 44)) toggleMute(); else A.music('title'); return; }
+  if (scene === 'title') { if (hit(x, y, 180, 300, 180, 60)) { press('play'); A.sfx('pop'); A.music('title'); setTimeout(goStages, 120); } else if (hit(x, y, 180, 372, 150, 46)) { press('cards'); A.sfx('click'); setTimeout(() => { scene = 'cards'; }, 120); } else if (hit(x, y, 330, 30, 44, 44)) toggleMute(); else if (hit(x, y, 30, 30, 44, 44)) openSettings(); else A.music('title'); return; }
   if (scene === 'stages') {
     if (hit(x, y, 30, 30, 44, 44)) { scene = 'title'; A.sfx('click'); return; }
-    if (hit(x, y, 330, 30, 44, 44)) { toggleMute(); return; }
-    for (const [m, mx] of [['easy', 120], ['medium', 240]]) if (hit(x, y, mx, MODE_Y, 116, 44)) { if (SAVE.d.mode !== m) { SAVE.d.mode = m; SAVE.save(); A.sfx('click'); } return; }
+    if (hit(x, y, 330, 30, 44, 44)) { openSettings(); return; }
     ui.stageTap = { x, y, sc: ui.stageScroll || 0 }; return;
   }
 }
 function hit(x, y, cx, cy, w, h) { return Math.abs(x - cx) <= w / 2 && Math.abs(y - cy) <= h / 2; }
 function press(id) { ui.pressed = id; setTimeout(() => { if (ui.pressed === id) ui.pressed = null; }, 160); }
 // ---------------- pause ----------------
-const PAUSE_BTN = { x: 336, y: 24, r: 26 }, PAUSE_MENU = { resume: [180, 330, 210, 60], stories: [180, 408, 170, 46] };
-function tryPause(x, y) { if (scene !== 'run' || !run || run.paused || run.phase === 'over') return false; if (Math.hypot(x - PAUSE_BTN.x, y - PAUSE_BTN.y) > PAUSE_BTN.r) return false; pauseRun(); return true; }
+// The pause bar: a compact bar along the top edge, so the paused microgame stays fully visible (the owner's rule).
+// Only its buttons do anything; a tap on the game itself does not resume.
+const PAUSE_BTN = { x: 336, y: 24, r: 26 }, PAUSE_BAR = { y: 38, h: 54, x0: 8, x1: 352 };
+const PAUSE_ITEMS = [{ id: 'resume', w: 128 }, { id: 'rewind', w: 56 }, { id: 'settings', w: 56 }, { id: 'quit', w: 80 }];
+function pauseItems() { // laid out left to right; the rewind button only when there is something to rewind
+  const list = PAUSE_ITEMS.filter(b => b.id !== 'rewind' || rewindAvailable()), gap = 8, total = list.reduce((a, b) => a + b.w, 0) + gap * (list.length - 1);
+  let x = (W - total) / 2; return list.map(b => { const o = { ...b, x: x + b.w / 2, y: PAUSE_BAR.y, h: PAUSE_BAR.h - 10 }; x += b.w + gap; return o; });
+}
+function tryPause(x, y) { if (scene !== 'run' || !run || run.paused || run.rewind || run.phase === 'over') return false; if (Math.hypot(x - PAUSE_BTN.x, y - PAUSE_BTN.y) > PAUSE_BTN.r) return false; pauseRun(); return true; }
 function pauseRun() { if (!run || run.paused) return; run.paused = true; run.pausedAt = T; ptr.down = false; A.sfx('click'); A.beat(false); setTimeout(() => { if (run && run.paused) A.call('pause'); }, 120); }
 function resumeRun() { if (!run || !run.paused) return; run.paused = false; A.call('resume'); A.sfx('pop'); if (run.phase === 'play') A.beat(true, { bpm: run.bpm, mood: run.g.def.mood || run.stage.mood }); }
 function pauseInput(type, x, y) {
   if (type !== 'down') return;
-  if (hit(x, y, ...PAUSE_MENU.resume)) { press('resume'); setTimeout(resumeRun, 120); }
-  else if (hit(x, y, ...PAUSE_MENU.stories)) { press('quit'); A.call('resume'); A.sfx('click'); setTimeout(goStages, 120); }
+  for (const b of pauseItems()) { if (!hit(x, y, b.x, b.y, b.w + 4, PAUSE_BAR.h)) continue; press('p:' + b.id);
+    if (b.id === 'resume') setTimeout(resumeRun, 120);
+    else if (b.id === 'quit') { A.call('resume'); A.sfx('click'); setTimeout(goStages, 120); }
+    else if (b.id === 'settings') openSettings();
+    else if (b.id === 'rewind') openRewind();
+    return; }
 }
 function pauseIcon(c, x, y) { c.save(); c.translate(x, y); c.fillStyle = 'rgba(40,20,50,0.38)'; c.beginPath(); c.arc(0, 0, 18, 0, 7); c.fill(); c.fillStyle = '#fff6ea'; roundRect(c, -7, -8, 5, 16, 2); c.fill(); roundRect(c, 2, -8, 5, 16, 2); c.fill(); c.restore(); }
 function drawPause(c, t) {
-  c.fillStyle = 'rgba(40,20,48,0.7)'; c.fillRect(0, 0, W, H);
-  P.command(c, 'Paused', 180, 200, 52, 1 + Math.sin(t * 2) * 0.02, { tilt: 0 });
-  button(c, ...PAUSE_MENU.resume.slice(0, 2), 210, 60, 'Keep playing', { size: 24, pressed: ui.pressed === 'resume' });
-  button(c, ...PAUSE_MENU.stories.slice(0, 2), 170, 46, 'Topics', { size: 19, top: '#fff6ea', bot: '#e8d2b0', edge: '#7a4a3a', pressed: ui.pressed === 'quit' });
+  const B = PAUSE_BAR; c.save(); c.fillStyle = 'rgba(30,14,36,0.3)'; roundRect(c, B.x0, B.y - B.h / 2 + 4, B.x1 - B.x0, B.h, 20); c.fill();
+  c.fillStyle = 'rgba(46,22,54,0.86)'; roundRect(c, B.x0, B.y - B.h / 2, B.x1 - B.x0, B.h, 20); c.fill(); c.strokeStyle = 'rgba(255,246,234,0.35)'; c.lineWidth = 1.5; c.stroke(); c.restore();
+  const light = { size: 19, top: '#fff6ea', bot: '#e8d2b0', edge: '#7a4a3a' };
+  for (const b of pauseItems()) {
+    const pr = ui.pressed === 'p:' + b.id;
+    if (b.id === 'resume') { button(c, b.x, b.y, b.w, b.h, '', { pressed: pr }); const dy = pr ? 3 : 0; c.fillStyle = '#5a2414'; c.beginPath(); c.moveTo(b.x - 47, b.y - 9 + dy); c.lineTo(b.x - 34, b.y + dy); c.lineTo(b.x - 47, b.y + 9 + dy); c.closePath(); c.fill(); P.label(c, 'Resume', b.x + 13, b.y + 1 + dy, 21, '#5a2414', 'center', 900); }
+    else if (b.id === 'quit') button(c, b.x, b.y, b.w, b.h, 'Quit', { ...light, pressed: pr });
+    else { button(c, b.x, b.y, b.w, b.h, '', { ...light, pressed: pr }); const dy = pr ? 3 : 0; if (b.id === 'settings') gearGlyph(c, b.x, b.y + dy, 1, '#5a2414', '#f3e0c4'); else rewindGlyph(c, b.x, b.y + dy, 1, '#5a2414'); }
+  }
 }
+// ---------------- rewind: scrub back through the microgame's working ----------------
+// The owner: "a rewind button that lets you scrub through the previous steps and see the animations undo in real time".
+// A microgame's state is full of closures, so it can't be copied. Instead every frame's dt, every input event and every
+// random number of the live microgame are recorded (g.rec), and the scrubber shows time t by re-playing a hidden copy
+// from init with the same inputs up to t (updates only; for the last 0.45 s MK.track also runs, so symbols are caught
+// mid-glide), then drawing that copy. Going forward steps the same copy on; going back rebuilds it. It is view only:
+// closing returns to the live microgame exactly as it was.
+const REWIND_BTN = { x: 288, y: 24, r: 24 }, RW = { y: 600, x0: 82, x1: 334, play: [40, 600], close: [336, 24] }, RW_TRACK = 0.45;
+function rewindTarget() { // the microgame the scrubber would show: the one being played, or the one just finished
+  if (!run) return null;
+  if ((run.phase === 'play' || run.phase === 'result') && run.g && run.g.rec) return run.g;
+  if (run.phase === 'between' && run.last && run.last.g && run.last.g.rec && !(run.checkin && run.checkin.choice)) return run.last.g;
+  return null;
+}
+function rewindAvailable() { const g = rewindTarget(); return !!g && g.rec.dts.length > 20; }
+function tryRewind(x, y) { if (scene !== 'run' || !run || run.paused || run.rewind || !rewindAvailable()) return false; if (Math.hypot(x - REWIND_BTN.x, y - REWIND_BTN.y) > REWIND_BTN.r) return false; openRewind(); return true; }
+function openRewind() {
+  const g = rewindTarget(); if (!g) return;
+  run.rewind = { g, tEnd: g.t, t: g.t, sim: null, playing: false, drag: null, marks: ((g.s.mk && g.s.mk.log) || []).filter(m => m <= g.t), cost: 0 };
+  ptr.down = false; A.beat(false); A.sfx('swoosh');
+}
+function closeRewind() { if (!run || !run.rewind) return; run.rewind = null; A.sfx('click'); if (run.phase === 'play' && !run.paused) A.beat(true, { bpm: run.bpm, mood: run.g.def.mood || run.stage.mood }); }
+// a hidden copy of the microgame, re-played from init with the recorded inputs
+function simNew(live) {
+  const def = live.def, rec = live.rec, sg = makeG(def, live.level, live.speed, true, live.mode, live.paceMul); sg.replay = live.replay; sg.sim = true;
+  let ri = 0; sg.rand = () => sg._norec ? Math.random() : ri < rec.rand.length ? rec.rand[ri++] : Math.random();
+  const fx = Object.assign(Object.create(FX), { parts: [], texts: [], shakeT: 0, shakeA: 0 });
+  sg.burst = (...a) => fx.burst(...a); sg.float = (...a) => fx.float(...a); sg.shake = () => { };
+  sg.ptr = { x: 0, y: 0, down: false, sx: 0, sy: 0, st: 0, path: [] };
+  const S = { g: sg, fx, rec, def, n: 0, ei: 0 };
+  try { def.init && def.init(sg); } catch (e) { console.error(def.id, 'rewind init', e); }
+  return S;
+}
+function simEvents(S) { // apply the input recorded after S.n updates
+  const g = S.g, ev = S.rec.ev;
+  while (S.ei < ev.length && ev[S.ei].k <= S.n) { const e = ev[S.ei++];
+    if (e.type === 'timeout') { if (!g.done) { if (S.def.winOnTimeout) g.win(); else g.fail(); } continue; }
+    if (e.type === 'fail') { g.fail(); continue; }
+    const [x, y] = e.a; if (e.type === 'down') Object.assign(g.ptr, { down: true, x, y, sx: x, sy: y }); else if (e.type === 'move') Object.assign(g.ptr, { x, y }); else if (e.type === 'up') g.ptr.down = false;
+    if (!g.done && S.def[e.type]) { try { S.def[e.type](g, ...e.a); } catch (err) { console.error(S.def.id, 'rewind', e.type, err); } } }
+}
+function simStep(S, track) {
+  simEvents(S); const dt = S.rec.dts[S.n]; if (dt == null) return false;
+  const g = S.g; g.t += dt; try { S.def.update && S.def.update(g, dt); } catch (e) { console.error(S.def.id, 'rewind update', e); }
+  S.fx.update(dt); S.n++; if (track) MK.track(g); return true;
+}
+// the copy at time t (rebuilt from init if it is already past t)
+function simAt(R, t) {
+  if (!R.sim || R.sim.g.t > t + 1e-6) { const t0 = performance.now(); R.sim = simNew(R.g); R.builds = (R.builds || 0) + 1; R.cost = performance.now() - t0; }
+  const S = R.sim, d = S.rec.dts; const t0 = performance.now();
+  while (S.n < d.length && S.g.t + d[S.n] <= t + 1e-6) simStep(S, t - S.g.t < RW_TRACK);
+  if (S.n >= d.length || t >= R.tEnd - 1e-6) simEvents(S);
+  R.cost += performance.now() - t0; return S;
+}
+function updateRewind(dt) {
+  const R = run.rewind; if (!R.playing) return;
+  R.t = Math.min(R.tEnd, R.t + dt * (setting('anim') === 'slow' ? 0.5 : 1)); if (R.t >= R.tEnd) R.playing = false;
+}
+function rwTimeAt(x) { return MK.clamp((x - RW.x0) / (RW.x1 - RW.x0), 0, 1) * run.rewind.tEnd; }
+function rwX(t) { return RW.x0 + (RW.x1 - RW.x0) * (run.rewind.tEnd ? t / run.rewind.tEnd : 1); }
+function rewindInput(type, x, y) {
+  const R = run.rewind;
+  if (type === 'down') {
+    if (Math.hypot(x - RW.close[0], y - RW.close[1]) < 26) { press('rwclose'); setTimeout(closeRewind, 100); return; }
+    if (Math.hypot(x - RW.play[0], y - RW.play[1]) < 28) { press('rwplay'); if (R.playing) R.playing = false; else { if (R.t >= R.tEnd - 0.05) R.t = 0; R.playing = true; } return; }
+    if (y > RW.y - 34 && y < RW.y + 34 && x > RW.x0 - 20 && x < RW.x1 + 18) {
+      R.playing = false; const mk = R.marks.find(m => Math.abs(rwX(m) - x) < 14);
+      R.drag = { x0: x, mark: mk ?? null, moved: false }; if (mk == null) R.t = rwTimeAt(x); }
+    return;
+  }
+  if (!R.drag) return;
+  if (type === 'move') { if (Math.abs(x - R.drag.x0) > 8) R.drag.moved = true; if (R.drag.moved || R.drag.mark == null) R.t = rwTimeAt(x); return; }
+  if (type === 'up') { if (!R.drag.moved && R.drag.mark != null) R.t = Math.max(0, R.drag.mark - 0.05); R.drag = null; } // a tap on a move's mark: just before that move
+}
+function rewindSeek(t) { const R = run && run.rewind; if (!R) return null; R.playing = false; R.t = MK.clamp(t, 0, R.tEnd); return R.t; }
+function drawRewind(c, t) {
+  const R = run.rewind, S = simAt(R, R.t), g = S.g;
+  g._norec = true; try { g.def.draw(g, c); } catch (e) { console.error(g.def.id, 'rewind draw', e); c.fillStyle = '#ccc'; c.fillRect(0, 0, W, H); } g._norec = false;
+  S.fx.draw(c); drawPlayOverlay(c, g, t);
+  // a soft film-like edge says "this is a replay, not the live game"
+  c.save(); c.strokeStyle = 'rgba(122,170,255,0.55)'; c.lineWidth = 6; c.strokeRect(3, 3, W - 6, H - 6); c.restore();
+  // the scrubber
+  c.save(); c.fillStyle = 'rgba(30,14,36,0.3)'; roundRect(c, 8, RW.y - 30 + 4, W - 16, 60, 24); c.fill(); c.fillStyle = 'rgba(46,22,54,0.88)'; roundRect(c, 8, RW.y - 30, W - 16, 60, 24); c.fill();
+  const pr = ui.pressed === 'rwplay'; c.fillStyle = '#ffd45a'; c.beginPath(); c.arc(RW.play[0], RW.play[1] + (pr ? 2 : 0), 22, 0, 7); c.fill(); c.strokeStyle = '#7a3a1a'; c.lineWidth = 2.5; c.stroke();
+  c.fillStyle = '#5a2414'; const px = RW.play[0], py = RW.play[1] + (pr ? 2 : 0);
+  if (R.playing) { roundRect(c, px - 8, py - 9, 6, 18, 2); c.fill(); roundRect(c, px + 2, py - 9, 6, 18, 2); c.fill(); } else { c.beginPath(); c.moveTo(px - 6, py - 10); c.lineTo(px + 10, py); c.lineTo(px - 6, py + 10); c.closePath(); c.fill(); }
+  c.fillStyle = 'rgba(255,246,234,0.25)'; roundRect(c, RW.x0, RW.y - 4, RW.x1 - RW.x0, 8, 4); c.fill();
+  const kx = rwX(R.t); c.fillStyle = '#9ad0ff'; roundRect(c, RW.x0, RW.y - 4, Math.max(8, kx - RW.x0), 8, 4); c.fill();
+  for (const m of R.marks) { const mx = rwX(m), past = m <= R.t; c.save(); c.translate(mx, RW.y); c.rotate(Math.PI / 4); c.fillStyle = past ? '#ffd45a' : '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.fillRect(-6, -6, 12, 12); c.strokeRect(-6, -6, 12, 12); c.restore(); }
+  c.fillStyle = '#fff6ea'; c.strokeStyle = '#3a1640'; c.lineWidth = 2.5; c.beginPath(); c.arc(kx, RW.y, 11, 0, 7); c.fill(); c.stroke();
+  c.restore();
+  // close: back to the live game
+  c.save(); c.translate(...RW.close); if (ui.pressed === 'rwclose') c.translate(0, 2); c.fillStyle = 'rgba(40,20,50,0.55)'; c.beginPath(); c.arc(0, 0, 19, 0, 7); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3.5; c.lineCap = 'round'; c.beginPath(); c.moveTo(-7, -7); c.lineTo(7, 7); c.moveTo(7, -7); c.lineTo(-7, 7); c.stroke(); c.restore();
+}
+function rewindIcon(c, x, y) { c.save(); c.fillStyle = 'rgba(40,20,50,0.38)'; c.beginPath(); c.arc(x, y, 18, 0, 7); c.fill(); c.restore(); rewindGlyph(c, x - 1, y, 0.85, '#fff6ea'); }
 function goStages() { scene = 'stages'; run = null; A.beat(false); A.music('title'); FX.clear(); }
 function toggleMute() { SAVE.d.muted = !SAVE.d.muted; SAVE.save(); A.call('mute', SAVE.d.muted); }
+
+// ---------------- settings (a full-screen page over the title, the topic list or the pause menu) ----------------
+// Each row is a label over a row of big choices. Changes apply at once and are saved; the timer applies to the
+// microgame being played, the other settings from the next microgame on.
+const SET = { open: false, t0: 0 };
+const SET_ROWS = [
+  { id: 'timer', label: 'Timer', opts: [['on', 'On'], ['off', 'Off']], get: () => timerOn() ? 'on' : 'off', set: v => setSetting('timer', v === 'on') },
+  { id: 'anim', label: 'Animations', opts: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast']], get: () => setting('anim'), set: v => setSetting('anim', v) },
+  { id: 'speedups', label: 'Speed-ups', opts: [['on', 'On'], ['off', 'Off']], get: () => setting('speedups') !== false ? 'on' : 'off', set: v => setSetting('speedups', v === 'on') },
+  { id: 'mode', label: 'Mode', opts: [['easy', 'Easy'], ['medium', 'Medium']], get: () => SAVE.d.mode || 'easy', set: v => { SAVE.d.mode = v; SAVE.save(); } },
+  { id: 'sound', label: 'Sound', opts: [['on', 'On'], ['off', 'Off']], get: () => SAVE.d.muted ? 'off' : 'on', set: v => { SAVE.d.muted = v === 'off'; SAVE.save(); A.call('mute', SAVE.d.muted); } },
+];
+const SET_LAYOUT = { y0: 84, dy: 92, x0: 28, w: 304, h: 50, back: [180, 594, 180, 54] };
+function setRowY(i) { return SET_LAYOUT.y0 + i * SET_LAYOUT.dy; } // the label's centre; the choices sit 38 px below
+function setOptBox(i, j) { const L = SET_LAYOUT, n = SET_ROWS[i].opts.length, w = L.w / n; return { x: L.x0 + w * (j + 0.5), y: setRowY(i) + 40, w, h: L.h }; }
+function openSettings() { SET.open = true; SET.t0 = T; ui.pressed = null; A.sfx('click'); }
+function closeSettings() { SET.open = false; A.sfx('click'); }
+function settingsInput(type, x, y) {
+  if (type !== 'down') return;
+  if (hit(x, y, ...SET_LAYOUT.back)) { press('setback'); setTimeout(closeSettings, 120); return; }
+  SET_ROWS.forEach((r, i) => r.opts.forEach(([v], j) => { const b = setOptBox(i, j); if (hit(x, y, b.x, b.y, b.w, b.h + 8) && r.get() !== v) { r.set(v); A.sfx('click'); } }));
+}
+function drawSettings(c, t) {
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fff3dc'); g.addColorStop(1, '#f2d2a8'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const k = Math.min(1, (T - SET.t0) * 4);
+  P.command(c, 'Settings', 180, 34, 30, 0.85 + 0.15 * easeOut(k), { tilt: 0 });
+  if (typeof ANI !== 'undefined') try { ANI.draw(c, 'owl', 322, 52, 0.62, { t, pose: 'idle', expr: 'happy', noShadow: true }); } catch (e) { }
+  SET_ROWS.forEach((r, i) => {
+    const y = setRowY(i), L = SET_LAYOUT, cur = r.get();
+    P.label(c, r.label, L.x0 + 4, y, 20, '#3a1640', 'left', 900);
+    const by = y + 40; c.fillStyle = 'rgba(90,40,50,0.14)'; roundRect(c, L.x0, by - L.h / 2, L.w, L.h, L.h / 2); c.fill();
+    r.opts.forEach(([v, label], j) => {
+      const b = setOptBox(i, j), on = cur === v;
+      if (on) { c.fillStyle = 'rgba(80,40,40,0.2)'; roundRect(c, b.x - b.w / 2 + 3, by - L.h / 2 + 6, b.w - 6, L.h - 6, (L.h - 6) / 2); c.fill();
+        const gr = c.createLinearGradient(0, by - L.h / 2, 0, by + L.h / 2); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#f2a33a'); c.fillStyle = gr; roundRect(c, b.x - b.w / 2 + 3, by - L.h / 2 + 3, b.w - 6, L.h - 6, (L.h - 6) / 2); c.fill(); c.strokeStyle = '#7a3a1a'; c.lineWidth = 2.5; c.stroke(); }
+      P.label(c, label, b.x, by + 1, 19, on ? '#5a2414' : '#7a4a3a', 'center', 900);
+    });
+  });
+  button(c, SET_LAYOUT.back[0], SET_LAYOUT.back[1], SET_LAYOUT.back[2], SET_LAYOUT.back[3], 'Back', { size: 24, pressed: ui.pressed === 'setback' });
+}
+function gearIcon(c, x, y) { c.save(); c.fillStyle = 'rgba(40,20,50,0.35)'; c.beginPath(); c.arc(x, y, 18, 0, 7); c.fill(); c.restore(); gearGlyph(c, x, y, 1, '#fff6ea', 'rgba(90,50,80,0.9)'); }
+function gearGlyph(c, x, y, s, col, hole) {
+  c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = col; c.beginPath(); for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8 + Math.PI / 16, r = i % 2 ? 8.2 : 11.2; c.lineTo(Math.cos(a - 0.12) * r, Math.sin(a - 0.12) * r); c.lineTo(Math.cos(a + 0.12) * r, Math.sin(a + 0.12) * r); } c.closePath(); c.fill();
+  if (hole) { c.fillStyle = hole; c.beginPath(); c.arc(0, 0, 3.8, 0, 7); c.fill(); } else { c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(0, 0, 3.8, 0, 7); c.fill(); } c.restore();
+}
+// two left-pointing triangles (rewind)
+function rewindGlyph(c, x, y, s, col) { c.save(); c.translate(x, y); c.scale(s, s); c.fillStyle = col; for (const dx of [-10, 1]) { c.beginPath(); c.moveTo(dx, 0); c.lineTo(dx + 11, -8); c.lineTo(dx + 11, 8); c.closePath(); c.fill(); } c.restore(); }
 
 // ---------------- drawing: shared page backdrop ----------------
 const bgCache = {};
@@ -337,7 +568,7 @@ function drawTitle(c, t) {
   else { stagePage(c, STAGES[3], t); P.command(c, typeof GAME_NAME !== 'undefined' ? GAME_NAME : 'Q.E.D.!', 180, 170, 64, 1); } // until title.js is painted
   button(c, 180, 300, 172, 56, 'Play', { size: 28, pressed: ui.pressed === 'play' });
   button(c, 180, 372, 140, 42, 'Cards', { size: 20, top: '#fff6ea', bot: '#e8d2b0', edge: '#7a4a3a', pressed: ui.pressed === 'cards' });
-  muteIcon(c, 330, 30);
+  muteIcon(c, 330, 30); gearIcon(c, 30, 30);
 }
 function muteIcon(c, x, y) { c.save(); c.translate(x, y); c.fillStyle = 'rgba(40,20,50,0.35)'; c.beginPath(); c.arc(0, 0, 18, 0, 7); c.fill(); c.fillStyle = '#fff6ea'; c.beginPath(); c.moveTo(-9, -4); c.lineTo(-4, -4); c.lineTo(3, -10); c.lineTo(3, 10); c.lineTo(-4, 4); c.lineTo(-9, 4); c.closePath(); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 2; c.lineCap = 'round'; if (SAVE.d.muted) { c.beginPath(); c.moveTo(6, -5); c.lineTo(13, 5); c.moveTo(13, -5); c.lineTo(6, 5); c.stroke(); } else { c.beginPath(); c.arc(4, 0, 6, -0.8, 0.8); c.stroke(); c.beginPath(); c.arc(4, 0, 10, -0.8, 0.8); c.stroke(); } c.restore(); }
 function backIcon(c, x, y) { c.save(); c.translate(x, y); c.fillStyle = 'rgba(40,20,50,0.35)'; c.beginPath(); c.arc(0, 0, 18, 0, 7); c.fill(); c.strokeStyle = '#fff6ea'; c.lineWidth = 3.5; c.lineCap = 'round'; c.lineJoin = 'round'; c.beginPath(); c.moveTo(4, -8); c.lineTo(-5, 0); c.lineTo(4, 8); c.stroke(); c.restore(); }
@@ -354,21 +585,13 @@ function stageRows() {
   }
   rows.end = y + (ui.stageScroll || 0); return rows;
 }
-function stageScrollMax() { return Math.max(0, stageRows().end - (MODE_Y - 40)); }
-const MODE_Y = 600;
-function drawModes(c) {
-  c.fillStyle = 'rgba(90,40,50,0.14)'; roundRect(c, 58, MODE_Y - 24, 244, 48, 24); c.fill();
-  for (const [m, mx, label] of [['easy', 120, 'Easy'], ['medium', 240, 'Medium']]) {
-    const on = (SAVE.d.mode || 'easy') === m;
-    if (on) { c.fillStyle = 'rgba(80,40,40,0.2)'; roundRect(c, mx - 58, MODE_Y - 18, 116, 40, 20); c.fill(); const gr = c.createLinearGradient(0, MODE_Y - 20, 0, MODE_Y + 20); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#f2a33a'); c.fillStyle = gr; roundRect(c, mx - 58, MODE_Y - 20, 116, 40, 20); c.fill(); c.strokeStyle = '#7a3a1a'; c.lineWidth = 2.5; c.stroke(); }
-    P.label(c, label, mx, MODE_Y, 18, on ? '#5a2414' : '#7a4a3a', 'center', 900);
-  }
-}
+function stageScrollMax() { return Math.max(0, stageRows().end - (LIST_BOT - 8)); }
+const LIST_BOT = 634; // the topic list runs to the bottom of the screen (the mode switch moved to the settings)
 function drawStages(c, t) {
   const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#fff3dc'); g.addColorStop(1, '#f2d2a8'); c.fillStyle = g; c.fillRect(0, 0, W, H);
-  c.save(); c.beginPath(); c.rect(0, 62, W, MODE_Y - 94); c.clip();
+  c.save(); c.beginPath(); c.rect(0, 62, W, LIST_BOT - 62); c.clip();
   for (const r of stageRows()) {
-    if (r.y + r.h < 50 || r.y > MODE_Y) continue;
+    if (r.y + r.h < 50 || r.y > LIST_BOT) continue;
     const pr = ui.pressed === r.id, x0 = 18, w = 324, cy = r.y + r.h / 2;
     c.save(); c.translate(0, pr ? 2 : 0);
     if (r.kind === 'head') { P.label(c, r.label.toUpperCase(), x0 + 4, cy + 2, 13, '#9a5a4a', 'left', 900); c.restore(); continue; }
@@ -400,8 +623,7 @@ function drawStages(c, t) {
   }
   c.restore();
   const hg = c.createLinearGradient(0, 0, 0, 64); hg.addColorStop(0, '#fff3dc'); hg.addColorStop(1, 'rgba(255,243,220,0.92)'); c.fillStyle = hg; c.fillRect(0, 0, W, 62);
-  c.fillStyle = 'rgba(242,210,168,0.97)'; c.fillRect(0, MODE_Y - 32, W, H - MODE_Y + 32);
-  backIcon(c, 30, 30); muteIcon(c, 330, 30); P.command(c, 'Pick a topic', 180, 32, 26, 1, { tilt: 0 }); drawModes(c);
+  backIcon(c, 30, 30); gearIcon(c, 330, 30); P.command(c, 'Pick a topic', 180, 32, 26, 1, { tilt: 0 });
 }
 function storyOrder() { const ix = Object.fromEntries(STAGES.map((st, i) => [st.id, i])); return MG.list.slice().sort((a, b) => (ix[a.stage] ?? 99) - (ix[b.stage] ?? 99)); }
 function cardTiles() { const out = []; storyOrder().forEach((d, i) => out.push({ def: d, x: 64 + (i % 3) * 116, y: 120 + Math.floor(i / 3) * 132 - ui.cardScroll, w: 104, h: 120 })); return out; }
@@ -433,7 +655,7 @@ function thumb(def, lazy) {
   const saved = { parts: FX.parts, texts: FX.texts, shakeT: FX.shakeT }; FX.parts = []; FX.texts = [];
   const pd = { down: ptr.down, x: ptr.x, y: ptr.y };
   try {
-    const g = makeG(def, 0, 1, true); def.init && def.init(g);
+    const g = makeG(def, 0, 1, true, 'easy', 1); def.init && def.init(g);
     const sy = (type, ...a) => { if (type === 'down') { ptr.down = true; ptr.x = a[0]; ptr.y = a[1]; } if (type === 'move') { ptr.x = a[0]; ptr.y = a[1]; } if (type === 'up') ptr.down = false; if (!g.done && def[type]) def[type](g, ...a); };
     const dt = 1 / 30;
     for (let i = 0; i < 330; i++) {
@@ -519,14 +741,15 @@ function cardInput(type, x, y) {
 }
 function drawRun(c, t) {
   const r = run, st = r.stage;
+  if (r.rewind) { drawRewind(c, t); return; }
   if (r.phase === 'play' || r.phase === 'result' && r.g) {
     const g = r.g; c.save();
     if (FX.shakeT > 0) c.translate((Math.random() - 0.5) * FX.shakeA, (Math.random() - 0.5) * FX.shakeA);
-    try { g.def.draw(g, c); } catch (e) { console.error(g.def.id, 'draw', e); c.fillStyle = '#ccc'; c.fillRect(0, 0, W, H); }
+    g._norec = true; try { g.def.draw(g, c); } catch (e) { console.error(g.def.id, 'draw', e); c.fillStyle = '#ccc'; c.fillRect(0, 0, W, H); } g._norec = false; // random numbers drawn while drawing are not part of the replay
     FX.draw(c); c.restore();
-    if (r.phase === 'play' && !r.paused) drawPlayOverlay(c, g, t);
+    if (r.phase === 'play') drawPlayOverlay(c, g, t); // the paused game stays fully visible, fuse and all
     if (r.phase === 'result') { const k = Math.min(1, r.pt * 5); c.fillStyle = g.result === 'win' ? `rgba(255,236,170,${0.25 * k})` : `rgba(60,30,80,${0.3 * k})`; c.fillRect(0, 0, W, H); }
-    if (r.paused) drawPause(c, t); else pauseIcon(c, PAUSE_BTN.x, PAUSE_BTN.y);
+    if (r.paused) drawPause(c, t); else { pauseIcon(c, PAUSE_BTN.x, PAUSE_BTN.y); if (rewindAvailable()) rewindIcon(c, REWIND_BTN.x, REWIND_BTN.y); }
     return;
   }
   stagePage(c, st, t);
@@ -547,21 +770,59 @@ function drawRun(c, t) {
   } else {
     // between, speedup, grace, result-less transitions: the host and the loaves
     const beat = Math.abs(Math.sin(T * Math.PI * (r.bpm / 60) / 1));
-    host(c, st, 84, 596, 2.0, { expr: r.phase === 'grace' ? 'wow' : 'laugh', pose: r.phase === 'speedup' ? 'cheer' : 'wave', t: T });
-    c.fillStyle = 'rgba(255,248,234,0.9)'; roundRect(c, 150, 330, 190, 90, 20); c.fill(); c.strokeStyle = '#7a4a3a'; c.lineWidth = 2.5; c.stroke();
-    P.label(c, String(r.i + (r.phase === 'between' ? 1 : 0)), 245, 375, 58, '#3a1640', 'center', 900);
+    const withCk = r.phase === 'between' && r.checkin; // the host steps aside for the check-in buttons
+    host(c, st, withCk ? 62 : 84, 596, withCk ? 1.75 : 2.0, { expr: r.phase === 'grace' ? 'wow' : 'laugh', pose: r.phase === 'speedup' ? 'cheer' : 'wave', t: T });
+    const ck = r.phase === 'between' && r.checkin, replaying = ck && ck.choice === 'replay';
+    if (!(r.phase === 'between' && r.final && !replaying)) { // the next game's number (a replay arrow before a replay; nothing after the last game)
+      const py = ck ? 300 : 330; c.fillStyle = 'rgba(255,248,234,0.9)'; roundRect(c, 150, py, 190, 90, 20); c.fill(); c.strokeStyle = '#7a4a3a'; c.lineWidth = 2.5; c.stroke();
+      if (replaying) replayGlyph(c, 245, py + 45, 26, '#3a1640'); else P.label(c, String(r.i + (r.phase === 'between' ? 1 : 0)), 245, py + 45, 58, '#3a1640', 'center', 900); }
+    if (ck) drawCheckin(c, r);
     for (let i = 0; i < 4; i++) { const gone = i >= r.loaves, popping = gone && i === r.loaves && T - r.lostLoafAt < 0.8; const by = 230 + (gone ? 0 : -beat * 6 * (i % 2 ? 1 : 0.6));
       if (popping) { const q = (T - r.lostLoafAt) / 0.8; c.save(); c.globalAlpha = 1 - q; life(c, 66 + i * 76, by - q * 60, 2 + q, false); c.restore(); } else life(c, 66 + i * 76, by, 2, gone); }
     if (r.phase === 'speedup') P.command(c, 'Faster!', 180, 120, 56, 0.7 + 0.3 * Math.abs(Math.sin(r.pt * 8)), { fill2: '#ff8a5a' });
     if (r.phase === 'between' && r.i === 0) P.command(c, 'Get ready!', 180, 120, 44, 0.6 + 0.4 * easeOut(k));
     if (r.phase === 'grace') drawGrace(c, r.pt);
   }
-  if (r.paused) drawPause(c, t); else pauseIcon(c, PAUSE_BTN.x, PAUSE_BTN.y);
+  if (r.paused) drawPause(c, t); else { pauseIcon(c, PAUSE_BTN.x, PAUSE_BTN.y); if (rewindAvailable()) rewindIcon(c, REWIND_BTN.x, REWIND_BTN.y); }
 }
 // the stage's host animal (src/animals.js), or a sheep if the animals failed to load
 function host(c, st, x, y, s, o) { try { if (typeof ANI !== 'undefined' && st.animal) return ANI.draw(c, st.animal, x, y, s, o); } catch (e) { console.error('host', e); } P.sheep(c, x, y, s, { t: o.t }); }
 // one life: an acorn (src/animals.js), or a loaf if the animals failed to load
 function life(c, x, y, s, gone) { try { if (typeof ANI !== 'undefined' && ANI.acorn) return ANI.acorn(c, x, y, s, gone); } catch (e) { } P.loaf(c, x, y, s, gone); }
+// the check-in after a microgame: three big buttons on the right, beside the host. After a choice, the chosen one
+// stays lit with a tick and the others fade.
+const CHECKIN_LOOK = {
+  got: { top: '#d8f6b8', bot: '#7ccf5e', edge: '#2f6a2a', ink: '#1e4a1a' },
+  confused: { top: '#ece2ff', bot: '#b49cf0', edge: '#4a3a8a', ink: '#2a1a5a' },
+  replay: { top: '#ffe08a', bot: '#f2a33a', edge: '#7a3a1a', ink: '#5a2414' },
+};
+function drawCheckin(c, r) {
+  const ck = r.checkin, B = CHECKIN_BOX;
+  CHECKIN.forEach((b, i) => {
+    const k = easeOut(Math.min(1, Math.max(0, (r.pt - 0.1 - i * 0.07) * 4))), chosen = ck.choice === b.id, fade = ck.choice && !chosen ? Math.max(0.25, 1 - (r.pt - ck.at) * 4) : 1;
+    if (k <= 0) return; const L = CHECKIN_LOOK[b.id];
+    c.save(); c.globalAlpha = fade * Math.min(1, k); c.translate(B.x, b.y); c.scale(0.7 + 0.3 * k, 0.7 + 0.3 * k); c.translate(-B.x, -b.y);
+    button(c, B.x, b.y, B.w, B.h, '', { ...L, pressed: chosen || ui.pressed === 'ck:' + b.id });
+    const ix = B.x - B.w / 2 + 26, dy = chosen || ui.pressed === 'ck:' + b.id ? 3 : 0;
+    checkinGlyph(c, b.id, ix, b.y + dy, L.ink);
+    P.label(c, b.label, ix + 20, b.y + 1 + dy, b.label.length > 9 ? 18 : 21, L.ink, 'left', 900);
+    c.restore();
+  });
+}
+function checkinGlyph(c, id, x, y, col) {
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 3.5; c.lineCap = 'round'; c.lineJoin = 'round';
+  if (id === 'got') { c.beginPath(); c.moveTo(x - 8, y); c.lineTo(x - 2, y + 6); c.lineTo(x + 8, y - 7); c.stroke(); }
+  else if (id === 'confused') P.label(c, '?', x, y + 1, 24, col, 'center', 900);
+  else replayGlyph(c, x, y, 9, col);
+  c.restore();
+}
+// a circular "again" arrow
+function replayGlyph(c, x, y, r, col) {
+  c.save(); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = Math.max(3, r * 0.32); c.lineCap = 'round';
+  c.beginPath(); c.arc(x, y, r, -Math.PI * 0.35, Math.PI * 1.35); c.stroke();
+  const a = -Math.PI * 0.35, hx = x + Math.cos(a) * r, hy = y + Math.sin(a) * r, s = r * 0.6;
+  c.beginPath(); c.moveTo(hx + s, hy - s * 0.1); c.lineTo(hx - s * 0.2, hy - s * 0.9); c.lineTo(hx - s * 0.1, hy + s * 0.7); c.closePath(); c.fill(); c.restore();
+}
 function drawGrace(c, pt) {
   const p = Math.min(1, pt / 1.6), x = -40 + p * 106, y = 120 + Math.sin(p * Math.PI) * -40 + p * 60;
   c.save(); const glow = c.createRadialGradient(66, 230, 2, 66, 230, 120); glow.addColorStop(0, `rgba(255,240,180,${0.6 * Math.min(1, pt)})`); glow.addColorStop(1, 'rgba(255,240,180,0)'); c.fillStyle = glow; c.fillRect(0, 80, W, 320); c.restore();
@@ -586,12 +847,12 @@ function drawPlayOverlay(c, g, t) {
   const d = g.def, a = g.t;
   if (a < 1.25) { const pop = a < 0.18 ? a / 0.18 * 1.15 : a < 0.3 ? 1.15 - (a - 0.18) / 0.12 * 0.15 : 1; const fade = a > 1.0 ? 1 - (a - 1.0) / 0.25 : 1;
     c.save(); c.globalAlpha = Math.max(0, fade); P.command(c, d.cmd, 180, 92, d.cmd.length > 9 ? 40 : 48, pop); /* no input icon: the math kit shows what to tap or drag */ c.restore(); }
-  // fuse
+  // fuse (hidden when the timer is off)
   const frac = Math.max(0, 1 - g.fuse() / g.dur), x0 = 20, x1 = 340, y = 622;
-  c.save(); c.fillStyle = 'rgba(40,20,50,0.35)'; roundRect(c, x0, y - 6, x1 - x0, 12, 6); c.fill();
+  if (timerOn()) { c.save(); c.fillStyle = 'rgba(40,20,50,0.35)'; roundRect(c, x0, y - 6, x1 - x0, 12, 6); c.fill();
   const fx = x0 + (x1 - x0) * frac; const gr = c.createLinearGradient(x0, 0, x1, 0); gr.addColorStop(0, '#ffe08a'); gr.addColorStop(1, '#ff8a4a'); c.fillStyle = gr; if (frac > 0) { roundRect(c, x0, y - 6, Math.max(12, fx - x0), 12, 6); c.fill(); }
   if (!g.done && frac > 0) { for (let i = 0; i < 4; i++) { c.fillStyle = ['#fff6c0', '#ffd45a', '#ff8a4a', '#fff'][i]; c.beginPath(); c.arc(fx + (Math.random() - 0.5) * 8, y + (Math.random() - 0.5) * 8, 2 + Math.random() * 2, 0, 7); c.fill(); } }
-  c.restore();
+  c.restore(); }
   if (g.done && g.t - g.doneAt < holdOf(g)) { const q = (g.t - g.doneAt) / holdOf(g); c.save(); c.globalAlpha = Math.min(1, q * 4) * (q > 0.8 ? (1 - q) * 5 : 1); P.command(c, g.result === 'win' ? (d.winText || 'Yes!') : (d.failText || 'Oops!'), 180, 92, 50, 0.8 + Math.min(0.2, q), { fill2: g.result === 'win' ? '#ffcf5a' : '#c8b8ff' }); c.restore(); }
 }
 
@@ -603,7 +864,7 @@ function frame(now) {
   try { step(dt); } catch (e) { console.error('step', e); recover(); }
   try { render(); } catch (e) { console.error('render', e); }
 }
-function step(dt) { if (scene === 'run' && run && !run.paused) updateRun(dt); FX.update(dt); }
+function step(dt) { if (scene === 'run' && run && run.rewind) updateRewind(dt); else if (scene === 'run' && run && !run.paused) updateRun(dt); FX.update(dt); }
 // if the run itself throws, move on instead of freezing: end a broken game as a win, or go back to the story list
 let recoverN = 0;
 function recover() { if (scene !== 'run' || !run) return; if (++recoverN > 30) { recoverN = 0; goStages(); return; } if (run.phase === 'play' && run.g) { run.g.done = true; run.g.result = 'win'; run.g.doneAt = run.g.t; } else if (run.phase !== 'over') { run.phase = 'result'; run.pt = 0; } }
@@ -616,6 +877,7 @@ function render() {
   thumbBudget = 2;
   if (scene === 'title') drawTitle(ctx, T); else if (scene === 'stages') drawStages(ctx, T); else if (scene === 'cards') drawCards(ctx, T); else if (scene === 'run' && run) drawRun(ctx, T);
   if (CV.list) drawCardViewer(ctx, T);
+  if (SET.open) drawSettings(ctx, T);
   ctx.restore();
   fillBands();
 }
@@ -662,29 +924,32 @@ window.HM = {
   // run one microgame headless with a fixed timestep; returns {result, t} and optional frames as data URLs
   test(id, opts = {}) {
     const def = MG.byId[id]; if (!def) return { error: 'no such microgame ' + id };
-    const { level = 0, speed = 1, auto = false, frames = [], overlay = true, events = [], mode = 'easy' } = opts;
+    const { level = 0, speed = 1, auto = false, frames = [], overlay = true, events = [], mode = 'easy', paceMul = 1, timer = true, maxT = 45 } = opts; // paceMul: working slower (2) or faster; timer: false never times out
     const errors = []; const oe = console.error; console.error = (...a) => { errors.push(a.map(String).join(' ')); oe(...a); };
     scene = 'run'; run = { stage: STAGE[def.stage] || STAGES[0], list: [def], i: 0, loaves: 4, phase: 'play', pt: 0, speed, bpm: 108, newCards: [] };
-    window.HM_AUTO = auto; FX.clear(); const g = makeG(def, level, speed, false, mode); run.g = g; try { def.init && def.init(g); } catch (e) { errors.push('init: ' + e); }
+    window.HM_AUTO = auto; FX.clear(); const g = makeG(def, level, speed, false, mode, paceMul); run.g = g; try { def.init && def.init(g); } catch (e) { errors.push('init: ' + e); }
     const shots = [], dt = 1 / 60; let fi = 0; const ev = events.slice().sort((a, b) => a.t - b.t); let ei = 0;
     const off = document.createElement('canvas'); off.width = W * 2; off.height = H * 2; const oc = off.getContext('2d');
-    for (let step = 0; step < 60 * 45; step++) {
+    for (let step = 0; step < 60 * maxT; step++) {
       while (ei < ev.length && ev[ei].t <= g.t) { const e = ev[ei++]; synth(e.type, ...(e.args || [])); }
       while (fi < frames.length && frames[fi] <= g.t) { oc.setTransform(2, 0, 0, 2, 0, 0); oc.clearRect(0, 0, W, H); try { def.draw(g, oc); } catch (e) { errors.push('draw: ' + e); } FX.draw(oc); if (overlay) drawPlayOverlay(oc, g, g.t); shots.push(off.toDataURL('image/jpeg', 0.85)); fi++; }
       g.t += dt; try { def.update && def.update(g, dt); } catch (e) { errors.push('update: ' + e); }
       if (auto && def.auto) { try { def.auto(g, dt, synth); } catch (e) { errors.push('auto: ' + e); } }
       FX.update(dt);
-      if (!g.done && g.fuse() >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
+      if (!g.done && timer && g.fuse() >= g.dur) { if (def.winOnTimeout) g.win(); else g.fail(); }
       if (g.done && g.t - g.doneAt > 0.8 && fi >= frames.length) break;
     }
     console.error = oe; window.HM_AUTO = false; scene = 'title'; run = null;
-    return { result: g.result, doneAt: +g.doneAt.toFixed(2), dur: +g.dur.toFixed(2), errors, shots };
+    return { result: g.result, doneAt: +g.doneAt.toFixed(2), dur: +g.dur.toFixed(2), t: +g.t.toFixed(2), held: +(g.held || 0).toFixed(2), errors, shots };
   },
   list() { return MG.list.map(d => ({ id: d.id, stage: d.stage, cmd: d.cmd, hint: d.hint, time: d.time, winOnTimeout: !!d.winOnTimeout, hasAuto: !!d.auto, card: !!(d.card && d.card.text) })); },
   goto(s, arg) { if (s === 'run') startRun(arg); else { scene = s; } },
   step(n = 1, dt = 1 / 60) { for (let i = 0; i < n; i++) { T += dt; step(dt); } render(); },
-  state() { return { scene, phase: run && run.phase, i: run && run.i, loaves: run && run.loaves, speed: run && run.speed, graceUsed: run && run.graceUsed, won: run && run.won, cleared: run && run.cleared, paused: !!(run && run.paused), cardViewerOpen: !!CV.list }; },
+  state() { return { scene, phase: run && run.phase, i: run && run.i, loaves: run && run.loaves, speed: run && run.speed, graceUsed: run && run.graceUsed, won: run && run.won, cleared: run && run.cleared, paused: !!(run && run.paused), cardViewerOpen: !!CV.list, settingsOpen: SET.open, checkin: !!(run && run.checkin), choice: run && run.checkin ? run.checkin.choice : null, final: run && run.final, replay: !!(run && run.g && run.g.replay), replays: run ? run.replays : 0, gameId: run && run.g ? run.g.def.id : null, paceMul: run && run.g ? run.g.paceMul : null, next: run && run.list && run.list.slice(run.i, run.i + 4).map(d => d.id) }; },
   pause() { pauseRun(); }, resume() { resumeRun(); },
+  // the rewind scrubber: open it, show time t (re-playing the hidden copy), read where it is, close it
+  rewind: { open() { openRewind(); return !!(run && run.rewind); }, seek(t) { const v = rewindSeek(t); if (v != null) render(); return v; }, close() { closeRewind(); },
+    info() { const R = run && run.rewind; return R ? { t: R.t, tEnd: R.tEnd, marks: R.marks.slice(), simT: R.sim ? R.sim.g.t : null, builds: R.builds || 0, cost: R.cost, playing: R.playing } : null; } },
   resetSave() { try { localStorage.removeItem(SAVE.key); } catch (e) { } SAVE.d = SAVE.merge({}, {}); },
   ready: false,
   synth,
