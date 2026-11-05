@@ -74,8 +74,9 @@ const MK = (() => {
     switch (n.k) {
       case 'num': { c.font = NUMF(s); let xx = x;
         // odometer roll (n.roll = { from, t0, dur }): the old value slides up and out while the new one rolls in from below
-        if (n.roll && X.t != null) { const k = easeIO((X.t - n.roll.t0) / n.roll.dur), d = s * 0.95;
-          if (k < 1) { c.save(); c.beginPath(); c.rect(x - s * 0.5, y - s * 0.95, m.w + s, s * 1.12); c.clip(); const a0 = c.globalAlpha;
+        // the window is exactly one line of digits tall (cap height plus a little), so the two numbers never show whole at once
+        if (n.roll && X.t != null) { const k = easeIO((X.t - n.roll.t0) / n.roll.dur), d = s * 0.9;
+          if (k < 1) { c.save(); c.beginPath(); c.rect(x - s * 0.5, y - s * 0.8, m.w + s, s * 0.88); c.clip(); const a0 = c.globalAlpha;
             c.globalAlpha = a0 * (1 - k); c.fillText(String(n.roll.from).replace(/^-/, '−'), xx, y - k * d); c.globalAlpha = a0 * k; c.fillText(n.v, xx, y + (1 - k) * d); c.restore(); break; }
           n.roll = null; }
         if (n.v.startsWith('−')) { c.lineWidth = s * 0.09; c.lineCap = 'round'; c.beginPath(); c.moveTo(xx + s * 0.06, y - s * 0.3); c.lineTo(xx + s * 0.34, y - s * 0.3); c.stroke(); xx += s * 0.42; c.fillText(n.v.slice(1), xx, y); } else c.fillText(n.v, xx, y); break; }
@@ -157,11 +158,17 @@ const MK = (() => {
     for (const n of all) {
       const b = tmp[n.id]; if (!b) continue; const prev = lastPos.get(n), first = !M.seen || !M.seen[key];
       if (!prev && !first && !n._born && !LEAF.test(n.k) && !allNew(n)) { lastPos.set(n, { x: b.x, y: b.y }); continue; } // a new wrapper around old symbols: the symbols glide, nothing fades
-      if (prev && (Math.abs(prev.x - b.x) > 1.5 || Math.abs(prev.y - b.y) > 1.5)) n._glide = { dx: prev.x - b.x + (n._gx || 0), dy: prev.y - b.y + (n._gy || 0), t0: g.t };
+      if (prev && (Math.abs(prev.x - b.x) > 1.5 || Math.abs(prev.y - b.y) > 1.5)) n._glide = { dx: prev.x - b.x + (n._ax || 0), dy: prev.y - b.y + (n._ay || 0), t0: g.t };
       else if (!prev && !first && !n._born) n._born = g.t;
       lastPos.set(n, { x: b.x, y: b.y });
-      if (n._glide) { const k = ease(clamp((g.t - n._glide.t0) / GLIDE, 0, 1)); n._gx = n._glide.dx * (1 - k); n._gy = n._glide.dy * (1 - k); if (k >= 1) { n._glide = null; n._gx = n._gy = 0; } }
+      // _ax/_ay: how far this symbol should appear from its new place right now (on screen, not relative to its parent)
+      if (n._glide) { const k = ease(clamp((g.t - n._glide.t0) / GLIDE, 0, 1)); n._ax = n._glide.dx * (1 - k); n._ay = n._glide.dy * (1 - k); if (k >= 1) { n._glide = null; n._ax = n._ay = 0; } }
+      else n._ax = n._ay = 0;
     }
+    // drawing translates a child by its parents' offsets too, so each node draws with its own offset minus its parent's
+    // (otherwise a symbol inside a gliding bracket or fraction slid twice as far)
+    const par = new Map(); (function walk(n, p) { if (!n) return; par.set(n, p); for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || []), ...(n.rows ? n.rows.flat() : [])]) walk(ch, n); })(e.node, null);
+    for (const n of all) { const p = par.get(n); n._gx = (n._ax || 0) - (p ? p._ax || 0 : 0); n._gy = (n._ay || 0) - (p ? p._ay || 0 : 0); }
     // symbols that vanished since the last frame fly into the nearest newly born symbol and fade (4 and 3 merge into 12)
     const prev = (M.prevNodes = M.prevNodes || {})[key] || [], cur = new Set(all), born = all.filter(n => n._born === g.t && tmp[n.id]);
     for (const p of prev) { if (cur.has(p.n) || p.n.alpha === 0 || !/^(num|var|txt|op)$/.test(p.n.k)) continue; // a symbol already faded out leaves no ghost

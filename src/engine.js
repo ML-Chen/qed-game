@@ -389,7 +389,11 @@ function drawStages(c, t) {
     } else {
       const ix = x0 + 22, iw = w - 22; c.fillStyle = r.kind === 'all' ? '#ffe9b0' : 'rgba(255,250,242,0.9)'; roundRect(c, ix, r.y, iw, r.h, 12); c.fill(); c.strokeStyle = 'rgba(122,74,58,0.3)'; c.lineWidth = 1.5; c.stroke();
       if (r.kind === 'all') { const n = MG.forStage(r.st.id).length; P.label(c, n > 1 ? `Play all ${n}` : 'Play', ix + 16, cy, 15, '#5a2414', 'left', 900); }
-      else { P.label(c, r.def.cmd, ix + 16, cy, 15, '#3a1640', 'left', 900); if (r.def.card && r.def.card.title) P.label(c, r.def.card.title, ix + iw - 34, cy, 12, '#9a5a4a', 'right', 800); if (SAVE.d.cards[r.def.id]) { c.fillStyle = '#7ab05a'; c.beginPath(); c.arc(ix + iw - 18, cy, 5, 0, 7); c.fill(); } }
+      else { P.label(c, r.def.cmd, ix + 16, cy, 15, '#3a1640', 'left', 900);
+        // the card title sits on the right; it shrinks to fit the space left by the command, and is left out if it still can't fit
+        if (r.def.card && r.def.card.title) { c.save(); c.font = '900 15px Nunito, system-ui, sans-serif'; const room = (ix + iw - 34) - (ix + 16 + c.measureText(r.def.cmd).width + 14); let fs = 12;
+          for (; fs >= 9.5; fs -= 0.5) { c.font = `800 ${fs}px Nunito, system-ui, sans-serif`; if (c.measureText(r.def.card.title).width <= room) break; } c.restore();
+          if (fs >= 9.5) P.label(c, r.def.card.title, ix + iw - 34, cy, fs, '#9a5a4a', 'right', 800); } if (SAVE.d.cards[r.def.id]) { c.fillStyle = '#7ab05a'; c.beginPath(); c.arc(ix + iw - 18, cy, 5, 0, 7); c.fill(); } }
       c.fillStyle = '#b8541f'; c.beginPath(); const px = r.kind === 'all' ? ix + iw - 22 : null; if (px) { c.moveTo(px - 5, cy - 7); c.lineTo(px + 7, cy); c.lineTo(px - 5, cy + 7); c.fill(); }
     }
     c.restore();
@@ -615,6 +619,8 @@ function render() {
   ctx.restore();
   fillBands();
 }
+const BW = 18, BH = 32, blur1 = document.createElement('canvas'), blur2 = document.createElement('canvas'); blur1.width = BW; blur1.height = BH; blur2.width = BW * 4; blur2.height = BH * 4;
+const blx1 = blur1.getContext('2d'), blx2 = blur2.getContext('2d'); blx1.imageSmoothingEnabled = blx2.imageSmoothingEnabled = true; // two small canvases make a cheap blur
 const bandStrip = document.createElement('canvas'); bandStrip.width = 40; bandStrip.height = 1; const bsx = bandStrip.getContext('2d');
 function strip(sx, sy, sw, sh, dx, dy, dw, dh) { bsx.clearRect(0, 0, 40, 1); bsx.drawImage(cv, sx, sy, sw, sh, 0, 0, 40, 1); ctx.drawImage(bandStrip, 0, 0, 40, 1, dx, dy, dw, dh); }
 function fillBands() {
@@ -626,9 +632,16 @@ function fillBands() {
       let g = ctx.createLinearGradient(0, 0, 0, fy); g.addColorStop(0, 'rgba(30,14,36,0.55)'); g.addColorStop(1, 'rgba(30,14,36,0.12)'); ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, fy);
       g = ctx.createLinearGradient(0, fy + fh, 0, cv.height); g.addColorStop(0, 'rgba(30,14,36,0.12)'); g.addColorStop(1, 'rgba(30,14,36,0.55)'); ctx.fillStyle = g; ctx.fillRect(0, fy + fh, cv.width, cv.height - fy - fh);
     }
+    // side bands (wide screens): a soft, darkened, blurred copy of the whole scene fills them. Stretching the edge column
+    // sideways smeared whatever stood at the edge (a fox's tail became a long streak).
     if (fx > 1) {
-      ctx.drawImage(cv, fx, 0, e, cv.height, 0, 0, fx, cv.height); ctx.drawImage(cv, fx + fw - e, 0, e, cv.height, fx + fw, 0, cv.width - fx - fw, cv.height);
-      ctx.fillStyle = 'rgba(30,14,36,0.35)'; ctx.fillRect(0, 0, fx, cv.height); ctx.fillRect(fx + fw, 0, cv.width - fx - fw, cv.height);
+      blx1.drawImage(cv, fx, fy, fw, fh, 0, 0, BW, BH); blx2.drawImage(blur1, 0, 0, BW, BH, 0, 0, BW * 4, BH * 4);
+      const k = Math.max(cv.width / (BW * 4), cv.height / (BH * 4)), w = BW * 4 * k, h = BH * 4 * k;
+      for (const [x0, x1] of [[0, fx], [fx + fw, cv.width]]) { ctx.save(); ctx.beginPath(); ctx.rect(x0, 0, x1 - x0, cv.height); ctx.clip();
+        ctx.drawImage(blur2, (cv.width - w) / 2, (cv.height - h) / 2, w, h); ctx.fillStyle = 'rgba(30,14,36,0.42)'; ctx.fillRect(x0, 0, x1 - x0, cv.height); ctx.restore(); }
+      const sh = Math.round(14 * DPR); // a soft shadow where the bands meet the game
+      let g = ctx.createLinearGradient(fx - sh, 0, fx, 0); g.addColorStop(0, 'rgba(20,8,24,0)'); g.addColorStop(1, 'rgba(20,8,24,0.35)'); ctx.fillStyle = g; ctx.fillRect(fx - sh, 0, sh, cv.height);
+      g = ctx.createLinearGradient(fx + fw, 0, fx + fw + sh, 0); g.addColorStop(0, 'rgba(20,8,24,0.35)'); g.addColorStop(1, 'rgba(20,8,24,0)'); ctx.fillStyle = g; ctx.fillRect(fx + fw, 0, sh, cv.height);
     }
   } catch (err) { }
 }
@@ -636,6 +649,13 @@ function fillBands() {
 let dragY = null; cv.addEventListener('pointerdown', e => { if (scene === 'cards' && !CV.list) dragY = toLogical(e)[1]; });
 cv.addEventListener('pointermove', e => { if (scene === 'cards' && !CV.list && dragY !== null && ptr.down) { const y = toLogical(e)[1]; ui.cardScroll = Math.max(0, Math.min(Math.max(0, Math.ceil(MG.list.length / 3) * 132 - 460), ui.cardScroll - (y - dragY))); dragY = y; } });
 cv.addEventListener('pointerup', () => { dragY = null; });
+// mouse wheels and touchpads scroll the topic list, the card collection and an open card's text (for computers without a touchscreen)
+cv.addEventListener('wheel', e => {
+  e.preventDefault(); const dy = (e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY) / (scale || 1);
+  if (CV.list) CV.scroll += dy; // clamped where the card is drawn
+  else if (scene === 'stages') ui.stageScroll = Math.max(0, Math.min(stageScrollMax(), (ui.stageScroll || 0) + dy));
+  else if (scene === 'cards') ui.cardScroll = Math.max(0, Math.min(Math.max(0, Math.ceil(MG.list.length / 3) * 132 - 460), ui.cardScroll + dy));
+}, { passive: false });
 
 // ---------------- test hooks (used by tools/mgtest.py) ----------------
 window.HM = {

@@ -2,12 +2,15 @@
 // A moonlit forest clearing. The number is painted on the end of a log (36). The player chops it with a downward swipe
 // through the log: it splits along a branch into two smaller logs, its smallest prime factor and the rest (2 and 18).
 // The player keeps chopping the logs that are not prime. A prime log glows gold and cannot be chopped: an axe stroke
-// through it bounces off with a clang and a shower of sparks (only the timer ends the microgame). When every leaf of the
-// tree is prime, the leaves fly down into the answer: 36 = 2 × 2 × 3 × 3 = 2² × 3².
+// through it bounces off with a clang and a shower of sparks (only the timer ends the microgame).
+// Each chop is acted out: the log cracks and shakes, "36 ÷ 2 = 18" writes itself on a little sign under it, then the
+// log splits and its two pieces slide down the new branches (a × writes itself between them), and every prime piece
+// lights up gold with a ding. When every leaf is prime, the leaves lift one after another and fly down into the
+// answer line, and the power form writes itself: 36 = 2 × 2 × 3 × 3 = 2² × 3².
 // A beaver on a branch at the right cheers each chop and winces at each clang.
 // Level 0: two chops (12, 18, 20, 28, 30, 45, 50), a wide swipe band. Level 1: two or three chops (24, 36, 40, 54...).
 // Level 2: three chops (60, 84, 90, 100, 126, 150), a narrower band. A clang counts as a miss from level 1 up.
-// Medium mode: after each chop the two new logs show "?", and the player picks the smallest prime factor from the tray.
+// Medium mode: the sign under a chopped log reads "36 ÷ ?", and the player picks the smallest prime factor from the tray.
 //
 // The swipe is a continuous gesture, so this file handles its own down/move/up (like calc_tangent.js). moves(g) returns a
 // placeholder drag move (the logs still to chop) until every leaf is prime, then nothing, so MK.update finishes the
@@ -35,7 +38,7 @@ MG.add({
     ask: 'What are the prime factors of 20? Write 72 as a product of primes.',
   },
   init(g) {
-    const S = g.s, K = M.setup(g); S.N = pickN(g); S.d = nChops(S.N);
+    const S = g.s, K = M.setup(g); S.N = pickN(g); S.d = nChops(S.N); S.T = M.pace(g);
     g.dur *= (2.6 + 1.05 * S.d * 1.4) / 8;
     // the tree is a chain: each chop puts the prime on the left and the rest on the right, one row down
     const L = S.d >= 3 ? { x0: 108, dx: 55, dy: 84, y0: 214 } : { x0: 124, dx: 64, dy: 102, y0: 226 };
@@ -48,7 +51,7 @@ MG.add({
     const fs = factors(S.N), groups = []; for (const p of fs) { const q = groups.find(q => q.p === p); if (q) q.k++; else groups.push({ p, k: 1 }); }
     S.fs = fs; S.groups = groups;
     M.play(g, {
-      moves(g) { const left = S.nodes.map((q, i) => !q.prime && !q.chopped ? 'n' + i : null).filter(Boolean); return left.length || S.pending ? [{ drag: left.length ? left : ['n0'], to: 'axe' }] : []; },
+      moves(g) { const left = S.nodes.map((q, i) => !q.prime && !q.chopped && !q.hidden ? 'n' + i : null).filter(Boolean); return left.length || S.pending ? [{ drag: left.length ? left : ['n0'], to: 'axe' }] : []; },
       area(g) { return null; },
       onWin(g) { S.winAt = g.t; reveal(g); },
     });
@@ -58,7 +61,7 @@ MG.add({
     S.nodes.forEach((q, i) => M.zone(g, 'n' + i, box(q)));
     S.slash = S.slash.filter(s => g.t - s.t0 < 0.35);
     // after a timeout the rest of the tree chops itself, one log at a time, so the player sees the answer
-    if (g.done && g.result === 'fail') { if (S.pending) { S.pending = false; S.nodes.forEach(q => q.pending = false); } if (g.t - g.doneAt > 0.35 && g.t - (S.autoChopAt ?? -9) > 0.22) { const i = S.nodes.findIndex(q => !q.prime && !q.chopped); if (i >= 0) { S.autoChopAt = g.t; split(g, i, true); } else if (!S.revealAt) reveal(g); } }
+    if (g.done && g.result === 'fail') { if (S.pending) { S.pending = false; S.nodes.forEach(q => q.pending = false); } if (S.splitting != null) { finishSplit(g, S.splitting, true); } if (g.t - g.doneAt > 0.35 && g.t - (S.autoChopAt ?? -9) > 0.22) { const i = S.nodes.findIndex(q => !q.prime && !q.chopped && !q.hidden); if (i >= 0) { S.autoChopAt = g.t; split(g, i, true); } else if (!S.revealAt) reveal(g); } }
   },
   down(g, x, y) {
     const S = g.s, K = S.mk; if (g.done) return;
@@ -68,23 +71,23 @@ MG.add({
   move(g, x, y) {
     const S = g.s, P0 = S.press; if (!P0 || g.done) return;
     const [px, py] = P0.pts[P0.pts.length - 1]; P0.pts.push([x, y, g.t]);
-    if (P0.used || (S.mk.ask && !S.mk.ask.closing)) return;
+    if (P0.used || (S.mk.ask && !S.mk.ask.closing) || S.mk.busyT > 0) return;
     // the axe cuts a log when the stroke crosses the log's middle going down, inside its swipe band
     if (y - P0.pts[0][1] < 10 || y <= py) return;
     const pad = PAD[g.level];
     for (let i = 0; i < S.nodes.length; i++) {
-      const q = S.nodes[i]; if (q.chopped || q.pending) continue;
+      const q = S.nodes[i]; if (q.chopped || q.pending || q.hidden) continue;
       if (py < q.y && y >= q.y) { const k = (q.y - py) / (y - py), cx = px + (x - px) * k; if (Math.abs(cx - q.x) <= R0 + pad) { P0.used = true; hit(g, i); return; } }
     }
   },
   up(g, x, y) {
     const S = g.s, P0 = S.press; S.press = null; if (!P0 || g.done || P0.used) return;
-    if (S.mk.ask && !S.mk.ask.closing) return;
+    if ((S.mk.ask && !S.mk.ask.closing) || S.mk.busyT > 0) return;
     const [x0, y0] = P0.pts[0], dx = x - x0, dy = y - y0;
     // a short downward stroke that started on a log (but never crossed its middle) also counts
     if (dy >= 26 && Math.abs(dx) < dy * 1.3) {
       const pad = PAD[g.level]; let bi = -1, bd = 1e9;
-      S.nodes.forEach((q, i) => { if (q.chopped || q.pending) return; const xm = (x0 + x) / 2; if (Math.abs(xm - q.x) <= R0 + pad && y0 <= q.y + R0 + 6 && y >= q.y - R0 - 6) { const d = Math.abs(xm - q.x); if (d < bd) { bd = d; bi = i; } } });
+      S.nodes.forEach((q, i) => { if (q.chopped || q.pending || q.hidden) return; const xm = (x0 + x) / 2; if (Math.abs(xm - q.x) <= R0 + pad && y0 <= q.y + R0 + 6 && y >= q.y - R0 - 6) { const d = Math.abs(xm - q.x); if (d < bd) { bd = d; bi = i; } } });
       if (bi >= 0) { hit(g, bi); return; }
     }
     // a tap: a log to chop wiggles (it wants a swipe), a prime twinkles, the beaver waves
@@ -99,7 +102,7 @@ MG.add({
     if (K.ask) { if (!K.ask.closing) M.auto(g, dt, synth); return; }
     if (S.bot) { const b = S.bot, k = clamp((g.t - b.t0) / b.dur, 0, 1), y = lerp(b.y0, b.y1, k); synth('move', b.x, y); if (k >= 1) { synth('up', b.x, y); S.bot = null; S.botNext = g.t + 0.35; } return; }
     if (g.t < (S.botNext ?? 0.5) || K.busyT > 0) return;
-    const q = S.nodes.find(q => !q.prime && !q.chopped && !q.pending); if (!q) return;
+    const q = S.nodes.find(q => !q.prime && !q.chopped && !q.pending && !q.hidden); if (!q) return;
     synth('down', q.x + 4, q.y - R0 - 22); S.bot = { t0: g.t, dur: 0.16, x: q.x - 2, y0: q.y - R0 - 22, y1: q.y + R0 + 22 };
   },
   draw(g, c) {
@@ -108,6 +111,7 @@ MG.add({
     ambient(c, t);
     drawBeaver(g, c, S);
     drawTree(g, c, S);
+    drawNote(g, c, S);
     drawSlash(g, c, S);
     drawFinal(g, c, S);
     drawGuide(g, c, S);
@@ -130,31 +134,58 @@ function hit(g, i) {
   split(g, i, false);
 }
 function split(g, i, quiet) {
-  const S = g.s, q = S.nodes[i], p = spf(q.n), rest = q.n / p, L = S.L;
+  const S = g.s, q = S.nodes[i], p = spf(q.n), rest = q.n / p, L = S.L, T = S.T;
   q.chopped = true; q.chopAt = g.t;
-  const a = { n: p, x: q.x - L.dx, y: q.y + L.dy, row: q.row + 1, bornAt: g.t, prime: true, parent: i };
-  const b = { n: rest, x: q.x + L.dx, y: q.y + L.dy, row: q.row + 1, bornAt: g.t, prime: isPrime(rest), parent: i };
+  const a = { n: p, x: q.x - L.dx, y: q.y + L.dy, row: q.row + 1, bornAt: g.t, prime: true, parent: i, hidden: true };
+  const b = { n: rest, x: q.x + L.dx, y: q.y + L.dy, row: q.row + 1, bornAt: g.t, prime: isPrime(rest), parent: i, hidden: true };
   S.nodes.push(a, b); q.kids = [S.nodes.length - 2, S.nodes.length - 1];
-  S.beaver.cheerAt = g.t;
-  if (!quiet) { g.sfx('crunch'); g.sfx('snap'); g.burst(q.x, q.y + R0, ['#e8b878', '#c88a4a', '#fff0d0'], 14, 150); }
-  if (g.mode === 'medium' && !quiet) {
-    a.pending = b.pending = true; S.pending = true; S.mk.busyT = 1e9;
+  S.beaver.cheerAt = g.t; S.splitting = i; S.noteOut = null;
+  if (quiet) { finishSplit(g, i, true); return; }
+  g.sfx('crunch'); g.sfx('snap'); g.burst(q.x, q.y + R0, ['#e8b878', '#c88a4a', '#fff0d0'], 14, 150);
+  // the working sign under the log: "84 ÷ 2 = 42"
+  S.nq = M.num('?', 'np', { col: '#ffe9a0' }); S.note = M.row(M.num(q.n), M.op('÷'), S.nq); S.noteAt = q;
+  M.place(g, 'note', S.note, q.x, q.y + R0 + 22, 20, { col: '#fff3d8' }); M.writeIn(g, S.note, { delay: 0.08 * T, dur: 0.3 * T }); S.noteK = g.t;
+  const go = g => { S.nq.v = String(p); S.nq.pop = g.t; M.relayout(g, 'note'); g.sfx('tap'); finishSplit(g, i, false); };
+  if (g.mode === 'medium') {
+    M.show(g, 0.45 * T); a.pending = b.pending = true; S.pending = true;
     let cd = 0; for (let d = 4; d < q.n; d++) if (q.n % d === 0 && !isPrime(d)) { cd = d; break; }
     const wrong = [cd || null, ...[2, 3, 5, 7].filter(r => r !== p)].filter(Boolean);
-    M.openAsk(g, { ask: { v: p, wrong }, after: 0.05, resolve(g) { a.pending = b.pending = false; S.pending = false; a.bornAt = b.bornAt = g.t; g.sfx('sparkle'); } });
-  } else if (b.prime) g.sfx('sparkle');
+    M.at(g, [[0.42 * T, g => { S.mk.busyT = 1e9; M.openAsk(g, { ask: { v: p, wrong }, after: 0.05, resolve(g) { a.pending = b.pending = false; S.pending = false; go(g); } }); }]]);
+  } else { M.show(g, 0.45 * T); M.at(g, [[0.45 * T, go]]); }
+}
+// the rest of a chop: "= 42" writes itself, then the log splits and its pieces slide down the branches
+function finishSplit(g, i, quiet) {
+  const S = g.s, q = S.nodes[i], [a, b] = q.kids.map(j => S.nodes[j]), T = S.T; if (S.splitting !== i) return; S.splitting = null;
+  S.noteOut = null; const born = g => { a.hidden = b.hidden = false; a.pending = b.pending = false; a.bornAt = b.bornAt = q.splitAt = g.t; };
+  const lastChop = !S.nodes.some(r => !r.prime && !r.chopped);
+  if (quiet) { born(g); delete S.mk.ex.note; S.note = null; if (b.prime) g.sfx('sparkle'); return; }
+  const eq = M.op('='), r = M.num(b.n, 'nr', { col: '#ffe9a0' }); S.note.items.push(eq, r); M.relayout(g, 'note'); M.writeIn(g, eq, { dur: 0.12 * T }); M.writeIn(g, r, { delay: 0.08 * T, dur: 0.22 * T });
+  const len = lastChop ? 1.05 + 0.16 * S.fs.length + 0.75 : 1.1; M.show(g, len * T);
+  M.at(g, [
+    [0.4 * T, g => { S.noteOut = g.t; }], // the sign fades just before the pieces slide down past it
+    [0.52 * T, g => { delete S.mk.ex.note; S.note = null; born(g); g.sfx('whoosh'); S.beaver.cheerAt = g.t; }],
+    [0.9 * T, g => { for (const r of [a, b]) if (r.prime) { r.dingAt = g.t; g.burst(r.x, r.y, ['#fff6c0', '#ffd45a', '#fff'], 8, 110); } g.sfx('sparkle'); }],
+    ...(lastChop ? [[1.05 * T, g => reveal(g)]] : []),
+  ]);
 }
 // the leaves fly down into the answer line
 function reveal(g) {
-  const S = g.s; if (S.revealAt) return; S.revealAt = g.t; g.sfx('magic');
+  const S = g.s; if (S.revealAt) return; S.revealAt = g.t; g.sfx('magic'); const T = S.T || 1, quick = g.done;
   const leaves = S.nodes.filter(q => q.prime && !q.chopped).sort((p, q) => p.n - q.n || p.row - q.row);
-  layoutFinal(g);
-  leaves.forEach((q, k) => { const b = S.finalBoxes[k]; if (!b) return; M.fly(g, { node: M.num(q.n), from: [q.x, q.y], to: [b.x, b.y], dur: 0.35, delay: k * 0.06, arc: -30, s0: 24, s1: S.finalS, col: '#ffe9a0' }); });
+  layoutFinal(g); S.fs.forEach((p, i) => { const n = M.node(g, 'f' + i); if (n) n.alpha = 0; });
+  const pw = M.node(g, 'fpow'); if (pw) pw.alpha = 0;
+  const gap = (quick ? 0.06 : 0.16 * T), dur = quick ? 0.35 : 0.42 * T;
+  leaves.forEach((q, k) => { const b = S.finalBoxes[k]; if (!b) return; M.at(g, [[k * gap, g => { q.liftAt = g.t; }]]);
+    M.fly(g, { node: M.num(q.n), from: [q.x, q.y], to: [b.x, b.y], dur, delay: k * gap, arc: -30, s0: 24, s1: S.finalS, col: '#ffe9a0',
+      then(g) { const n = M.node(g, 'f' + k); if (n) { n.alpha = 1; n.pop = g.t; } g.sfx('tap'); } }); });
+  const end = (leaves.length - 1) * gap + dur;
+  if (pw) M.at(g, [[end + 0.05, g => { pw.alpha = 1; M.writeIn(g, pw, { dur: quick ? 0.2 : 0.4 * T }); M.sparkle(g, 'fpow', { delay: quick ? 0.2 : 0.4 * T, n: 12 }); g.sfx('ding'); S.beaver.cheerAt = g.t; }]]);
 }
 function finalNode(S, withIds) {
   const prod = S.fs.flatMap((p, i) => [i ? M.op('×') : null, M.num(p, withIds ? 'f' + i : null)]);
   const pow = S.groups.flatMap((q, i) => [i ? M.op('×') : null, q.k > 1 ? M.sup(M.num(q.p), M.num(q.k)) : M.num(q.p)]);
-  return M.row(M.num(S.N), M.op('='), ...prod, ...(S.groups.some(q => q.k > 1) ? [M.op('='), ...pow] : []));
+  const pr = M.row(M.op('='), ...pow); if (withIds) pr.id = 'fpow';
+  return M.row(M.num(S.N), M.op('='), ...prod, ...(S.groups.some(q => q.k > 1) ? [pr] : []));
 }
 function layoutFinal(g) {
   const S = g.s, node = finalNode(S, true); let s = 28; const w = M.lay(node, s).w; if (w > 312) s *= 312 / w;
@@ -216,7 +247,7 @@ function drawTree(g, c, S) {
   const t = g.t;
   // branches first
   for (const q of S.nodes) {
-    if (!q.kids) continue; const k = ease((t - q.chopAt) / 0.2);
+    if (!q.kids || q.splitAt == null) continue; const k = ease((t - q.splitAt) / ((S.T || 1) * 0.35));
     for (const j of q.kids) { const r = S.nodes[j], ex = lerp(q.x, r.x, k), ey = lerp(q.y, r.y, k);
       c.save(); c.lineCap = 'round'; c.strokeStyle = '#1a1020'; c.lineWidth = 7; c.beginPath(); c.moveTo(q.x, q.y + R0 * 0.6); c.quadraticCurveTo((q.x + ex) / 2, (q.y + ey) / 2 + 6, ex, ey - R0 * 0.6); c.stroke();
       c.strokeStyle = '#8a6a4a'; c.lineWidth = 4; c.stroke(); c.restore(); }
@@ -228,13 +259,16 @@ function drawTree(g, c, S) {
   S.nodes.forEach((q, i) => drawLog(g, c, S, q, i));
 }
 function drawLog(g, c, S, q, i) {
-  const t = g.t, born = q.bornAt < 0 ? 1 : ease((t - q.bornAt) / 0.22);
+  if (q.hidden) return; const BD = (S.T || 1) * 0.35, t = g.t, born = q.bornAt < 0 ? 1 : ease((t - q.bornAt) / BD);
   let x = q.x, y = q.y;
-  if (q.parent != null && q.bornAt >= 0 && t - q.bornAt < 0.22) { const p = S.nodes[q.parent]; x = lerp(p.x, q.x, born); y = lerp(p.y, q.y, born); }
+  if (q.parent != null && q.bornAt >= 0 && t - q.bornAt < BD) { const p = S.nodes[q.parent]; x = lerp(p.x, q.x, born); y = lerp(p.y, q.y, born); }
   const nud = q.nudgeAt != null && t - q.nudgeAt < 0.35 ? Math.sin((t - q.nudgeAt) * 45) * 4 * (1 - (t - q.nudgeAt) / 0.35) : 0;
   const clang = q.clangAt != null && t - q.clangAt < 0.4 ? 1 - (t - q.clangAt) / 0.4 : 0;
-  const gold = q.prime && !q.pending, r = R0 * (q.parent != null ? 0.6 + 0.4 * born : 1) * (1 + clang * 0.12);
-  c.save(); c.translate(x + nud + Math.sin(t * 70) * clang * 3, y);
+  // a fresh chop shakes the log; a prime piece swells once when it lights up; a leaf lifts as it flies to the answer
+  const crack = q.chopAt != null && t - q.chopAt < 0.3 ? 1 - (t - q.chopAt) / 0.3 : 0, ding = q.dingAt != null && t - q.dingAt < 0.35 ? Math.sin((t - q.dingAt) / 0.35 * Math.PI) : 0;
+  const lift = q.liftAt != null ? Math.sin(clamp((t - q.liftAt) / 0.3, 0, 1) * Math.PI) : 0;
+  const gold = q.prime && !q.pending && (q.dingAt != null || q.parent == null || t - q.bornAt > BD * 2.2), r = R0 * (q.parent != null ? 0.6 + 0.4 * born : 1) * (1 + clang * 0.12 + ding * 0.18 + lift * 0.12);
+  c.save(); c.translate(x + nud + Math.sin(t * 70) * (clang + crack) * 3, y - lift * 8);
   if (gold) { c.shadowColor = '#ffd84a'; c.shadowBlur = 18 + 8 * Math.sin(t * 4 + i); }
   // bark ring, then the cut face with growth rings
   c.fillStyle = gold ? '#a8701a' : '#4a2c1c'; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.shadowBlur = 0;
@@ -254,6 +288,16 @@ function drawLog(g, c, S, q, i) {
 }
 function star4(c, x, y, r) { c.beginPath(); c.moveTo(x, y - r * 2); c.quadraticCurveTo(x, y, x + r * 2, y); c.quadraticCurveTo(x, y, x, y + r * 2); c.quadraticCurveTo(x, y, x - r * 2, y); c.quadraticCurveTo(x, y, x, y - r * 2); c.fill(); }
 // the axe stroke: a bright streak through the log (a short bounce for a prime)
+// the little wooden sign under a log being chopped, holding its working ("84 ÷ 2 = 42")
+function drawNote(g, c, S) {
+  const e = S.mk.ex.note; if (!e || !S.note) return; const t = g.t, m = M.lay(S.note, e.s), x = e.x + m.w / 2, y = e.y - e.s * 0.3;
+  const fade = S.noteOut != null ? 1 - clamp((t - S.noteOut) / 0.2, 0, 1) : 1, grow = ease((t - S.noteK) / 0.15); if (fade <= 0) return;
+  c.save(); c.globalAlpha = fade; c.translate(x, y); c.scale(grow, grow);
+  const w = m.w + 18, h = 28; c.fillStyle = 'rgba(10,8,30,0.4)'; rr(c, -w / 2, -h / 2 + 3, w, h, 8); c.fill();
+  const gr = c.createLinearGradient(0, -h / 2, 0, h / 2); gr.addColorStop(0, '#7a5034'); gr.addColorStop(1, '#4a2c1c'); c.fillStyle = gr; rr(c, -w / 2, -h / 2, w, h, 8); c.fill();
+  c.strokeStyle = 'rgba(255,220,160,0.45)'; c.lineWidth = 1.5; c.stroke(); c.restore();
+  c.save(); c.globalAlpha = fade; M.drawEx(g, c, 'note'); c.restore();
+}
 function drawSlash(g, c, S) {
   for (const s of S.slash) {
     const k = (g.t - s.t0) / 0.35, a = 1 - k;
@@ -278,7 +322,6 @@ function drawFinal(g, c, S) {
   const gr = c.createLinearGradient(0, y - 24, 0, y + 28); gr.addColorStop(0, '#7a5034'); gr.addColorStop(1, '#4a2c1c'); c.fillStyle = gr; rr(c, 180 - m.w / 2 - 16, y - 24, m.w + 32, 52, 14); c.fill();
   c.strokeStyle = 'rgba(255,220,160,0.4)'; c.lineWidth = 1.5; c.stroke(); c.restore();
   // each prime appears in the line when its flying copy lands
-  S.fs.forEach((p, i) => { const q = M.node(g, 'f' + i); if (q) q.alpha = t >= S.revealAt + i * 0.06 + 0.35 ? 1 : 0; });
   M.drawEx(g, c, 'final');
 }
 
@@ -286,7 +329,7 @@ function drawFinal(g, c, S) {
 // the next log to chop always glows; a ghost hand swipes down through it at level 0, or after a 2-second pause
 function drawGuide(g, c, S) {
   const t = g.t, K = S.mk; if (g.done || S.press || (K.ask && !K.ask.closing) || K.busyT > 0) return;
-  const q = S.nodes.find(q => !q.prime && !q.chopped && !q.pending); if (!q) return;
+  const q = S.nodes.find(q => !q.prime && !q.chopped && !q.pending && !q.hidden); if (!q) return;
   M.glowBox(c, { x: q.x, y: q.y, w: R0 * 2, h: R0 * 2 }, t, 0.9, true);
   if ((g.level !== 0 && t - S.lastMoveT < 2) || t < 0.4) return;
   const per = 1.3, k = ((t - 0.4) % per) / per, e = easeIO(clamp((k - 0.2) / 0.4, 0, 1)), y = lerp(q.y - R0 - 34, q.y + R0 + 30, e), fade = k > 0.85 ? (1 - k) / 0.15 : Math.min(1, k / 0.1);

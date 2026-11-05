@@ -3,10 +3,13 @@
 // The scene is a deep, glowing reef at night: the first matrix is made of pink bubbles, the second of little cyan
 // jellyfish, the answer cells are open scallop shells, and the brackets are strands of glowing kelp.
 // Moves: drag a row of the first matrix (grab any entry; the whole row lifts as one strip, carried by the octopus's arm)
-// onto a column of the second. The strip swings round to lie along the column, the matching entries pair up, and a
-// working line shows a·e + b·g at once. Tap each product to compute it (either order), then tap the + to add them:
-// the sum hops into the shell where that row and column meet. Cells may be started in any order; two can be in
-// progress at once. Nothing waits on an animation.
+// onto a column of the second. The strip swings slowly round to lie along the column, the matching entries pair up
+// (first pair, then second pair, each flashing in the matrices while its product lights in the working line), and the
+// working line a·e + b·g writes itself under the matrices. Tap each product (either order): it is circled and its two
+// entries flash in the matrices; then the first factor and the dot slide into the second, which rolls over to the
+// product like an odometer. Tap the +: the second product slides into the first, which rolls over to the sum, and the
+// sum lifts off and arcs up into the shell where that row and column meet, which pops. Cells may be started in any
+// order; two can be in progress at once. The fuse stands still while the working plays.
 // Level 0: the top-left cell (the others are filled in). Level 1: one cell anywhere. Level 2: two cells, with negatives.
 // Wrong moves: dragging a row of the second matrix (pairing the wrong way: it lands on a column of the first and the
 // octopus's arms get tangled), tapping the + before both products are worked out, or tapping the second matrix.
@@ -14,7 +17,9 @@
 // (a·f + b·h from the wrong column, a·e + b·e, a + b + e + g).
 const M = MK;
 const INK = '#fff6e0', A_INK = '#ffb8cc', B_INK = '#94ecff', OCTO = '#ee7a92', OCTO_D = '#a8405e';
-const lerp = M.lerp, clamp = M.clamp, ease = M.ease, easeIO = M.easeIO;
+const lerp = M.lerp, clamp = M.clamp, ease = M.ease, easeIO = M.easeIO, GOLDN = '#ffe27a';
+// every symbol inside a node (fading these, not just their wrapper, means they leave no ghosts when removed)
+const leaves = (n, out = []) => { if (!n) return out; if (/^(num|var|txt|op)$/.test(n.k)) out.push(n); for (const ch of [n.base, n.exp, n.n, n.d, n.inner, ...(n.items || [])]) leaves(ch, out); return out; };
 
 // ---------------- numbers ----------------
 function pickProblem(g) {
@@ -334,20 +339,21 @@ MG.add({
     const G = geo(g), eq = Mk.box.eq; S.cx0 = eq.x + eq.w / 2;
     S.cellPos = (i, j) => ({ x: S.cx0 + s * 0.4 + S.cw * (j + 0.5) + j * s * 0.3, y: G.rowsY[i] });
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const p = S.cellPos(i, j); M.zone(g, id('c', i, j), { x: p.x, y: p.y, w: S.cw, h: G.bRow * 0.9, s: s * 0.78 }); }
-    const inertIds = ['eq']; for (let c = 0; c < 4; c++) inertIds.push('q' + c + '0', 'q' + c + '1');
+    const inertIds = ['eq']; for (let c = 0; c < 4; c++) for (const k of [0, 1]) inertIds.push('q' + c + k, 'x' + c + k, 'y' + c + k, 'd' + c + k);
     M.inert(g, inertIds);
     // time scales with the number of moves: four per cell (drag, two products, the sum)
     g.dur *= (2.6 + 1.05 * 4 * S.need.length) / 8;
 
-    // the working lines under the matrices: one per cell in progress
-    const factor = (v, col, paren) => paren && v < 0 ? M.paren(M.num(v, null, { col }), null, { col }) : M.num(v, null, { col });
-    S.line = cell => {
-      const c = cix(cell.i, cell.j), a = S.A[cell.i], e = [S.B[0][cell.j], S.B[1][cell.j]], parts = [0, 1].map(k => {
-        if (cell.shown[k]) { const v = a[k] * e[k], n = M.num(v, 'q' + c + k, { pop: cell.pp[k] }); return k && v < 0 ? M.paren(n) : n; }
-        const r = M.row(factor(a[k], A_INK, k === 1), M.op('·'), factor(e[k], B_INK, true)); r.id = 'p' + c + k; r.pop = cell.lp; return r;
-      });
-      return M.row(parts[0], M.gap(9), M.op('+', 'r' + c, { pop: cell.lp }), M.gap(9), parts[1]);
-    };
+    // the working lines under the matrices: one per cell in progress. Their nodes are kept (cell.L), so when a product
+    // is worked out its symbols slide and roll in place instead of being replaced.
+    const T = M.pace(g);
+    S.face = 'happy'; S.faceT = -9; S.point = false;
+    const mkLine = cell => { const c = cix(cell.i, cell.j), a = S.A[cell.i], e = [S.B[0][cell.j], S.B[1][cell.j]];
+      cell.L = { k: [0, 1].map(k => { const fx = M.num(a[k], 'x' + c + k, { col: A_INK }), fy = M.num(e[k], 'y' + c + k, { col: B_INK }), dot = M.op('·', 'd' + c + k);
+        const wx = k === 1 && a[k] < 0 ? M.paren(fx, null, { col: A_INK }) : fx, wy = e[k] < 0 ? M.paren(fy, null, { col: B_INK }) : fy;
+        const r = M.row(wx, dot, wy); r.id = 'p' + c + k; return { fx, fy, dot, wx, wy, r, res: null }; }),
+        plus: M.op('+', 'r' + c), g1: M.gap(9), g2: M.gap(9) }; };
+    S.line = cell => { const L = cell.L, part = k => L.k[k].res || L.k[k].r; L.row = L.row || M.row(); L.row.items = cell.sumNode ? [cell.sumNode] : [part(0), L.g1, L.plus, L.g2, part(1)]; return L.row; };
     S.relay = () => {
       for (const k of Object.keys(Mk.ex)) if (k.startsWith('work')) delete Mk.ex[k];
       const live = S.order.filter(cell => cell.state === 'work'), ys = live.length > 1 ? [342, 388] : [362];
@@ -355,30 +361,51 @@ MG.add({
     };
     const burst = (x, y, cols) => g.burst(x, y, cols || ['#ffd45a', '#7ae8ff', '#fff'], 10, 120);
     const act = () => { S.octo.bumpAt = g.t; S.puffs.push({ t0: g.t, x: 180 + (g.rand() - 0.5) * 30 }); };
+    const think = g => { S.face = 'think'; S.faceT = g.t; };
+    // a part slides into a neighbour and melts away (its symbols fade, so nothing is left behind)
+    const slide = (g, n, dx, dur, delay) => { M.tween(g, n, { dx, alpha: 0, sc: 0.5 }, dur, { delay }); for (const q of leaves(n)) if (q !== n) M.tween(g, q, { alpha: 0 }, dur, { delay }); };
+    const pairFlash = (g, cell, k) => { S.flash[id('a', cell.i, k)] = g.t; S.flash[id('b', k, cell.j)] = g.t; };
+    // 1. a row onto a column: the strip swings round, the pairs light in turn, and the working line writes itself
     const startCell = (g, cell) => {
-      cell.state = 'work'; cell.lp = g.t; cell.pp = [-9, -9]; cell.shown = [false, false]; S.order.push(cell); S.relay(); g.sfx('swoosh'); g.sfx('bubble'); act();
-      for (const k of [0, 1]) { S.flash[id('a', cell.i, k)] = g.t; S.flash[id('b', k, cell.j)] = g.t; }
-      const h = S.dropAt || stripHome(g, { m: 'a', r: cell.i });
-      S.flourish = { i: cell.i, j: cell.j, t0: g.t, x: h.x, y: h.y };
+      cell.state = 'work'; cell.pp = [-9, -9]; cell.shown = [false, false]; mkLine(cell); S.order.push(cell); S.relay(); g.sfx('swoosh'); g.sfx('bubble'); act();
+      M.show(g, 1.2 * T); S.point = true; think(g);
+      const h = S.dropAt || stripHome(g, { m: 'a', r: cell.i }); S.dropAt = null;
+      S.flourish = { i: cell.i, j: cell.j, t0: g.t, x: h.x, y: h.y, dur: 1.0 * T };
+      const lineT = 0.45 * T; cell.lineT = g.t + lineT; M.writeIn(g, S.line(cell), { delay: lineT, dur: 0.5 * T });
+      M.at(g, [
+        [0.5 * T, g => { pairFlash(g, cell, 0); M.indicate(g, cell.L.k[0].r, { dur: 0.35 * T, col: GOLDN }); g.sfx('tap'); act(); }],
+        [0.8 * T, g => { pairFlash(g, cell, 1); M.indicate(g, cell.L.k[1].r, { dur: 0.35 * T, col: GOLDN }); g.sfx('tap'); act(); }],
+        [1.15 * T, g => { if (!S.order.some(q => q.state === 'work' && q !== cell && !q.adding)) S.point = false; }]]);
     };
-    const compute = (cell, k) => ({
-      tap: 'p' + cix(cell.i, cell.j) + k, busy: 0.1, askAt: 0, after: 0.1,
-      ask: (() => { const x = S.A[cell.i][k], y = S.B[k][cell.j], v = x * y; return { v, wrong: [x + y, v + x, v - 1, v + y, -v, v + 1] }; })(),
-      then(g) { cell.p[k] = true; },
-      resolve(g) { cell.pp[k] = g.t; cell.shown[k] = true; S.relay(); g.sfx('pop'); act(); S.flash[id('a', cell.i, k)] = g.t; S.flash[id('b', k, cell.j)] = g.t;
-        const b = Mk.box['q' + cix(cell.i, cell.j) + k]; if (b) burst(b.x, b.y); },
-    });
+    // 2. a product: circled, its entries flash; then the first factor and the dot slide into the second, which rolls over
+    const compute = (cell, k) => { const c = cix(cell.i, cell.j), x = S.A[cell.i][k], y = S.B[k][cell.j], v = x * y;
+      return { tap: 'p' + c + k, busy: 0.1, askAt: 0.45 * T, after: 0.8 * T,
+        ask: { v, wrong: [x + y, v + x, v - 1, v + y, -v, v + 1] },
+        then(g) { cell.p[k] = true; M.show(g, 0.45 * T); think(g); S.point = true; const P = cell.L.k[k];
+          M.circle(g, 'p' + c + k, { dur: 0.45 * T, col: GOLDN }); pairFlash(g, cell, k);
+          M.indicate(g, P.fx, { dur: 0.3 * T, col: A_INK }); M.indicate(g, P.fy, { delay: 0.15 * T, dur: 0.3 * T, col: B_INK }); g.sfx('tap'); },
+        resolve(g) { M.show(g, 0.8 * T); const P = cell.L.k[k], by = M.box(g, P.fy.id), bx = M.box(g, P.fx.id), bd = M.box(g, P.dot.id);
+          cell.sl = cell.sl || []; cell.sl[k] = g.t; slide(g, P.wx, by && bx ? by.x - bx.x : 30, 0.32 * T); slide(g, P.dot, by && bd ? by.x - bd.x : 15, 0.3 * T); g.sfx('whoosh');
+          M.at(g, [[0.32 * T, g => { P.fy.id = 'q' + c + k; P.fy.col = GOLDN; P.res = k && v < 0 ? M.paren(P.fy) : P.fy; cell.shown[k] = true; cell.pp[k] = g.t; S.relay();
+              M.roll(g, P.fy, v, { dur: 0.3 * T }); S.relay(); g.sfx('pop'); act(); }],
+            [0.66 * T, g => { M.sparkle(g, P.fy, { n: 8, cols: [GOLDN, '#fff', '#7ae8ff'] }); P.fy.col = INK; M.indicate(g, P.fy, { dur: 0.2 * T, sc: 1.2, col: GOLDN }); if (!S.order.some(q => q.state === 'work' && q.p.some(z => !z))) S.point = false; }]]); } }; };
+    // 3. the +: the second product slides into the first, which rolls over to the sum; the sum arcs up into its shell
     const addUp = cell => {
-      const i = cell.i, j = cell.j, a = S.A[i][0], b = S.A[i][1], e = S.B[0][j], gg = S.B[1][j], f = S.B[0][1 - j], h = S.B[1][1 - j];
+      const i = cell.i, j = cell.j, c = cix(i, j), a = S.A[i][0], b = S.A[i][1], e = S.B[0][j], gg = S.B[1][j], f = S.B[0][1 - j], h = S.B[1][1 - j];
       return {
-        tap: 'r' + cix(i, j), busy: 0.1, askAt: 0, after: 0.1,
+        tap: 'r' + c, busy: 0.1, askAt: 0.45 * T, after: 1.3 * T,
         ask: { v: cell.v, wrong: [a * f + b * h, a * e + b * e, a + b + e + gg, a * gg + b * e, cell.v + 1, cell.v - 1] },
-        then(g) { cell.adding = true; },
-        resolve(g) {
-          const from = Mk.box['r' + cix(i, j)], to = S.cellPos(i, j);
-          cell.state = 'done'; cell.pop = g.t; S.relay(); g.sfx('coin'); S.octo.happyAt = g.t; act();
-          if (from) S.trail = { x0: from.x, y0: from.y, x1: to.x, y1: to.y, t0: g.t };
-          burst(to.x, to.y, ['#ffd45a', '#ff8ab4', '#fff', '#7ae8ff']);
+        then(g) { cell.adding = true; M.show(g, 0.45 * T); think(g); S.point = true;
+          M.circle(g, ['q' + c + '0', 'r' + c, 'q' + c + '1'], { dur: 0.45 * T, col: GOLDN }); M.indicate(g, cell.L.plus, { delay: 0.1 * T, dur: 0.3 * T, sc: 1.5, col: GOLDN }); g.sfx('tap'); },
+        resolve(g) { M.show(g, 1.3 * T); const L = cell.L, q0 = L.k[0].fy, b0 = M.box(g, q0.id), b1 = M.box(g, L.k[1].fy.id), bp = M.box(g, L.plus.id);
+          slide(g, L.k[1].res, b0 && b1 ? b0.x - b1.x : -50, 0.36 * T); slide(g, L.plus, b0 && bp ? b0.x - bp.x : -25, 0.32 * T); g.sfx('whoosh');
+          M.at(g, [
+            [0.36 * T, g => { cell.sumNode = q0; q0.col = GOLDN; S.relay(); M.roll(g, q0, cell.v, { dur: 0.34 * T }); S.relay(); g.sfx('coin'); act(); }],
+            // the sum lifts off the working line and arcs up into its shell
+            [0.78 * T, g => { const from = M.box(g, q0.id), to = S.cellPos(i, j); q0.alpha = 0; g.sfx('swoosh');
+              if (from) { M.fly(g, { node: M.num(cell.v, null, { col: GOLDN }), from: [from.x, from.y], to: [to.x, to.y], dur: 0.42 * T, arc: -50, s0: 29, s1: S.s * 0.78 }); S.trail = { x0: from.x, y0: from.y, x1: to.x, y1: to.y, t0: g.t, dur: 0.42 * T }; } }],
+            [1.2 * T, g => { const to = S.cellPos(i, j); cell.state = 'done'; cell.pop = g.t; S.relay(); g.sfx('ding'); S.octo.happyAt = g.t; act();
+              burst(to.x, to.y, ['#ffd45a', '#ff8ab4', '#fff', '#7ae8ff']); if (!S.order.some(q => q.state === 'work')) S.point = false; }]]);
         },
       };
     };
@@ -451,7 +478,7 @@ MG.add({
     const S = g.s, Mk = g.s.mk, t = g.t, s = S.s;
     c.drawImage(g.bake('matrix_reef', reef), 0, 0, W, H);
     scenery(g, c);
-    const G = geo(g), fl = S.flourish, fk = fl ? (t - fl.t0) / 0.42 : 2;
+    const G = geo(g), fl = S.flourish, fk = fl ? (t - fl.t0) / (fl.dur || 0.42) : 2;
     const fla = k => { const f = S.flash[k]; return f == null ? 0 : Math.max(0, 1 - (t - f) / 0.35); };
     // a soft pool of light where the problem floats
     const pg = c.createRadialGradient(180, 300, 20, 180, 300, 200); pg.addColorStop(0, 'rgba(70,150,210,0.22)'); pg.addColorStop(1, 'rgba(70,150,210,0)'); c.fillStyle = pg; c.fillRect(0, 150, W, 320);
@@ -479,14 +506,16 @@ MG.add({
     const live = S.order.filter(q => q.state === 'work');
     live.forEach((cell, n) => {
       const ci = cix(cell.i, cell.j), ready = cell.p[0] && cell.p[1];
-      for (const k of [0, 1]) { const b = Mk.box['p' + ci + k]; if (cell.shown[k] || !b) continue; const asking = cell.p[k]; c.save(); glowOn(c, asking ? 'rgba(255,220,120,0.9)' : 'rgba(140,230,255,0.7)', asking ? 14 : 10); c.fillStyle = asking ? 'rgba(255,220,130,0.22)' : 'rgba(160,230,255,0.13)'; c.strokeStyle = asking ? 'rgba(255,230,150,0.95)' : 'rgba(190,240,255,0.75)'; c.lineWidth = 1.8; c.beginPath(); rr(c, b.x - b.w / 2 - 7, b.y - b.h / 2 - 5, b.w + 14, b.h + 10, (b.h + 10) / 2); c.fill(); c.stroke(); c.restore(); }
-      const pb = Mk.box['r' + ci]; if (pb) { c.save(); glowOn(c, ready ? 'rgba(255,220,120,0.9)' : 'rgba(140,200,255,0.4)', ready ? 14 : 6); c.fillStyle = ready ? 'rgba(255,220,130,0.3)' : 'rgba(160,210,255,0.08)'; c.strokeStyle = ready ? 'rgba(255,230,150,0.9)' : 'rgba(170,210,255,0.35)'; c.lineWidth = 1.6; c.beginPath(); c.arc(pb.x, pb.y, pb.h * 0.5 + 3, 0, 7); c.fill(); c.stroke(); c.restore(); }
-      M.drawEx(g, c, 'work' + n);
+      const la = clamp((t - (cell.lineT || 0) - 0.2) / 0.35, 0, 1); c.save(); c.globalAlpha = la; // the bubbles fade in once the line has written itself
+      for (const k of [0, 1]) { const b = Mk.box['p' + ci + k]; if (cell.shown[k] || !b || (cell.sl && cell.sl[k] != null)) continue; const asking = cell.p[k]; c.save(); glowOn(c, asking ? 'rgba(255,220,120,0.9)' : 'rgba(140,230,255,0.7)', asking ? 14 : 10); c.fillStyle = asking ? 'rgba(255,220,130,0.22)' : 'rgba(160,230,255,0.13)'; c.strokeStyle = asking ? 'rgba(255,230,150,0.95)' : 'rgba(190,240,255,0.75)'; c.lineWidth = 1.8; c.beginPath(); rr(c, b.x - b.w / 2 - 7, b.y - b.h / 2 - 5, b.w + 14, b.h + 10, (b.h + 10) / 2); c.fill(); c.stroke(); c.restore(); }
+      const pb = Mk.box['r' + ci]; if (pb && !cell.adding) { c.save(); glowOn(c, ready ? 'rgba(255,220,120,0.9)' : 'rgba(140,200,255,0.4)', ready ? 14 : 6); c.fillStyle = ready ? 'rgba(255,220,130,0.3)' : 'rgba(160,210,255,0.08)'; c.strokeStyle = ready ? 'rgba(255,230,150,0.9)' : 'rgba(170,210,255,0.35)'; c.lineWidth = 1.6; c.beginPath(); c.arc(pb.x, pb.y, pb.h * 0.5 + 3, 0, 7); c.fill(); c.stroke(); c.restore(); }
+      c.restore(); M.drawEx(g, c, 'work' + n); c.save(); c.globalAlpha = la;
       const mx = (cell.lx || 40) - 26, my = cell.ly;
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const on = i === cell.i && j === cell.j; c.fillStyle = on ? '#ff8ab4' : 'rgba(200,230,255,0.3)'; c.beginPath(); rr(c, mx - 9 + j * 10, my - 9 + i * 10, 8, 8, 2); c.fill(); }
+      c.restore();
     });
     // the sum's quick hop into its shell
-    const tr = S.trail, tk = tr ? (t - tr.t0) / 0.22 : 2;
+    const tr = S.trail, tk = tr ? (t - tr.t0) / (tr.dur || 0.22) : 2;
     if (tr && tk < 1) for (let q = 0; q < 6; q++) { const kk = clamp(tk - q * 0.06, 0, 1), e = easeIO(kk); c.fillStyle = q ? 'rgba(255,230,140,0.7)' : '#fff6c0'; c.beginPath(); c.arc(lerp(tr.x0, tr.x1, e), lerp(tr.y0, tr.y1, e) - Math.sin(e * Math.PI) * 40, 6 - q, 0, 7); c.fill(); }
 
     // the octopus: it bounces on every move, carries the row with one long arm, and knots up after a mistake
@@ -496,7 +525,8 @@ MG.add({
     const P0 = Mk.press, dragging = P0 && P0.dragging && P0.strip;
     for (const p of S.puffs) { const k = (t - p.t0) / 1.2; if (k < 0 || k > 1) continue; for (let q = 0; q < 3; q++) bubble(c, p.x + Math.sin(k * 9 + q * 2) * 6 + (q - 1) * 9, 480 - k * 90 - q * 10, 2.5 + q, 1 - k); }
     S.puffs = S.puffs.filter(p => t - p.t0 < 1.2);
-    octopus(g, c, ox, oy, 1.05, { t, pose: won || happy ? 'cheer' : 'idle', expr: won ? 'laugh' : tangleK >= 0 && tangleK < 1 ? 'wow' : lost ? 'sad' : 'happy', hold: !!dragging, look: dragging ? clamp((P0.x - ox) / 120, -1, 1) : 0, lookY: dragging ? -1 : 0 });
+    const pose = won || happy ? 'cheer' : bump > 0 ? 'hop' : S.point && M.showing(g) && !dragging ? 'point' : 'idle', expr0 = t - S.faceT < 0.6 ? S.face : 'happy';
+    octopus(g, c, ox, oy, 1.05, { t, pose, expr: won ? 'laugh' : tangleK >= 0 && tangleK < 1 ? 'wow' : lost ? 'sad' : expr0, hold: !!dragging, look: dragging ? clamp((P0.x - ox) / 120, -1, 1) : 0, lookY: dragging ? -1 : 0 });
     if (dragging) reach(g, c, ox + 4, oy - 36, P0.x, P0.y - 14);
     else if (fl && fk < 0.5) { const k1 = easeIO(clamp(fk / 0.55, 0, 1)), x1 = G.colsX[fl.j] - s * 1.05, y1 = (G.rowsY[0] + G.rowsY[1]) / 2; reach(g, c, ox + 4, oy - 36, lerp(fl.x, x1, k1), lerp(fl.y, y1, k1) + 14); }
     if (tangleK >= 0 && tangleK < 1) tangle(g, c, ox, oy - 4, tangleK);

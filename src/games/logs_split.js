@@ -1,29 +1,43 @@
 // logs_split.js — LOG RULES! Split a logarithm with the product, quotient and power rules (log is base 10 here).
 // Drag the log onto the factors inside: log(100x) becomes log 100 + log x (a quotient gives a difference). Tap log 100
 // to compute it (2). If x has an exponent, drag the exponent in front of its log: log x³ becomes 3 log x.
+// Show your work: on the split, each factor inside the brackets is circled in turn, the brackets melt away, a second
+// "log" peels off the first and flies to the other factor, and the + (or −, where the fraction bar was) writes itself
+// between them. On log 100, the note "10^? = 100" writes itself under it, the 2 fills in (the tray asks for it in
+// medium mode) and flies up as log 100 shrinks into it. On the power rule, the exponent hops down in front of its log.
 // Level 0: log(Nx). Level 1: log(x/N) or log(N/x). Level 2: a product or quotient with x², x³ or x⁴.
-// Medium mode: tapping log N opens the tray.
-const M = MK, INK = SCN.ink('chalk'), LOGC = '#ffd27a', XC = '#9ad8ff';
+const M = MK, INK = SCN.ink('chalk'), LOGC = '#ffd27a', XC = '#9ad8ff', NC = '#ffb0c8', HX = 290, HY = 592;
 function gen(g) {
   const L = g.level, r = k => Math.floor(g.rand() * k), N = [10, 100, 1000][r(L === 0 ? 2 : 3)];
   const form = L === 0 ? 'mul' : L === 1 ? 'div' : r(2) ? 'mul' : 'div';
   return { N, form, xTop: form === 'mul' || r(2) === 0, k: L === 2 ? 2 + r(3) : 1, v: L === 0 ? 'x' : ['x', 'y'][r(2)] };
 }
+// leaf symbols are made once and reused (so they glide when the line is rewritten); wrappers are made fresh each time
 function build(g) {
-  const S = g.s, pp = id => ({ pop: S.pops[id] }), lw = id => M.txt('log', id, { col: LOGC });
-  const xn = () => S.k > 1 ? M.sup(M.vr(S.v, 'x', { col: XC }), M.num(S.k, 'k')) : M.vr(S.v, 'x', { col: XC });
+  const S = g.s;
+  const xn = () => S.k > 1 && !S.pw ? M.sup(S.xv, S.kn, 'xk') : S.xv;
+  S.lg.id = S.split ? 'lx' : 'log'; S.lg2.id = 'ln';
   const mk = () => {
     if (!S.split) {
-      const inner = S.form === 'mul' ? M.row(M.num(S.N, 'N'), xn()) : S.xTop ? M.frac(xn(), M.num(S.N, 'N')) : M.frac(M.num(S.N, 'N'), xn());
-      return M.row(lw('log'), M.paren(inner, 'par'));
+      const inner = S.form === 'mul' ? M.row(S.Nn, xn()) : S.xTop ? M.frac(xn(), S.Nn) : M.frac(S.Nn, xn());
+      return M.row(S.lg, M.paren(inner, 'par'));
     }
-    const LN = S.nv ? M.num(Math.round(Math.log10(S.N)), 'nv', pp('nv')) : Object.assign(M.row(lw(), M.gap(6), M.num(S.N)), { id: 'LN', ...pp('LN') });
-    const LX = S.pw ? M.row(M.num(S.k, "kf", pp("kf")), M.gap(12), lw('lx'), M.gap(6), M.vr(S.v, 'x', { col: XC })) : M.row(lw('lx'), M.gap(6), xn());
-    if (S.form === 'mul') return M.row(LN, M.op('+', 'opr'), LX);
-    return S.xTop ? M.row(LX, M.op('-', 'opr'), LN) : M.row(LN, M.op('-', 'opr'), LX);
+    const LN = S.nv ? S.nvN : Object.assign(M.row(S.lg2, M.gap(6), S.Nn), { id: 'LN' });
+    const LX = S.pw ? M.row(S.kn, M.gap(12), S.lg, M.gap(6), S.xv) : M.row(S.lg, M.gap(6), xn());
+    if (S.form === 'mul') return M.row(LN, S.op, LX);
+    return S.xTop ? M.row(LX, S.op, LN) : M.row(LN, S.op, LX);
   };
   let s = 60; while (s > 34 && M.lay(mk(), s).w > 318) s -= 4;
   M.place(g, 'ex', mk(), 180, 306, s, { col: INK });
+}
+// the fox hops on each beat and points at the board while the work is shown
+const hop = (g, e) => { g.s.mk.lastMove = g.t; g.s.face = e || 'wow'; g.s.faceT = g.t; };
+function host(g, c) {
+  const S = g.s, mk = S.mk, hk = mk.lastMove != null && g.t - mk.lastMove < 0.35 ? Math.sin((g.t - mk.lastMove) / 0.35 * Math.PI) : 0;
+  const won = g.done && g.result === 'win', lost = g.done && g.result === 'fail', missed = mk.missAt > 0 && g.t - mk.missAt < 0.7;
+  const expr = won ? 'laugh' : lost ? 'sad' : missed ? 'think' : S.faceT != null && g.t - S.faceT < 0.6 ? S.face : 'happy';
+  const pose = won ? 'cheer' : hk > 0 ? 'hop' : M.showing(g) ? 'point' : 'idle';
+  if (typeof ANI !== 'undefined') ANI.draw(c, 'fox', HX, HY - hk * 24, 1.4, { t: g.t, pose, expr, facing: -1 }); else SCN.host(g, c, 'fox', HX, HY, 1.4);
 }
 
 MG.add({
@@ -36,20 +50,43 @@ MG.add({
   },
 
   init(g) {
-    const S = g.s; M.setup(g); Object.assign(S, gen(g)); S.pops = {};
-    build(g); M.inert(g, ['par', 'opr']);
+    const S = g.s; M.setup(g); Object.assign(S, gen(g));
+    S.lg = M.txt('log', 'log', { col: LOGC }); S.lg2 = M.txt('log', 'ln', { col: LOGC }); S.Nn = M.num(S.N, 'N'); S.xv = M.vr(S.v, 'x', { col: XC });
+    S.kn = M.num(S.k, 'k'); S.op = M.op(S.form === 'mul' ? '+' : '-', 'opr'); S.n = Math.round(Math.log10(S.N)); S.nvN = M.num(S.n, 'nv', { _born: -1 });
+    build(g); M.inert(g, ['par', 'opr', 'ln', 'xk', 'nv']);
     g.dur *= (2.6 + 1.05 * (S.k > 1 ? 3 : 2)) / 8;
-    const burst = id => { const b = M.box(g, id); if (b) g.burst(b.x, b.y, ['#ffd27a', '#9ad8ff', '#fff'], 10, 120); };
     M.play(g, {
       moves(g) {
-        const out = [], n = Math.round(Math.log10(S.N));
+        const out = [], n = S.n, T = M.pace(g);
         // drag the log onto the factors inside the brackets: one log for each factor
-        if (!S.split) out.push({ drag: 'log', to: ['N', 'x', 'k', 'par'], busy: 0.1, then(g) { S.split = true; S.pops.LN = g.t; g.sfx('pop'); build(g); burst('LN'); } });
+        if (!S.split) out.push({ drag: 'log', to: ['N', 'x', 'k', 'par'], busy: 0.1, then(g) {
+          M.show(g, 1.35 * T); hop(g, 'think'); const facs = [S.Nn, S.k > 1 ? 'xk' : S.xv];
+          M.circle(g, 'N', { col: NC, dur: 0.4 * T }); M.circle(g, S.k > 1 ? 'xk' : 'x', { col: XC, dur: 0.4 * T, delay: 0.18 * T });
+          M.indicate(g, S.Nn, { col: NC, dur: 0.3 * T }); M.indicate(g, S.xv, { col: XC, dur: 0.3 * T, delay: 0.18 * T }); M.at(g, [[0.18 * T, g => g.sfx('tap')]]);
+          M.at(g, [[0.55 * T, g => { // the brackets melt, the factors move apart and each gets its own log
+              const from = { ...M.box(g, 'log') }; S.split = true; S.lg2.alpha = 0; S.op.alpha = 0; build(g); g.sfx('swoosh'); hop(g);
+              M.fly(g, { node: M.txt('log', null, { col: LOGC }), from: [from.x, from.y], to: 'ln', dur: 0.4 * T, arc: -46, s0: from.s, s1: (M.box(g, 'ln') || {}).s,
+                then(g) { S.lg2.alpha = 1; S.lg2.pop = g.t; M.sparkle(g, 'ln', { cols: [LOGC, '#fff'], n: 8 }); g.sfx('pop'); } }); }],
+            [1.0 * T, g => { S.op.alpha = 1; M.writeIn(g, S.op, { dur: 0.25 * T }); M.indicate(g, S.op, { delay: 0.1 * T, dur: 0.3 * T, sc: 1.4 }); g.sfx('tap'); hop(g, 'happy'); }]]); } });
         else {
-          if (!S.nv) out.push({ tap: 'LN', busy: 0.1, askAt: 0, after: 0.1, ask: { v: n, wrong: [S.N / 10, S.N, n + 1, 10] },
-            then() {}, resolve(g) { S.nv = true; S.pops.nv = g.t; g.sfx('coin'); build(g); burst('nv'); } });
+          // log 10ⁿ = n, because 10ⁿ = N: the note asks "10^? = 100" and the answer flies up into the line
+          if (!S.nv) out.push({ tap: 'LN', busy: 0.1, askAt: 0.6 * T, after: 1.0 * T, ask: { v: n, wrong: [S.N / 10, S.N, n + 1, 10] },
+            then(g) { M.show(g, 0.6 * T); hop(g, 'think'); M.circle(g, 'LN', { col: LOGC, dur: 0.45 * T });
+              const b = M.box(g, 'LN'); S.q = M.num(n, 'nq', { alpha: 0, col: LOGC }); S.qs = M.slot('nqs', { w: 22 });
+              S.note = M.row(M.sup(M.num(10), S.qs), M.op('='), M.num(S.N)); S.note.id = 'note';
+              M.place(g, 'note', S.note, M.clamp(b.x, 100, 260), 386, 34, { col: INK }); M.writeIn(g, S.note, { dur: 0.4 * T, delay: 0.1 * T }); },
+            resolve(g) { M.show(g, 1.0 * T); S.qs.fill = S.q; S.q.alpha = 1; M.relayout(g, 'note'); M.writeIn(g, S.q, { dur: 0.2 * T }); M.indicate(g, S.q, { delay: 0.15 * T, dur: 0.3 * T }); g.sfx('ding');
+              M.at(g, [[0.4 * T, g => { const from = { ...M.box(g, 'nq') }, lb = M.box(g, 'LN');
+                  M.tween(g, S.lg2, { alpha: 0, sc: 0.6 }, 0.25 * T); M.tween(g, S.Nn, { alpha: 0, sc: 0.6 }, 0.25 * T); S.q.alpha = 0; S.nvN.alpha = 0;
+                  M.fly(g, { node: M.num(n, null, { col: LOGC }), from: [from.x, from.y], to: lb ? [lb.x, lb.y] : 'LN', dur: 0.35 * T, arc: 30, s0: from.s, s1: lb ? lb.s : 40,
+                    then(g) { S.nv = true; S.nvN.alpha = 1; build(g); S.nvN.pop = g.t; M.sparkle(g, 'nv', { n: 12 }); g.sfx('coin'); hop(g, 'laugh'); } }); }],
+                [0.6 * T, g => { M.tween(g, S.note, { alpha: 0 }, 0.25 * T); }], [0.9 * T, g => { delete g.s.mk.ex.note; }]]); } });
           // the power rule: drag the exponent down in front of its log
-          if (S.k > 1 && !S.pw) out.push({ drag: 'k', to: ['lx'], busy: 0.1, then(g) { S.pw = true; S.pops.kf = g.t; g.sfx('pop'); build(g); burst('kf'); } });
+          if (S.k > 1 && !S.pw) out.push({ drag: 'k', to: ['lx'], busy: 0.1, then(g) {
+            M.show(g, 0.95 * T); hop(g, 'think'); M.circle(g, 'k', { dur: 0.35 * T }); const from = { ...M.box(g, 'k') };
+            M.at(g, [[0.3 * T, g => { S.pw = true; S.kn.alpha = 0; build(g); g.sfx('swoosh'); const to = { ...M.box(g, 'k') };
+              M.fly(g, { node: M.num(S.k), from: [from.x, from.y], to: [to.x, to.y], dur: 0.45 * T, arc: -70, s0: from.s, s1: to.s,
+                then(g) { S.kn.alpha = 1; S.kn.pop = g.t; M.indicate(g, S.lg, { delay: 0.05 * T, dur: 0.3 * T }); M.sparkle(g, 'k', { n: 10 }); g.sfx('pop'); hop(g, 'laugh'); } }); }]]); } });
         }
         return out;
       },
@@ -60,7 +97,7 @@ MG.add({
   down(g, x, y) { M.down(g, x, y); }, move(g, x, y) { M.move(g, x, y); }, up(g, x, y) { M.up(g, x, y); },
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
-    SCN.std(g, c, { scene: 'library', panel: 'chalk', host: 'fox', hostX: 290, hostY: 592, hostS: 1.4 });
-    M.drawEx(g, c, 'ex'); M.drawUI(g, c);
+    SCN.std(g, c, { scene: 'library', panel: 'chalk' }); host(g, c);
+    M.drawEx(g, c, 'ex'); M.drawEx(g, c, 'note'); M.drawUI(g, c);
   },
 });

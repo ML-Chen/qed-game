@@ -1,10 +1,12 @@
 // limits_inf.js — LIMIT AT INF! The limit of a rational function as x → ∞ when the top and bottom have the same
 // degree: only the leading terms matter, so lim (3x² + 1)/(x² + 5) = lim 3x²/x² = 3.
-// Moves: tap the top (any of its terms) and the bottom, in either order: the smaller terms drift off into space and
-// only the leading term stays. Then tap the fraction of leading terms: the powers cancel and the value appears.
+// Moves, each acted out (show your work): tap the top (any of its terms) and the bottom, in either order: the highest
+// power lights up gold, the smaller terms fade and drift off into space, and only the leading term stays. Then tap the
+// fraction of leading terms: the two equal powers are circled, joined by an arrow and crossed out, the numbers divide in
+// a note ("6 ÷ 2 = 3"), and the line becomes the true statement lim (original) = L.
 // Under the problem, a comet flies along the graph to the right, settling toward the dashed line y = L.
 // Level 0: (ax² + b)/(x² + d). Level 1: (ax² + bx)/(cx² + d), a a multiple of c. Level 2: cubes, and a/c may be a fraction.
-// Medium mode: the last tap opens the tray (wrong tiles: the ratio of the constants, c/a, 0, 1).
+// Medium mode: the tray opens once the powers have cancelled (wrong tiles: the ratio of the constants, c/a, 0, 1).
 const M = MK, INK = SCN.ink('none'), SUB = '#9ad8ff', GOLD = '#ffd45a';
 const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
 function pick(g) {
@@ -19,25 +21,31 @@ function glyph(c, kind, b, col) {
   else { const a = b.w / 2 - s * 0.06; for (let i = 0; i <= 48; i++) { const u = i / 48 * Math.PI * 2, d = 1 + Math.sin(u) ** 2, x = b.x + a * Math.cos(u) / d, yy = y + a * 1.1 * Math.sin(u) * Math.cos(u) / d; i ? c.lineTo(x, yy) : c.moveTo(x, yy); } }
   c.stroke(); c.restore();
 }
-// a term c·x^p (the first term of a line has no sign)
+// a term c·x^p as separate nodes (sign, coefficient, power), so the leading term's parts can cancel on their own
 function term([cf, p], first, id) {
-  const it = [first ? null : M.op('+'), p && cf === 1 ? null : M.num(cf), p === 0 ? null : p === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(p))];
-  return Object.assign(M.row(...it), { id });
+  const Q = { cf, p, sg: first ? null : M.op('+'), co: p && cf === 1 ? null : M.num(cf, id + 'c'), pw: p === 0 ? null : p === 1 ? M.vr('x', id + 'x') : M.sup(M.vr('x', id + 'x'), M.num(p)) };
+  if (Q.pw) Q.pw.id = id + 'p'; Q.row = M.row(); Q.row.id = id; Q.sync = () => { Q.row.items = [Q.sg, Q.co, Q.pw].filter(Boolean); }; Q.sync(); return Q;
 }
-const line = (T, k, only) => M.row(...(only ? T.slice(0, 1) : T).map((q, i) => term(q, i === 0, k + i)));
+// a plain copy of a line of terms, with no ids (for the final statement and for measuring)
+const plainLine = T => M.row(...T.map(([cf, p], i) => M.row(i ? M.op('+') : null, p && cf === 1 ? null : M.num(cf), p === 0 ? null : p === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(p)))));
 const valNode = (a, c) => { const d = gcd(a, c); return c / d === 1 ? M.num(a / d) : M.frac(M.num(a / d), M.num(c / d)); };
+const hideAll = n => { if (!n) return; n.alpha = 0; for (const ch of [n.base, n.exp, n.n, n.d, n.inner, ...(n.items || [])]) hideAll(ch); };
+const idsIn = n => { const out = []; (function walk(q) { if (!q) return; if (q.id) out.push(q.id); for (const ch of [q.base, q.exp, q.n, q.d, q.inner, ...(q.items || [])]) walk(ch); })(n); return out; };
+// MK.drawEx glides every node that moved, and a child's glide adds to its parent's, so a symbol inside a moving row would
+// start twice as far away. drawEx2 lets the kit work out the glides on a scratch canvas, removes each parent's share
+// from its children's glides, then draws for real.
+const NULLC = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 1; return cv.getContext('2d'); })();
+function unnest(n, ax, ay, t0) {
+  if (!n) return; let gx = ax, gy = ay;
+  if (n._glide) { if (!n._glide.fixed && n._glide.t0 === t0) { n._glide.dx -= ax; n._glide.dy -= ay; } n._glide.fixed = true; gx = ax + n._glide.dx; gy = ay + n._glide.dy; }
+  for (const ch of [n.base, n.exp, n.n, n.d, n.inner, n.fill, ...(n.items || [])]) unnest(ch, gx, gy, t0);
+}
+function drawEx2(g, c, key) { const e = g.s.mk.ex[key]; if (!e) return; M.drawEx(g, NULLC, key); unnest(e.node, 0, 0, g.t); M.drawEx(g, c, key); }
+// the left edge stays put (set from the widest moment), so "lim" never slides while the fraction changes
 function build(g) {
-  const S = g.s;
-  const lim = M.txt('lim', 'lim'), sub = M.row(M.vr('x'), { k: 'gap', w: 22, id: 'arr' }, { k: 'gap', w: 26, id: 'inf' });
-  let main;
-  if (S.val) main = M.row(M.frac(line(S.top, ''), line(S.bot, '')), M.op('='), Object.assign(valNode(S.top[0][0], S.bot[0][0]), { col: GOLD, pop: S.popV, id: 'res' }));
-  else if (S.dt && S.db) main = Object.assign(M.frac(line(S.top, '', true), line(S.bot, '', true)), { id: 'fr', pop: S.popF });
-  else main = M.frac(Object.assign(line(S.top, 't', S.dt), { id: 'top' }), Object.assign(line(S.bot, 'b', S.db), { id: 'bot' }));
-  let s = 46; const w = () => Math.max(M.lay(lim, s).w, M.lay(sub, s * 0.55).w) + s * 0.25 + M.lay(main, s).w;
-  if (w() > 300) s *= 300 / w();
-  const cw = Math.max(M.lay(lim, s).w, M.lay(sub, s * 0.55).w), x0 = 180 - w() / 2, y = 292;
-  M.place(g, 'lim', lim, x0 + cw / 2, y, s, { col: INK }); M.place(g, 'sub', sub, x0 + cw / 2, y + s * 0.62, s * 0.55, { col: INK });
-  M.place(g, 'main', main, x0 + cw + s * 0.25, y, s, { col: INK, left: true });
+  const S = g.s, s = S.size, cw = Math.max(M.lay(S.limN, s).w, M.lay(S.subN, s * 0.55).w), y = 292;
+  M.place(g, 'lim', S.limN, S.x0 + cw / 2, y, s, { col: INK }); M.place(g, 'sub', S.subN, S.x0 + cw / 2, y + s * 0.62, s * 0.55, { col: INK });
+  M.place(g, 'main', S.main, S.x0 + cw + s * 0.25, y, s, { col: INK, left: true });
 }
 const fx = (T, x) => T.reduce((s, [cf, p]) => s + cf * Math.pow(x, p), 0);
 
@@ -51,19 +59,46 @@ MG.add({
   },
 
   init(g) {
-    const S = g.s; M.setup(g); Object.assign(S, pick(g)); S.dt = S.db = false; build(g); M.inert(g, ['arr', 'inf', 'res']);
+    const S = g.s; M.setup(g); Object.assign(S, pick(g)); S.dt = S.db = false; const T = M.pace(g);
+    const a = S.top[0][0], c = S.bot[0][0], cs = S.top[S.top.length - 1][0], ds = S.bot[S.bot.length - 1][0], n = S.n;
+    S.limN = M.txt('lim', 'lim'); S.subN = M.row(M.vr('x'), { k: 'gap', w: 22, id: 'arr' }, { k: 'gap', w: 26, id: 'inf' });
+    S.TQ = S.top.map((q, i) => term(q, i === 0, 't' + i)); S.BQ = S.bot.map((q, i) => term(q, i === 0, 'b' + i));
+    S.topR = M.row(...S.TQ.map(q => q.row)); S.topR.id = 'top'; S.botR = M.row(...S.BQ.map(q => q.row)); S.botR.id = 'bot';
+    S.fr = M.frac(S.topR, S.botR, 'fr'); S.main = M.row(S.fr);
+    const full = () => M.frac(plainLine(S.top), plainLine(S.bot));
+    const measure = sz => Math.max(M.lay(M.row(full(), M.op('='), valNode(a, c)), sz).w, M.lay(full(), sz).w) + Math.max(M.lay(S.limN, sz).w, M.lay(S.subN, sz * 0.55).w) + sz * 0.25;
+    S.size = Math.min(46, 46 * 300 / measure(46)); S.x0 = 180 - measure(S.size) / 2; build(g); M.inert(g, ['arr', 'inf', 'res', 'eqv']);
     g.dur *= (2.6 + 1.05 * 3) / 8;
-    const a = S.top[0][0], c = S.bot[0][0], cs = S.top[S.top.length - 1][0], ds = S.bot[S.bot.length - 1][0];
-    // the smaller terms drift off toward the top right, shrinking into the distance
-    const drop = (g, k, T) => { T.slice(1).forEach((q, i) => { const b = M.box(g, k + (i + 1)); if (b) M.fly(g, { node: term(q, true), from: [b.x, b.y], to: [340 - i * 20, 40 + i * 10], dur: 0.6, arc: -30, s0: b.s, s1: 6 }); }); };
-    const side = (k, T, flag) => ({ tap: [k, ...T.map((q, i) => k[0] + i)], busy: 0.1, then(g) { drop(g, k[0], T); S[flag] = true; S.popF = g.t; g.sfx('whoosh'); build(g); } });
+    const react = (g, e) => { g.s.mk.lastMove = g.t; S.face = e || 'wow'; S.faceT = g.t; };
+    // one side: the highest power lights up gold, the smaller terms fade and drift off into space, the leading term stays
+    const side = (k, Q, R, flag) => ({ tap: [k, ...idsIn(R)], busy: 0.1, then(g) { S[flag] = true; M.show(g, 1.0 * T); react(g, 'think'); S.point = true; const lead = Q[0];
+      M.light(g, lead.pw, { col: GOLD, dur: 0.2 * T }); M.indicate(g, lead.row, { dur: 0.45 * T, sc: 1.2, col: GOLD }); M.sparkle(g, lead.pw.id, { n: 8, cols: [GOLD, '#fff'] }); g.sfx('ding');
+      for (const q of Q.slice(1)) M.tween(g, q.row, { alpha: 0.35, sc: 0.8 }, 0.25 * T, { delay: 0.3 * T });
+      M.at(g, [[0.6 * T, g => { Q.slice(1).forEach((q, i) => { const b = M.box(g, q.row.id); if (b) M.fly(g, { node: M.row(q.co ? M.num(q.cf) : null, q.p === 0 ? null : q.p === 1 ? M.vr('x') : M.sup(M.vr('x'), M.num(q.p))), from: [b.x, b.y], to: [330 - i * 26, 60 + i * 16], dur: 0.6 * T, arc: -30, s0: b.s * 0.8, s1: 6, col: SUB });
+          hideAll(q.row); }); R.items = [lead.row]; build(g); g.sfx('whoosh'); react(g); }],
+        [0.95 * T, g => { S.point = false; }]]); } });
+    const cancelT = 1.0 * T, tail = (gcd(a, c) === 1 ? 0.85 : 1.05) * T;
     M.play(g, {
       moves(g) {
         const out = [];
-        if (!S.dt) out.push(side('top', S.top, 'dt'));
-        if (!S.db) out.push(side('bot', S.bot, 'db'));
-        if (S.dt && S.db && !S.tapped) out.push({ tap: 'fr', busy: 0.1, ask: { v: valNode(a, c), wrong: [valNode(cs, ds), valNode(c, a), M.num(0), M.num(1)] }, askAt: 0, after: 0.1,
-          then() { S.tapped = true; }, resolve(g) { S.val = true; S.popV = g.t; g.sfx('coin'); build(g); const b = M.box(g, 'res'); if (b) g.burst(b.x, b.y, [GOLD, '#9ad8ff', '#fff'], 16, 140); } });
+        if (!S.dt) out.push(side('top', S.TQ, S.topR, 'dt'));
+        if (!S.db) out.push(side('bot', S.BQ, S.botR, 'db'));
+        if (S.dt && S.db && !S.tapped) out.push({ tap: ['fr', ...idsIn(S.fr)], busy: 0.1, ask: { v: valNode(a, c), wrong: [valNode(cs, ds), valNode(c, a), M.num(0), M.num(1)] }, askAt: cancelT, after: tail,
+          then(g) { S.tapped = true; M.show(g, cancelT); react(g, 'think'); S.point = true; const t0 = S.TQ[0], b0 = S.BQ[0];
+            // the same power on top and bottom: circled together, crossed out, and they leave the bare numbers behind
+            M.circle(g, [t0.pw.id, b0.pw.id], { col: GOLD, dur: 0.5 * T }); M.arrow(g, t0.pw.id, b0.pw.id, { col: GOLD, bend: -30, dur: 0.3 * T, linger: 0.2 });
+            M.strike(g, t0.pw, { delay: 0.35 * T, dur: 0.2 * T }); M.strike(g, b0.pw, { delay: 0.45 * T, dur: 0.2 * T });
+            M.at(g, [[0.38 * T, g => g.sfx('swoosh')], [0.72 * T, g => { M.tween(g, t0.pw, { alpha: 0, sc: 0.6 }, 0.14 * T); M.tween(g, b0.pw, { alpha: 0, sc: 0.6 }, 0.14 * T); }],
+              [0.88 * T, g => { hideAll(t0.pw); hideAll(b0.pw); for (const q of [t0, b0]) { if (!q.co) q.co = M.num(1, q.row.id + 'c', { _born: g.t }); q.pw = null; q.sync(); } build(g); g.sfx('pop'); react(g); M.light(g, t0.co, { col: GOLD }); M.light(g, b0.co, { col: GOLD }); }]]); },
+          resolve(g) { M.show(g, tail); S.point = false; const d = gcd(a, c), plain = d === 1;
+            // the numbers divide ("6 ÷ 2 = 3") or the fraction simplifies ("4/6 = 2/3") in a note; a fraction that is already
+            // simplest (3/2) just turns gold. Then the line becomes the true statement about the original limit.
+            if (!plain) M.note(g, { node: d === c ? M.row(M.num(a), M.op('÷'), M.num(c), M.op('='), M.num(a / c)) : M.row(M.frac(M.num(a), M.num(c)), M.op('='), M.frac(M.num(a / d), M.num(c / d))), at: 'fr', off: [S.size * 2.4, -S.size * 0.2], s: Math.round(S.size * 0.62), col: GOLD, write: 0.28 * T, hold: 0.25 * T, fade: 0.2 * T });
+            else M.indicate(g, S.fr, { dur: 0.4 * T, sc: 1.15, col: GOLD });
+            const t1 = plain ? 0.3 * T : 0.5 * T;
+            M.at(g, [[t1, g => { M.tween(g, S.fr, { alpha: 0, sc: 0.6 }, 0.12 * T); }],
+              [t1 + 0.12 * T, g => { hideAll(S.fr); S.res = Object.assign(valNode(a, c), { col: GOLD, id: 'res', pop: g.t }); S.main.items = [S.res]; build(g); S.val = true; S.popV = g.t; g.sfx('coin'); react(g, 'wow'); M.sparkle(g, 'res', { n: 16, cols: [GOLD, '#9ad8ff', '#fff'] }); }],
+              [t1 + 0.5 * T, g => { const f = full(); f._born = g.t; S.main.items = [f, M.op('=', 'eqv'), S.res]; build(g); g.sfx('chime'); react(g, 'laugh'); }]]); } });
         return out;
       },
       area(g) { return !S.dt ? ['top'] : !S.db ? ['bot'] : ['fr']; },
@@ -74,8 +109,12 @@ MG.add({
   auto(g, dt, synth) { M.auto(g, dt, synth); },
   draw(g, c) {
     const S = g.s, t = g.t;
-    SCN.std(g, c, { scene: 'space', panel: 'none', host: 'owl', hostX: 300, hostY: 604, hostS: 1.15 });
-    M.drawEx(g, c, 'lim'); M.drawEx(g, c, 'sub'); M.drawEx(g, c, 'main'); glyph(c, 'arr', M.box(g, 'arr'), INK); glyph(c, 'inf', M.box(g, 'inf'), INK);
+    SCN.std(g, c, { scene: 'space', panel: 'none' });
+    // the owl points at the problem while the work is shown, and hops when a step lands
+    const mk = S.mk, hopK = mk.lastMove != null && t - mk.lastMove < 0.35 ? Math.sin((t - mk.lastMove) / 0.35 * Math.PI) : 0, won = g.done && g.result === 'win', lost = g.done && g.result === 'fail';
+    const expr = won ? 'laugh' : lost ? 'sad' : S.faceT != null && t - S.faceT < 0.6 ? S.face : 'happy', pose = won ? 'cheer' : hopK > 0 ? 'hop' : S.point && M.showing(g) ? 'point' : 'idle';
+    if (typeof ANI !== 'undefined') ANI.draw(c, 'owl', 300, 604 - hopK * 22, 1.15, { t, pose, expr, facing: -1 }); else SCN.host(g, c, 'owl', 300, 604, 1.15);
+    M.drawEx(g, c, 'lim'); M.drawEx(g, c, 'sub'); drawEx2(g, c, 'main'); glyph(c, 'arr', M.box(g, 'arr'), INK); glyph(c, 'inf', M.box(g, 'inf'), INK);
     // the graph: a comet flies right along y = f(x) and settles toward the dashed line y = L
     const L = S.top[0][0] / S.bot[0][0], x0 = 30, x1 = 330, yb = 520, yt = 410, X1 = 14, top = Math.max(L * 1.35, 1);
     const Y = v => yb - M.clamp(v / top, -0.1, 1.1) * (yb - yt), X = x => x0 + x / X1 * (x1 - x0), f = x => fx(S.top, x) / fx(S.bot, x);
