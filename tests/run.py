@@ -17,7 +17,9 @@ Checks:
                 its working; Replay slower replays it at half speed without costing an acorn or counting toward 12
   rewind        every microgame: after a couple of moves the rewind scrubber re-plays it exactly (the hidden copy at "now"
                 matches the live game), scrubbing to many times draws with no errors, closing leaves the live game
-                unchanged and the bot still wins; the button, the marks and the play button work; also in medium mode
+                unchanged and the bot still wins; the button, the marks and the play button work; also in medium mode and in step mode
+  steps         step mode (tap through the working): every microgame's bot wins with it in easy and medium mode; while it
+                waits nothing changes and the fuse stands still; a tap goes on, is never a miss, and the "tap" cue shows
   text_fits     card text stays a sensible length
   no_network    the page makes no network requests
 """
@@ -169,7 +171,7 @@ def settings(b, page, out):
         for o in row:
             w = pg.evaluate("t => { const c = document.createElement('canvas').getContext('2d'); c.font = '900 19px Nunito'; return c.measureText(t).width; }", o['l'])
             if w > o['b']['w'] - 12: fails.append(f'settings choice "{o["l"]}" is wider than its button')
-    want = {'timer': 'off', 'anim': 'slow', 'speedups': 'off', 'mode': 'medium', 'sound': 'off'}
+    want = {'timer': 'off', 'anim': 'slow', 'steps': 'tap', 'speedups': 'off', 'mode': 'medium', 'sound': 'off'}
     for rid, v in want.items():
         bx = pg.evaluate("([rid, v]) => { const i = SET_ROWS.findIndex(r => r.id === rid), j = SET_ROWS[i].opts.findIndex(o => o[0] === v); return setOptBox(i, j); }", [rid, v])
         pg.mouse.click(bx['x'], bx['y']); pg.evaluate('HM.step(2)')
@@ -178,8 +180,8 @@ def settings(b, page, out):
     pg.mouse.click(180, 594); pg.wait_for_timeout(300); pg.evaluate('HM.step(2)')
     if pg.evaluate('SET.open'): fails.append('Back did not close the settings')
     pg.reload(); pg.wait_for_function('window.HM && window.HM.ready && document.fonts.status === "loaded"', timeout=20000)
-    after = pg.evaluate("({ s: SAVE.d.settings, mode: SAVE.d.mode, muted: SAVE.d.muted, pace: paceMulFor(MG.list[0]), timer: timerOn() })")
-    if after['s'] != {'timer': False, 'anim': 'slow', 'speedups': False} or after['mode'] != 'medium' or not after['muted'] or after['pace'] != 1.5 or after['timer']:
+    after = pg.evaluate("({ s: SAVE.d.settings, mode: SAVE.d.mode, muted: SAVE.d.muted, pace: paceMulFor(MG.list[0]), timer: timerOn(), steps: stepsFor(MG.list[0]) })")
+    if after['s'] != {'timer': False, 'anim': 'slow', 'speedups': False, 'steps': 'tap'} or after['mode'] != 'medium' or not after['muted'] or after['pace'] != 1.5 or after['timer'] or not after['steps']:
         fails.append(f'settings did not survive a reload: {after}')
     # the gear on the topic list and the Settings button in the pause menu open the same page
     pg.evaluate("HM.goto('stages'); HM.step(2)"); pg.mouse.click(330, 30); pg.evaluate('HM.step(2)')
@@ -197,9 +199,9 @@ def settings(b, page, out):
     # merging two saves keeps the newer settings and, per microgame, the newer check-in
     m = pg.evaluate("""() => { const a = { savedAt: 1, settings: { timer: false, anim: 'fast' }, learn: { x: { s: 'got', at: 5 }, y: { s: 'got', at: 1 } } },
         b = { savedAt: 2, settings: { anim: 'slow' }, learn: { x: { s: 'confused', at: 3 }, y: { s: 'confused', at: 4 }, z: { s: 'bogus', at: 9 } } }; return SAVE.merge(a, b); }""")
-    if m['settings'] != {'timer': False, 'anim': 'slow', 'speedups': True}: fails.append(f'merged settings {m["settings"]}')
+    if m['settings'] != {'timer': False, 'anim': 'slow', 'speedups': True, 'steps': 'auto'}: fails.append(f'merged settings {m["settings"]}')
     if m['learn'] != {'x': {'s': 'got', 'at': 5}, 'y': {'s': 'confused', 'at': 4}}: fails.append(f'merged check-ins {m["learn"]}')
-    if pg.evaluate('JSON.stringify(SAVE.merge(null, null).settings)') != '{"timer":true,"anim":"normal","speedups":true}': fails.append('a fresh save does not start with the default settings')
+    if pg.evaluate('JSON.stringify(SAVE.merge(null, null).settings)') != '{"timer":true,"anim":"normal","speedups":true,"steps":"auto"}': fails.append('a fresh save does not start with the default settings')
     pg.evaluate('HM.resetSave()')
     fails += errs; pg.close(); return fails
 
@@ -262,10 +264,12 @@ def checkin(b, page, out):
         pg.evaluate("__hm.drive({until: 'between'})")
     if not seen: fails.append(f'{cid} did not come back after "Confused"')
     elif abs(seen['paceMul'] - 1.6) > 1e-9: fails.append(f'{cid} came back at pace x{seen["paceMul"]}, expected x1.6')
+    elif not seen['steps']: fails.append(f'{cid} came back after "Confused" without step mode')
     # 4. Replay slower: same microgame, same level, half speed, no acorn, no count, no speed-up
     pg.evaluate("__hm.drive({until: 'between'}); HM.step(30)"); s = S(); rid = pg.evaluate('run.checkin.def.id'); lvl = pg.evaluate('run.last.level')
     pg.mouse.click(248, 586); pg.evaluate("__hm.drive({until: 'play'})"); r = S()
     if not r['replay'] or r['gameId'] != rid or pg.evaluate('run.g.level') != lvl or abs(r['paceMul'] - 2) > 1e-9: fails.append(f'"Replay slower" did not replay {rid} at level {lvl} at half speed: {r}')
+    if not r['steps']: fails.append('"Replay slower" did not replay in step mode')
     pg.evaluate("window.HM_AUTO = false"); ev = pg.evaluate("__hm.drive({until: 'between', maxFrames: 60 * 120})"); r2 = S(); pg.evaluate("window.HM_AUTO = true")
     if [e['phase'] for e in ev] != ['result', 'between']: fails.append(f'after a replay the run went {[e["phase"] for e in ev]}, expected result then the check-in')
     if r2['loaves'] != s['loaves'] or r2['i'] != s['i'] or r2['speed'] != s['speed'] or r2['cleared'] != s['cleared']: fails.append(f'a lost replay changed the run: before {s}, after {r2}')
@@ -282,7 +286,7 @@ def checkin(b, page, out):
     fails += errs; pg.close(); return fails
 
 
-REWIND_ONE = """([id, mode]) => { localStorage.clear(); SAVE.d = SAVE.merge(null, null); SAVE.d.mode = mode; CV.list = null; const def = MG.byId[id]; __hm.seed(6);
+REWIND_ONE = """([id, mode, steps]) => { localStorage.clear(); SAVE.d = SAVE.merge(null, null); SAVE.d.mode = mode; if (steps) SAVE.d.settings.steps = 'tap'; CV.list = null; const def = MG.byId[id]; __hm.seed(6);
     window.HM_AUTO = true; startRun(def.stage, id); __hm.drive({ until: 'play' }); const g = run.g;
     for (let i = 0; i < 60 * 20 && run.phase === 'play' && !g.done; i++) { T += 1 / 60; step(1 / 60); const L = g.s.mk && g.s.mk.log || []; if (L.length >= 2 && g.t - L[1] > 0.5) break; }
     window.HM_AUTO = false; if (run.phase !== 'play') return { error: 'the bot finished before the rewind could be opened (phase ' + run.phase + ')' };
@@ -304,8 +308,8 @@ def rewind(b, page, out):
     pg, errs, _ = open_page(b, page); fails = []; costs = []
     ids = [g['id'] for g in pg.evaluate('HM.list()')]
     for gid in ids:
-        for mode in (('easy', 'medium') if ids.index(gid) % 4 == 0 else ('easy',)):
-            r = pg.evaluate(REWIND_ONE, [gid, mode])
+        for mode in (('easy', 'medium') if ids.index(gid) % 4 == 0 else ('easy',)) + (('steps',) if ids.index(gid) % 2 == 1 else ()):
+            r = pg.evaluate(REWIND_ONE, [gid, 'easy' if mode == 'steps' else mode, mode == 'steps'])
             if r.get('error'): fails.append(f'{gid} ({mode}): {r["error"]}'); continue
             if not r['same']: fails.append(f'{gid} ({mode}): the rewind copy does not match the live game at "now": live {r["live"][:160]} copy {r["copy"][:160]}')
             if not r['unchanged']: fails.append(f'{gid} ({mode}): scrubbing changed the live game: {r["before"][:200]} -> {r["after"][:200]}')
@@ -340,6 +344,51 @@ def rewind(b, page, out):
     elif pg.evaluate('run.phase') != 'between' or pg.evaluate('run.pt') != pt: fails.append('the check-in screen moved on while the scrubber was open')
     if out: pg.screenshot(path=str(out / 'rewind_checkin.png'))
     pg.evaluate("HM.rewind.close(); HM.goto('title'); run = null; HM.resetSave()")
+    fails += errs; pg.close(); return fails
+
+
+STEP_ONE = """id => { const def = MG.byId[id]; __hm.seed(9); scene = 'run'; run = { stage: STAGE[def.stage] || STAGES[0], list: [def], i: 0, loaves: 4, phase: 'play', pt: 0, speed: 1, bpm: 108, newCards: [] };
+    window.HM_AUTO = true; FX.clear(); const g = makeG(def, 0, 1, true, 'easy', 1); g.steps = true; run.g = g; def.init && def.init(g); const out = { waited: 0 };
+    const tick = () => { T += 1 / 60; step(1 / 60); };
+    for (let i = 0; i < 60 * 40 && !g.done && !g.stepWait; i++) tick();
+    if (g.stepWait) { // hold still: with no tap nothing moves, the fuse stands still, and the cue is drawn
+      window.HM_AUTO = false; const sig = () => JSON.stringify([g.t, g.held, g.fuse(), g.s.mk.timers.length, g.rec.dts.length, g.rec.ev.length]); const a = sig();
+      for (let i = 0; i < 90; i++) tick(); out.still = sig() === a; out.waited = 1;
+      const oc = document.createElement('canvas').getContext('2d'); out.cue = __hm.capture(() => drawPlayOverlay(ctx, g, T)).some(r => r.text === 'tap');
+      const w0 = g.s.mk.wrong || 0; synth('down', 40, 300); synth('up', 40, 300); out.goes = !g.stepWait; out.noMiss = (g.s.mk.wrong || 0) === w0;
+      window.HM_AUTO = true; }
+    for (let i = 0; i < 60 * 60 && !g.done; i++) tick();
+    out.result = g.result; out.stops = g.stepCount || 0; window.HM_AUTO = false; scene = 'title'; run = null; return out; }"""
+
+
+@test
+def steps(b, page, out):
+    pg, errs, _ = open_page(b, page); fails = []; counts = []; none = []
+    ids = [g['id'] for g in pg.evaluate('HM.list()')]
+    for gid in ids:
+        r = pg.evaluate(STEP_ONE, gid)
+        if r['result'] != 'win': fails.append(f'{gid}: in step mode the bot did not win ({r["result"]}, {r["stops"]} stops)')
+        if r['waited']:
+            if not r['still']: fails.append(f'{gid}: something changed while step mode waited for a tap')
+            if not r['cue']: fails.append(f'{gid}: no "tap" cue while step mode waited')
+            if not r['goes']: fails.append(f'{gid}: a tap did not go on from a step')
+            if not r['noMiss']: fails.append(f'{gid}: a step tap counted as a wrong move')
+        else: none.append(gid)
+        counts.append((r['stops'], gid))
+        if ids.index(gid) % 3 == 0:
+            m = pg.evaluate('id => { __hm.seed(5); const r = HM.test(id, { auto: true, steps: true, mode: "medium", level: 1, speed: 1.5 }); return { result: r.result, errors: r.errors.slice(0, 2) }; }', gid)
+            if m['result'] != 'win': fails.append(f'{gid}: in step mode (medium, level 1) the bot did not win ({m["result"]}) {m["errors"]}')
+    counts.sort(reverse=True)
+    print('      steps: most stops ' + ', '.join(f'{g} {n}' for n, g in counts[:6]) + (f'; no stops (each move fits in one beat): {", ".join(none)}' if none else ''))
+    # a tap while a beat is playing finishes it at once (fast-forward to the next stop)
+    gid = 'reverse' if 'reverse' in ids else ids[0]
+    ff = pg.evaluate("""id => { const def = MG.byId[id]; __hm.seed(9); scene = 'run'; run = { stage: STAGE[def.stage] || STAGES[0], list: [def], i: 0, loaves: 4, phase: 'play', pt: 0, speed: 1, bpm: 108, newCards: [] };
+        window.HM_AUTO = true; FX.clear(); const g = makeG(def, 0, 1, true, 'easy', 1); g.steps = true; run.g = g; def.init(g); const tick = () => { T += 1 / 60; step(1 / 60); };
+        for (let i = 0; i < 60 * 20 && !g.stepWait; i++) tick(); window.HM_AUTO = false; synth('down', 40, 300); synth('up', 40, 300); tick(); tick();
+        if (!MK.stepBusy(g) || g.stepWait) { scene = 'title'; run = null; return { skip: true }; }
+        const t0 = g.t; synth('down', 40, 300); synth('up', 40, 300); let n = 0; while (!g.stepWait && MK.stepBusy(g) && n < 600) { tick(); n++; }
+        const out = { frames: n, gameT: +(g.t - t0).toFixed(2) }; scene = 'title'; run = null; return out; }""", gid)
+    if not ff.get('skip') and ff['frames'] * 1.5 > ff['gameT'] * 60: fails.append(f'a tap during a beat did not fast-forward it: {ff}')
     fails += errs; pg.close(); return fails
 
 
