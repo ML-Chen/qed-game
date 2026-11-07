@@ -5,7 +5,7 @@
 // space. Thrown straight up, it falls straight back down on the frog. After each orbit the frog hops to another peak (a
 // different height, so a different speed): two orbits at levels 0 and 1, three at level 2.
 (() => {
-  const C = { x: 180, y: 360 }, R = 92, GM = 8.2e7, BR = 8, KV = 6.0, LOST = 178, MAXD = 200; // KV: speed per pixel of drag, so an orbit needs only ~120 px (the owner: from the top peak the old ~200 px drag ran off the screen's edge)
+  const C = { x: 180, y: 360 }, R = 92, GM = 8.2e7, BR = 8, KV = 6.0, LOST = 178, MAXD = 200, FLICKT = 0.25, FLICKV = 1150; // KV: speed per pixel of drag, so an orbit needs only ~120 px (the owner: from the top peak the old ~200 px drag ran off the screen's edge)
   const PEAKS = [{ a: -Math.PI / 2, h: 30 }, { a: Math.PI, h: 26 }, { a: 0.35, h: 20 }];
   const surf = th => { let r = R; for (const p of PEAKS) { let d = Math.atan2(Math.sin(th - p.a), Math.cos(th - p.a)); r += p.h * Math.exp(-d * d / 0.05); } return r; };
   const ORDERS = [[[0, 1], [0, 1], [0, 1, 2]], [[1, 0], [1, 2], [1, 0, 2]], [[2, 0], [2, 1], [2, 0, 1]], [[0, 2], [0, 2], [0, 2, 1]]];
@@ -37,12 +37,18 @@
       const s = g.s, L = Math.min(2, g.level);
       s.v = SK.variant(g, 4); s.order = ORDERS[s.v][L]; s.k = 0; s.ball = null; s.trail = []; s.marks = []; s.drag = null; s.bonkT = -9; s.next = 0; s.hopT = -9; s.lostT = -9; s.fx = null; s.orbits = 0;
     },
-    down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.ball || g.t < s.next) return; const h = handOf(s); if (SK.dist(x, y, h.x, h.y) < 70) s.drag = { x, y, x0: x, y0: y }; },
+    down(g, x, y) { const s = g.s; SK.touched(g); if (g.done || s.ball || g.t < s.next) return; const h = handOf(s); if (SK.dist(x, y, h.x, h.y) < 70) s.drag = { x, y, x0: x, y0: y, t0: g.t }; },
     move(g, x, y) { const s = g.s; if (s.drag) { s.drag.x = x; s.drag.y = y; } },
     up(g) {
       const s = g.s, d = s.drag; s.drag = null; if (!d || g.done || s.ball) return;
       const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.hypot(dx, dy); if (L < 14) return;
-      const h = handOf(s), k = Math.min(L, MAXD) / L;
+      // a quick flick counts too (the owner: players sometimes flick instead of dragging): a swipe shorter than FLICKT
+      // seconds throws as if dragged (this peak's orbit drag) × sqrt(its speed / FLICKV px/s), so a FLICKV flick orbits from any peak, so a harder flick throws faster but
+      // gently (twice as fast a flick throws ~1.4x as fast), which keeps the orbit window wide enough to hit; a slow
+      // drag (FLICKT s or longer) is unchanged; within a flick only its speed counts, not how far the finger went
+      const h = handOf(s), Lorb = Math.sqrt(GM / h.r0) / KV; // the drag length that orbits from this peak
+      const dur = g.t - (d.t0 ?? g.t), Le = dur < FLICKT ? Lorb * Math.sqrt(L / Math.max(dur, 0.03) / FLICKV) : L;
+      const k = Math.min(Le, MAXD) / L;
       s.tries = (s.tries || 0) + 1; s.ball = { x: h.x, y: h.y, vx: dx * k * KV, vy: dy * k * KV, th: Math.atan2(h.y - C.y, h.x - C.x), went: 0, t: 0 }; s.trail = []; g.sfx('whoosh');
     },
     update(g, dt) {
