@@ -5,7 +5,7 @@
 // space. Thrown straight up, it falls straight back down on the frog. After each orbit the frog hops to another peak (a
 // different height, so a different speed): two orbits at levels 0 and 1, three at level 2.
 (() => {
-  const C = { x: 180, y: 360 }, R = 92, GM = 8.2e7, BR = 8, KV = 3.7, LOST = 178;
+  const C = { x: 180, y: 360 }, R = 92, GM = 8.2e7, BR = 8, KV = 6.0, LOST = 178, MAXD = 200; // KV: speed per pixel of drag, so an orbit needs only ~120 px (the owner: from the top peak the old ~200 px drag ran off the screen's edge)
   const PEAKS = [{ a: -Math.PI / 2, h: 30 }, { a: Math.PI, h: 26 }, { a: 0.35, h: 20 }];
   const surf = th => { let r = R; for (const p of PEAKS) { let d = Math.atan2(Math.sin(th - p.a), Math.cos(th - p.a)); r += p.h * Math.exp(-d * d / 0.05); } return r; };
   const ORDERS = [[[0, 1], [0, 1], [0, 1, 2]], [[1, 0], [1, 2], [1, 0, 2]], [[2, 0], [2, 1], [2, 0, 1]], [[0, 2], [0, 2], [0, 2, 1]]];
@@ -42,7 +42,7 @@
     up(g) {
       const s = g.s, d = s.drag; s.drag = null; if (!d || g.done || s.ball) return;
       const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.hypot(dx, dy); if (L < 14) return;
-      const h = handOf(s), k = Math.min(L, 280) / L;
+      const h = handOf(s), k = Math.min(L, MAXD) / L;
       s.tries = (s.tries || 0) + 1; s.ball = { x: h.x, y: h.y, vx: dx * k * KV, vy: dy * k * KV, th: Math.atan2(h.y - C.y, h.x - C.x), went: 0, t: 0 }; s.trail = []; g.sfx('whoosh');
     },
     update(g, dt) {
@@ -93,12 +93,12 @@
       else if (!g.done && g.t >= s.next - 0.2) { SK.ball(c, h.x, h.y, BR, '#ff8a5a'); }
       if (t - s.lostT < 0.8) { const [x, y] = s.lostAt; c.save(); c.globalAlpha = 1 - (t - s.lostT) / 0.8; c.translate(x, y); c.rotate(t * 3); c.fillStyle = '#ffffff'; c.beginPath(); for (let i = 0; i < 8; i++) { const q = i * Math.PI / 4, r = i % 2 ? 4 : 14; c.lineTo(Math.cos(q) * r, Math.sin(q) * r); } c.closePath(); c.fill(); c.restore(); }
       // the throw arrow while dragging: direction and speed
-      const d = s.drag, Lb0 = Math.sqrt(GM / h.r0) / KV; if (d) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.min(280, Math.hypot(dx, dy)), a = Math.atan2(dy, dx); if (L > 6) { c.save(); c.translate(h.x, h.y); c.rotate(a); c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -4); c.lineTo(L - 12, -4); c.lineTo(L - 12, -10); c.lineTo(L, 0); c.lineTo(L - 12, 10); c.lineTo(L - 12, 4); c.lineTo(0, 4); c.closePath(); c.fill(); c.stroke(); c.restore(); } }
+      const d = s.drag, Lb0 = Math.sqrt(GM / h.r0) / KV; if (d) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.min(MAXD, Math.hypot(dx, dy)), a = Math.atan2(dy, dx); if (L > 6) { c.save(); c.translate(h.x, h.y); c.rotate(a); c.fillStyle = '#ffd45a'; c.strokeStyle = '#3a1640'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -4); c.lineTo(L - 12, -4); c.lineTo(L - 12, -10); c.lineTo(L, 0); c.lineTo(L - 12, 10); c.lineTo(L - 12, 4); c.lineTo(0, 4); c.closePath(); c.fill(); c.stroke(); c.restore(); } }
       // orbits still to make
       if (!won) SK.tag(c, 'Orbits ' + s.k + ' / ' + s.order.length, 180, 592, 18);
       // levels 0-1, while aiming: the path this throw would take, green if it goes all the way round
       if (d && g.level <= 1) { const dx = d.x - d.x0, dy = d.y - d.y0, L = Math.hypot(dx, dy);
-        if (L >= 14) { const k = Math.min(L, 280) / L, q = { x: h.x, y: h.y, vx: dx * k * KV, vy: dy * k * KV }, pts = []; let th0 = Math.atan2(h.y - C.y, h.x - C.x), went = 0, end = 'lost', tt = 0;
+        if (L >= 14) { const k = Math.min(L, MAXD) / L, q = { x: h.x, y: h.y, vx: dx * k * KV, vy: dy * k * KV }, pts = []; let th0 = Math.atan2(h.y - C.y, h.x - C.x), went = 0, end = 'lost', tt = 0;
           for (let i = 0; i < 600 && tt < 3; i++) { const hh = 1 / 200, rx = q.x - C.x, ry = q.y - C.y, r2 = rx * rx + ry * ry, r = Math.sqrt(r2), a = GM / r2; q.vx -= a * rx / r * hh; q.vy -= a * ry / r * hh; q.x += q.vx * hh; q.y += q.vy * hh; tt += hh;
             const th = Math.atan2(q.y - C.y, q.x - C.x); went += Math.atan2(Math.sin(th - th0), Math.cos(th - th0)); th0 = th; if (i % 4 === 0) pts.push([q.x, q.y]);
             if (tt > 0.12 && SK.dist(q.x, q.y, h.x, h.y) < 24) { end = Math.abs(went) > 5.2 ? 'orbit' : 'head'; break; } if (r < surf(th) + BR) { end = 'land'; break; } if (q.x < -30 || q.x > 390 || q.y < 50 || q.y > 650) break; }
