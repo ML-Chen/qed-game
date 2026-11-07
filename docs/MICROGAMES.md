@@ -48,7 +48,7 @@ In medium mode, the tray opens at `askAt` (when the working has reached the comp
 
 The player may do things in any order that is mathematically valid. The microgame's `moves(g)` lists every valid move at each moment.
 
-**Modes.** `g.mode` is 'easy' or 'medium' (the player picks it on the settings page). In medium mode, when an animation reaches a computation (4 · 3), it pauses and the player picks the result from a tray of 3–4 tiles; wrong tiles are the results of real mistakes. Write each computation as a move with `ask` and `resolve` (see `src/mathkit.js`); easy mode just runs `resolve` by itself. Medium mode gets 40% more time.
+**Modes.** `g.mode` is 'easy' or 'medium' (the player picks it on the settings page). In medium mode, when an animation reaches a computation (4 · 3), it pauses and the player picks the result from a tray of 3–4 tiles; wrong tiles are the results of real mistakes. No tile glows or is pointed at: the player works the answer out (only after a timeout does the right tile turn yellow). Write each computation as a move with `ask` and `resolve` (see `src/mathkit.js`); easy mode just runs `resolve` by itself. Medium mode gets 40% more time.
 
 Copy the reference microgame `src/games/calc_power.js`, and read `src/mathkit.js` (global `MK`) completely before you start.
 

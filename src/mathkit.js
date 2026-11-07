@@ -345,8 +345,8 @@ const MK = (() => {
       const m = ch.node._m || lay(ch.node, ch.s); draw(c, ch.node, -m.w / 2, (m.a - m.d) / 2, ch.s, { t: g.t });
       c.restore();
     });
-    // level 0: the right tile lights up after a moment
-    if (!g.done && g.t - A.t0 > 1.0) { const r = A.list.find(q => q.ok); if (r) glowBox(c, { x: r.x, y: r.y, w: r.w, h: r.h }, g.t, Math.min(1, (g.t - A.t0 - 1) * 3)); }
+    // No glow on the right tile (the owner's rule: Medium gives no hint about which tile to pick; the player works the
+    // answer out). Only after a timeout does the right tile turn yellow ('answer', above).
   }
 
   // ---------------- guidance ----------------
